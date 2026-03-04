@@ -21,7 +21,7 @@ namespace rng {
  * Uses std::mt19937_64 for high-quality random numbers.
  */
 class PRNG {
- public:
+  public:
   using result_type = std::mt19937_64::result_type;
   using engine_type = std::mt19937_64;
 
@@ -196,7 +196,7 @@ class PRNG {
   engine_type& engine() { return engine_; }
   const engine_type& engine() const { return engine_; }
 
- private:
+  private:
   uint64_t master_seed_;
   engine_type engine_;
 };
