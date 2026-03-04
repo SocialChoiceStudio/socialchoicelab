@@ -27,13 +27,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake build-essential clang-format python3-pip
-          pip3 install cpplint
+          pip3 install --user cpplint || pip3 install cpplint
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install cmake clang-format
-          pip3 install cpplint
+          pip3 install --break-system-packages cpplint
 
       - name: Format check
         run: |
@@ -47,7 +48,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cd build && ctest -LE benchmark --output-on-failure
+          cd build && ./test_distance_functions && ./test_prng && ./test_distance_comparison && ./test_loss_functions && ./test_distance_speed && ./test_performance_comparison
 
       - name: Lint (strict)
         run: ./lint.sh --strict lint
