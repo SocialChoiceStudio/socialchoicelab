@@ -108,3 +108,12 @@
 - **StreamManager ownership (Item 18):** Adopted single-owner policy. Removed mutex and all `std::lock_guard` from `StreamManager` (the old mutex provided false safety — `get_stream()` returns a reference that outlives the lock). Removed `const` overload of `get_stream()` (it silently mutated via `mutable` members, violating const semantics). Removed `mutable` from member declarations. Added `reset_for_run(master_seed, run_index)` for deterministic per-run seeding. Updated stream naming convention (`voters`, `candidates`, `tiebreak`, `movement`, `memory_update`, `analysis`). The global singleton's construction mutex in `stream_manager.cpp` is retained (it guards construction only, not concurrent StreamManager use). Full decision rationale: `docs/architecture/StreamManager_Design.md`.
 
 **Test framework:** Google Test (GTest) is in use via CMake FetchContent; it is the project’s test framework. **Eigen migration:** Complete; no PointND or utility_functions.h remains (see 2025-09-11 and 2026-02-14).
+## 2026-03-04
+
+**Phase 2 complete** (documentation truthfulness, Items 22–27): README updated, stale PointND references removed, PROJECT_LOG chronological order fixed, reference index cleaned, design doc Rcpp→cpp11.
+
+**Phase 3 complete** (developer experience, Items 28–33): CI workflow (Ubuntu + macOS, clang-format 21, format/build/test/lint), ROADMAP, MILESTONE_GATES, CONTRIBUTING/SECURITY/CHANGELOG, .clang-tidy, pre-commit hook, dependency sequencing.
+
+**Backlog Item 34**: CMakeLists.txt modernized — target_include_directories(), target_compile_options() with generator expressions, install() targets, removed unused C language, removed redundant gtest linking.
+
+**C++ standard set to C++20**: Confirmed GTest 1.14, Eigen 3.4, Clang 17, and GCC 13 (CI) all support C++20. All 40 project tests pass. Recorded in DEVELOPMENT.md to prevent silent reversion.

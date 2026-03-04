@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
-project(SocialChoiceLab VERSION 1.0.0 LANGUAGES CXX C)
+project(SocialChoiceLab VERSION 1.0.0 LANGUAGES CXX)
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+# C++ standard (applies to all targets)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -10,13 +10,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
-
-# Compiler flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-
-# Include directories
-include_directories(include)
 
 # Fetch dependencies
 include(FetchContent)
@@ -45,61 +38,51 @@ add_library(socialchoicelab_core
     include/socialchoicelab/preference/loss/loss_functions.h
     src/core/rng/stream_manager.cpp
 )
-
-# Set properties
-set_target_properties(socialchoicelab_core PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
+target_include_directories(socialchoicelab_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_options(socialchoicelab_core PRIVATE
+    $<$<CONFIG:Debug>:-g -O0 -Wall -Wextra>
+    $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )
-
-# Link Eigen
-target_link_libraries(socialchoicelab_core Eigen3::Eigen)
+set_target_properties(socialchoicelab_core PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
+target_link_libraries(socialchoicelab_core PUBLIC Eigen3::Eigen)
 
 # Enable testing
 enable_testing()
 
-# Add unit tests
-add_executable(test_distance_functions tests/unit/test_distance_functions.cpp)
-target_link_libraries(test_distance_functions
-    socialchoicelab_core
-    gtest_main
-    gtest
+# Compile options for test executables (same as core in Debug/Release)
+set(SocialChoiceLab_compile_options
+    $<$<CONFIG:Debug>:-g -O0 -Wall -Wextra>
+    $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )
+
+# Add unit tests (gtest_main pulls in gtest)
+add_executable(test_distance_functions tests/unit/test_distance_functions.cpp)
+target_compile_options(test_distance_functions PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_distance_functions PRIVATE socialchoicelab_core gtest_main)
 
 add_executable(test_prng tests/unit/test_prng.cpp)
-target_link_libraries(test_prng
-    socialchoicelab_core
-    gtest_main
-    gtest
-)
+target_compile_options(test_prng PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_prng PRIVATE socialchoicelab_core gtest_main)
 
 add_executable(test_distance_comparison tests/unit/test_distance_comparison.cpp)
-target_link_libraries(test_distance_comparison
-    socialchoicelab_core
-    gtest_main
-    gtest
-)
+target_compile_options(test_distance_comparison PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_distance_comparison PRIVATE socialchoicelab_core gtest_main)
 
 add_executable(test_distance_speed tests/unit/test_distance_speed.cpp)
-target_link_libraries(test_distance_speed
-    socialchoicelab_core
-    gtest_main
-    gtest
-)
+target_compile_options(test_distance_speed PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_distance_speed PRIVATE socialchoicelab_core gtest_main)
 
 add_executable(test_performance_comparison tests/unit/test_performance_comparison.cpp)
-target_link_libraries(test_performance_comparison
-    socialchoicelab_core
-    gtest_main
-    gtest
-)
+target_compile_options(test_performance_comparison PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_performance_comparison PRIVATE socialchoicelab_core gtest_main)
 
 add_executable(test_loss_functions tests/unit/test_loss_functions.cpp)
-target_link_libraries(test_loss_functions
-    socialchoicelab_core
-    gtest_main
-    gtest
-)
+target_compile_options(test_loss_functions PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_loss_functions PRIVATE socialchoicelab_core gtest_main)
 
 # Register tests with CTest
 add_test(NAME DistanceFunctionsTest COMMAND test_distance_functions)
@@ -124,4 +107,16 @@ add_custom_target(lint
     COMMAND ${CMAKE_SOURCE_DIR}/lint.sh lint
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Lint C++ code with cpplint (permissive)"
+)
+
+# Install targets
+include(GNUInstallDirs)
+install(TARGETS socialchoicelab_core
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(DIRECTORY include/socialchoicelab
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
 )

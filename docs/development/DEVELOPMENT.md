@@ -95,9 +95,22 @@ make test
 
 ### Configuration Files
 
+- **C++ standard: C++20.** All source and tests are compiled with `-std=c++20`. Dependencies (GTest 1.14, Eigen 3.4, Clang 17+, GCC 13+) all support C++20.
 - `.clang-format`: clang-format configuration (Google style). Kept compatible with **clang-format 21** (see below).
+- `.clang-tidy`: clang-tidy checks (used by `end-of-milestone.sh` and optionally locally). Requires `compile_commands.json` (generate with `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build`).
 - `CMakeLists.txt`: Build configuration with format/lint targets
 - `lint.sh`: Convenience script for formatting and linting
+
+### Pre-commit hook (optional)
+
+To enforce formatting before every commit, install the project hook:
+
+```bash
+cp scripts/pre-commit.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+The hook runs `./lint.sh format` and fails if any of `include/`, `src/`, or `tests/unit/` change, so you must stage the formatted files and commit again. Skip once with `git commit --no-verify`.
 
 ### clang-format version
 
