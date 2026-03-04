@@ -28,6 +28,12 @@ jobs:
         with:
           version: "21"
 
+      # KyleMayes sets DYLD_LIBRARY_PATH which breaks Homebrew git on macOS; clear it.
+      # clang-format finds its own dylibs via RPATH so does not need this variable.
+      - name: Fix DYLD_LIBRARY_PATH (macOS)
+        if: runner.os == 'macOS'
+        run: echo "DYLD_LIBRARY_PATH=" >> $GITHUB_ENV
+
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
