@@ -1,6 +1,6 @@
 # Reference Materials for SocialChoiceLab
 
-This directory contains reference materials organized by layer and topic to support development of the SocialChoiceLab project.
+This directory contains reference materials organized by layer and topic to support development of the SocialChoiceLab project. Subdirectory READMEs (foundation, geometry, development, social_choice) describe scope; "key references needed" lists in some subdirs may be incomplete.
 
 ## Directory Structure
 

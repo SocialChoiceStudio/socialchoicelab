@@ -3,7 +3,7 @@
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
 - **Current phase:** Phase 3 (Developer Experience and Process)
-- **Next item:** 29 — Create `docs/ROADMAP.md` with near-term, mid-term, and long-term plans. Severity: Medium.
+- **Next item:** 32 — Add `.clang-tidy` config and pre-commit hooks for automated quality enforcement. Severity: Medium.
 - **Last updated:** 2026-03-04
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/CONSENSUS_PLAN.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in CONSENSUS_PLAN.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
@@ -59,3 +59,20 @@
 - Added `.github/workflows/ci.yml`: runs on push and pull_request to `main`.
 - Matrix: `ubuntu-latest`, `macos-latest`. Steps: install deps (cmake, clang-format, cpplint), format check (./lint.sh format then git diff --exit-code), configure & build, ctest -LE benchmark, ./lint.sh --strict lint.
 - Marked Item 28 ✅ Done in CONSENSUS_PLAN; next item 29 (ROADMAP.md).
+
+### Session: 2026-03-04 — ROADMAP (Item 29)
+
+- Created `docs/status/ROADMAP.md`: near-term (1–2 months), mid-term (3–6 months), long-term (6+ months). Links to Design Document and Implementation Priority Guide; does not duplicate. Dependency order stated (c_api before bindings, geometry before voting rules).
+- Added ROADMAP to docs index (`docs/README.md`). ROADMAP is reviewed at end-of-milestone (see `scripts/end-of-milestone.sh`).
+- Marked Item 29 ✅ Done in CONSENSUS_PLAN; next item 30 (milestone gates).
+
+### Session: 2026-03-04 — Milestone gates (Item 30)
+
+- Created `docs/status/MILESTONE_GATES.md`: definition-of-done for Phase 3 complete, c_api minimal, Geometry + voting (mid-term), First binding / 1.0. Each milestone has gates for features, tests, docs, API stability.
+- Linked from ROADMAP and docs index. Marked Item 30 ✅ Done in CONSENSUS_PLAN; next item 31 (CONTRIBUTING/SECURITY/CHANGELOG).
+
+### Session: 2026-03-04 — CONTRIBUTING, SECURITY, CHANGELOG + docs consolidation (Item 31)
+
+- Added `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` at project root. Linked from docs index.
+- Docs consolidation: slimmed `docs/references/social_choice/README.md` to a short pointer; REFERENCE_INDEX.md is the single source for the reference library. Added note in `docs/references/README.md` about subdir scope. Updated `docs/README.md` with root docs in table and layout, Phase2Changes note, and update rule to prefer single source of truth.
+- Marked Item 31 ✅ Done in CONSENSUS_PLAN; next item 32 (.clang-tidy and pre-commit).
