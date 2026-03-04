@@ -22,26 +22,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Pre-built LLVM/clang-format for both Ubuntu and macOS (version 21; 22 not in action assets)
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "21"
+
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential python3-pip wget
-          wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s 22
-          sudo apt-get install -y clang-format-22
+          sudo apt-get install -y cmake build-essential python3-pip
           pip3 install --user cpplint || pip3 install cpplint
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          # Use clang-format 22 (same version as macOS and as documented)
-          mkdir -p "$RUNNER_TEMP/cf-bin" && ln -sf /usr/bin/clang-format-22 "$RUNNER_TEMP/cf-bin/clang-format"
-          echo "$RUNNER_TEMP/cf-bin" >> $GITHUB_PATH
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install cmake llvm
+          brew install cmake
           pip3 install --break-system-packages cpplint
-          # Use clang-format 22 (same version as Ubuntu and as documented)
-          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
 
       - name: Format check
         run: |

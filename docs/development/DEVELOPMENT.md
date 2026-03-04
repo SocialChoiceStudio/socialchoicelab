@@ -95,33 +95,32 @@ make test
 
 ### Configuration Files
 
-- `.clang-format`: clang-format configuration (Google style). Kept compatible with **clang-format 22** (see below).
+- `.clang-format`: clang-format configuration (Google style). Kept compatible with **clang-format 21** (see below).
 - `CMakeLists.txt`: Build configuration with format/lint targets
 - `lint.sh`: Convenience script for formatting and linting
 
 ### clang-format version
 
-The project uses **clang-format 22**. CI and local formatting should use the same version so `.clang-format` options behave identically everywhere.
+The project uses **clang-format 21** in CI so that the same pre-built binaries work on both Ubuntu and macOS (LLVM 22 is not yet available in the [install-llvm-action](https://github.com/KyleMayes/install-llvm-action) assets).
 
-- **CI:** Ubuntu and macOS both install and use clang-format 22 in the workflow.
-- **Local:** Install clang-format 22 so `./lint.sh format` matches CI. If you use a different version, format check may differ or fail in CI.
+- **CI:** Uses `KyleMayes/install-llvm-action@v2` with `version: "21"`; no apt/brew LLVM install.
+- **Local:** Use clang-format 21 so `./lint.sh format` matches CI. clang-format 22 is fine locally if your config stays compatible (e.g. `SortIncludes: CaseSensitive` works in both).
 
 ### Installation
 
 Required tools for building (GTest and Eigen are fetched by CMake via FetchContent):
 
-**clang-format 22** (required for formatting; must match CI):
+**clang-format 21** (required for formatting; must match CI):
 
 ```bash
-# macOS — install LLVM (includes clang-format 22)
-brew install llvm
-# Add to PATH for this shell: export PATH="$(brew --prefix llvm)/bin:$PATH"
-# To make permanent, add that line to your shell profile.
+# macOS — LLVM 21 (includes clang-format)
+brew install llvm@21
+# Add to PATH: export PATH="$(brew --prefix llvm@21)/bin:$PATH"
 
-# Ubuntu/Debian — add LLVM repo and install clang-format 22
-wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s 22
-sudo apt-get install -y clang-format-22
-# Run as clang-format-22, or: sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-22 100
+# Ubuntu/Debian — official LLVM repo
+wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s 21
+sudo apt-get install -y clang-format-21
+# Use clang-format-21 or: sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-21 100
 ```
 
 **Other tools:**
