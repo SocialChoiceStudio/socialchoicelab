@@ -21,9 +21,51 @@ After this, `git push` (no flags) works forever because `-u` set the tracking br
 
 ---
 
-## Daily Workflow
+## End-of-Session Script (Recommended)
 
-That's it — three commands:
+Instead of the three manual commands, run the end-of-session script:
+
+```bash
+./scripts/end-of-session.sh
+```
+
+It does four things automatically:
+1. Updates `docs/status/WHERE_WE_ARE.md` pointer from `CONSENSUS_PLAN.md`
+2. Appends a dated session entry to the Recent Work section
+3. Stages and commits everything (`git add -A && git commit`)
+4. Pushes to GitHub
+
+You can pass an optional commit message:
+```bash
+./scripts/end-of-session.sh "Implement Item 28: CI workflow"
+```
+
+Or skip the push (commit locally only):
+```bash
+./scripts/end-of-session.sh --no-push
+```
+
+---
+
+## End-of-Milestone Script
+
+When you finish a phase, run:
+
+```bash
+./scripts/end-of-milestone.sh phase-3
+```
+
+Replace `phase-3` with any tag name (e.g. `v0.1.0`). It will:
+1. Run `clang-tidy` on all source files (advisory — you can continue past warnings)
+2. Remind you to update `CHANGELOG.md`
+3. Call `end-of-session.sh` to commit and push
+4. Create an annotated git tag and push it to GitHub
+
+---
+
+## Daily Workflow (Manual Alternative)
+
+If you don't want to use the script, that's it — three commands:
 
 ```bash
 git add -A
