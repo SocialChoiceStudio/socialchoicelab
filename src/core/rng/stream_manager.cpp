@@ -4,6 +4,7 @@
 #include "socialchoicelab/core/rng/stream_manager.h"
 
 #include <memory>
+#include <mutex>
 
 namespace socialchoicelab {
 namespace core {
