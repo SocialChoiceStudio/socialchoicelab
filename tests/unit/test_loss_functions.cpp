@@ -10,7 +10,13 @@
 
 #include "socialchoicelab/preference/loss/loss_functions.h"
 
-using namespace socialchoicelab::preference::loss;
+using socialchoicelab::preference::loss::distance_to_utility;
+using socialchoicelab::preference::loss::gaussian_loss;
+using socialchoicelab::preference::loss::linear_loss;
+using socialchoicelab::preference::loss::LossFunctionType;
+using socialchoicelab::preference::loss::normalize_utility;
+using socialchoicelab::preference::loss::quadratic_loss;
+using socialchoicelab::preference::loss::threshold_loss;
 
 class LossFunctionsTest : public ::testing::Test {
  protected:
@@ -305,4 +311,3 @@ TEST_F(LossFunctionsTest, TemplateInstantiation) {
   int i_linear = linear_loss(i_distance, 2);
   EXPECT_EQ(i_linear, 6);  // 2 * 3 (positive loss)
 }
-

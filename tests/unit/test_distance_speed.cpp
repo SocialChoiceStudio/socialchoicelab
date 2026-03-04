@@ -7,15 +7,15 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <numeric>
 #include <random>
 #include <vector>
 
 #include "socialchoicelab/preference/distance/distance_functions.h"
 
-using namespace socialchoicelab::preference::distance;
+using socialchoicelab::preference::distance::minkowski_distance;
 
 // Benchmark function to time execution
 template <typename Func>

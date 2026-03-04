@@ -12,7 +12,7 @@
 
 #include "socialchoicelab/preference/distance/distance_functions.h"
 
-using namespace socialchoicelab::preference::distance;
+using socialchoicelab::preference::distance::minkowski_distance;
 
 class DistanceComparisonTest : public ::testing::Test {
  protected:

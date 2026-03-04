@@ -9,7 +9,12 @@
 
 #include "socialchoicelab/preference/distance/distance_functions.h"
 
-using namespace socialchoicelab::preference::distance;
+using socialchoicelab::preference::distance::calculate_distance;
+using socialchoicelab::preference::distance::chebyshev_distance;
+using socialchoicelab::preference::distance::DistanceType;
+using socialchoicelab::preference::distance::euclidean_distance;
+using socialchoicelab::preference::distance::manhattan_distance;
+using socialchoicelab::preference::distance::minkowski_distance;
 
 class DistanceFunctionsTest : public ::testing::Test {
  protected:

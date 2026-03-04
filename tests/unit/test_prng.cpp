@@ -8,7 +8,11 @@
 #include "socialchoicelab/core/rng/prng.h"
 #include "socialchoicelab/core/rng/stream_manager.h"
 
-using namespace socialchoicelab::core::rng;
+using socialchoicelab::core::rng::candidates_rng;
+using socialchoicelab::core::rng::PRNG;
+using socialchoicelab::core::rng::set_global_stream_manager_seed;
+using socialchoicelab::core::rng::StreamManager;
+using socialchoicelab::core::rng::voters_rng;
 
 class PRNGTest : public ::testing::Test {
  protected:

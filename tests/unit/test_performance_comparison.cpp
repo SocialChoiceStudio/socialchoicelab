@@ -11,7 +11,7 @@
 
 #include "socialchoicelab/preference/distance/distance_functions.h"
 
-using namespace socialchoicelab::preference::distance;
+using socialchoicelab::preference::distance::euclidean_distance;
 
 // Use the original distance functions namespace to avoid conflicts
 namespace original_distance = socialchoicelab::preference::distance;
@@ -91,4 +91,3 @@ TEST_F(PerformanceComparisonTest, EigenVectorOperations) {
   EXPECT_NEAR(eigen_sum, size * std::sqrt(5.0),
               1e-8);  // sqrt(1^2 + 2^2) = sqrt(5)
 }
-
