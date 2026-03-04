@@ -26,15 +26,22 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential clang-format python3-pip
+          sudo apt-get install -y cmake build-essential python3-pip wget
+          wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s 20
+          sudo apt-get install -y clang-format-20
           pip3 install --user cpplint || pip3 install cpplint
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          # Use clang-format 20 (same version as macOS and as documented)
+          mkdir -p "$RUNNER_TEMP/cf-bin" && ln -sf /usr/bin/clang-format-20 "$RUNNER_TEMP/cf-bin/clang-format"
+          echo "$RUNNER_TEMP/cf-bin" >> $GITHUB_PATH
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install cmake clang-format
+          brew install cmake llvm@20
           pip3 install --break-system-packages cpplint
+          # Use clang-format 20 (same version as Ubuntu and as documented)
+          echo "$(brew --prefix llvm@20)/bin" >> $GITHUB_PATH
 
       - name: Format check
         run: |

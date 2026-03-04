@@ -95,22 +95,44 @@ make test
 
 ### Configuration Files
 
-- `.clang-format`: clang-format configuration (Google style)
+- `.clang-format`: clang-format configuration (Google style). Kept compatible with **clang-format 20** (see below).
 - `CMakeLists.txt`: Build configuration with format/lint targets
 - `lint.sh`: Convenience script for formatting and linting
+
+### clang-format version
+
+The project uses **clang-format 20** (latest stable at the time of pinning). CI and local formatting should use the same version so `.clang-format` options behave identically everywhere.
+
+- **CI:** Ubuntu and macOS both install and use clang-format 20 in the workflow.
+- **Local:** Install clang-format 20 so `./lint.sh format` matches CI. If you use a different version, format check may differ or fail in CI.
 
 ### Installation
 
 Required tools for building (GTest and Eigen are fetched by CMake via FetchContent):
 
+**clang-format 20** (required for formatting; must match CI):
+
+```bash
+# macOS — install LLVM 20 (includes clang-format)
+brew install llvm@20
+# Add to PATH for this shell: export PATH="$(brew --prefix llvm@20)/bin:$PATH"
+# To make permanent, add that line to your shell profile.
+
+# Ubuntu/Debian — add LLVM repo and install clang-format 20
+wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s 20
+sudo apt-get install -y clang-format-20
+# Run as clang-format-20, or: sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-20 100
+```
+
+**Other tools:**
+
 ```bash
 # macOS
-brew install clang-format
 pip3 install cpplint
 
 # Ubuntu/Debian
-sudo apt-get install clang-format
-pip3 install cpplint
+sudo apt-get install -y cmake build-essential python3-pip
+pip3 install --user cpplint
 ```
 
 ## Project Structure
