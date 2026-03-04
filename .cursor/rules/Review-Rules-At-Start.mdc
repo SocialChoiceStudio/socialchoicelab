@@ -1,0 +1,14 @@
+---
+description: At session start, review Cursor User rules and Project rules and follow them.
+alwaysApply: true
+---
+
+# Review Rules at Session Start
+
+When you start a session (or are newly spawned):
+
+1. **Review Cursor User rules** (the user's global Cursor rules).
+2. **Review this project's rules** in `.cursor/rules/` (all `.mdc` files there).
+3. **Follow both** for the rest of the session. If User and Project rules conflict, ask the user which takes precedence.
+
+Treat this as part of your initial context so proposals and behavior match the user's and project's stated preferences.

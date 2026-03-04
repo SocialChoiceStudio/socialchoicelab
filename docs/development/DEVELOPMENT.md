@@ -50,6 +50,8 @@ make lint
 
 For CI, use `./lint.sh --strict lint` so the script exits with failure if cpplint reports any issues.
 
+**GitHub Actions:** `.github/workflows/ci.yml` runs on every push and pull_request to `main`. It builds and tests on Ubuntu and macOS, runs a format check (code must be formatted), and runs lint in strict mode. Benchmark tests are excluded (`ctest -LE benchmark`) for speed.
+
 ### Style Guide
 
 We follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) with the following key points:

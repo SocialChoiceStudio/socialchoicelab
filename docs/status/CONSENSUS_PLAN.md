@@ -81,7 +81,7 @@ See `docs/Phase2Changes.md` for a step-by-step record of Phase 2 edits.
 
 | # | Item | Source | Severity |
 |---|------|--------|----------|
-| 28 | Add CI workflow (build + test on push/PR across major OS targets; include format/lint checks). | **(Both)** | High |
+| 28 | Add CI workflow (build + test on push/PR across major OS targets; include format/lint checks). | **(Both)** | High | ✅ Done |
 | 29 | Create `docs/ROADMAP.md` with near-term (1-2 months), mid-term (3-6 months), and long-term (6+ months) plans. Link to design doc and implementation priority instead of duplicating. | **(Both)** | Medium |
 | 30 | Define milestone gates with "done" criteria: required features, tests, docs, and API stability expectations for each milestone. | **(Both)** | Medium |
 | 31 | Add `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` — standard open-source project hygiene. | **(Both)** | Medium |

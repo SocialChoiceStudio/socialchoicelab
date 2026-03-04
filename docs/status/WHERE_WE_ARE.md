@@ -3,8 +3,8 @@
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
 - **Current phase:** Phase 3 (Developer Experience and Process)
-- **Next item:** 28 — Add CI workflow (build + test on push/PR across major OS targets; include format/lint checks). Severity: High.
-- **Last updated:** 2026-03-03
+- **Next item:** 29 — Create `docs/ROADMAP.md` with near-term, mid-term, and long-term plans. Severity: Medium.
+- **Last updated:** 2026-03-04
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/CONSENSUS_PLAN.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in CONSENSUS_PLAN.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
 
@@ -53,3 +53,9 @@
 - Removed GitButler. Git history was corrupted; files recovered from working tree.
 - Reorganized docs into `docs/status/`, `docs/architecture/`, `docs/development/` subdirectories.
 - Deleted duplicates (`agent_discussions/`), corrupted pre-recovery file, and empty stubs.
+
+### Session: 2026-03-04 — CI workflow (Item 28)
+
+- Added `.github/workflows/ci.yml`: runs on push and pull_request to `main`.
+- Matrix: `ubuntu-latest`, `macos-latest`. Steps: install deps (cmake, clang-format, cpplint), format check (./lint.sh format then git diff --exit-code), configure & build, ctest -LE benchmark, ./lint.sh --strict lint.
+- Marked Item 28 ✅ Done in CONSENSUS_PLAN; next item 29 (ROADMAP.md).
