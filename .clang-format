@@ -94,7 +94,7 @@ BinPackArguments: true
 BinPackLongBracedList: true
 BinPackParameters: BinPack
 BitFieldColonSpacing: Both
-BracedInitializerIndentWidth: -1
+BracedInitializerIndentWidth: 2
 BraceWrapping:
   AfterCaseLabel:  false
   AfterClass:      false
