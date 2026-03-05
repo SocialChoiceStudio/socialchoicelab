@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Phase 3 (Developer Experience and Process)
-- **Next item:** Backlog complete. Item 46 (license) deferred; 38 done.
+- **Current phase:** All consensus-plan phases complete (backlog done).
+- **Next item:** See `docs/status/ROADMAP.md` — near-term: c_api design, then CGAL 2D geometry.
 - **Last updated:** 2026-03-04
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/CONSENSUS_PLAN.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in CONSENSUS_PLAN.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
@@ -110,6 +110,17 @@
 - **44:** Added WeightedEuclideanAndChebyshev and ThreeDimensionalPoints tests.
 - **45:** Added TriangleInequalityEqualWeights test (Euclidean, Manhattan, Chebyshev, Minkowski p=1.5).
 - Marked 37, 39, 40, 41, 43, 44, 45 Done; 38 and 46 skipped per user request.
+
+### Session: 2026-03-05 — Documentation restructure
+
+- Deleted 5 orphaned/stale files: `docs/status/Phase2Changes.md`, and 4 empty subdirectory READMEs under `docs/references/` (social_choice, foundation, geometry, development).
+- Moved `REFERENCE_INDEX.md` and `implementation_priority.md` from `docs/references/social_choice/` to `docs/references/` (flat structure; subdirs removed).
+- Rewrote `docs/references/README.md` to reflect new flat layout.
+- Updated `docs/README.md`: removed Phase2Changes entry and stale subdirectory tree; updated layout block.
+- Updated `docs/status/ROADMAP.md`: near-term now reflects backlog done → c_api + CGAL start; all links to implementation_priority.md updated to new path; table formatting fixed.
+- Updated `docs/status/CONSENSUS_PLAN.md`: removed stale "Next step: work through Phase 0" footer; replaced with accurate status.
+- Updated `docs/status/WHERE_WE_ARE.md`: current phase now points to ROADMAP for what's next.
+- Updated `docs/architecture/StreamManager_Design.md`: status changed from "Proposed — for adoption" to "Adopted"; "Recommended next actions" section replaced with "Implementation status" (done).
 
 ### Session: 2026-03-04 — Backlog 38 (DRY minkowski/Chebyshev)
 

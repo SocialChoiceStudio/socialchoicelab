@@ -1,6 +1,6 @@
 # Implementation Priority Guide
 
-Based on your comprehensive social choice reference library, here's a prioritized implementation roadmap for SocialChoiceLab.
+Based on the social choice reference library, here is a prioritized implementation roadmap for SocialChoiceLab.
 
 ## Phase 1: Foundation + Core Geometry (Milestone 1)
 
@@ -23,7 +23,7 @@ Based on your comprehensive social choice reference library, here's a prioritize
    - Policy space boundaries
 
 ### Distance Functions
-**Priority: HIGH** - Core to preference modeling
+**Priority: HIGH** - Core to preference modeling *(implemented)*
 
 1. **Euclidean Distance** (most common in spatial models)
 2. **Manhattan Distance** (L1 norm)

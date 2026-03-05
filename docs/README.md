@@ -10,7 +10,6 @@ This file is the single entry point for project documentation.
 | Backlog and phase/item status | `docs/status/CONSENSUS_PLAN.md` |
 | Near-/mid-/long-term roadmap | `docs/status/ROADMAP.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/MILESTONE_GATES.md` |
-| Phase 2 edit record | `docs/status/Phase2Changes.md` |
 | Chronological project history | `docs/status/PROJECT_LOG.md` |
 | Architecture intent | `docs/architecture/Design_Document.md` |
 | StreamManager design & rules | `docs/architecture/StreamManager_Design.md` |
@@ -22,7 +21,6 @@ This file is the single entry point for project documentation.
 | Security and vulnerability reporting | `SECURITY.md` (project root) |
 | Release history | `CHANGELOG.md` (project root) |
 
-**Note:** `docs/status/Phase2Changes.md` is a one-time record of Phase 2 edits; for ongoing work see WHERE_WE_ARE and PROJECT_LOG.
 
 If two docs disagree for execution decisions, use this precedence:
 
@@ -43,8 +41,7 @@ docs/
 │   ├── CONSENSUS_PLAN.md                  ← prioritized backlog (source of truth for item status)
 │   ├── ROADMAP.md                         ← near-term, mid-term, long-term plans
 │   ├── MILESTONE_GATES.md                 ← definition of done per milestone
-│   ├── PROJECT_LOG.md                     ← chronological narrative history
-│   └── Phase2Changes.md                   ← one-time Phase 2 edit record (ongoing: WHERE_WE_ARE, PROJECT_LOG)
+│   └── PROJECT_LOG.md                     ← chronological narrative history
 ├── architecture/
 │   ├── Design_Document.md                 ← living system architecture
 │   └── StreamManager_Design.md            ← RNG single-owner policy and rules
@@ -54,10 +51,8 @@ docs/
 │   └── sample_simulation_description.md   ← illustrative walkthrough + glossary (non-governing)
 └── references/
     ├── README.md                          ← reference library index
-    ├── development/
-    ├── foundation/
-    ├── geometry/
-    └── social_choice/
+    ├── REFERENCE_INDEX.md                 ← annotated list of all papers and books
+    └── implementation_priority.md         ← prioritized roadmap for social-choice features
 ```
 
 ## Update Rules

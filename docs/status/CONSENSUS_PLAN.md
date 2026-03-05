@@ -73,7 +73,7 @@ Before finalizing the plan, the two agents debated six points. All were resolved
 | 26 | Fix DEVELOPMENT.md: style guide says functions use `PascalCase` but actual code uses `snake_case`; remove instruction to install Google Test via Homebrew (project uses FetchContent). | **(Claude Only)** | Medium | ✅ Done (verified; already correct) |
 | 27 | Fix design doc: change "Rcpp" to "cpp11" in licensing section — the R binding layer uses cpp11, not Rcpp. | **(Claude Only)** | Low | ✅ Done |
 
-See `docs/Phase2Changes.md` for a step-by-step record of Phase 2 edits.
+Phase 2 edit record archived in `docs/status/PROJECT_LOG.md` (session 2026-02-14).
 
 ---
 
@@ -128,4 +128,4 @@ See `docs/Phase2Changes.md` for a step-by-step record of Phase 2 edits.
 
 **Priority order:** Correctness and reproducibility (Phases 0-1) before documentation and process (Phases 2-3) before backlog modernization.
 
-**Next step:** Work through Phase 0 items in order. Each item is self-contained and can be tackled independently unless noted otherwise.
+**Status:** All 46 items resolved (45 done, 1 deferred). See `docs/status/ROADMAP.md` for what comes next.

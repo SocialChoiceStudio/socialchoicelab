@@ -2,7 +2,7 @@
 
 This directory contains reference materials for SocialChoiceLab development. **PDF files are stored locally but not tracked in Git** to keep the repository lightweight.
 
-## 📚 Reference Library Organization
+## Reference Library Organization
 
 ### Core Theoretical Foundations
 - **Handbook of Computational Social Choice** - Complete reference for computational methods
@@ -36,22 +36,11 @@ This directory contains reference materials for SocialChoiceLab development. **P
 - **Kamwa: Simulations in Preference Aggregation** - Computational approaches
 - **Data Simulations for Voting by Evaluation** - New evaluation methods
 
-## 🎯 Implementation Priority
+## Implementation Priority
 
-See [Implementation_Priority.md](Implementation_Priority.md) in this directory for the full prioritized roadmap. Summary: Foundation + core geometry (Yolk, uncovered set, distance functions) → voting rules and aggregation → advanced spatial analysis → applications.
+See [implementation_priority.md](implementation_priority.md) for the full prioritized roadmap. Summary: Foundation + core geometry (Yolk, uncovered set, distance functions) → voting rules and aggregation → advanced spatial analysis → applications.
 
-## 📁 File Organization
-
-This directory contains reference materials for social choice theory and implementation. PDFs and papers are stored locally; see the sections above for topic organization.
-
-## 💡 Usage Notes
-
-- **PDFs are available locally** for reference during development
-- **Key papers for Phase 1**: Yolk paper, Geometry of Voting, Spatial Models
-- **Implementation guides**: Patty's 2D work, Schofield's multi-dimensional models
-- **Theoretical foundation**: Handbook chapters, Miller & Shepsle spatial theory
-
-## 🔗 Integration with SocialChoiceLab
+## Integration with SocialChoiceLab
 
 These references directly inform:
 - **Foundation layer**: Geometric types and exact computations

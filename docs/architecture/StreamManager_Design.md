@@ -2,7 +2,7 @@
 
 **Authors:** Claude Opus 4.6 + GPT 5.3 (merged)  
 **Date:** 2026-02-14  
-**Status:** Proposed — for adoption  
+**Status:** Adopted (Item 18 complete; see CONSENSUS_PLAN.md)  
 **Sources:** `GPTProposedCombinedStreamManagerImplementation.md`, `OpusProposedCombinedStreamManagerImplementation.md`
 
 ---
@@ -252,9 +252,6 @@ No fundamental disagreements were found.
 
 ---
 
-## Recommended next actions (Item 18)
+## Implementation status (Item 18)
 
-1. Mark Item 18 decision in `SESSION_PROGRESS.md` (single-owner policy).
-2. Implement code changes C1–C5 in `stream_manager.h` / `stream_manager.cpp`.
-3. Add stream-map subsection to `sample_simulation_description.md` (D1).
-4. Update `consensus_plan.md` Item 18 to Done.
+All code changes C1–C5 were implemented on 2026-02-14. Item 18 is ✅ Done in CONSENSUS_PLAN.md. This document is the adopted reference for StreamManager ownership rules.
