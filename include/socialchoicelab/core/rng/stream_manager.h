@@ -96,11 +96,11 @@ class StreamManager {
     }
     auto it = streams_.find(name);
     if (it == streams_.end()) {
-      uint64_t stream_seed = generate_stream_seed(name);
-      streams_[name] = std::make_unique<PRNG>(stream_seed);
-      it = streams_.find(name);
+      it =
+          streams_
+              .emplace(name, std::make_unique<PRNG>(generate_stream_seed(name)))
+              .first;
     }
-
     return *it->second;
   }
 
@@ -134,7 +134,10 @@ class StreamManager {
   }
 
   /**
-   * @brief Reset a specific stream
+   * @brief Reset a specific stream to a new seed
+   *
+   * If the stream does not exist, it is created with the given seed.
+   *
    * @param name Stream name
    * @param seed New seed for this stream
    * @throws std::invalid_argument if an allowlist is set and name is not
@@ -163,6 +166,9 @@ class StreamManager {
 
   /**
    * @brief Get list of all stream names
+   *
+   * Order of names is unspecified.
+   *
    * @return Vector of stream names
    */
   std::vector<std::string> stream_names() const {

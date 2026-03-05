@@ -74,12 +74,13 @@ format_code() {
         echo_info "Formatted: $TARGET"
     else
         # Default: only our code (include, src, tests/unit). Otherwise use TARGET.
-        SEARCH_DIRS="$TARGET"
         if [ "$TARGET" = "." ]; then
-            SEARCH_DIRS="include src tests/unit"
+            SEARCH_DIRS=(include src tests/unit)
+        else
+            SEARCH_DIRS=("$TARGET")
         fi
         # Directory or pattern (parentheses required for correct -o precedence)
-        find $SEARCH_DIRS \( -name "*.h" -o -name "*.cpp" \) 2>/dev/null | while read -r file; do
+        find "${SEARCH_DIRS[@]}" \( -name "*.h" -o -name "*.cpp" \) 2>/dev/null | while read -r file; do
             clang-format -i "$file"
             echo_info "Formatted: $file"
         done
@@ -95,9 +96,10 @@ lint_code() {
         cpplint --root=include "$TARGET"
     else
         # Default: only our code (include, src, tests/unit). Otherwise use TARGET.
-        SEARCH_DIRS="$TARGET"
         if [ "$TARGET" = "." ]; then
-            SEARCH_DIRS="include src tests/unit"
+            SEARCH_DIRS=(include src tests/unit)
+        else
+            SEARCH_DIRS=("$TARGET")
         fi
         # Directory or pattern (parentheses required for correct -o precedence)
         while IFS= read -r file; do
@@ -107,7 +109,7 @@ lint_code() {
             else
                 cpplint --root=include "$file" || true
             fi
-        done < <(find $SEARCH_DIRS \( -name "*.h" -o -name "*.cpp" \) 2>/dev/null)
+        done < <(find "${SEARCH_DIRS[@]}" \( -name "*.h" -o -name "*.cpp" \) 2>/dev/null)
     fi
 }
 

@@ -36,7 +36,7 @@
    From the 1000 round outcomes (and optionally from final positions, stored information, and the model output from each round), compute and save the summary for this run.
 
 7. **Next run.**  
-   Repeat from step 1 with new random positions and reset stored information until all 10,000 runs are done.
+   Call `reset_for_run(master_seed, run_index)` (or equivalent) so the next run uses a deterministic, independent RNG state. Then repeat from step 1 with new random positions and reset stored information until all 10,000 runs are done.
 
 ---
 

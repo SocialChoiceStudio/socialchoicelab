@@ -161,6 +161,12 @@ TEST_F(PRNGTest, BetaInvalidParametersThrow) {
   EXPECT_THROW(rng.beta(1.0, 0.0), std::invalid_argument);
   EXPECT_THROW(rng.beta(-0.1, 1.0), std::invalid_argument);
   EXPECT_THROW(rng.beta(1.0, -0.1), std::invalid_argument);
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(rng.beta(nan, 1.0), std::invalid_argument);
+  EXPECT_THROW(rng.beta(1.0, nan), std::invalid_argument);
+  EXPECT_THROW(rng.beta(inf, 1.0), std::invalid_argument);
+  EXPECT_THROW(rng.beta(1.0, inf), std::invalid_argument);
 }
 
 // Item 24: beta(alpha, beta) happy path — values in (0,1), mean ≈
@@ -237,6 +243,21 @@ TEST_F(PRNGTest, Reset) {
   // Should get same sequence
   EXPECT_EQ(rng.uniform_int(0, 100), first);
   EXPECT_EQ(rng.uniform_int(0, 100), second);
+}
+
+// Item 15: Copy produces independent object with same state (same sequence from
+// copy point)
+TEST_F(PRNGTest, CopyProducesIdenticalSequenceFromCopyPoint) {
+  PRNG original(k_default_master_seed);
+  (void)original.uniform_int(0, 100);
+  (void)original.uniform_int(0, 100);
+
+  PRNG copy = original;
+
+  for (int i = 0; i < 20; ++i) {
+    EXPECT_EQ(original.uniform_int(0, 1000000), copy.uniform_int(0, 1000000))
+        << "Copy should produce same sequence as original from copy point";
+  }
 }
 
 TEST_F(PRNGTest, Skip) {

@@ -26,6 +26,7 @@ If two docs disagree for execution decisions, use this precedence:
 
 1. `docs/status/where_we_are.md`
 2. `docs/architecture/` (relevant design doc)
+3. `docs/status/consensus_plan_3.md` (active backlog; item status)
 4. `docs/status/project_log.md` (history only)
 
 ## Documentation Layout
@@ -74,8 +75,8 @@ Choose the subdirectory by the doc's purpose:
 
 For each completed development item:
 
-1. Update `docs/status/where_we_are.md` (and this file's layout if you add a new doc).
-2. Update `docs/status/where_we_are.md` (next item, last updated date, add to Recent Work).
+1. Update `docs/status/where_we_are.md` (next item, last updated date, add to Recent Work).
+2. Mark the item ✅ Done in the active consensus plan (`docs/status/consensus_plan_3.md` or current plan).
 3. Add a dated milestone note to `docs/status/project_log.md` when materially relevant.
 
 At **end-of-milestone** (when running `scripts/end-of-milestone.sh`), the script prompts to confirm `docs/status/roadmap.md` is still accurate for near/mid/long-term; update it if horizons have shifted.

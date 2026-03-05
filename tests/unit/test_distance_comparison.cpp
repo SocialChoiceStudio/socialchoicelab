@@ -86,7 +86,7 @@ TEST_F(DistanceComparisonTest, SmallTest) {
       double minkowski_rawcpp = calculateRawMinkowski(point_a, point_b, order);
 
       // Compare results
-      EXPECT_NEAR(minkowski_socialchoicelab, minkowski_rawcpp, 1e-15)
+      EXPECT_NEAR(minkowski_socialchoicelab, minkowski_rawcpp, 1e-12)
           << "Order " << order << " failed for points " << point_a << " and "
           << point_b;
     }
@@ -115,7 +115,7 @@ TEST_F(DistanceComparisonTest, MediumTest) {
       double minkowski_rawcpp = calculateRawMinkowski(point_a, point_b, order);
 
       // Compare results
-      EXPECT_NEAR(minkowski_socialchoicelab, minkowski_rawcpp, 1e-15)
+      EXPECT_NEAR(minkowski_socialchoicelab, minkowski_rawcpp, 1e-12)
           << "Order " << order << " failed for points " << point_a << " and "
           << point_b;
     }

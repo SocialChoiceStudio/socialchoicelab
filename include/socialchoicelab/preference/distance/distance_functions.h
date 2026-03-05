@@ -71,10 +71,10 @@ template <typename Derived1, typename Derived2, typename T>
 T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
                      const Eigen::MatrixBase<Derived2>& alternative_point,
                      T order_p, const std::vector<T>& salience_weights) {
-  static_assert(std::is_arithmetic_v<T>,
-                "Minkowski distance requires arithmetic type");
+  static_assert(std::is_floating_point_v<T>,
+                "minkowski_distance requires a floating-point type");
 
-  const int N = ideal_point.size();
+  const Eigen::Index N = ideal_point.size();
   if (N != alternative_point.size()) {
     throw std::invalid_argument(
         "Ideal point and alternative point must have same dimension");
@@ -104,7 +104,7 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
     }
   }
 
-  for (int i = 0; i < N; ++i) {
+  for (Eigen::Index i = 0; i < N; ++i) {
     if (!std::isfinite(static_cast<double>(ideal_point[i]))) {
       throw std::invalid_argument("ideal_point[" + std::to_string(i) +
                                   "] is not finite");
@@ -130,7 +130,7 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
   // p=1: Manhattan (sum of absolute weighted differences), avoid std::pow
   if (std::abs(order_p - T{1}) < eps) {
     T sum = T{0};
-    for (int i = 0; i < N; ++i) {
+    for (Eigen::Index i = 0; i < N; ++i) {
       sum +=
           salience_weights[i] * std::abs(ideal_point[i] - alternative_point[i]);
     }
@@ -141,7 +141,7 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
   // std::pow
   if (std::abs(order_p - T{2}) < eps) {
     T sum_sq = T{0};
-    for (int i = 0; i < N; ++i) {
+    for (Eigen::Index i = 0; i < N; ++i) {
       T wd =
           salience_weights[i] * std::abs(ideal_point[i] - alternative_point[i]);
       sum_sq += wd * wd;
@@ -156,7 +156,7 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
 
   // Calculate weighted Minkowski distance using raw C++ math
   T sum = T{0};
-  for (int i = 0; i < N; ++i) {
+  for (Eigen::Index i = 0; i < N; ++i) {
     T weighted_diff =
         salience_weights[i] * std::abs(ideal_point[i] - alternative_point[i]);
     sum += std::pow(weighted_diff, order_p);
@@ -223,7 +223,7 @@ template <typename Derived1, typename Derived2, typename T>
 T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
                      const Eigen::MatrixBase<Derived2>& alternative_point,
                      const std::vector<T>& salience_weights) {
-  const int N = ideal_point.size();
+  const Eigen::Index N = ideal_point.size();
   if (N != alternative_point.size()) {
     throw std::invalid_argument(
         "Ideal point and alternative point must have same dimension");
@@ -243,7 +243,7 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
         "dimensionality of the space");
   }
 
-  for (int i = 0; i < N; ++i) {
+  for (Eigen::Index i = 0; i < N; ++i) {
     if (!std::isfinite(static_cast<double>(ideal_point[i]))) {
       throw std::invalid_argument("ideal_point[" + std::to_string(i) +
                                   "] is not finite");
@@ -265,7 +265,7 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
   }
 
   T max_weighted_diff = T{0};
-  for (int i = 0; i < N; ++i) {
+  for (Eigen::Index i = 0; i < N; ++i) {
     T weighted_diff =
         salience_weights[i] * std::abs(ideal_point[i] - alternative_point[i]);
     max_weighted_diff = std::max(max_weighted_diff, weighted_diff);

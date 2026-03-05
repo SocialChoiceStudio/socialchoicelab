@@ -16,7 +16,7 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 - Design doc: c_api design inputs table updated (29–31); stream_manager_design notes optional allowlist and SplitMix64 finalizer.
 
 ### Fixed
-- (Add entries here as relevant.)
+- (None this release.)
 
 ---
 

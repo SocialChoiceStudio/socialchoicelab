@@ -105,8 +105,8 @@ T quadratic_loss(T distance, T sensitivity = T{1.0}) {
  */
 template <typename T>
 T gaussian_loss(T distance, T max_loss = T{1.0}, T steepness = T{1.0}) {
-  static_assert(std::is_arithmetic_v<T>,
-                "Gaussian loss requires arithmetic type");
+  static_assert(std::is_floating_point_v<T>,
+                "gaussian_loss requires a floating-point type");
   if constexpr (std::is_floating_point_v<T>) {
     if (!std::isfinite(distance))
       throw std::invalid_argument("gaussian_loss: distance must be finite");
@@ -159,6 +159,9 @@ T threshold_loss(T distance, T threshold, T sensitivity = T{1.0}) {
 /**
  * @brief Convert distance to utility using specified loss function
  *
+ * @note For THRESHOLD loss, always pass @p threshold explicitly; the default
+ * 0.5 may not match your model.
+ *
  * @tparam T Numeric type
  * @param distance Distance from ideal point
  * @param loss_type Type of loss function to apply
@@ -206,6 +209,14 @@ T distance_to_utility(T distance, LossFunctionType loss_type,
  * Uses the same loss parameters as were used to produce the raw utility,
  * so normalization is correct for GAUSSIAN and THRESHOLD types.
  *
+ * For integer @p T, the result is 0 or 1 (binary clipping); continuous
+ * [0,1] normalization is meaningful only for floating-point types.
+ *
+ * Callers must provide consistent inputs: @p utility should be within the
+ * range implied by the loss (e.g. utility ≤ max possible utility for the
+ * given @p max_distance). Behavior is algebraically correct but output may
+ * fall outside [0,1] if inputs are inconsistent.
+ *
  * Degenerate case: when the utility range (max_utility - min_utility) is
  * zero or negligible (within relative/absolute tolerance; see
  * socialchoicelab::core::near_zero), the function returns 1.0 so that "all
@@ -219,7 +230,7 @@ T distance_to_utility(T distance, LossFunctionType loss_type,
  * @param max_loss Maximum loss for GAUSSIAN
  * @param steepness Steepness for GAUSSIAN
  * @param threshold Threshold for THRESHOLD loss
- * @return Normalized utility in [0, 1]
+ * @return Normalized utility in [0, 1] (or 0/1 for integer T)
  */
 template <typename T>
 T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,

@@ -13,9 +13,6 @@
 
 using socialchoicelab::preference::distance::euclidean_distance;
 
-// Use the original distance functions namespace to avoid conflicts
-namespace original_distance = socialchoicelab::preference::distance;
-
 class PerformanceComparisonTest : public ::testing::Test {
  protected:
   void SetUp() override {

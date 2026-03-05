@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Generate compile_commands.json for clangd/LSP and clang-tidy
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)

@@ -154,7 +154,7 @@ If these are missing, the simulation is under-specified for reproducibility.
 
 ## Part V: Code Changes Required
 
-These changes bring `stream_manager.h` / `stream_manager.cpp` into alignment with the rules above.
+These changes bring `stream_manager.h` / `stream_manager.cpp` into alignment with the rules above. (Exact line numbers in the source may have changed since this document was written; refer to the current code for implementation details.)
 
 ### C1. Update the class-level Doxygen comment
 

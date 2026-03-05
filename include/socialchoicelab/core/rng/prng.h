@@ -59,6 +59,8 @@ class PRNG {
    */
   template <typename T>
   T uniform_int(T min, T max) {
+    static_assert(std::is_integral_v<T> && !std::is_same_v<T, bool>,
+                  "uniform_int requires an integral type (not bool)");
     if (min > max) {
       throw std::invalid_argument("uniform_int: min must be <= max");
     }
@@ -75,6 +77,8 @@ class PRNG {
    */
   template <typename T>
   T uniform_real(T min, T max) {
+    static_assert(std::is_floating_point_v<T>,
+                  "uniform_real requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(min) || !std::isfinite(max)) {
         throw std::invalid_argument("uniform_real: min and max must be finite");
@@ -96,6 +100,8 @@ class PRNG {
    */
   template <typename T>
   T normal(T mean, T stddev) {
+    static_assert(std::is_floating_point_v<T>,
+                  "normal requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(mean) || !std::isfinite(stddev)) {
         throw std::invalid_argument("normal: mean and stddev must be finite");
@@ -116,6 +122,8 @@ class PRNG {
    */
   template <typename T>
   T exponential(T lambda) {
+    static_assert(std::is_floating_point_v<T>,
+                  "exponential requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(lambda)) {
         throw std::invalid_argument("exponential: lambda must be finite");
@@ -132,11 +140,13 @@ class PRNG {
    * @brief Generate gamma random number
    * @tparam T Real type (float, double)
    * @param alpha Shape parameter
-   * @param beta Rate parameter
+   * @param beta Scale parameter (scale = 1/rate)
    * @return Random number from gamma distribution
    */
   template <typename T>
   T gamma(T alpha, T beta) {
+    static_assert(std::is_floating_point_v<T>,
+                  "gamma requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(alpha) || !std::isfinite(beta)) {
         throw std::invalid_argument("gamma: alpha and beta must be finite");
@@ -158,6 +168,14 @@ class PRNG {
    */
   template <typename T>
   T beta(T alpha, T beta_param) {
+    static_assert(std::is_floating_point_v<T>,
+                  "beta requires a floating-point type");
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(alpha) || !std::isfinite(beta_param)) {
+        throw std::invalid_argument(
+            "beta: alpha and beta_param must be finite");
+      }
+    }
     if (alpha <= T{0} || beta_param <= T{0}) {
       throw std::invalid_argument(
           "beta: alpha and beta_param must be positive");
@@ -255,6 +273,7 @@ class PRNG {
   /**
    * @brief Get current state for debugging
    * @return String representation of current state
+   * @throws std::bad_alloc if string allocation fails
    */
   std::string state_string() const {
     return "PRNG(master_seed=" + std::to_string(master_seed_) + ")";
