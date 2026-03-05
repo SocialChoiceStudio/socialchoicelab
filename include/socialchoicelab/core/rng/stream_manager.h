@@ -59,7 +59,8 @@ class StreamManager {
    * std::invalid_argument if name is not in the allowed set. Pass an empty
    * container to clear the allowlist and restore get-or-create for any name.
    *
-   * @param names Allowed stream names (e.g. {"voters", "candidates", "tiebreak"})
+   * @param names Allowed stream names (e.g. {"voters", "candidates",
+   * "tiebreak"})
    */
   void register_streams(const std::vector<std::string>& names) {
     allowed_stream_names_.clear();
@@ -72,14 +73,15 @@ class StreamManager {
    * @brief Get or create a named stream
    * @param name Stream name (e.g., "voters", "candidates", "tiebreak")
    * @return Reference to the PRNG for this stream
-   * @throws std::invalid_argument if an allowlist is set and name is not allowed
+   * @throws std::invalid_argument if an allowlist is set and name is not
+   * allowed
    */
   PRNG& get_stream(const std::string& name) {
     if (!allowed_stream_names_.empty() &&
         allowed_stream_names_.find(name) == allowed_stream_names_.end()) {
       throw std::invalid_argument(
-          "StreamManager: stream name not in registered set (typo?): \"" + name +
-          "\"");
+          "StreamManager: stream name not in registered set (typo?): \"" +
+          name + "\"");
     }
     auto it = streams_.find(name);
     if (it == streams_.end()) {
@@ -119,14 +121,15 @@ class StreamManager {
    * @brief Reset a specific stream
    * @param name Stream name
    * @param seed New seed for this stream
-   * @throws std::invalid_argument if an allowlist is set and name is not allowed
+   * @throws std::invalid_argument if an allowlist is set and name is not
+   * allowed
    */
   void reset_stream(const std::string& name, uint64_t seed) {
     if (!allowed_stream_names_.empty() &&
         allowed_stream_names_.find(name) == allowed_stream_names_.end()) {
       throw std::invalid_argument(
-          "StreamManager: stream name not in registered set (typo?): \"" + name +
-          "\"");
+          "StreamManager: stream name not in registered set (typo?): \"" +
+          name + "\"");
     }
     auto it = streams_.find(name);
     if (it != streams_.end()) {

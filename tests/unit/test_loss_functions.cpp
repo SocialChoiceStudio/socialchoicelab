@@ -289,12 +289,12 @@ TEST_F(LossFunctionsTest, InvalidLossParametersThrow) {
 // Item 28: degenerate range (near-zero utility spread) returns 1.0
 TEST_F(LossFunctionsTest, NormalizeUtilityDegenerateRangeReturnsOne) {
   double tiny_max_distance = 1e-15;
-  double raw_utility = distance_to_utility(0.0, LossFunctionType::LINEAR,
-                                           sensitivity, max_loss, steepness,
-                                           threshold);
-  double normalized =
-      normalize_utility(raw_utility, tiny_max_distance, LossFunctionType::LINEAR,
-                        sensitivity, max_loss, steepness, threshold);
+  double raw_utility =
+      distance_to_utility(0.0, LossFunctionType::LINEAR, sensitivity, max_loss,
+                          steepness, threshold);
+  double normalized = normalize_utility(raw_utility, tiny_max_distance,
+                                        LossFunctionType::LINEAR, sensitivity,
+                                        max_loss, steepness, threshold);
   EXPECT_DOUBLE_EQ(normalized, 1.0);
 }
 

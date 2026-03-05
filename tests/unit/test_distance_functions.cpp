@@ -275,7 +275,8 @@ TEST_F(DistanceFunctionsTest, TriangleInequalityEqualWeights) {
 // Item 26: minkowski at p = k_minkowski_chebyshev_cutoff (100.0) boundary
 TEST_F(DistanceFunctionsTest, MinkowskiAtChebyshevCutoffBoundary) {
   std::vector<double> w = {1.0, 1.0};
-  double d_mink = minkowski_distance(point_a, point_b, k_minkowski_chebyshev_cutoff, w);
+  double d_mink =
+      minkowski_distance(point_a, point_b, k_minkowski_chebyshev_cutoff, w);
   double d_cheb = chebyshev_distance(point_a, point_b, w);
   EXPECT_DOUBLE_EQ(d_mink, d_cheb);
   // p just above cutoff also uses Chebyshev

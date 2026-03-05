@@ -174,7 +174,8 @@ T distance_to_utility(T distance, LossFunctionType loss_type,
                       T steepness = T{1.0}, T threshold = T{0.5}) {
   if constexpr (std::is_floating_point_v<T>) {
     if (!std::isfinite(distance))
-      throw std::invalid_argument("distance_to_utility: distance must be finite");
+      throw std::invalid_argument(
+          "distance_to_utility: distance must be finite");
   }
 
   T loss;
@@ -232,8 +233,7 @@ T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,
           "normalize_utility: max_distance must be finite");
   }
   if (max_distance < T{0})
-    throw std::invalid_argument(
-        "normalize_utility: max_distance must be >= 0");
+    throw std::invalid_argument("normalize_utility: max_distance must be >= 0");
 
   // Calculate maximum possible utility (at distance 0)
   T max_utility = distance_to_utility(T{0}, loss_type, sensitivity, max_loss,
@@ -247,8 +247,10 @@ T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,
   if constexpr (std::is_floating_point_v<T>) {
     T range = max_utility - min_utility;
     T scale = std::max({std::abs(max_utility), std::abs(min_utility), T{1}});
-    T tol = std::max(static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_rel) * scale,
-                     static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_abs));
+    T tol = std::max(
+        static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_rel) *
+            scale,
+        static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_abs));
     if (std::abs(range) <= tol) {
       return T{1.0};  // All utilities the same → treat as best
     }

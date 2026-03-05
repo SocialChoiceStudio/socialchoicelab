@@ -162,7 +162,8 @@ TEST_F(PRNGTest, BetaInvalidParametersThrow) {
   EXPECT_THROW(rng.beta(1.0, -0.1), std::invalid_argument);
 }
 
-// Item 24: beta(alpha, beta) happy path — values in (0,1), mean ≈ alpha/(alpha+beta)
+// Item 24: beta(alpha, beta) happy path — values in (0,1), mean ≈
+// alpha/(alpha+beta)
 TEST_F(PRNGTest, BetaHappyPath) {
   PRNG rng(k_default_master_seed);
   const double alpha = 2.0, beta_param = 5.0;
@@ -179,7 +180,8 @@ TEST_F(PRNGTest, BetaHappyPath) {
   EXPECT_NEAR(mean, expected_mean, 0.03);
 }
 
-// Item 24: gamma(alpha, beta) happy path — positive, mean = alpha * beta (shape * scale per std::gamma_distribution)
+// Item 24: gamma(alpha, beta) happy path — positive, mean = alpha * beta (shape
+// * scale per std::gamma_distribution)
 TEST_F(PRNGTest, GammaHappyPath) {
   PRNG rng(k_default_master_seed);
   const double alpha = 2.0, beta = 1.5;
@@ -240,7 +242,8 @@ TEST_F(PRNGTest, Skip) {
   PRNG rng1(k_default_master_seed);
   PRNG rng2(k_default_master_seed);
 
-  // Item 25: Test engine position directly — draw 10 from rng1.engine(), discard 10 on rng2.engine()
+  // Item 25: Test engine position directly — draw 10 from rng1.engine(),
+  // discard 10 on rng2.engine()
   for (int i = 0; i < 10; ++i) {
     (void)rng1.engine()();
   }
@@ -309,7 +312,8 @@ TEST_F(StreamManagerTest, StreamNames) {
               names.end());
 }
 
-// Item 23: StreamManager reset_stream, has_stream, remove_stream, clear, debug_info
+// Item 23: StreamManager reset_stream, has_stream, remove_stream, clear,
+// debug_info
 TEST_F(StreamManagerTest, HasStream) {
   StreamManager manager(k_default_master_seed);
   EXPECT_FALSE(manager.has_stream("voters"));
@@ -363,7 +367,8 @@ TEST_F(StreamManagerTest, DebugInfo) {
   EXPECT_TRUE(info.find("master_seed") != std::string::npos);
 }
 
-// Item 23: reset_for_run — same (master_seed, run_index) => same sequences; different index => different
+// Item 23: reset_for_run — same (master_seed, run_index) => same sequences;
+// different index => different
 TEST_F(StreamManagerTest, ResetForRunReproducibility) {
   const uint64_t master = 42;
   const uint64_t run0 = 0;
@@ -378,8 +383,10 @@ TEST_F(StreamManagerTest, ResetForRunReproducibility) {
   int a2 = m2.get_stream("voters").uniform_int(0, 1000000);
   int b2 = m2.get_stream("voters").uniform_int(0, 1000000);
 
-  EXPECT_EQ(a1, a2) << "Same (master_seed, run_index) should give same first draw";
-  EXPECT_EQ(b1, b2) << "Same (master_seed, run_index) should give same second draw";
+  EXPECT_EQ(a1, a2)
+      << "Same (master_seed, run_index) should give same first draw";
+  EXPECT_EQ(b1, b2)
+      << "Same (master_seed, run_index) should give same second draw";
 }
 
 TEST_F(StreamManagerTest, ResetForRunDifferentIndicesDifferentSequences) {
@@ -414,7 +421,8 @@ TEST_F(StreamManagerTest, GlobalStreamManager) {
 }
 
 // Item 27: set_global_stream_manager_seed second-call branch (reset existing)
-TEST_F(StreamManagerTest, SetGlobalStreamManagerSeedSecondCallProducesDifferentSequences) {
+TEST_F(StreamManagerTest,
+       SetGlobalStreamManagerSeedSecondCallProducesDifferentSequences) {
   set_global_stream_manager_seed(11111);
   int a1 = voters_rng().uniform_int(0, 1000000);
   int b1 = voters_rng().uniform_int(0, 1000000);
@@ -431,7 +439,7 @@ TEST_F(StreamManagerTest, SetGlobalStreamManagerSeedSecondCallProducesDifferentS
 TEST_F(StreamManagerTest, RegisterStreamsThenGetUnknownThrows) {
   StreamManager mgr(12345);
   mgr.register_streams({"voters", "candidates", "tiebreak"});
-  EXPECT_THROW(mgr.get_stream("voter"), std::invalid_argument);   // typo
+  EXPECT_THROW(mgr.get_stream("voter"), std::invalid_argument);  // typo
   EXPECT_THROW(mgr.get_stream("unknown"), std::invalid_argument);
 }
 

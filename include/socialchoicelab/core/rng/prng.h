@@ -60,8 +60,7 @@ class PRNG {
   template <typename T>
   T uniform_int(T min, T max) {
     if (min > max) {
-      throw std::invalid_argument(
-          "uniform_int: min must be <= max");
+      throw std::invalid_argument("uniform_int: min must be <= max");
     }
     std::uniform_int_distribution<T> dist(min, max);
     return dist(engine_);
@@ -78,13 +77,11 @@ class PRNG {
   T uniform_real(T min, T max) {
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(min) || !std::isfinite(max)) {
-        throw std::invalid_argument(
-            "uniform_real: min and max must be finite");
+        throw std::invalid_argument("uniform_real: min and max must be finite");
       }
     }
     if (!(min < max)) {
-      throw std::invalid_argument(
-          "uniform_real: min must be < max");
+      throw std::invalid_argument("uniform_real: min must be < max");
     }
     std::uniform_real_distribution<T> dist(min, max);
     return dist(engine_);
@@ -101,8 +98,7 @@ class PRNG {
   T normal(T mean, T stddev) {
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(mean) || !std::isfinite(stddev)) {
-        throw std::invalid_argument(
-            "normal: mean and stddev must be finite");
+        throw std::invalid_argument("normal: mean and stddev must be finite");
       }
     }
     if (stddev <= T{0}) {
@@ -122,8 +118,7 @@ class PRNG {
   T exponential(T lambda) {
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(lambda)) {
-        throw std::invalid_argument(
-            "exponential: lambda must be finite");
+        throw std::invalid_argument("exponential: lambda must be finite");
       }
     }
     if (lambda <= T{0}) {
@@ -144,13 +139,11 @@ class PRNG {
   T gamma(T alpha, T beta) {
     if constexpr (std::is_floating_point_v<T>) {
       if (!std::isfinite(alpha) || !std::isfinite(beta)) {
-        throw std::invalid_argument(
-            "gamma: alpha and beta must be finite");
+        throw std::invalid_argument("gamma: alpha and beta must be finite");
       }
     }
     if (alpha <= T{0} || beta <= T{0}) {
-      throw std::invalid_argument(
-          "gamma: alpha and beta must be positive");
+      throw std::invalid_argument("gamma: alpha and beta must be positive");
     }
     std::gamma_distribution<T> dist(alpha, beta);
     return dist(engine_);
@@ -190,12 +183,10 @@ class PRNG {
    */
   bool bernoulli(double probability = 0.5) {
     if (!std::isfinite(probability)) {
-      throw std::invalid_argument(
-          "bernoulli: probability must be finite");
+      throw std::invalid_argument("bernoulli: probability must be finite");
     }
     if (probability < 0.0 || probability > 1.0) {
-      throw std::invalid_argument(
-          "bernoulli: probability must be in [0, 1]");
+      throw std::invalid_argument("bernoulli: probability must be in [0, 1]");
     }
     std::bernoulli_distribution dist(probability);
     return dist(engine_);
