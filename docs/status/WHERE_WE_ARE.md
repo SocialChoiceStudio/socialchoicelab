@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Batch 1
-- **Next item:** 1 — **Minkowski Doxygen formula vs code mismatch** — The Doxygen…. Severity: Critical.
+- **Current phase:** Batch 2
+- **Next item:** 4 — **`minkowski_distance` accepts integral `T`** — When `T` is …. Severity: High.
 - **Last updated:** 2026-03-05
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan_3.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.

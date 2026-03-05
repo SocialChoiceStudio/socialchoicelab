@@ -35,15 +35,26 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
                      const std::vector<T>& salience_weights);
 
 /**
- * @brief Minkowski distance with salience weights
+ * @brief Minkowski distance with salience weights (Convention B)
  *
- * Implements weighted Minkowski distance:
- * d = (Σ w_i * |x_i - y_i|^p)^(1/p)
+ * Implements weighted Minkowski distance using **Convention B** (dimension
+ * pre-scaling): each dimension's difference is scaled by its weight *before*
+ * exponentiation.
+ *
+ * @code
+ * d = ( Σ (w_i * |x_i - y_i|)^p )^(1/p)
+ * @endcode
  *
  * Where:
  * - w_i is the salience weight for dimension i
  * - p is the Minkowski order parameter
  * - x_i, y_i are the coordinates in dimension i
+ *
+ * **Convention B vs Convention A:** Convention A would weight outside the
+ * exponent: `d = (Σ w_i * |x_i - y_i|^p)^(1/p)`. This function uses
+ * Convention B throughout. Doubling w_i has the same effect as halving the
+ * unit length in dimension i. See docs/architecture/design_document.md for
+ * rationale.
  *
  * @tparam Derived1 Eigen expression type for ideal point
  * @tparam Derived2 Eigen expression type for alternative point

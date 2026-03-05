@@ -41,7 +41,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **core::serialization** – Protobuf for data exchange
 
 ### 2. Preference Services
-- **distance** – Minkowski (p≥1), Euclidean, Manhattan, Chebyshev, custom. Salience weights per dimension (finite, ≥0; zero = dimension masking). Invalid inputs throw `std::invalid_argument`.
+- **distance** – Minkowski (p≥1), Euclidean, Manhattan, Chebyshev, custom. Salience weights per dimension (finite, ≥0; zero = dimension masking). Invalid inputs throw `std::invalid_argument`. **Weighting convention (Convention B — dimension pre-scaling):** `d = (Σ (wᵢ |xᵢ - yᵢ|)^p)^(1/p)`. Weight is applied *before* exponentiation; doubling wᵢ halves the effective unit length in dimension i. This differs from Convention A (`d = (Σ wᵢ |xᵢ - yᵢ|^p)^(1/p)`) where weight is outside the exponent. All wrappers (Euclidean, Manhattan, Chebyshev) use Convention B via `minkowski_distance`.
 - **loss** – Linear, quadratic, Gaussian, and threshold loss functions; `distance_to_utility` and `normalize_utility`. Parameter domains enforced (sensitivity, max_loss, steepness, threshold, finite inputs); invalid inputs throw `std::invalid_argument`.
 - **utility** – Applies a loss function to a distance metric to produce utility values
 - **indifference** – Level-set construction; stateless service

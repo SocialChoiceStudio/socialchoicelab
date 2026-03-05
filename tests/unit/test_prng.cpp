@@ -463,3 +463,46 @@ TEST_F(StreamManagerTest, RegisterStreamsEmptyClearsAllowlist) {
   EXPECT_NO_THROW(mgr.get_stream("other"));
   EXPECT_TRUE(mgr.has_stream("other"));
 }
+
+// Item 2: discrete_choice weight validation
+TEST_F(PRNGTest, DiscreteChoiceAllZeroWeightsThrows) {
+  PRNG rng(k_default_master_seed);
+  std::vector<double> all_zero = {0.0, 0.0, 0.0};
+  EXPECT_THROW(rng.discrete_choice(all_zero), std::invalid_argument);
+}
+
+TEST_F(PRNGTest, DiscreteChoiceNegativeWeightThrows) {
+  PRNG rng(k_default_master_seed);
+  std::vector<double> neg = {1.0, -0.1, 1.0};
+  EXPECT_THROW(rng.discrete_choice(neg), std::invalid_argument);
+}
+
+TEST_F(PRNGTest, DiscreteChoiceNaNWeightThrows) {
+  PRNG rng(k_default_master_seed);
+  std::vector<double> nan_w = {1.0, std::numeric_limits<double>::quiet_NaN()};
+  EXPECT_THROW(rng.discrete_choice(nan_w), std::invalid_argument);
+}
+
+TEST_F(PRNGTest, DiscreteChoiceInfWeightThrows) {
+  PRNG rng(k_default_master_seed);
+  std::vector<double> inf_w = {1.0, std::numeric_limits<double>::infinity()};
+  EXPECT_THROW(rng.discrete_choice(inf_w), std::invalid_argument);
+}
+
+TEST_F(PRNGTest, DiscreteChoiceSinglePositiveAmongZerosReturnsItsIndex) {
+  PRNG rng(k_default_master_seed);
+  // Only index 2 has positive weight — must always return 2
+  std::vector<double> w = {0.0, 0.0, 5.0, 0.0};
+  for (int i = 0; i < 20; ++i) {
+    EXPECT_EQ(rng.discrete_choice(w), size_t{2});
+  }
+}
+
+TEST_F(PRNGTest, DiscreteChoiceValidWeightsWorks) {
+  PRNG rng(k_default_master_seed);
+  std::vector<double> w = {1.0, 2.0, 3.0};
+  for (int i = 0; i < 30; ++i) {
+    size_t idx = rng.discrete_choice(w);
+    EXPECT_LT(idx, w.size());
+  }
+}

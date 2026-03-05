@@ -26,6 +26,12 @@ namespace socialchoicelab::core::rng {
  * multi-threaded programs, construct a separate StreamManager per thread or
  * per run rather than sharing one instance.
  *
+ * REFERENCE INVALIDATION:
+ * The PRNG& returned by get_stream() is invalidated by any call to reset_all(),
+ * reset_for_run(), clear(), remove_stream(), or by destruction of the
+ * StreamManager. Do not store the reference across such calls; re-call
+ * get_stream() to obtain a fresh reference after any of these operations.
+ *
  * The global get_global_stream_manager() is safe for single-threaded use and
  * tests. In multi-threaded programs, construct local StreamManager instances
  * with per-run seeds derived from (master_seed, run_index) via reset_for_run().
@@ -71,6 +77,11 @@ class StreamManager {
 
   /**
    * @brief Get or create a named stream
+   *
+   * @warning The returned reference is invalidated by reset_all(),
+   * reset_for_run(), clear(), remove_stream(), or destruction of this
+   * StreamManager. Do not store the reference across such calls.
+   *
    * @param name Stream name (e.g., "voters", "candidates", "tiebreak")
    * @return Reference to the PRNG for this stream
    * @throws std::invalid_argument if an allowlist is set and name is not
@@ -95,6 +106,9 @@ class StreamManager {
 
   /**
    * @brief Reset all streams with new master seed
+   *
+   * @warning Invalidates all references previously returned by get_stream().
+   *
    * @param master_seed New master seed
    */
   void reset_all(uint64_t master_seed) {
@@ -108,6 +122,8 @@ class StreamManager {
    * Derives the run seed from (global_master_seed, run_index) so that each
    * run is independently replayable and run N does not depend on draws from
    * run N-1. Use this at the start of each simulation run.
+   *
+   * @warning Invalidates all references previously returned by get_stream().
    *
    * @param global_master_seed Experiment-level master seed
    * @param run_index Zero-based index of this run
@@ -169,12 +185,18 @@ class StreamManager {
 
   /**
    * @brief Remove a stream
+   *
+   * @warning Invalidates the reference to the removed stream returned by any
+   * prior get_stream() call for that name.
+   *
    * @param name Stream name
    */
   void remove_stream(const std::string& name) { streams_.erase(name); }
 
   /**
    * @brief Clear all streams
+   *
+   * @warning Invalidates all references previously returned by get_stream().
    */
   void clear() { streams_.clear(); }
 

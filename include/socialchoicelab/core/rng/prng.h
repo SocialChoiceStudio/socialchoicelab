@@ -194,14 +194,41 @@ class PRNG {
 
   /**
    * @brief Generate random choice from discrete distribution
-   * @tparam T Value type
-   * @param weights Weights for each choice (must not be empty)
+   *
+   * @tparam T Weight type (numeric)
+   * @param weights Non-empty weight vector. All weights must be ≥ 0; at least
+   * one must be > 0. For floating-point T, all weights must be finite.
    * @return Index of chosen element
+   * @throws std::invalid_argument if weights is empty, any weight is negative
+   * or non-finite, or all weights are zero.
    */
   template <typename T>
   size_t discrete_choice(const std::vector<T>& weights) {
     if (weights.empty()) {
       throw std::invalid_argument("discrete_choice: weights must not be empty");
+    }
+    for (size_t i = 0; i < weights.size(); ++i) {
+      if constexpr (std::is_floating_point_v<T>) {
+        if (!std::isfinite(static_cast<double>(weights[i]))) {
+          throw std::invalid_argument("discrete_choice: weight[" +
+                                      std::to_string(i) + "] is not finite");
+        }
+      }
+      if (weights[i] < T{0}) {
+        throw std::invalid_argument("discrete_choice: weight[" +
+                                    std::to_string(i) + "] must be >= 0");
+      }
+    }
+    bool any_positive = false;
+    for (const auto& w : weights) {
+      if (w > T{0}) {
+        any_positive = true;
+        break;
+      }
+    }
+    if (!any_positive) {
+      throw std::invalid_argument(
+          "discrete_choice: at least one weight must be > 0");
     }
     std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
     return dist(engine_);
