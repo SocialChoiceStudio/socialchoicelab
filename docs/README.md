@@ -7,7 +7,7 @@ This file is the single entry point for project documentation.
 | What you need | Where to look |
 |---------------|---------------|
 | What's next / current position | `docs/status/where_we_are.md` |
-| Active backlog (third review) | `docs/status/consensus_plan_3.md` |
+| Active backlog (fourth review) | `docs/status/consensus_plan_4.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
 | Chronological project history | `docs/status/project_log.md` |
@@ -26,7 +26,7 @@ If two docs disagree for execution decisions, use this precedence:
 
 1. `docs/status/where_we_are.md`
 2. `docs/architecture/` (relevant design doc)
-3. `docs/status/consensus_plan_3.md` (active backlog; item status)
+3. `docs/status/consensus_plan_4.md` (active backlog; item status)
 4. `docs/status/project_log.md` (history only)
 
 ## Documentation Layout

@@ -2,16 +2,26 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Batch 2
-- **Next item:** 4 — **`minkowski_distance` accepts integral `T`** — When `T` is …. Severity: High.
+- **Current phase:** Batch 1 (fourth review)
+- **Next item:** 1 — Dead includes in `loss_functions.h`. Severity: High.
 - **Last updated:** 2026-03-05
 
-**Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan_3.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.
+**Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan_4.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/consensus_plan_3.md`. Use the plan's Status column to confirm; if they disagree, update this file.
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/consensus_plan_4.md`. Use the plan's Status column to confirm; if they disagree, update this file.
 ---
 
 ## Recent Work
+
+### Session: 2026-03-05 — Fourth review complete; consensus_plan_4.md created
+
+- Two-agent review (Claude Opus + ChatGPT Codex), 5 rounds (r01_claude → r05_claude), consensus reached.
+- Third review (26 items) confirmed all ✅ Done.
+- 30 new actionable items identified: 4 High, 6 Medium, 7 Low, 8 test gaps, 5 doc follow-ups.
+- Key findings: dead Eigen include in `loss_functions.h`; local epsilon vs `numeric_constants.h`; signed/unsigned comparison warnings; loss function type constraints allow unsigned + `INT_MIN` UB; stale `where_we_are.md`; Minkowski cutoff overflow at p=100; missing `[[nodiscard]]`; CI pip portability.
+- `docs/status/consensus_plan_4.md` created. `docs/README.md` and `where_we_are.md` updated to point to it.
+- Next: Item 1 — dead includes in `loss_functions.h`. Severity: High.
+See `docs/status/consensus_plan_4.md` for details.
 
 ### Session: 2026-02-14 — Phase 0 & Phase 1 complete
 
