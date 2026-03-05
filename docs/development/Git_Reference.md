@@ -30,7 +30,7 @@ Instead of the three manual commands, run the end-of-session script:
 ```
 
 It does four things automatically:
-1. Updates `docs/status/WHERE_WE_ARE.md` pointer from `CONSENSUS_PLAN.md`
+1. Updates `docs/status/where_we_are.md` pointer from `consensus_plan.md`
 2. Appends a dated session entry to the Recent Work section
 3. Stages and commits everything (`git add -A && git commit`)
 4. Pushes to GitHub

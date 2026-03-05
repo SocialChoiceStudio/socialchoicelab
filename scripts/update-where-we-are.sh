@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate docs/status/WHERE_WE_ARE.md from docs/status/CONSENSUS_PLAN.md.
+# Regenerate docs/status/where_we_are.md from docs/status/consensus_plan.md.
 # Finds the first item not marked ✅ Done and updates the cached pointer.
 # Run from repo root.
 
@@ -7,8 +7,8 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-plan="docs/status/CONSENSUS_PLAN.md"
-out="docs/status/WHERE_WE_ARE.md"
+plan="docs/status/consensus_plan.md"
+out="docs/status/where_we_are.md"
 
 if [ ! -f "$plan" ]; then
   echo "Error: $plan not found."
@@ -112,9 +112,9 @@ new_header = f"""# Where We Are
 - **Next item:** {num} — {title.rstrip('.')}. Severity: {severity}.
 - **Last updated:** {today}
 
-**Authority:** This file is a cached pointer. The **Status** column in `docs/status/CONSENSUS_PLAN.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in CONSENSUS_PLAN.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
+**Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in consensus_plan.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and CONSENSUS_PLAN.md. Use the plan's Status column to confirm; if they disagree, update this file."""
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and consensus_plan.md. Use the plan's Status column to confirm; if they disagree, update this file."""
 
 with open(out_path, "w") as f:
     f.write(new_header + rest)

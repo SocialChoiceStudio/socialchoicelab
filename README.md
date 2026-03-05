@@ -11,7 +11,7 @@ Core C++ engine with R and Python bindings for simulating and analyzing spatial 
 
 ## Documentation
 
-See the [Living Design Document](docs/architecture/Design_Document.md) for full architecture details, or [docs/README.md](docs/README.md) for the complete documentation index.
+See the [Living Design Document](docs/architecture/design_document.md) for full architecture details, or [docs/README.md](docs/README.md) for the complete documentation index.
 
 ## License
 

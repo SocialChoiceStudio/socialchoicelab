@@ -71,11 +71,11 @@ case "$ans" in
   [yY]*) ;;
   *) echo "Update CHANGELOG.md first, then re-run."; exit 1 ;;
 esac
-echo "ROADMAP: docs/status/ROADMAP.md — are near/mid/long-term sections still accurate?"
-read -r -p "Is ROADMAP.md still accurate? [y/N] " ans
+echo "ROADMAP: docs/status/roadmap.md — are near/mid/long-term sections still accurate?"
+read -r -p "Is roadmap.md still accurate? [y/N] " ans
 case "$ans" in
   [yY]*) ;;
-  *) echo "Review and update docs/status/ROADMAP.md, then re-run."; exit 1 ;;
+  *) echo "Review and update docs/status/roadmap.md, then re-run."; exit 1 ;;
 esac
 
 # --- Step 3: Commit + push all changes via end-of-session ---

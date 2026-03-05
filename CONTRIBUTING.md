@@ -5,10 +5,10 @@ Thanks for your interest in contributing. This project is part of **SocialChoice
 ## How to contribute
 
 1. **Check current position and backlog**  
-   See [docs/status/WHERE_WE_ARE.md](docs/status/WHERE_WE_ARE.md) for what we're working on next and [docs/status/CONSENSUS_PLAN.md](docs/status/CONSENSUS_PLAN.md) for the full prioritized backlog.
+   See [docs/status/where_we_are.md](docs/status/where_we_are.md) for what we're working on next and [docs/status/consensus_plan.md](docs/status/consensus_plan.md) for the full prioritized backlog.
 
 2. **Follow code style and tooling**  
-   Use the style and tooling described in [docs/development/DEVELOPMENT.md](docs/development/DEVELOPMENT.md): clang-format (version 21 in CI), cpplint, and the project's `.clang-format` and `lint.sh`. Run `./lint.sh format` and `./lint.sh lint` before committing.
+   Use the style and tooling described in [docs/development/development.md](docs/development/development.md): clang-format (version 21 in CI), cpplint, and the project's `.clang-format` and `lint.sh`. Run `./lint.sh format` and `./lint.sh lint` before committing.
 
 3. **Run tests**  
    Build and run tests (e.g. `cd build && ctest -LE benchmark`). CI runs on push/PR to `main`; keep the tree green.
@@ -21,7 +21,7 @@ Thanks for your interest in contributing. This project is part of **SocialChoice
 
 ## Git workflow
 
-For the solo/maintainer workflow (branching, committing, pushing), see [docs/development/Git_Reference.md](docs/development/Git_Reference.md).
+For the solo/maintainer workflow (branching, committing, pushing), see [docs/development/git_reference.md](docs/development/git_reference.md).
 
 ## Questions
 

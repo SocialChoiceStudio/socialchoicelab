@@ -58,13 +58,27 @@ We follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppgu
 
 - **Indentation**: 2 spaces
 - **Line length**: 80 characters maximum
-- **Naming**: 
+- **C++ symbol naming**:
   - Classes: `PascalCase` (e.g., `PRNG`, `StreamManager`)
   - Functions: `snake_case` (e.g., `minkowski_distance`, `linear_loss`)
   - Variables: `snake_case` (e.g., `point_distance`)
-  - Constants: `kConstantName` (e.g., `kMaxDimensions`)
+  - Constants: `k_snake_case` (e.g., `k_default_master_seed`, `k_minkowski_chebyshev_cutoff`)
 - **Headers**: Self-contained with include guards
 - **Includes**: Ordered as: related header, C system, C++ standard, other libraries, project headers
+
+### File Naming Conventions
+
+| File type | Convention | Examples |
+|-----------|------------|---------|
+| C++ headers | `snake_case.h` | `stream_manager.h`, `distance_functions.h` |
+| C++ sources | `snake_case.cpp` | `stream_manager.cpp` |
+| C++ tests | `test_snake_case.cpp` | `test_distance_functions.cpp`, `test_prng.cpp` |
+| Shell scripts | `kebab-case.sh` | `end-of-milestone.sh`, `pre-commit.sh` |
+| Root open-source docs | `ALL_CAPS.md` | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` |
+| `README.md` (anywhere) | Always `README.md` | `docs/README.md`, `docs/references/README.md` |
+| All other docs in `docs/` | `snake_case.md` | `development.md`, `design_document.md`, `where_we_are.md` |
+
+When adding new files, follow the convention for the file type. Do not mix cases within a type.
 
 ### Common Issues and Fixes
 
@@ -182,7 +196,7 @@ make test
 
 ## StreamManager and RNG Policy
 
-**Decision doc:** `docs/architecture/StreamManager_Design.md`  
+**Decision doc:** `docs/architecture/stream_manager_design.md`  
 **Implemented:** Feb 14, 2026 (consensus plan Item 18)
 
 ### Single-owner contract

@@ -105,15 +105,27 @@
 - **Error-condition tests:** Added `EXPECT_THROW` tests for distance, PRNG, and loss error paths.
 - **Missing includes:** Added `<stdexcept>`, `<type_traits>`, `<vector>`, `<numeric>` where needed for portability.
 - **Enum hardening:** Unknown enum values in `calculate_distance` and `distance_to_utility` now throw instead of silently falling back to defaults.
-- **StreamManager ownership (Item 18):** Adopted single-owner policy. Removed mutex and all `std::lock_guard` from `StreamManager` (the old mutex provided false safety — `get_stream()` returns a reference that outlives the lock). Removed `const` overload of `get_stream()` (it silently mutated via `mutable` members, violating const semantics). Removed `mutable` from member declarations. Added `reset_for_run(master_seed, run_index)` for deterministic per-run seeding. Updated stream naming convention (`voters`, `candidates`, `tiebreak`, `movement`, `memory_update`, `analysis`). The global singleton's construction mutex in `stream_manager.cpp` is retained (it guards construction only, not concurrent StreamManager use). Full decision rationale: `docs/architecture/StreamManager_Design.md`.
+- **StreamManager ownership (Item 18):** Adopted single-owner policy. Removed mutex and all `std::lock_guard` from `StreamManager` (the old mutex provided false safety — `get_stream()` returns a reference that outlives the lock). Removed `const` overload of `get_stream()` (it silently mutated via `mutable` members, violating const semantics). Removed `mutable` from member declarations. Added `reset_for_run(master_seed, run_index)` for deterministic per-run seeding. Updated stream naming convention (`voters`, `candidates`, `tiebreak`, `movement`, `memory_update`, `analysis`). The global singleton's construction mutex in `stream_manager.cpp` is retained (it guards construction only, not concurrent StreamManager use). Full decision rationale: `docs/architecture/stream_manager_design.md`.
 
 **Test framework:** Google Test (GTest) is in use via CMake FetchContent; it is the project’s test framework. **Eigen migration:** Complete; no PointND or utility_functions.h remains (see 2025-09-11 and 2026-02-14).
 ## 2026-03-04
 
 **Phase 2 complete** (documentation truthfulness, Items 22–27): README updated, stale PointND references removed, PROJECT_LOG chronological order fixed, reference index cleaned, design doc Rcpp→cpp11.
 
-**Phase 3 complete** (developer experience, Items 28–33): CI workflow (Ubuntu + macOS, clang-format 21, format/build/test/lint), ROADMAP, MILESTONE_GATES, CONTRIBUTING/SECURITY/CHANGELOG, .clang-tidy, pre-commit hook, dependency sequencing.
+**Phase 3 complete** (developer experience, Items 28–33): CI workflow (Ubuntu + macOS, clang-format 21, format/build/test/lint), roadmap.md, milestone_gates.md, CONTRIBUTING/SECURITY/CHANGELOG, .clang-tidy, pre-commit hook, dependency sequencing.
 
 **Backlog Item 34**: CMakeLists.txt modernized — target_include_directories(), target_compile_options() with generator expressions, install() targets, removed unused C language, removed redundant gtest linking.
 
-**C++ standard set to C++20**: Confirmed GTest 1.14, Eigen 3.4, Clang 17, and GCC 13 (CI) all support C++20. All 40 project tests pass. Recorded in DEVELOPMENT.md to prevent silent reversion.
+**C++ standard set to C++20**: Confirmed GTest 1.14, Eigen 3.4, Clang 17, and GCC 13 (CI) all support C++20. All 40 project tests pass. Recorded in development.md to prevent silent reversion.
+
+**Backlog Items 35–38**: (35) Unified namespace style to C++17 nested form in all 5 files. (36) Extracted `k_default_master_seed` constant; replaced all `12345` literals. (37) Special-cased p=1 and p=2 in `minkowski_distance` to avoid `std::pow` in tight loop. (38) DRY: `minkowski_distance` calls `chebyshev_distance()` for high-p case; extracted `k_minkowski_chebyshev_cutoff = 100.0` constant with forward declaration for two-phase lookup.
+
+**Backlog Items 39–45**: (39) Indentation verified consistent; format run. (40) Removed commented dead code from `distance_functions.h`. (41) Added `noexcept` to simple accessors in PRNG and StreamManager. (42) Skipped — `<algorithm>` required for `std::max` in threshold_loss. (43) Fixed Doxygen `@tparam N` on all distance wrapper functions. (44) Added WeightedEuclideanAndChebyshev and ThreeDimensionalPoints tests. (45) Added TriangleInequalityEqualWeights test. All 45 backlog items resolved; item 46 (GPL vs LGPL) deferred.
+
+## 2026-03-05
+
+**Documentation restructure**: Deleted 5 orphaned/stale files (Phase2Changes.md, 4 empty reference subdirectory READMEs). Flattened `docs/references/` — moved reference_index.md and implementation_priority.md from `social_choice/` subdir to `references/` directly; removed empty subdirectories. Updated docs/README.md layout, roadmap.md near-term, consensus_plan.md footer, stream_manager_design.md status.
+
+**File naming conventions established**: All docs in `docs/` renamed to `snake_case.md` (10 files; except README.md files which stay as-is). Root hygiene docs remain `ALL_CAPS.md`. C++ files already consistent (snake_case.h/.cpp, test_snake_case.cpp). Scripts use kebab-case.sh. Convention documented in `docs/development/development.md` § File Naming Conventions and in `.cursor/rules/File-Naming-Conventions.mdc`. All 16 cross-reference files updated in one pass; zero broken links remain.
+
+**Documentation content review**: Corrected stale content across all docs — design_document.md (loss functions list, benchmark description, consensus_plan file reference); milestone_gates.md (ALL_CAPS filenames in prose, Phase 3 marked complete); consensus_plan.md (added Status column to Phase 3 and Backlog table headers); where_we_are.md (chronological session order, last updated date).

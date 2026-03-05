@@ -2,7 +2,7 @@
 
 **Authors:** Claude Opus 4.6 + GPT 5.3 (merged)  
 **Date:** 2026-02-14  
-**Status:** Adopted (Item 18 complete; see CONSENSUS_PLAN.md)  
+**Status:** Adopted (Item 18 complete; see consensus_plan.md)  
 **Sources:** `GPTProposedCombinedStreamManagerImplementation.md`, `OpusProposedCombinedStreamManagerImplementation.md`
 
 ---
@@ -254,4 +254,4 @@ No fundamental disagreements were found.
 
 ## Implementation status (Item 18)
 
-All code changes C1–C5 were implemented on 2026-02-14. Item 18 is ✅ Done in CONSENSUS_PLAN.md. This document is the adopted reference for StreamManager ownership rules.
+All code changes C1–C5 were implemented on 2026-02-14. Item 18 is ✅ Done in consensus_plan.md. This document is the adopted reference for StreamManager ownership rules.

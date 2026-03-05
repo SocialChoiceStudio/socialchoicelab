@@ -1,10 +1,10 @@
 # Milestone Gates: Definition of Done
 
-For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates that must be satisfied before we consider it "done". See [ROADMAP.md](ROADMAP.md) for time horizons; this document defines *what* must be true.
+For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates that must be satisfied before we consider it "done". See [roadmap.md](roadmap.md) for time horizons; this document defines *what* must be true.
 
 ---
 
-## Phase 3 complete (tag: e.g. `phase-3`)
+## Phase 3 complete (tag: e.g. `phase-3`) ✅ Already reached (2026-03-04)
 
 **Scope:** Developer experience and process. No new product features; process and docs only.
 
@@ -12,7 +12,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 |------|----------|
 | **Features** | No new feature requirements. Existing core (distance, loss, PRNG, StreamManager) unchanged and working. |
 | **Tests** | CI green on `main`: build + test (unit tests, exclude benchmarks) on Ubuntu and macOS; format check passes; `./lint.sh --strict lint` passes. |
-| **Docs** | CONSENSUS_PLAN Phase 3 items 28–30 done. ROADMAP and this file exist. WHERE_WE_ARE and docs index point to them. CONTRIBUTING/SECURITY/CHANGELOG (Item 31) may be done in same milestone or immediately after. |
+| **Docs** | `consensus_plan.md` Phase 3 items 28–33 done. `roadmap.md` and this file exist. `where_we_are.md` and docs index point to them. `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` added. |
 | **API stability** | N/A — we are not promising stability yet. Public C++ API may still change; no c_api exists. |
 
 **Check before tagging:** Run `scripts/end-of-milestone.sh <tag>`; it will prompt for CHANGELOG and ROADMAP.
@@ -21,7 +21,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ## c_api minimal (tag: e.g. `c-api-minimal` or `v0.2.0`)
 
-**Scope:** A stable C ABI surface over the current C++ core so that R/Python bindings can depend on it. See [Design Document](../architecture/Design_Document.md) § FFI & Interfaces.
+**Scope:** A stable C ABI surface over the current C++ core so that R/Python bindings can depend on it. See [Design Document](../architecture/design_document.md) § FFI & Interfaces.
 
 | Gate | Criteria |
 |------|----------|
@@ -34,7 +34,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ## Geometry + voting (mid-term) (tag: e.g. `v0.3.0`)
 
-**Scope:** Exact 2D geometry (CGAL), voting rules, outcome concepts. See [ROADMAP](ROADMAP.md) mid-term and [Implementation Priority](../references/social_choice/implementation_priority.md).
+**Scope:** Exact 2D geometry (CGAL), voting rules, outcome concepts. See [ROADMAP](roadmap.md) mid-term and [Implementation Priority](../references/implementation_priority.md).
 
 | Gate | Criteria |
 |------|----------|
@@ -47,7 +47,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ## First binding / 1.0 (tag: e.g. `v1.0.0`)
 
-**Scope:** First released R or Python package (or both) that calls the c_api. See [ROADMAP](ROADMAP.md) long-term.
+**Scope:** First released R or Python package (or both) that calls the c_api. See [ROADMAP](roadmap.md) long-term.
 
 | Gate | Criteria |
 |------|----------|

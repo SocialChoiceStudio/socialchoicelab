@@ -7,11 +7,11 @@ PDF files are stored locally but **not tracked in Git** to keep the repository l
 
 | File | Purpose |
 |------|---------|
-| [REFERENCE_INDEX.md](REFERENCE_INDEX.md) | Annotated list of all papers and books, organized by topic |
+| [reference_index.md](reference_index.md) | Annotated list of all papers and books, organized by topic |
 | [implementation_priority.md](implementation_priority.md) | Prioritized roadmap for social-choice and geometric features |
 
 ## Adding New References
 
-1. Add an entry to `REFERENCE_INDEX.md` under the appropriate section.
+1. Add an entry to `reference_index.md` under the appropriate section.
 2. If it affects implementation order, update `implementation_priority.md`.
 3. Keep PDF files local; do not commit large binaries to Git.

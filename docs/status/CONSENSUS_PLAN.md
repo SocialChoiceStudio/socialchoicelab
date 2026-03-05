@@ -55,10 +55,10 @@ Before finalizing the plan, the two agents debated six points. All were resolved
 | 15 | Add error-condition tests (`EXPECT_THROW`) for invalid inputs across distance, loss, and PRNG functions — currently zero error-condition tests in the entire suite. | **(Both)** | Medium | ✅ Done |
 | 16 | Add missing includes for portability: `<stdexcept>` in `distance_functions.h` and `loss_functions.h`; `<type_traits>` in `loss_functions.h`; `<vector>` in `prng.h` and `stream_manager.h`; `<numeric>` in `test_distance_speed.cpp`. | **(Both)** | Medium | ✅ Done |
 | 17 | Harden enum handling: replace silent `default` fallbacks in `calculate_distance` and `distance_to_utility` switch statements with `throw std::invalid_argument("Unknown type")` — current defaults silently use Euclidean/Linear for unrecognized enum values. | **(Both)** | Medium | ✅ Done |
-| 18 | Either remove thread-safety claims from `StreamManager` or fix with proper lock management. Current issues: `get_stream()` returns references that outlive the lock; `master_seed()` reads without lock while `reset_all()` writes under lock (data race); `const` overload of `get_stream()` silently creates streams via `mutable` members. If single-threaded use is intended, document that and remove the mutex overhead. | **(Both)** | Medium | ✅ Done — single-owner policy adopted. See `docs/architecture/StreamManager_Design.md` for full decision and rationale. |
+| 18 | Either remove thread-safety claims from `StreamManager` or fix with proper lock management. Current issues: `get_stream()` returns references that outlive the lock; `master_seed()` reads without lock while `reset_all()` writes under lock (data race); `const` overload of `get_stream()` silently creates streams via `mutable` members. If single-threaded use is intended, document that and remove the mutex overhead. | **(Both)** | Medium | ✅ Done — single-owner policy adopted. See `docs/architecture/stream_manager_design.md` for full decision and rationale. |
 | 19 | Fix or remove tautological/empty tests: `EXPECT_TRUE(true)` in Skip test; `EXPECT_GE(size_t, 0)` (always true for unsigned); `MemoryUsage` test that doesn't measure memory; tautological `utility == -loss` assertions. | **(Claude Only)** | Medium | ✅ Done |
 | 20 | Rename `beta()` parameter to avoid self-shadowing — `beta(T alpha, T beta)` shadows the function name. | **(Claude Only)** | Low | ✅ Done (already `beta_param` in prng.h) |
-| 21 | Separate performance benchmarks from unit tests — `test_distance_speed.cpp` and `test_performance_comparison.cpp` have arbitrary timing thresholds that will randomly fail on different machines. Use CTest labels or Google Benchmark. | **(Claude Only)** | Low | ✅ Done — timing assertions removed (report only); CTest label `benchmark` added; doc in DEVELOPMENT.md. |
+| 21 | Separate performance benchmarks from unit tests — `test_distance_speed.cpp` and `test_performance_comparison.cpp` have arbitrary timing thresholds that will randomly fail on different machines. Use CTest labels or Google Benchmark. | **(Claude Only)** | Low | ✅ Done — timing assertions removed (report only); CTest label `benchmark` added; doc in development.md. |
 
 ---
 
@@ -67,22 +67,22 @@ Before finalizing the plan, the two agents debated six points. All were resolved
 | # | Item | Source | Severity | Status |
 |---|------|--------|----------|--------|
 | 22 | Update README: separate "Implemented Now" (distance functions, loss functions, PRNG/StreamManager) from "Planned" (CGAL, voting rules, outcome concepts, R/Python bindings, GUI). | **(Both)** | High | ✅ Done |
-| 23 | Fix stale PointND references in docs — `DEVELOPMENT.md`, `docs/references/foundation/README.md`, and others still reference the deleted `PointND` type and `core::types` namespace. | **(Both)** | High | ✅ Done |
+| 23 | Fix stale PointND references in docs — `development.md`, `docs/references/foundation/README.md`, and others still reference the deleted `PointND` type and `core::types` namespace. | **(Both)** | High | ✅ Done |
 | 24 | Fix PROJECT_LOG: restore chronological order (Sept 10 entry appears after Sept 14); resolve GTest contradiction (log says "abandoned" but GTest is in use); note that Eigen migration is complete (utility_functions.h was deleted Feb 14). | **(Both)** | Medium | ✅ Done |
-| 25 | Repair reference index structure: remove phantom subdirectories from `docs/references/README.md` and `REFERENCE_INDEX.md` that were never created; consolidate the implementation priority list that appears identically in three files. | **(Both)** | Medium | ✅ Done |
-| 26 | Fix DEVELOPMENT.md: style guide says functions use `PascalCase` but actual code uses `snake_case`; remove instruction to install Google Test via Homebrew (project uses FetchContent). | **(Claude Only)** | Medium | ✅ Done (verified; already correct) |
+| 25 | Repair reference index structure: remove phantom subdirectories from `docs/references/README.md` and `reference_index.md` that were never created; consolidate the implementation priority list that appears identically in three files. | **(Both)** | Medium | ✅ Done |
+| 26 | Fix development.md: style guide says functions use `PascalCase` but actual code uses `snake_case`; remove instruction to install Google Test via Homebrew (project uses FetchContent). | **(Claude Only)** | Medium | ✅ Done (verified; already correct) |
 | 27 | Fix design doc: change "Rcpp" to "cpp11" in licensing section — the R binding layer uses cpp11, not Rcpp. | **(Claude Only)** | Low | ✅ Done |
 
-Phase 2 edit record archived in `docs/status/PROJECT_LOG.md` (session 2026-02-14).
+Phase 2 edit record archived in `docs/status/project_log.md` (session 2026-02-14).
 
 ---
 
 ## Phase 3 / Week 4: Developer Experience and Process
 
-| # | Item | Source | Severity |
-|---|------|--------|----------|
+| # | Item | Source | Severity | Status |
+|---|------|--------|----------|--------|
 | 28 | Add CI workflow (build + test on push/PR across major OS targets; include format/lint checks). | **(Both)** | High | ✅ Done |
-| 29 | Create `docs/status/ROADMAP.md` with near-term (1-2 months), mid-term (3-6 months), and long-term (6+ months) plans. Link to design doc and implementation priority instead of duplicating. | **(Both)** | Medium | ✅ Done |
+| 29 | Create `docs/status/roadmap.md` with near-term (1-2 months), mid-term (3-6 months), and long-term (6+ months) plans. Link to design doc and implementation priority instead of duplicating. | **(Both)** | Medium | ✅ Done |
 | 30 | Define milestone gates with "done" criteria: required features, tests, docs, and API stability expectations for each milestone. | **(Both)** | Medium | ✅ Done |
 | 31 | Add `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` — standard open-source project hygiene. | **(Both)** | Medium | ✅ Done |
 | 32 | Add `.clang-tidy` config and pre-commit hooks for automated quality enforcement. | **(Both)** | Medium | ✅ Done |
@@ -92,8 +92,8 @@ Phase 2 edit record archived in `docs/status/PROJECT_LOG.md` (session 2026-02-14
 
 ## Backlog: Quality and Modernization (No Rush)
 
-| # | Item | Source | Severity |
-|---|------|--------|----------|
+| # | Item | Source | Severity | Status |
+|---|------|--------|----------|--------|
 | 34 | Modernize CMakeLists.txt: use `target_include_directories()` instead of global `include_directories()`; use `target_compile_options()` with generator expressions instead of global `set()`; add `install()` targets; remove unused `C` language; remove redundant `gtest` linking. | **(Claude Only)** | Low | ✅ Done |
 | 35 | Unify namespace style to C++17 nested form (`namespace socialchoicelab::core::rng {`) — currently mixed with C++11 style. | **(Claude Only)** | Low | ✅ Done |
 | 36 | Extract magic number `12345` (default seed) to a named constant — appears in `prng.h`, `stream_manager.h`, and `stream_manager.cpp`. | **(Claude Only)** | Low | ✅ Done |
@@ -128,4 +128,4 @@ Phase 2 edit record archived in `docs/status/PROJECT_LOG.md` (session 2026-02-14
 
 **Priority order:** Correctness and reproducibility (Phases 0-1) before documentation and process (Phases 2-3) before backlog modernization.
 
-**Status:** All 46 items resolved (45 done, 1 deferred). See `docs/status/ROADMAP.md` for what comes next.
+**Status:** All 46 items resolved (45 done, 1 deferred). See `docs/status/roadmap.md` for what comes next.

@@ -42,7 +42,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 
 ### 2. Preference Services
 - **distance** – Minkowski (p≥1), Euclidean, Manhattan, Chebyshev, custom
-- **loss** – Linear and quadratic loss functions
+- **loss** – Linear, quadratic, Gaussian, and threshold loss functions; `distance_to_utility` and `normalize_utility`
 - **utility** – Applies a loss function to a distance metric to produce utility values
 - **indifference** – Level-set construction; stateless service
 
@@ -122,7 +122,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 
 ## Licensing
 - **GPL v3** for full compatibility with CGAL EPEC and cpp11 (R binding layer).
-- **Revisit:** Once most functionality is built out, reconsider GPL v3 vs LGPL v3 for library adoption (LGPL allows proprietary code to link without relicensing; CGAL Voronoi/Delaunay and some other algorithm packages are GPL-only). See CONSENSUS_PLAN backlog item 46.
+- **Revisit:** Once most functionality is built out, reconsider GPL v3 vs LGPL v3 for library adoption (LGPL allows proprietary code to link without relicensing; CGAL Voronoi/Delaunay and some other algorithm packages are GPL-only). See `docs/status/consensus_plan.md` backlog item 46.
 
 ---
 
@@ -156,7 +156,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **Unit tests**: Test each service independently (distance, loss, geometry)
 - **Integration tests**: Test complete workflows end-to-end
 - **Geometric validation**: Compare against reference implementations (CGAL examples, published results)
-- **Performance benchmarks**: Regression testing for computation times
+- **Performance benchmarks**: Timing reports only (no hard assertions); labeled `benchmark` in CTest so they can be excluded from CI (`ctest -LE benchmark`)
 - **Continuous integration**: Automated builds on multiple platforms
 - **Test data**: Synthetic profiles, real-world examples, edge cases
 

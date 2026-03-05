@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-of-session: update WHERE_WE_ARE.md, commit everything, push.
+# End-of-session: update where_we_are.md, commit everything, push.
 #
 # Usage: ./scripts/end-of-session.sh [--no-push] ["optional commit message"]
 #   --no-push   Commit but do not push to GitHub.
@@ -26,8 +26,8 @@ fi
 
 today=$(date +%Y-%m-%d)
 
-# --- Step 1: Update WHERE_WE_ARE.md pointer from Consensus Plan ---
-echo "=== Updating WHERE_WE_ARE.md ==="
+# --- Step 1: Update where_we_are.md pointer from Consensus Plan ---
+echo "=== Updating where_we_are.md ==="
 NEXT_LINE=$(./scripts/update-where-we-are.sh 2>/dev/null | tail -1)
 if [ -z "$NEXT_LINE" ] || [ "$(echo "$NEXT_LINE" | awk -F'|' '{print NF}')" -lt 4 ]; then
   echo "Error: update-where-we-are.sh did not return expected phase|num|title|severity output."
@@ -39,9 +39,9 @@ title=$(echo "$NEXT_LINE" | cut -d'|' -f3)
 echo "Next: $phase — Item $num: ${title%.}"
 
 # --- Step 2: Append a dated session entry to WHERE_WE_ARE Recent Work (skip if today already present) ---
-WHERE="$ROOT/docs/status/WHERE_WE_ARE.md"
+WHERE="$ROOT/docs/status/where_we_are.md"
 if ! grep -q "### Session: $today" "$WHERE" 2>/dev/null; then
-  printf '\n### Session: %s\n\nNext: %s — Item %s: %s.\nSee `docs/status/CONSENSUS_PLAN.md` for details.\n' \
+  printf '\n### Session: %s\n\nNext: %s — Item %s: %s.\nSee `docs/status/consensus_plan.md` for details.\n' \
     "$today" "$phase" "$num" "${title%.}" >> "$WHERE"
 fi
 
