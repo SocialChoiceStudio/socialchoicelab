@@ -10,9 +10,7 @@
 
 #include "socialchoicelab/core/rng/prng.h"
 
-namespace socialchoicelab {
-namespace core {
-namespace rng {
+namespace socialchoicelab::core::rng {
 
 /**
  * @brief Manages multiple independent PRNG streams
@@ -44,7 +42,7 @@ class StreamManager {
    * @brief Construct with master seed
    * @param master_seed Master seed for all streams
    */
-  explicit StreamManager(uint64_t master_seed = 12345)
+  explicit StreamManager(uint64_t master_seed = k_default_master_seed)
       : master_seed_(master_seed) {}
 
   /**
@@ -105,7 +103,7 @@ class StreamManager {
    * @brief Get master seed
    * @return Master seed value
    */
-  uint64_t master_seed() const { return master_seed_; }
+  uint64_t master_seed() const noexcept { return master_seed_; }
 
   /**
    * @brief Get list of all stream names
@@ -144,7 +142,7 @@ class StreamManager {
    * @brief Get total number of streams
    * @return Number of active streams
    */
-  size_t size() const { return streams_.size(); }
+  size_t size() const noexcept { return streams_.size(); }
 
   /**
    * @brief Get debug information
@@ -242,6 +240,4 @@ inline PRNG& analysis_rng() {
   return get_global_stream_manager().get_stream("analysis");
 }
 
-}  // namespace rng
-}  // namespace core
-}  // namespace socialchoicelab
+}  // namespace socialchoicelab::core::rng

@@ -10,9 +10,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace socialchoicelab {
-namespace preference {
-namespace loss {
+namespace socialchoicelab::preference::loss {
 
 /**
  * @brief Loss function types based on empirical research
@@ -190,6 +188,4 @@ T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,
   return (utility - min_utility) / (max_utility - min_utility);
 }
 
-}  // namespace loss
-}  // namespace preference
-}  // namespace socialchoicelab
+}  // namespace socialchoicelab::preference::loss

@@ -9,9 +9,10 @@
 #include <string>
 #include <vector>
 
-namespace socialchoicelab {
-namespace core {
-namespace rng {
+namespace socialchoicelab::core::rng {
+
+/** Default master seed used when none is specified. */
+constexpr uint64_t k_default_master_seed = 12345;
 
 /**
  * @brief Seeded pseudo-random number generator
@@ -29,14 +30,14 @@ class PRNG {
    * @brief Construct with master seed
    * @param master_seed Master seed for reproducible generation
    */
-  explicit PRNG(uint64_t master_seed = 12345)
+  explicit PRNG(uint64_t master_seed = k_default_master_seed)
       : master_seed_(master_seed), engine_(master_seed) {}
 
   /**
    * @brief Get master seed
    * @return Master seed value
    */
-  uint64_t master_seed() const { return master_seed_; }
+  uint64_t master_seed() const noexcept { return master_seed_; }
 
   /**
    * @brief Reset with new master seed
@@ -201,6 +202,4 @@ class PRNG {
   engine_type engine_;
 };
 
-}  // namespace rng
-}  // namespace core
-}  // namespace socialchoicelab
+}  // namespace socialchoicelab::core::rng

@@ -6,9 +6,7 @@
 #include <memory>
 #include <mutex>
 
-namespace socialchoicelab {
-namespace core {
-namespace rng {
+namespace socialchoicelab::core::rng {
 
 namespace {
 
@@ -34,7 +32,7 @@ StreamManager& get_global_stream_manager() {
   std::lock_guard<std::mutex> lock(state.mutex);
 
   if (!state.manager) {
-    state.manager = std::make_unique<StreamManager>(12345);  // Default seed
+    state.manager = std::make_unique<StreamManager>(k_default_master_seed);
   }
 
   return *state.manager;
@@ -51,6 +49,4 @@ void set_global_stream_manager_seed(uint64_t seed) {
   }
 }
 
-}  // namespace rng
-}  // namespace core
-}  // namespace socialchoicelab
+}  // namespace socialchoicelab::core::rng

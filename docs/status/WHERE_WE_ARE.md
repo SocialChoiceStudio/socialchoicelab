@@ -3,7 +3,7 @@
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
 - **Current phase:** Phase 3 (Developer Experience and Process)
-- **Next item:** 32 — Add `.clang-tidy` config and pre-commit hooks for automated quality enforcement. Severity: Medium.
+- **Next item:** Backlog complete. Item 46 (license) deferred; 38 done.
 - **Last updated:** 2026-03-04
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/CONSENSUS_PLAN.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in CONSENSUS_PLAN.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
@@ -76,3 +76,41 @@
 - Added `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` at project root. Linked from docs index.
 - Docs consolidation: slimmed `docs/references/social_choice/README.md` to a short pointer; REFERENCE_INDEX.md is the single source for the reference library. Added note in `docs/references/README.md` about subdir scope. Updated `docs/README.md` with root docs in table and layout, Phase2Changes note, and update rule to prefer single source of truth.
 - Marked Item 31 ✅ Done in CONSENSUS_PLAN; next item 32 (.clang-tidy and pre-commit).
+
+### Session: 2026-03-04 — .clang-tidy and pre-commit hook (Item 32)
+
+- Added `.clang-tidy`: FormatStyle file, focused checks (bugprone-*, readability-*, modernize-use-nullptr/override, performance-*). Used by end-of-milestone.sh.
+- Added `scripts/pre-commit.sh`: runs `./lint.sh format`, fails if include/src/tests/unit changed. Documented install in DEVELOPMENT.md (cp to .git/hooks/pre-commit).
+- Marked Item 32 ✅ Done in CONSENSUS_PLAN; next item 33.
+
+### Session: 2026-03-04 — Dependency sequencing in ROADMAP (Item 33)
+
+- Added "Dependency sequencing" subsection to ROADMAP: c_api before bindings, geometry primitives before advanced electoral methods, foundation before new layers.
+- Marked Item 33 ✅ Done. Phase 3 (Items 28–33) complete.
+
+### Session: 2026-03-04 — CMake modernization (Item 34)
+
+- CMakeLists.txt: removed C language; replaced global include_directories() with target_include_directories(socialchoicelab_core PUBLIC include); replaced global CMAKE_CXX_FLAGS_* with target_compile_options() and generator expressions ($<CONFIG:Debug/Release>); added install(TARGETS) and install(DIRECTORY) for library and headers; test targets link only gtest_main (redundant gtest removed). Kept CMAKE_CXX_STANDARD 17 at project level. Build and project tests verified.
+- Marked Item 34 ✅ Done; next Backlog item 35.
+
+### Session: 2026-03-04 — Backlog 35 & 36
+
+- **Item 35:** Unified namespace style to C++17 nested form in all 5 files: `prng.h`, `stream_manager.h`, `stream_manager.cpp`, `loss_functions.h`, `distance_functions.h`.
+- **Item 36:** Added `k_default_master_seed` in `prng.h`; used in `prng.h`, `stream_manager.h`, `stream_manager.cpp`, and `test_prng.cpp`.
+- Marked 35 and 36 ✅ Done in CONSENSUS_PLAN; next item 37.
+
+### Session: 2026-03-04 — Backlog 37, 39, 40, 41, 43, 44, 45 (not 38, 46)
+
+- **37:** Special-cased p=1 and p=2 in minkowski_distance (no std::pow in loop); epsilon-based comparison.
+- **39:** Indentation verified consistent; format run.
+- **40:** Removed commented dead code (type aliases) from distance_functions.h.
+- **41:** Added noexcept to PRNG::master_seed(), StreamManager::master_seed(), StreamManager::size(). Not state_string() (can throw).
+- **42:** Skipped — \<algorithm\> is required for std::max in threshold_loss.
+- **43:** Fixed Doxygen @tparam N → Derived1, Derived2, T on minkowski, euclidean, manhattan, chebyshev, calculate_distance.
+- **44:** Added WeightedEuclideanAndChebyshev and ThreeDimensionalPoints tests.
+- **45:** Added TriangleInequalityEqualWeights test (Euclidean, Manhattan, Chebyshev, Minkowski p=1.5).
+- Marked 37, 39, 40, 41, 43, 44, 45 Done; 38 and 46 skipped per user request.
+
+### Session: 2026-03-04 — Backlog 38 (DRY minkowski/Chebyshev)
+
+- **38:** For order_p > k_minkowski_chebyshev_cutoff, minkowski_distance now calls chebyshev_distance() instead of duplicating the max loop. Extracted threshold to k_minkowski_chebyshev_cutoff = 100.0 with comment that it is a heuristic; revisit if a formal bound is needed. Added forward declaration for chebyshev_distance. Marked 38 ✅ Done; backlog complete (46 deferred).

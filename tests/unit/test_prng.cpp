@@ -9,6 +9,7 @@
 #include "socialchoicelab/core/rng/stream_manager.h"
 
 using socialchoicelab::core::rng::candidates_rng;
+using socialchoicelab::core::rng::k_default_master_seed;
 using socialchoicelab::core::rng::PRNG;
 using socialchoicelab::core::rng::set_global_stream_manager_seed;
 using socialchoicelab::core::rng::StreamManager;
@@ -22,8 +23,8 @@ class PRNGTest : public ::testing::Test {
 };
 
 TEST_F(PRNGTest, Construction) {
-  PRNG rng1(12345);
-  PRNG rng2(12345);
+  PRNG rng1(k_default_master_seed);
+  PRNG rng2(k_default_master_seed);
   PRNG rng3(54321);
 
   // Same seed should produce same sequence
@@ -40,7 +41,7 @@ TEST_F(PRNGTest, Construction) {
 }
 
 TEST_F(PRNGTest, UniformInt) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   // Test range
   for (int i = 0; i < 1000; ++i) {
@@ -55,7 +56,7 @@ TEST_F(PRNGTest, UniformInt) {
 }
 
 TEST_F(PRNGTest, UniformReal) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   // Test range
   for (int i = 0; i < 1000; ++i) {
@@ -66,7 +67,7 @@ TEST_F(PRNGTest, UniformReal) {
 }
 
 TEST_F(PRNGTest, Normal) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   // Test normal distribution
   double sum = 0.0;
@@ -82,7 +83,7 @@ TEST_F(PRNGTest, Normal) {
 }
 
 TEST_F(PRNGTest, Exponential) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   // Test exponential distribution
   for (int i = 0; i < 1000; ++i) {
@@ -92,7 +93,7 @@ TEST_F(PRNGTest, Exponential) {
 }
 
 TEST_F(PRNGTest, Bernoulli) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   // Test bernoulli distribution
   int true_count = 0;
@@ -109,7 +110,7 @@ TEST_F(PRNGTest, Bernoulli) {
 }
 
 TEST_F(PRNGTest, DiscreteChoice) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   std::vector<double> weights{1.0, 2.0, 3.0, 4.0};
 
@@ -121,7 +122,7 @@ TEST_F(PRNGTest, DiscreteChoice) {
 }
 
 TEST_F(PRNGTest, UniformChoice) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   // Test uniform choice
   for (int i = 0; i < 1000; ++i) {
@@ -131,18 +132,18 @@ TEST_F(PRNGTest, UniformChoice) {
 }
 
 TEST_F(PRNGTest, UniformChoiceZeroSizeThrows) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
   EXPECT_THROW(rng.uniform_choice(0), std::invalid_argument);
 }
 
 TEST_F(PRNGTest, DiscreteChoiceEmptyWeightsThrows) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
   std::vector<double> empty_weights;
   EXPECT_THROW(rng.discrete_choice(empty_weights), std::invalid_argument);
 }
 
 TEST_F(PRNGTest, BetaInvalidParametersThrow) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
   EXPECT_THROW(rng.beta(0.0, 1.0), std::invalid_argument);
   EXPECT_THROW(rng.beta(1.0, 0.0), std::invalid_argument);
   EXPECT_THROW(rng.beta(-0.1, 1.0), std::invalid_argument);
@@ -150,14 +151,14 @@ TEST_F(PRNGTest, BetaInvalidParametersThrow) {
 }
 
 TEST_F(PRNGTest, Reset) {
-  PRNG rng(12345);
+  PRNG rng(k_default_master_seed);
 
   // Generate some numbers
   int first = rng.uniform_int(0, 100);
   int second = rng.uniform_int(0, 100);
 
   // Reset with same seed
-  rng.reset(12345);
+  rng.reset(k_default_master_seed);
 
   // Should get same sequence
   EXPECT_EQ(rng.uniform_int(0, 100), first);
@@ -165,8 +166,8 @@ TEST_F(PRNGTest, Reset) {
 }
 
 TEST_F(PRNGTest, Skip) {
-  PRNG rng1(12345);
-  PRNG rng2(12345);
+  PRNG rng1(k_default_master_seed);
+  PRNG rng2(k_default_master_seed);
 
   // Generate 10 numbers from rng1 first
   for (int i = 0; i < 10; ++i) {
@@ -187,7 +188,7 @@ TEST_F(PRNGTest, Skip) {
   EXPECT_LE(val2, 100);
 
   // Both engines advanced past the initial state (values differ from fresh rng)
-  PRNG rng_fresh(12345);
+  PRNG rng_fresh(k_default_master_seed);
   int fresh_val = rng_fresh.uniform_int(0, 100);
   // After 10 draws (rng1) or skip(10) (rng2), both should be past position 0
   // We can't guarantee exact equality due to distribution state, but we verify
@@ -203,7 +204,7 @@ class StreamManagerTest : public ::testing::Test {
 };
 
 TEST_F(StreamManagerTest, BasicOperations) {
-  StreamManager manager(12345);
+  StreamManager manager(k_default_master_seed);
 
   // Get streams
   PRNG& voters = manager.get_stream("voters");
@@ -220,7 +221,7 @@ TEST_F(StreamManagerTest, BasicOperations) {
 }
 
 TEST_F(StreamManagerTest, ResetAll) {
-  StreamManager manager(12345);
+  StreamManager manager(k_default_master_seed);
 
   PRNG& voters = manager.get_stream("voters");
   int first = voters.uniform_int(0, 100);
@@ -236,7 +237,7 @@ TEST_F(StreamManagerTest, ResetAll) {
 }
 
 TEST_F(StreamManagerTest, StreamNames) {
-  StreamManager manager(12345);
+  StreamManager manager(k_default_master_seed);
 
   // Initially empty
   EXPECT_EQ(manager.size(), 0);
@@ -258,7 +259,7 @@ TEST_F(StreamManagerTest, StreamNames) {
 
 TEST_F(StreamManagerTest, GlobalStreamManager) {
   // Test global convenience functions
-  set_global_stream_manager_seed(12345);
+  set_global_stream_manager_seed(k_default_master_seed);
 
   PRNG& voters = voters_rng();
   PRNG& candidates = candidates_rng();

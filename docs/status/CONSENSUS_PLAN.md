@@ -85,8 +85,8 @@ See `docs/Phase2Changes.md` for a step-by-step record of Phase 2 edits.
 | 29 | Create `docs/status/ROADMAP.md` with near-term (1-2 months), mid-term (3-6 months), and long-term (6+ months) plans. Link to design doc and implementation priority instead of duplicating. | **(Both)** | Medium | ✅ Done |
 | 30 | Define milestone gates with "done" criteria: required features, tests, docs, and API stability expectations for each milestone. | **(Both)** | Medium | ✅ Done |
 | 31 | Add `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` — standard open-source project hygiene. | **(Both)** | Medium | ✅ Done |
-| 32 | Add `.clang-tidy` config and pre-commit hooks for automated quality enforcement. | **(Both)** | Medium |
-| 33 | Add dependency-aware sequencing to roadmap (e.g., `c_api` before language bindings, geometry primitives before advanced electoral methods). | **(ChatGPT Only)** | Low |
+| 32 | Add `.clang-tidy` config and pre-commit hooks for automated quality enforcement. | **(Both)** | Medium | ✅ Done |
+| 33 | Add dependency-aware sequencing to roadmap (e.g., `c_api` before language bindings, geometry primitives before advanced electoral methods). | **(ChatGPT Only)** | Low | ✅ Done |
 
 ---
 
@@ -94,19 +94,19 @@ See `docs/Phase2Changes.md` for a step-by-step record of Phase 2 edits.
 
 | # | Item | Source | Severity |
 |---|------|--------|----------|
-| 34 | Modernize CMakeLists.txt: use `target_include_directories()` instead of global `include_directories()`; use `target_compile_options()` with generator expressions instead of global `set()`; add `install()` targets; remove unused `C` language; remove redundant `gtest` linking. | **(Claude Only)** | Low |
-| 35 | Unify namespace style to C++17 nested form (`namespace socialchoicelab::core::rng {`) — currently mixed with C++11 style. | **(Claude Only)** | Low |
-| 36 | Extract magic number `12345` (default seed) to a named constant — appears in `prng.h`, `stream_manager.h`, and `stream_manager.cpp`. | **(Claude Only)** | Low |
-| 37 | Special-case `p=1` and `p=2` in `minkowski_distance` to avoid `std::pow` in tight loop — use `std::abs` for p=1 and `x*x` for p=2. | **(Claude Only)** | Low |
-| 38 | DRY: have `minkowski_distance` call `chebyshev_distance()` for high-p case instead of duplicating the Chebyshev logic. | **(Claude Only)** | Low |
-| 39 | Fix broken indentation in `minkowski_distance` — main calculation block uses 12-space indent while rest of file uses 4; closing brace at column 0. | **(Claude Only)** | Low |
-| 40 | Remove commented-out dead code in `distance_functions.h` (lines 197-200: unused type aliases with unresolved "Note:"). | **(Claude Only)** | Low |
-| 41 | Add `noexcept` to simple accessors (`master_seed()`, `state_string()`, etc.). | **(Claude Only)** | Low |
-| 42 | Remove unused `<algorithm>` include from `loss_functions.h`. | **(Claude Only)** | Low |
-| 43 | Fix Doxygen `@tparam N` on distance wrapper functions that don't have a template parameter `N`. | **(Claude Only)** | Low |
-| 44 | Add weighted and higher-dimensional distance tests — current tests almost exclusively use equal weights `{1.0, 1.0}` on 2D points. | **(Claude Only)** | Low |
-| 45 | Add triangle inequality tests for distance metrics (`d(a,c) <= d(a,b) + d(b,c)`). | **(Claude Only)** | Low |
-| 46 | Evaluate GPL v3 vs LGPL v3 for library adoption — GPL requires downstream programs to also be GPL, which may discourage academic use. | **(Claude Only)** | Low |
+| 34 | Modernize CMakeLists.txt: use `target_include_directories()` instead of global `include_directories()`; use `target_compile_options()` with generator expressions instead of global `set()`; add `install()` targets; remove unused `C` language; remove redundant `gtest` linking. | **(Claude Only)** | Low | ✅ Done |
+| 35 | Unify namespace style to C++17 nested form (`namespace socialchoicelab::core::rng {`) — currently mixed with C++11 style. | **(Claude Only)** | Low | ✅ Done |
+| 36 | Extract magic number `12345` (default seed) to a named constant — appears in `prng.h`, `stream_manager.h`, and `stream_manager.cpp`. | **(Claude Only)** | Low | ✅ Done |
+| 37 | Special-case `p=1` and `p=2` in `minkowski_distance` to avoid `std::pow` in tight loop — use `std::abs` for p=1 and `x*x` for p=2. | **(Claude Only)** | Low | ✅ Done |
+| 38 | DRY: have `minkowski_distance` call `chebyshev_distance()` for high-p case instead of duplicating the Chebyshev logic. | **(Claude Only)** | Low | ✅ Done |
+| 39 | Fix broken indentation in `minkowski_distance` — main calculation block uses 12-space indent while rest of file uses 4; closing brace at column 0. | **(Claude Only)** | Low | ✅ Done (verified consistent; format run) |
+| 40 | Remove commented-out dead code in `distance_functions.h` (lines 197-200: unused type aliases with unresolved "Note:"). | **(Claude Only)** | Low | ✅ Done |
+| 41 | Add `noexcept` to simple accessors (`master_seed()`, `state_string()`, etc.). | **(Claude Only)** | Low | ✅ Done |
+| 42 | Remove unused `<algorithm>` include from `loss_functions.h`. | **(Claude Only)** | Low | (skipped: required for std::max in threshold_loss) |
+| 43 | Fix Doxygen `@tparam N` on distance wrapper functions that don't have a template parameter `N`. | **(Claude Only)** | Low | ✅ Done |
+| 44 | Add weighted and higher-dimensional distance tests — current tests almost exclusively use equal weights `{1.0, 1.0}` on 2D points. | **(Claude Only)** | Low | ✅ Done |
+| 45 | Add triangle inequality tests for distance metrics (`d(a,c) <= d(a,b) + d(b,c)`). | **(Claude Only)** | Low | ✅ Done |
+| 46 | Evaluate GPL v3 vs LGPL v3 for library adoption — GPL requires downstream programs to also be GPL, which may discourage academic use. | **(Claude Only)** | Low | Deferred: revisit when most functionality is built; staying GPL for now. See Design doc § Licensing. |
 
 ---
 

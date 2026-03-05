@@ -173,3 +173,57 @@ TEST_F(DistanceFunctionsTest, SalienceWeights) {
       std::abs(point_b[0] - point_a[0]) + std::abs(point_b[1] - point_a[1]);
   EXPECT_DOUBLE_EQ(unweighted_manhattan, raw_manhattan);
 }
+
+// Weighted Euclidean and Chebyshev, and 3D points (item 44)
+TEST_F(DistanceFunctionsTest, WeightedEuclideanAndChebyshev) {
+  std::vector<double> weights = {2.0, 0.5};
+  // Weighted Euclidean: sqrt((2*1000)^2 + (0.5*1)^2) = sqrt(4e6 + 0.25)
+  double we = euclidean_distance(point_a, point_b, weights);
+  EXPECT_NEAR(we, std::sqrt(4000000.25), 1e-10);
+  // Weighted Chebyshev: max(2000, 0.5) = 2000
+  double wc = chebyshev_distance(point_a, point_b, weights);
+  EXPECT_DOUBLE_EQ(wc, 2000.0);
+}
+
+TEST_F(DistanceFunctionsTest, ThreeDimensionalPoints) {
+  Eigen::Vector3d a(0.0, 0.0, 0.0);
+  Eigen::Vector3d b(3.0, 4.0, 0.0);  // 5 in xy-plane
+  std::vector<double> equal_weights_3d = {1.0, 1.0, 1.0};
+  EXPECT_DOUBLE_EQ(manhattan_distance(a, b, equal_weights_3d), 7.0);
+  EXPECT_DOUBLE_EQ(euclidean_distance(a, b, equal_weights_3d), 5.0);
+  EXPECT_DOUBLE_EQ(chebyshev_distance(a, b, equal_weights_3d), 4.0);
+
+  std::vector<double> weights_3d = {1.0, 1.0, 2.0};  // double weight on z
+  Eigen::Vector3d c(0.0, 0.0, 5.0);
+  // Manhattan: 1*0 + 1*0 + 2*5 = 10
+  EXPECT_DOUBLE_EQ(manhattan_distance(a, c, weights_3d), 10.0);
+}
+
+// Triangle inequality: d(a,c) <= d(a,b) + d(b,c) for metrics (item 45)
+TEST_F(DistanceFunctionsTest, TriangleInequalityEqualWeights) {
+  std::vector<double> two = {1.0, 1.0};
+  Eigen::Vector2d a(0.0, 0.0);
+  Eigen::Vector2d b(1.0, 2.0);
+  Eigen::Vector2d c(4.0, 1.0);
+
+  double d_ab_e = euclidean_distance(a, b, two);
+  double d_bc_e = euclidean_distance(b, c, two);
+  double d_ac_e = euclidean_distance(a, c, two);
+  EXPECT_LE(d_ac_e, d_ab_e + d_bc_e + 1e-10) << "Euclidean triangle inequality";
+
+  double d_ab_m = manhattan_distance(a, b, two);
+  double d_bc_m = manhattan_distance(b, c, two);
+  double d_ac_m = manhattan_distance(a, c, two);
+  EXPECT_LE(d_ac_m, d_ab_m + d_bc_m + 1e-10) << "Manhattan triangle inequality";
+
+  double d_ab_c = chebyshev_distance(a, b, two);
+  double d_bc_c = chebyshev_distance(b, c, two);
+  double d_ac_c = chebyshev_distance(a, c, two);
+  EXPECT_LE(d_ac_c, d_ab_c + d_bc_c + 1e-10) << "Chebyshev triangle inequality";
+
+  double d_ab_p = minkowski_distance(a, b, 1.5, two);
+  double d_bc_p = minkowski_distance(b, c, 1.5, two);
+  double d_ac_p = minkowski_distance(a, c, 1.5, two);
+  EXPECT_LE(d_ac_p, d_ab_p + d_bc_p + 1e-10)
+      << "Minkowski p=1.5 triangle inequality";
+}

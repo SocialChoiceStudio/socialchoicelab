@@ -9,9 +9,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace socialchoicelab {
-namespace preference {
-namespace distance {
+namespace socialchoicelab::preference::distance {
 
 /**
  * @brief Distance function types
@@ -22,6 +20,17 @@ enum class DistanceType {
   CHEBYSHEV,  // p = ∞ (L∞ norm)
   MINKOWSKI   // General p (Lp norm)
 };
+
+/** Above this order_p, Minkowski is approximated by Chebyshev (L∞) to avoid
+ * overflow in (Σ term^p)^(1/p). Heuristic; revisit if you need a formal bound.
+ */
+constexpr double k_minkowski_chebyshev_cutoff = 100.0;
+
+// Forward declaration so minkowski_distance can call chebyshev_distance.
+template <typename Derived1, typename Derived2, typename T>
+T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
+                     const Eigen::MatrixBase<Derived2>& alternative_point,
+                     const std::vector<T>& salience_weights);
 
 /**
  * @brief Minkowski distance with salience weights
@@ -34,8 +43,9 @@ enum class DistanceType {
  * - p is the Minkowski order parameter
  * - x_i, y_i are the coordinates in dimension i
  *
+ * @tparam Derived1 Eigen expression type for ideal point
+ * @tparam Derived2 Eigen expression type for alternative point
  * @tparam T Numeric type (float, double, etc.)
- * @tparam N Dimension of the points
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative/candidate position
  * @param order_p Minkowski order parameter (p ≥ 1)
@@ -74,17 +84,33 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
     throw std::invalid_argument("Minkowski order_p must be >= 1");
   }
 
-  // Safety check: for very large orders, use Chebyshev distance to avoid
-  // overflow
-  if (order_p > T{100.0}) {
-    // For large p, Minkowski distance approaches Chebyshev distance (L∞ norm)
-    T max_weighted_diff = T{0};
+  const T eps = static_cast<T>(1e-9);
+
+  // p=1: Manhattan (sum of absolute weighted differences), avoid std::pow
+  if (std::abs(order_p - T{1}) < eps) {
+    T sum = T{0};
     for (int i = 0; i < N; ++i) {
-      T weighted_diff =
+      sum +=
           salience_weights[i] * std::abs(ideal_point[i] - alternative_point[i]);
-      max_weighted_diff = std::max(max_weighted_diff, weighted_diff);
     }
-    return max_weighted_diff;
+    return sum;
+  }
+
+  // p=2: Euclidean (sqrt of sum of squared weighted differences), avoid
+  // std::pow
+  if (std::abs(order_p - T{2}) < eps) {
+    T sum_sq = T{0};
+    for (int i = 0; i < N; ++i) {
+      T wd =
+          salience_weights[i] * std::abs(ideal_point[i] - alternative_point[i]);
+      sum_sq += wd * wd;
+    }
+    return std::sqrt(sum_sq);
+  }
+
+  // For very large p, approximate by Chebyshev (L∞) to avoid overflow
+  if (order_p > static_cast<T>(k_minkowski_chebyshev_cutoff)) {
+    return chebyshev_distance(ideal_point, alternative_point, salience_weights);
   }
 
   // Calculate weighted Minkowski distance using raw C++ math
@@ -100,8 +126,9 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
 /**
  * @brief Euclidean distance (Minkowski with p=2)
  *
+ * @tparam Derived1 Eigen expression type for ideal point
+ * @tparam Derived2 Eigen expression type for alternative point
  * @tparam T Numeric type
- * @tparam N Dimension
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param salience_weights Optional salience weights (default: equal)
@@ -118,8 +145,9 @@ T euclidean_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
 /**
  * @brief Manhattan distance (Minkowski with p=1)
  *
+ * @tparam Derived1 Eigen expression type for ideal point
+ * @tparam Derived2 Eigen expression type for alternative point
  * @tparam T Numeric type
- * @tparam N Dimension
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param salience_weights Optional salience weights (default: equal)
@@ -136,8 +164,9 @@ T manhattan_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
 /**
  * @brief Chebyshev distance (Minkowski with p=∞)
  *
+ * @tparam Derived1 Eigen expression type for ideal point
+ * @tparam Derived2 Eigen expression type for alternative point
  * @tparam T Numeric type
- * @tparam N Dimension
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param salience_weights Optional salience weights (default: equal)
@@ -182,8 +211,9 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
 /**
  * @brief Distance function factory
  *
+ * @tparam Derived1 Eigen expression type for ideal point
+ * @tparam Derived2 Eigen expression type for alternative point
  * @tparam T Numeric type
- * @tparam N Dimension
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param distance_type Type of distance to calculate
@@ -214,11 +244,4 @@ T calculate_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
   }
 }
 
-// Type aliases for common cases
-// Note: Template functions don't work well with decltype, so we'll use function
-// pointers instead using Distance2D = decltype(minkowski_distance<double>);
-// using Distance3D = decltype(minkowski_distance<double>);
-
-}  // namespace distance
-}  // namespace preference
-}  // namespace socialchoicelab
+}  // namespace socialchoicelab::preference::distance

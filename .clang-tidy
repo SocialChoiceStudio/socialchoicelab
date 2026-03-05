@@ -1,0 +1,22 @@
+# clang-tidy configuration for SocialChoiceLab
+# Used by end-of-milestone.sh and optionally by pre-commit. Requires compile_commands.json (cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON).
+---
+FormatStyle: file
+HeaderFilterRegex: ''
+WarningsAsErrors: ''
+
+# Enable a focused set of checks; expand as needed. Disable noisy or style-heavy ones.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-too-small-loop-variable,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  modernize-use-nullptr,
+  modernize-use-override,
+  performance-for-range-copy,
+  performance-unnecessary-copy-initialization

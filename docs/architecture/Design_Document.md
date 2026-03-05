@@ -122,6 +122,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 
 ## Licensing
 - **GPL v3** for full compatibility with CGAL EPEC and cpp11 (R binding layer).
+- **Revisit:** Once most functionality is built out, reconsider GPL v3 vs LGPL v3 for library adoption (LGPL allows proprietary code to link without relicensing; CGAL Voronoi/Delaunay and some other algorithm packages are GPL-only). See CONSENSUS_PLAN backlog item 46.
 
 ---
 
