@@ -4,7 +4,7 @@
 
 - **Current phase:** Batch 1 (fourth review)
 - **Next item:** 1 — Dead includes in `loss_functions.h`. Severity: High.
-- **Last updated:** 2026-03-05
+- **Last updated:** 2026-03-05 (CI paths filter + pip PEP 668 fix applied; Item 8 ✅ Done)
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan_4.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.
 

@@ -6,8 +6,26 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.github/workflows/**'
+      - 'lint.sh'
   pull_request:
     branches: [main]
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.github/workflows/**'
+      - 'lint.sh'
 
 jobs:
   build-and-test:
@@ -46,7 +64,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake build-essential python3-pip
-          pip3 install --user cpplint || pip3 install cpplint
+          pip3 install --break-system-packages cpplint || pip3 install --user cpplint
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies (macOS)
