@@ -12,12 +12,13 @@
 //  - scs_stream_manager_create returns a heap-allocated SCS_StreamManagerImpl;
 //    the caller must call scs_stream_manager_destroy.
 
-#include "scs_api.h"
+#include "scs_api.h"  // NOLINT(build/include_subdir)
 
 #include <cstdio>
 #include <cstring>
 #include <numbers>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -122,7 +123,10 @@ extern "C" int scs_calculate_distance(const double* ideal_point,
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
-    using namespace socialchoicelab::preference::distance;
+    using socialchoicelab::preference::distance::chebyshev_distance;
+    using socialchoicelab::preference::distance::euclidean_distance;
+    using socialchoicelab::preference::distance::manhattan_distance;
+    using socialchoicelab::preference::distance::minkowski_distance;
     Eigen::Map<const Eigen::VectorXd> ip(ideal_point, n_dims);
     Eigen::Map<const Eigen::VectorXd> ap(alt_point, n_dims);
     std::vector<double> weights(dist_cfg->salience_weights,
@@ -169,7 +173,7 @@ extern "C" int scs_distance_to_utility(double distance,
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
-    using namespace socialchoicelab::preference::loss;
+    using socialchoicelab::preference::loss::distance_to_utility;
     *out = distance_to_utility(distance, to_cpp_loss(loss_cfg->loss_type),
                                loss_cfg->sensitivity, loss_cfg->max_loss,
                                loss_cfg->steepness, loss_cfg->threshold);
@@ -193,7 +197,7 @@ extern "C" int scs_normalize_utility(double utility, double max_distance,
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
-    using namespace socialchoicelab::preference::loss;
+    using socialchoicelab::preference::loss::normalize_utility;
     *out = normalize_utility(utility, max_distance,
                              to_cpp_loss(loss_cfg->loss_type),
                              loss_cfg->sensitivity, loss_cfg->max_loss,
@@ -222,7 +226,9 @@ extern "C" int scs_level_set_1d(double ideal, double weight,
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
-    using namespace socialchoicelab::preference::indifference;
+    using socialchoicelab::preference::indifference::DistanceConfig;
+    using socialchoicelab::preference::indifference::level_set_1d;
+    using socialchoicelab::preference::indifference::LossConfig;
     LossConfig lcfg = to_cpp_loss_config(*loss_cfg);
     DistanceConfig dcfg;
     dcfg.distance_type =
@@ -263,7 +269,14 @@ extern "C" int scs_level_set_2d(double ideal_x, double ideal_y,
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
-    using namespace socialchoicelab::preference::indifference;
+    using socialchoicelab::preference::indifference::Circle2d;
+    using socialchoicelab::preference::indifference::DistanceConfig;
+    using socialchoicelab::preference::indifference::Ellipse2d;
+    using socialchoicelab::preference::indifference::level_set_2d;
+    using socialchoicelab::preference::indifference::LevelSet2d;
+    using socialchoicelab::preference::indifference::LossConfig;
+    using socialchoicelab::preference::indifference::Polygon2d;
+    using socialchoicelab::preference::indifference::Superellipse2d;
     LossConfig lcfg = to_cpp_loss_config(*loss_cfg);
     DistanceConfig dcfg = to_cpp_dist_config(*dist_cfg);
 
@@ -333,7 +346,12 @@ extern "C" int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
-    using namespace socialchoicelab::preference::indifference;
+    using socialchoicelab::preference::indifference::Circle2d;
+    using socialchoicelab::preference::indifference::Ellipse2d;
+    using socialchoicelab::preference::indifference::LevelSet2d;
+    using socialchoicelab::preference::indifference::Polygon2d;
+    using socialchoicelab::preference::indifference::Superellipse2d;
+    using socialchoicelab::preference::indifference::to_polygon;
 
     // Rebuild the C++ LevelSet2d from the C POD struct.
     LevelSet2d ls;

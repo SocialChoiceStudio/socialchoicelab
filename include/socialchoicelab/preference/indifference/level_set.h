@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 #include <stdexcept>
@@ -82,7 +83,8 @@ namespace detail {
  * Throws if level unreachable. */
 [[nodiscard]] inline double distance_from_utility_level(double level,
                                                         const LossConfig& cfg) {
-  using namespace socialchoicelab::core::near_zero;
+  using socialchoicelab::core::near_zero::k_near_zero_abs;
+  using socialchoicelab::core::near_zero::k_near_zero_rel;
   if (!std::isfinite(level)) {
     throw std::invalid_argument("level_set: utility level must be finite");
   }

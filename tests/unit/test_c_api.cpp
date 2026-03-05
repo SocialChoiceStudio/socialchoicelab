@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <cstring>
 
-#include "scs_api.h"
+#include "scs_api.h"  // NOLINT(build/include_subdir)
 
 // ---------------------------------------------------------------------------
 // Helpers
