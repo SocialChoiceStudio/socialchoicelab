@@ -68,3 +68,13 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 | First binding / 1.0 | R or Python package | CI + binding tests | User docs | Semver from 1.0 |
 
 When in doubt, tighten the gate rather than ship: "done" means the criteria above are satisfied, not "we moved on".
+
+---
+
+## Revisit before release / before opening to others
+
+Single list of items to revisit before we tag a release or open the project to other contributors. Add items here when we defer or skip something that we want to decide before launch.
+
+| Item | Source | Note |
+|------|--------|------|
+| **C++20 vs C++17** | Consensus plan 4, Batch 3 #11 | We keep `CMAKE_CXX_STANDARD 20` and expect to use C++20 features as we build out. Before release: either adopt C++20 features (e.g. concepts, `[[nodiscard("reason")]]`) so the requirement is justified, or lower to C++17 if we do not need them. |

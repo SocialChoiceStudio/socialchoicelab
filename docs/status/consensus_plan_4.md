@@ -81,7 +81,7 @@ For each item: the **Origin** column shows which agent identified it (Claude = C
 
 ## Test coverage additions
 
-Do these alongside the items they correspond to.
+Do these alongside the items they correspond to. **Completed 2026-03-05:** Minkowski p=100 (Item 6, done earlier), SkipViaPublicAPI, ResetStreamUnknownNameThrowsWhenAllowlistSet, OneDimensionalDistanceAllMetrics, DistanceToUtilityGaussianIgnoresSensitivity. **N/A:** reject unsigned T (static_assert enforces; no compile-fail test added), INT_MIN guard (float-only), normalize_utility&lt;int&gt; (loss is float-only).
 
 | Test | Alongside item | File |
 |------|----------------|------|
@@ -97,6 +97,8 @@ Do these alongside the items they correspond to.
 ---
 
 ## Documentation follow-ups
+
+**Completed 2026-03-05:** Layers 3–8 marked "(planned, not yet built)", Protobuf marked "(planned; not yet implemented)", numeric_constants.h added to project tree, jargon-tutorial note added to sample_simulation_description.md. README backlog pointer was already updated to fourth review.
 
 | Topic | File | Note |
 |-------|------|------|

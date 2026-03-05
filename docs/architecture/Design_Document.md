@@ -38,7 +38,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **core::kernels** – CGAL kernel policy, numeric kernels
 - **core::linalg** – Eigen linear algebra (matrices, vectors, operations)
 - **core::rng** – Seeded PRNG, multiple streams
-- **core::serialization** – Protobuf for data exchange
+- **core::serialization** – Protobuf for data exchange (planned; not yet implemented)
 
 ### 2. Preference Services
 - **distance** – Minkowski (p≥1), Euclidean, Manhattan, Chebyshev, custom. Salience weights per dimension (finite, ≥0; zero = dimension masking). Invalid inputs throw `std::invalid_argument`. **Weighting convention (Convention B — dimension pre-scaling):** `d = (Σ (wᵢ |xᵢ - yᵢ|)^p)^(1/p)`. Weight is applied *before* exponentiation; doubling wᵢ halves the effective unit length in dimension i. This differs from Convention A (`d = (Σ wᵢ |xᵢ - yᵢ|^p)^(1/p)`) where weight is outside the exponent. All wrappers (Euclidean, Manhattan, Chebyshev) use Convention B via `minkowski_distance`.
@@ -46,28 +46,28 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **utility** – Applies a loss function to a distance metric to produce utility values
 - **indifference** – Level-set construction; stateless service
 
-### 3. Geometry Services
+### 3. Geometry Services *(planned, not yet built)*
 - **geom2d** – CGAL EPEC exact 2D operations
 - **geom3d** – CGAL exact 3D where needed
 - **geomND** – Numeric N-dimensional algorithms: convex hull, half-space intersection, kd-tree
 
-### 4. Profiles and Aggregation
+### 4. Profiles and Aggregation *(planned, not yet built)*
 - **profiles** – Generators, loaders, schema validation
 - **directional_voting** – Support for directional preferences (voters can have preferred directions of change)
 - **aggregation** – Convert utilities to ranks, scores, approvals
 
-### 5. Voting Rules & Aggregation Properties
+### 5. Voting Rules & Aggregation Properties *(planned, not yet built)*
 - **voting_rules** – Plurality, Borda, Condorcet, etc...
 - **aggregation_properties** – Transitivity, Pareto efficiency, IIA, monotonicity, etc...
 
-### 6. Outcome Concepts
+### 6. Outcome Concepts *(planned, not yet built)*
 - **outcome_concepts** – Copeland, Strong Point, Heart, Yolk, Uncovered sets, k-majority winsets
 
-### 7. Simulation Engines (stateful)
+### 7. Simulation Engines (stateful) *(planned, not yet built)*
 - **adaptive_candidates** – Round-based candidate movement (Sticker, Aggregator, Hunter, Predator)
 - **experiment_runner** – Replications, parameter sweeps
 
-### 8. FFI & Interfaces
+### 8. FFI & Interfaces *(planned, not yet built)*
 - **c_api** – Stable surface for all bindings
 - **python** – pybind11
 - **r** – cpp11

@@ -290,6 +290,17 @@ TEST_F(PRNGTest, Skip) {
   EXPECT_EQ(rng1.engine()(), rng2.engine()());
 }
 
+// Consensus plan 4 test gap: PRNG::skip(N) — use public API, then compare next
+// draw
+TEST_F(PRNGTest, SkipViaPublicAPI) {
+  PRNG rng1(k_default_master_seed);
+  PRNG rng2(k_default_master_seed);
+  rng1.skip(10);
+  rng2.skip(10);
+  // Next draw from each should be equal (same seed, same position)
+  EXPECT_EQ(rng1.uniform_int(0, 100), rng2.uniform_int(0, 100));
+}
+
 class StreamManagerTest : public ::testing::Test {
  protected:
   // No per-test setup needed
@@ -506,6 +517,16 @@ TEST_F(StreamManagerTest, RegisterStreamsEmptyNameThrows) {
   EXPECT_THROW(mgr.register_streams({"", "voters"}), std::invalid_argument);
   EXPECT_THROW(mgr.register_streams({"voters", ""}), std::invalid_argument);
   EXPECT_THROW(mgr.register_streams({""}), std::invalid_argument);
+}
+
+// Consensus plan 4 test gap: reset_stream("typo", seed) throws when allowlist
+// is set
+TEST_F(StreamManagerTest, ResetStreamUnknownNameThrowsWhenAllowlistSet) {
+  StreamManager mgr(12345);
+  mgr.register_streams({"voters", "candidates"});
+  EXPECT_THROW(mgr.reset_stream("typo", 99999), std::invalid_argument);
+  EXPECT_THROW(mgr.reset_stream("voter", 99999), std::invalid_argument);
+  EXPECT_NO_THROW(mgr.reset_stream("voters", 99999));
 }
 
 // Item 2: discrete_choice weight validation

@@ -10,6 +10,7 @@ This file is the single entry point for project documentation.
 | Active backlog (fourth review) | `docs/status/consensus_plan_4.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
+| Revisit before release or before opening to others | `docs/status/milestone_gates.md` § Revisit before release |
 | Chronological project history | `docs/status/project_log.md` |
 | Architecture intent | `docs/architecture/design_document.md` |
 | StreamManager design & rules | `docs/architecture/stream_manager_design.md` |

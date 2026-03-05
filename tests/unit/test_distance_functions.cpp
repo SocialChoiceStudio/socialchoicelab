@@ -298,3 +298,16 @@ TEST_F(DistanceFunctionsTest, MinkowskiP100LargeCoordsNoOverflow) {
   EXPECT_TRUE(std::isfinite(d_mink))
       << "p=100 with large coords must be finite";
 }
+
+// Consensus plan 4 test gap: 1D Minkowski (N=1) — all four metrics
+TEST_F(DistanceFunctionsTest, OneDimensionalDistanceAllMetrics) {
+  Eigen::VectorXd a(1);
+  a << 0.0;
+  Eigen::VectorXd b(1);
+  b << 3.0;
+  std::vector<double> w = {1.0};
+  EXPECT_DOUBLE_EQ(manhattan_distance(a, b, w), 3.0);
+  EXPECT_DOUBLE_EQ(euclidean_distance(a, b, w), 3.0);
+  EXPECT_DOUBLE_EQ(chebyshev_distance(a, b, w), 3.0);
+  EXPECT_DOUBLE_EQ(minkowski_distance(a, b, 1.5, w), 3.0);
+}

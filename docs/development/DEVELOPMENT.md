@@ -200,6 +200,7 @@ pip3 install --user cpplint
 ```
 socialchoicelab/
 ├── include/socialchoicelab/     # Public headers
+│   ├── core/numeric_constants.h # Tolerance constants (k_near_zero_rel, k_near_zero_abs)
 │   ├── core/rng/                # PRNG, StreamManager
 │   ├── preference/distance/     # Distance functions (Eigen-based)
 │   └── preference/loss/         # Loss and utility functions

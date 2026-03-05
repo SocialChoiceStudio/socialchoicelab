@@ -69,6 +69,8 @@
 
 ## Jargon mapping: process, thread, stream, memory, etc.
 
+*This section (through to the end of the document) is a self-contained process/thread/memory tutorial. It may be moved to a separate document in the future for clarity.*
+
 This section maps the technical terms (command, process, thread, module, stream, StreamManager, program, execution, memory space) onto the simulation above, and notes **alternative ways** to implement the same logical flow (nested and branching steps). The same "series of nested and branching function calls" can be implemented with one process, many processes, or one process with many threads; that choice affects where random numbers and memory live.
 
 ---

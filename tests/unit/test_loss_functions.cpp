@@ -371,3 +371,16 @@ TEST_F(LossFunctionsTest, UtilityNormalizerMatchesNormalizeUtility) {
   UtilityNormalizer<double> deg(0.0, LossFunctionType::LINEAR, sensitivity);
   EXPECT_DOUBLE_EQ(deg.normalize(0.0), 1.0);
 }
+
+// Consensus plan 4 test gap: GAUSSIAN ignores sensitivity; passing 5.0 matches
+// default 1.0
+TEST_F(LossFunctionsTest, DistanceToUtilityGaussianIgnoresSensitivity) {
+  const double d = 2.0;
+  double with_default =
+      distance_to_utility(d, LossFunctionType::GAUSSIAN, 1.0, 1.0, 1.0);
+  double with_five =
+      distance_to_utility(d, LossFunctionType::GAUSSIAN, 5.0, 1.0, 1.0);
+  EXPECT_DOUBLE_EQ(with_five, with_default)
+      << "sensitivity=5.0 should be ignored for GAUSSIAN; output should match "
+         "default sensitivity=1.0";
+}
