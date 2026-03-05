@@ -8,7 +8,7 @@ This file is the single entry point for project documentation.
 |---------------|---------------|
 | What's next / current position | `docs/status/where_we_are.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
-| c_api run plan (spec → implement → test → document) | `docs/status/c_api_plan.md` |
+| Geometry plan (Foundation + Services, Steps A–E) | `docs/status/geometry_plan.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
 | Archived plans (consensus reviews, core completion) | `docs/status/archive/` |
 | Revisit before release or before opening to others | `docs/status/milestone_gates.md` § Revisit before release |

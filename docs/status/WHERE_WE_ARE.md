@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** c_api minimal complete. Core complete + c_api wrapper built and tested.
-- **Next:** R or Python bindings (see [roadmap.md](roadmap.md) near-term). c_api_plan.md is ready to archive.
+- **Current phase:** Geometry (Layer 3). c_api minimal complete and archived; now building CGAL-based exact 2D geometry services.
+- **Next:** Step A1 — CGAL integration (see [geometry_plan.md](geometry_plan.md)).
 - **Last updated:** 2026-03-05
 
 **Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
