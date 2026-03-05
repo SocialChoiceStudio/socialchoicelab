@@ -1,0 +1,13 @@
+---
+description: End-user error messages should state what failed, what the user entered, and suggest fixes.
+alwaysApply: true
+---
+
+# End-User Error Messages
+
+When writing end-user error messages, follow these guidelines when possible:
+
+1. **State what failed** — Clearly say what operation or check failed (e.g. "Login failed", "Invalid input").
+2. **Include what the user entered** — Tell the user what they entered (or chose) that led to the failure, when it's safe and useful (e.g. "The value you entered, 'xyz', is not a valid email").
+3. **Suggest how to fix it** — Give at least one concrete suggestion (e.g. "Enter a number between 1 and 10", "Check your password and try again").
+4. **When in doubt** — If you're unsure what to say or how much to reveal, ask the current developer rather than guessing.

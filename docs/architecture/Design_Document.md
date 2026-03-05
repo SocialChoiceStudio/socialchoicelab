@@ -41,8 +41,8 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **core::serialization** – Protobuf for data exchange
 
 ### 2. Preference Services
-- **distance** – Minkowski (p≥1), Euclidean, Manhattan, Chebyshev, custom
-- **loss** – Linear, quadratic, Gaussian, and threshold loss functions; `distance_to_utility` and `normalize_utility`
+- **distance** – Minkowski (p≥1), Euclidean, Manhattan, Chebyshev, custom. Salience weights per dimension (finite, ≥0; zero = dimension masking). Invalid inputs throw `std::invalid_argument`.
+- **loss** – Linear, quadratic, Gaussian, and threshold loss functions; `distance_to_utility` and `normalize_utility`. Parameter domains enforced (sensitivity, max_loss, steepness, threshold, finite inputs); invalid inputs throw `std::invalid_argument`.
 - **utility** – Applies a loss function to a distance metric to produce utility values
 - **indifference** – Level-set construction; stateless service
 
@@ -96,6 +96,16 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **Files**: python/src/bindings.cpp.
 - **Build**: scikit-build-core + CMake; produce wheels linking to libscs_core.
 - **Errors**: map c_api errors to Python exceptions; NumPy views for bulk arrays where helpful.
+
+### c_api design inputs (consensus plan Items 29–31)
+
+Reference these when designing the c_api surface; they are not implementation tasks for current C++ code.
+
+| Item | Topic | Guidance |
+|------|--------|----------|
+| **29** | `distance_to_utility` parameter explosion | C has no default arguments; six parameters (most conditionally used) do not map cleanly. **Use:** a single `SCS_LossConfig` POD struct with a type discriminant and a parameter union (or equivalent) so the c_api takes one config object instead of six optional parameters. |
+| **30** | Stream auto-creation vs pre-registration | **Implemented in C++:** `StreamManager::register_streams(names)`. When the allowlist is set, `get_stream(name)` and `reset_stream(name, seed)` throw `std::invalid_argument` for names not in the set; call `register_streams({})` to clear and restore get-or-create for any name. **c_api:** Enforce the same policy at the boundary (registered streams only when the client has called the registration equivalent). |
+| **31** | Do not expose `PRNG::engine()` through c_api | **Decision:** Do not expose in the c_api. `PRNG::engine()` remains in the C++ API with a Doxygen note (internal/test use only; do not expose via c_api). Tests use it for `skip()` verification. Revisit removing it from the public C++ API only if no internal or test code needs it. |
 
 ---
 

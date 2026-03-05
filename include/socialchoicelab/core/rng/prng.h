@@ -3,10 +3,12 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace socialchoicelab::core::rng {
@@ -57,6 +59,10 @@ class PRNG {
    */
   template <typename T>
   T uniform_int(T min, T max) {
+    if (min > max) {
+      throw std::invalid_argument(
+          "uniform_int: min must be <= max");
+    }
     std::uniform_int_distribution<T> dist(min, max);
     return dist(engine_);
   }
@@ -70,6 +76,16 @@ class PRNG {
    */
   template <typename T>
   T uniform_real(T min, T max) {
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(min) || !std::isfinite(max)) {
+        throw std::invalid_argument(
+            "uniform_real: min and max must be finite");
+      }
+    }
+    if (!(min < max)) {
+      throw std::invalid_argument(
+          "uniform_real: min must be < max");
+    }
     std::uniform_real_distribution<T> dist(min, max);
     return dist(engine_);
   }
@@ -83,6 +99,15 @@ class PRNG {
    */
   template <typename T>
   T normal(T mean, T stddev) {
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(mean) || !std::isfinite(stddev)) {
+        throw std::invalid_argument(
+            "normal: mean and stddev must be finite");
+      }
+    }
+    if (stddev <= T{0}) {
+      throw std::invalid_argument("normal: stddev must be positive");
+    }
     std::normal_distribution<T> dist(mean, stddev);
     return dist(engine_);
   }
@@ -95,6 +120,15 @@ class PRNG {
    */
   template <typename T>
   T exponential(T lambda) {
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(lambda)) {
+        throw std::invalid_argument(
+            "exponential: lambda must be finite");
+      }
+    }
+    if (lambda <= T{0}) {
+      throw std::invalid_argument("exponential: lambda must be positive");
+    }
     std::exponential_distribution<T> dist(lambda);
     return dist(engine_);
   }
@@ -108,6 +142,16 @@ class PRNG {
    */
   template <typename T>
   T gamma(T alpha, T beta) {
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(alpha) || !std::isfinite(beta)) {
+        throw std::invalid_argument(
+            "gamma: alpha and beta must be finite");
+      }
+    }
+    if (alpha <= T{0} || beta <= T{0}) {
+      throw std::invalid_argument(
+          "gamma: alpha and beta must be positive");
+    }
     std::gamma_distribution<T> dist(alpha, beta);
     return dist(engine_);
   }
@@ -145,6 +189,14 @@ class PRNG {
    * @return Random boolean
    */
   bool bernoulli(double probability = 0.5) {
+    if (!std::isfinite(probability)) {
+      throw std::invalid_argument(
+          "bernoulli: probability must be finite");
+    }
+    if (probability < 0.0 || probability > 1.0) {
+      throw std::invalid_argument(
+          "bernoulli: probability must be in [0, 1]");
+    }
     std::bernoulli_distribution dist(probability);
     return dist(engine_);
   }
@@ -192,6 +244,11 @@ class PRNG {
 
   /**
    * @brief Get the underlying engine (for advanced use)
+   *
+   * Internal/test use only. Do not expose through the c_api — bypasses
+   * reproducibility guarantees. See consensus plan Item 31 and
+   * docs/architecture/design_document.md § c_api design inputs.
+   *
    * @return Reference to the random engine
    */
   engine_type& engine() { return engine_; }

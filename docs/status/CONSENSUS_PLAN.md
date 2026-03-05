@@ -85,24 +85,26 @@ For each item: the **Origin** column shows which agent(s) identified it (Claude 
 
 | # | Item | File | Origin | Severity | Status |
 |---|------|------|--------|----------|--------|
-| 20 | Distance functions accept non-finite/invalid inputs — `order_p`, coordinates, and salience weights are not checked for NaN, infinity, or negative values. Non-integer `p` with negative weighted differences passed to `std::pow` can silently produce NaN. **Fix:** Before computation in `minkowski_distance` (propagate to wrappers): `std::isfinite(order_p)` and `order_p >= 1`; each coordinate finite; each salience weight finite and `>= 0`. Throw `std::invalid_argument` with precise messages. (Whether zero weights are permitted — dimension masking — is a design decision; document it explicitly.) | `include/socialchoicelab/preference/distance/distance_functions.h` | B | High | Pending |
-| 21 | Loss functions do not enforce documented parameter domains — Doxygen specifies positive domains but none are enforced. Negative `sensitivity` inverts utility semantics. **Fix:** Add `std::invalid_argument` guards: `sensitivity > 0`; `max_loss > 0`; `steepness > 0`; `threshold >= 0`; finite numeric inputs; in `normalize_utility`, require finite `utility` and `max_distance >= 0`. | `include/socialchoicelab/preference/loss/loss_functions.h` | B | High | Pending |
-| 22 | PRNG wrappers forward invalid distribution parameters to STL without checking — STL behaviour with invalid params is implementation-defined (assert, exception, or silent nonsense). **Fix:** Add explicit guards for each wrapper: `min <= max` (integer); `min < max` (real); `stddev > 0`; `lambda > 0`; gamma shape/scale > 0; `0 <= probability <= 1`. Throw `std::invalid_argument`. | `include/socialchoicelab/core/rng/prng.h` | X | High | Pending |
+| 20 | Distance functions accept non-finite/invalid inputs — `order_p`, coordinates, and salience weights are not checked for NaN, infinity, or negative values. Non-integer `p` with negative weighted differences passed to `std::pow` can silently produce NaN. **Fix:** Before computation in `minkowski_distance` (propagate to wrappers): `std::isfinite(order_p)` and `order_p >= 1`; each coordinate finite; each salience weight finite and `>= 0`. Throw `std::invalid_argument` with precise messages. (Whether zero weights are permitted — dimension masking — is a design decision; document it explicitly.) | `include/socialchoicelab/preference/distance/distance_functions.h` | B | High | ✅ Done |
+| 21 | Loss functions do not enforce documented parameter domains — Doxygen specifies positive domains but none are enforced. Negative `sensitivity` inverts utility semantics. **Fix:** Add `std::invalid_argument` guards: `sensitivity > 0`; `max_loss > 0`; `steepness > 0`; `threshold >= 0`; finite numeric inputs; in `normalize_utility`, require finite `utility` and `max_distance >= 0`. | `include/socialchoicelab/preference/loss/loss_functions.h` | B | High | ✅ Done |
+| 22 | PRNG wrappers forward invalid distribution parameters to STL without checking — STL behaviour with invalid params is implementation-defined (assert, exception, or silent nonsense). **Fix:** Add explicit guards for each wrapper: `min <= max` (integer); `min < max` (real); `stddev > 0`; `lambda > 0`; gamma shape/scale > 0; `0 <= probability <= 1`. Throw `std::invalid_argument`. | `include/socialchoicelab/core/rng/prng.h` | X | High | ✅ Done |
 
 ### Test coverage gaps
 
 | # | Item | File | Origin | Severity | Status |
 |---|------|------|--------|----------|--------|
-| 23 | `StreamManager` methods have zero test coverage — `reset_stream()`, `has_stream()`, `remove_stream()`, `clear()`, `debug_info()`, `reset_for_run()` untested. `reset_for_run()` is especially important: verify same `(master_seed, run_index)` always produces same sequences; different indices produce different sequences. | `tests/unit/test_prng.cpp` | C | Medium | Pending |
-| 24 | PRNG distribution happy paths untested — `gamma()` has zero tests. `beta()` only tests error conditions. `exponential()` only checks `>= 0`. **Fix:** Add statistical tests: sample N values, check mean/range within tolerance (same pattern as existing Bernoulli/Normal tests). | `tests/unit/test_prng.cpp` | C | Medium | Pending |
-| 25 | `PRNG::skip()` test only verifies no crash — checks output is in range, which passes even if `skip()` did nothing. **Fix:** Test engine position directly: draw 10 values from `rng1.engine()`, discard 10 on `rng2.engine()`, compare `rng1.engine()() == rng2.engine()()`. | `tests/unit/test_prng.cpp` lines 168–197 | C | Medium | Pending |
-| 26 | No tests for invalid-input edge cases — NaN/Inf coordinates, negative/zero salience weights, invalid loss params, `minkowski_distance` at exactly `p = k_minkowski_chebyshev_cutoff` (100.0) boundary, `normalize_utility` degenerate case. **Fix:** Once Items 20–22 are done, add corresponding `EXPECT_THROW` tests for each. | `tests/unit/test_distance_functions.cpp`, `tests/unit/test_loss_functions.cpp` | B | Medium | Pending |
-| 27 | `set_global_stream_manager_seed` second-call branch untested — function has two paths (create new / reset existing); only the create path is exercised. **Fix:** Call twice with different seeds; verify second call produces different sequences. | `tests/unit/test_prng.cpp` | C | Low | Pending |
-| 28 | `normalize_utility` uses exact floating-point equality — `if (max_utility == min_utility)` is fragile; returning `T{1.0}` on zero range is undocumented. **Fix:** Use epsilon comparison; document the degenerate-case convention; add a test. | `include/socialchoicelab/preference/loss/loss_functions.h` line 184 | C | Medium | Pending |
+| 23 | `StreamManager` methods have zero test coverage — `reset_stream()`, `has_stream()`, `remove_stream()`, `clear()`, `debug_info()`, `reset_for_run()` untested. `reset_for_run()` is especially important: verify same `(master_seed, run_index)` always produces same sequences; different indices produce different sequences. | `tests/unit/test_prng.cpp` | C | Medium | ✅ Done |
+| 24 | PRNG distribution happy paths untested — `gamma()` has zero tests. `beta()` only tests error conditions. `exponential()` only checks `>= 0`. **Fix:** Add statistical tests: sample N values, check mean/range within tolerance (same pattern as existing Bernoulli/Normal tests). | `tests/unit/test_prng.cpp` | C | Medium | ✅ Done |
+| 25 | `PRNG::skip()` test only verifies no crash — checks output is in range, which passes even if `skip()` did nothing. **Fix:** Test engine position directly: draw 10 values from `rng1.engine()`, discard 10 on `rng2.engine()`, compare `rng1.engine()() == rng2.engine()()`. | `tests/unit/test_prng.cpp` lines 168–197 | C | Medium | ✅ Done |
+| 26 | No tests for invalid-input edge cases — NaN/Inf coordinates, negative/zero salience weights, invalid loss params, `minkowski_distance` at exactly `p = k_minkowski_chebyshev_cutoff` (100.0) boundary, `normalize_utility` degenerate case. **Fix:** Once Items 20–22 are done, add corresponding `EXPECT_THROW` tests for each. | `tests/unit/test_distance_functions.cpp`, `tests/unit/test_loss_functions.cpp` | B | Medium | ✅ Done |
+| 27 | `set_global_stream_manager_seed` second-call branch untested — function has two paths (create new / reset existing); only the create path is exercised. **Fix:** Call twice with different seeds; verify second call produces different sequences. | `tests/unit/test_prng.cpp` | C | Low | ✅ Done |
+| 28 | `normalize_utility` uses exact floating-point equality — `if (max_utility == min_utility)` is fragile; returning `T{1.0}` on zero range is undocumented. **Fix:** Use epsilon comparison; document the degenerate-case convention; add a test. | `include/socialchoicelab/preference/loss/loss_functions.h` line 184 | C | Medium | ✅ Done |
 
 ---
 
 ## c_api design inputs (not implementation tasks — reference when designing c_api)
+
+**Captured in** `docs/architecture/design_document.md` § c_api design inputs. No C++ code changes; apply when implementing the c_api. Items 30 and 31 have optional decisions (see design doc).
 
 | # | Topic | Detail | Origin |
 |---|-------|--------|--------|
@@ -112,14 +114,14 @@ For each item: the **Origin** column shows which agent(s) identified it (Claude 
 
 ---
 
-## Deferred — Style/preference, no urgency
+## Deferred — Style/preference (Items 32–35 implemented per best-practice check)
 
-| # | Item | Origin | Note |
-|---|------|--------|------|
-| 32 | `generate_stream_seed` hash-mixing strength — XOR combining of master_seed and name_hash weaker than SplitMix64. Not a correctness issue. | C | Optional optimization |
-| 33 | `combine_seed` mixing — custom XOR-multiply sequence; SplitMix64 finalizer gives better avalanche. | C | Optional optimization |
-| 34 | CMake compiler flags not guarded by compiler-ID — `-g -O0 -Wall -O3` are GCC/Clang-only. Not a live issue. | C | Add if Windows CI planned |
-| 35 | Empty `SetUp()` overrides in test fixtures. | C | Minor cleanup |
+| # | Item | Origin | Note | Status |
+|---|------|--------|------|--------|
+| 32 | `generate_stream_seed` hash-mixing strength — XOR combining of master_seed and name_hash weaker than SplitMix64. Not a correctness issue. | C | Optional optimization | ✅ Done |
+| 33 | `combine_seed` mixing — custom XOR-multiply sequence; SplitMix64 finalizer gives better avalanche. | C | Optional optimization | ✅ Done |
+| 34 | CMake compiler flags not guarded by compiler-ID — `-g -O0 -Wall -O3` are GCC/Clang-only. Not a live issue. | C | Add if Windows CI planned | ✅ Done |
+| 35 | Empty `SetUp()` overrides in test fixtures. | C | Minor cleanup | ✅ Done |
 
 ---
 

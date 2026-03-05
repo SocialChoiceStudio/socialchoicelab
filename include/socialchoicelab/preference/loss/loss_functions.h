@@ -10,6 +10,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "socialchoicelab/core/numeric_constants.h"
+
 namespace socialchoicelab::preference::loss {
 
 /**
@@ -43,6 +45,14 @@ template <typename T>
 T linear_loss(T distance, T sensitivity = T{1.0}) {
   static_assert(std::is_arithmetic_v<T>,
                 "Linear loss requires arithmetic type");
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!std::isfinite(distance))
+      throw std::invalid_argument("linear_loss: distance must be finite");
+    if (!std::isfinite(sensitivity))
+      throw std::invalid_argument("linear_loss: sensitivity must be finite");
+  }
+  if (sensitivity <= T{0})
+    throw std::invalid_argument("linear_loss: sensitivity must be positive");
   return sensitivity * std::abs(distance);
 }
 
@@ -65,6 +75,14 @@ template <typename T>
 T quadratic_loss(T distance, T sensitivity = T{1.0}) {
   static_assert(std::is_arithmetic_v<T>,
                 "Quadratic loss requires arithmetic type");
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!std::isfinite(distance))
+      throw std::invalid_argument("quadratic_loss: distance must be finite");
+    if (!std::isfinite(sensitivity))
+      throw std::invalid_argument("quadratic_loss: sensitivity must be finite");
+  }
+  if (sensitivity <= T{0})
+    throw std::invalid_argument("quadratic_loss: sensitivity must be positive");
   return sensitivity * distance * distance;
 }
 
@@ -89,6 +107,18 @@ template <typename T>
 T gaussian_loss(T distance, T max_loss = T{1.0}, T steepness = T{1.0}) {
   static_assert(std::is_arithmetic_v<T>,
                 "Gaussian loss requires arithmetic type");
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!std::isfinite(distance))
+      throw std::invalid_argument("gaussian_loss: distance must be finite");
+    if (!std::isfinite(max_loss))
+      throw std::invalid_argument("gaussian_loss: max_loss must be finite");
+    if (!std::isfinite(steepness))
+      throw std::invalid_argument("gaussian_loss: steepness must be finite");
+  }
+  if (max_loss <= T{0})
+    throw std::invalid_argument("gaussian_loss: max_loss must be positive");
+  if (steepness <= T{0})
+    throw std::invalid_argument("gaussian_loss: steepness must be positive");
   return max_loss * (T{1.0} - std::exp(-steepness * distance * distance));
 }
 
@@ -111,6 +141,18 @@ template <typename T>
 T threshold_loss(T distance, T threshold, T sensitivity = T{1.0}) {
   static_assert(std::is_arithmetic_v<T>,
                 "Threshold loss requires arithmetic type");
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!std::isfinite(distance))
+      throw std::invalid_argument("threshold_loss: distance must be finite");
+    if (!std::isfinite(threshold))
+      throw std::invalid_argument("threshold_loss: threshold must be finite");
+    if (!std::isfinite(sensitivity))
+      throw std::invalid_argument("threshold_loss: sensitivity must be finite");
+  }
+  if (threshold < T{0})
+    throw std::invalid_argument("threshold_loss: threshold must be >= 0");
+  if (sensitivity <= T{0})
+    throw std::invalid_argument("threshold_loss: sensitivity must be positive");
   return sensitivity * std::max(T{0}, std::abs(distance) - threshold);
 }
 
@@ -130,6 +172,11 @@ template <typename T>
 T distance_to_utility(T distance, LossFunctionType loss_type,
                       T sensitivity = T{1.0}, T max_loss = T{1.0},
                       T steepness = T{1.0}, T threshold = T{0.5}) {
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!std::isfinite(distance))
+      throw std::invalid_argument("distance_to_utility: distance must be finite");
+  }
+
   T loss;
 
   switch (loss_type) {
@@ -158,6 +205,11 @@ T distance_to_utility(T distance, LossFunctionType loss_type,
  * Uses the same loss parameters as were used to produce the raw utility,
  * so normalization is correct for GAUSSIAN and THRESHOLD types.
  *
+ * Degenerate case: when the utility range (max_utility - min_utility) is
+ * zero or negligible (within relative/absolute tolerance; see
+ * socialchoicelab::core::near_zero), the function returns 1.0 so that "all
+ * utilities are the same" is interpreted as "all tied for best."
+ *
  * @tparam T Numeric type
  * @param utility Raw utility value
  * @param max_distance Maximum possible distance for normalization
@@ -172,6 +224,17 @@ template <typename T>
 T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,
                     T sensitivity = T{1.0}, T max_loss = T{1.0},
                     T steepness = T{1.0}, T threshold = T{0.5}) {
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!std::isfinite(utility))
+      throw std::invalid_argument("normalize_utility: utility must be finite");
+    if (!std::isfinite(max_distance))
+      throw std::invalid_argument(
+          "normalize_utility: max_distance must be finite");
+  }
+  if (max_distance < T{0})
+    throw std::invalid_argument(
+        "normalize_utility: max_distance must be >= 0");
+
   // Calculate maximum possible utility (at distance 0)
   T max_utility = distance_to_utility(T{0}, loss_type, sensitivity, max_loss,
                                       steepness, threshold);
@@ -180,9 +243,19 @@ T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,
   T min_utility = distance_to_utility(max_distance, loss_type, sensitivity,
                                       max_loss, steepness, threshold);
 
-  // Normalize to [0, 1]
-  if (max_utility == min_utility) {
-    return T{1.0};  // All utilities are the same
+  // Normalize to [0, 1]; use tolerance so degenerate range is robust (Item 28)
+  if constexpr (std::is_floating_point_v<T>) {
+    T range = max_utility - min_utility;
+    T scale = std::max({std::abs(max_utility), std::abs(min_utility), T{1}});
+    T tol = std::max(static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_rel) * scale,
+                     static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_abs));
+    if (std::abs(range) <= tol) {
+      return T{1.0};  // All utilities the same → treat as best
+    }
+  } else {
+    if (max_utility == min_utility) {
+      return T{1.0};
+    }
   }
 
   return (utility - min_utility) / (max_utility - min_utility);

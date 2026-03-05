@@ -78,6 +78,15 @@ We follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppgu
 | `README.md` (anywhere) | Always `README.md` | `docs/README.md`, `docs/references/README.md` |
 | All other docs in `docs/` | `snake_case.md` | `development.md`, `design_document.md`, `where_we_are.md` |
 
+### Numeric tolerance
+
+When comparing floating-point values for "equal for practical purposes" (e.g. degenerate range, zero denominator), use the shared constants in `include/socialchoicelab/core/numeric_constants.h`:
+
+- **`socialchoicelab::core::near_zero::k_near_zero_rel`** — relative tolerance (default 1e-9). Negligible = this fraction of the local scale.
+- **`socialchoicelab::core::near_zero::k_near_zero_abs`** — absolute tolerance (default 1e-12). Fallback when scale is tiny.
+
+**Convention:** At each call site, compute a scale from the values being compared (e.g. `scale = max(|a|, |b|, 1)`). Treat as equal when `|a - b| <= max(k_near_zero_rel * scale, k_near_zero_abs)`. Do not use a global "space size"; the scale is always local to the comparison. See PEP 485 / `math.isclose` for the same pattern.
+
 When adding new files, follow the convention for the file type. Do not mix cases within a type.
 
 ### Common Issues and Fixes
@@ -87,6 +96,15 @@ When adding new files, follow the convention for the file type. Do not mix cases
 3. **Missing copyright**: Add copyright header to new files
 4. **Include order**: Use `clang-format` to fix automatically
 5. **Line length**: Break long lines or use `clang-format` to wrap
+
+### End-user error messages
+
+When writing end-user error messages (CLI, UI, or any user-facing failure), aim for:
+
+- **State what failed** — Clearly say what operation or check failed (e.g. "Login failed", "Invalid input").
+- **Include what the user entered** — Tell the user what they entered or chose that led to the failure, when it's safe and useful (e.g. "The value you entered, 'xyz', is not a valid email").
+- **Suggest how to fix it** — Give at least one concrete suggestion (e.g. "Enter a number between 1 and 10", "Check your password and try again").
+- **When in doubt** — If you're unsure what to say or how much to reveal, ask the current developer or maintainer rather than guessing.
 
 ### Pre-commit Workflow
 

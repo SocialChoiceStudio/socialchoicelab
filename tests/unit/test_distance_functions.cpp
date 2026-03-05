@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include "socialchoicelab/preference/distance/distance_functions.h"
@@ -13,6 +14,7 @@ using socialchoicelab::preference::distance::calculate_distance;
 using socialchoicelab::preference::distance::chebyshev_distance;
 using socialchoicelab::preference::distance::DistanceType;
 using socialchoicelab::preference::distance::euclidean_distance;
+using socialchoicelab::preference::distance::k_minkowski_chebyshev_cutoff;
 using socialchoicelab::preference::distance::manhattan_distance;
 using socialchoicelab::preference::distance::minkowski_distance;
 
@@ -155,6 +157,48 @@ TEST_F(DistanceFunctionsTest, UnknownDistanceTypeThrows) {
       std::invalid_argument);
 }
 
+// Test that non-finite and invalid inputs throw (Item 20)
+TEST_F(DistanceFunctionsTest, NonFiniteAndInvalidInputsThrow) {
+  std::vector<double> equal_weights = {1.0, 1.0};
+  const double inf = std::numeric_limits<double>::infinity();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  EXPECT_THROW(minkowski_distance(point_a, point_b, nan, equal_weights),
+               std::invalid_argument);
+  EXPECT_THROW(minkowski_distance(point_a, point_b, inf, equal_weights),
+               std::invalid_argument);
+
+  Eigen::Vector2d point_nan(0.0, nan);
+  EXPECT_THROW(euclidean_distance(point_nan, point_b, equal_weights),
+               std::invalid_argument);
+  EXPECT_THROW(euclidean_distance(point_a, point_nan, equal_weights),
+               std::invalid_argument);
+  Eigen::Vector2d point_inf(0.0, inf);
+  EXPECT_THROW(manhattan_distance(point_a, point_inf, equal_weights),
+               std::invalid_argument);
+
+  std::vector<double> weights_nan = {1.0, nan};
+  EXPECT_THROW(euclidean_distance(point_a, point_b, weights_nan),
+               std::invalid_argument);
+  std::vector<double> weights_inf = {1.0, inf};
+  EXPECT_THROW(chebyshev_distance(point_a, point_b, weights_inf),
+               std::invalid_argument);
+
+  std::vector<double> weights_negative = {1.0, -0.1};
+  EXPECT_THROW(minkowski_distance(point_a, point_b, 2.0, weights_negative),
+               std::invalid_argument);
+  EXPECT_THROW(chebyshev_distance(point_a, point_b, weights_negative),
+               std::invalid_argument);
+}
+
+// Test that zero salience weight is allowed (dimension masking)
+TEST_F(DistanceFunctionsTest, ZeroSalienceWeightAllowed) {
+  std::vector<double> weights_zero_second = {1.0, 0.0};
+  // Second dimension ignored: Manhattan = 1*|1000| + 0*|1| = 1000
+  double d = manhattan_distance(point_a, point_b, weights_zero_second);
+  EXPECT_DOUBLE_EQ(d, 1000.0);
+}
+
 // Test salience weights
 TEST_F(DistanceFunctionsTest, SalienceWeights) {
   std::vector<double> weights = {2.0,
@@ -226,4 +270,15 @@ TEST_F(DistanceFunctionsTest, TriangleInequalityEqualWeights) {
   double d_ac_p = minkowski_distance(a, c, 1.5, two);
   EXPECT_LE(d_ac_p, d_ab_p + d_bc_p + 1e-10)
       << "Minkowski p=1.5 triangle inequality";
+}
+
+// Item 26: minkowski at p = k_minkowski_chebyshev_cutoff (100.0) boundary
+TEST_F(DistanceFunctionsTest, MinkowskiAtChebyshevCutoffBoundary) {
+  std::vector<double> w = {1.0, 1.0};
+  double d_mink = minkowski_distance(point_a, point_b, k_minkowski_chebyshev_cutoff, w);
+  double d_cheb = chebyshev_distance(point_a, point_b, w);
+  EXPECT_DOUBLE_EQ(d_mink, d_cheb);
+  // p just above cutoff also uses Chebyshev
+  double d_above = minkowski_distance(point_a, point_b, 100.1, w);
+  EXPECT_NEAR(d_above, d_cheb, 1e-6);
 }

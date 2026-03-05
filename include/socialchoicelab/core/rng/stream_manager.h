@@ -4,8 +4,10 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "socialchoicelab/core/rng/prng.h"
@@ -35,6 +37,11 @@ namespace socialchoicelab::core::rng {
  *   "movement"      - candidate movement strategies
  *   "memory_update" - agent memory updates
  *   "analysis"      - model output / analytical computations
+ *
+ * Optional allowlist (Item 30): after register_streams(names), only those
+ * names are valid for get_stream() and reset_stream(); unknown names throw.
+ * Call register_streams({}) to clear the allowlist and restore get-or-create
+ * for any name.
  */
 class StreamManager {
  public:
@@ -46,11 +53,34 @@ class StreamManager {
       : master_seed_(master_seed) {}
 
   /**
+   * @brief Lock allowed stream names (optional typo safety)
+   *
+   * After this call, get_stream(name) and reset_stream(name, ...) throw
+   * std::invalid_argument if name is not in the allowed set. Pass an empty
+   * container to clear the allowlist and restore get-or-create for any name.
+   *
+   * @param names Allowed stream names (e.g. {"voters", "candidates", "tiebreak"})
+   */
+  void register_streams(const std::vector<std::string>& names) {
+    allowed_stream_names_.clear();
+    for (const auto& n : names) {
+      allowed_stream_names_.insert(n);
+    }
+  }
+
+  /**
    * @brief Get or create a named stream
    * @param name Stream name (e.g., "voters", "candidates", "tiebreak")
    * @return Reference to the PRNG for this stream
+   * @throws std::invalid_argument if an allowlist is set and name is not allowed
    */
   PRNG& get_stream(const std::string& name) {
+    if (!allowed_stream_names_.empty() &&
+        allowed_stream_names_.find(name) == allowed_stream_names_.end()) {
+      throw std::invalid_argument(
+          "StreamManager: stream name not in registered set (typo?): \"" + name +
+          "\"");
+    }
     auto it = streams_.find(name);
     if (it == streams_.end()) {
       uint64_t stream_seed = generate_stream_seed(name);
@@ -89,8 +119,15 @@ class StreamManager {
    * @brief Reset a specific stream
    * @param name Stream name
    * @param seed New seed for this stream
+   * @throws std::invalid_argument if an allowlist is set and name is not allowed
    */
   void reset_stream(const std::string& name, uint64_t seed) {
+    if (!allowed_stream_names_.empty() &&
+        allowed_stream_names_.find(name) == allowed_stream_names_.end()) {
+      throw std::invalid_argument(
+          "StreamManager: stream name not in registered set (typo?): \"" + name +
+          "\"");
+    }
     auto it = streams_.find(name);
     if (it != streams_.end()) {
       it->second->reset(seed);
@@ -162,9 +199,23 @@ class StreamManager {
 
  private:
   /**
+   * @brief SplitMix64-style finalizer for better avalanche (Items 32–33)
+   *
+   * Improves mixing of combined seed material. Deterministic and portable.
+   */
+  static uint64_t finalize_splitmix64(uint64_t z) {
+    z ^= (z >> 30);
+    z *= 0xbf58476d1ce4e5b9ULL;
+    z ^= (z >> 27);
+    z *= 0x94d049bb133111ebULL;
+    return z ^ (z >> 31);
+  }
+
+  /**
    * @brief Combine a master seed and a run index into a single run seed
    *
-   * Uses FNV-1a mixing so adjacent run indices produce unrelated seeds.
+   * Uses FNV-1a mixing plus SplitMix64-style finalizer so adjacent run
+   * indices produce well-mixed, unrelated seeds.
    *
    * @param master_seed Experiment-level seed
    * @param run_index Zero-based run index
@@ -177,7 +228,7 @@ class StreamManager {
     h *= kFnvPrime;
     h ^= (run_index >> 17);
     h *= kFnvPrime;
-    return h;
+    return finalize_splitmix64(h);
   }
 
   /**
@@ -206,12 +257,14 @@ class StreamManager {
       name_hash *= kFnvPrime;
     }
 
-    // Combine master seed with name hash to get unique seed for each stream
-    return master_seed_ ^ (name_hash << 1) ^ (name_hash >> 1);
+    // Combine master seed with name hash, then apply SplitMix64-style finalizer
+    uint64_t raw = master_seed_ ^ (name_hash << 1) ^ (name_hash >> 1);
+    return finalize_splitmix64(raw);
   }
 
   uint64_t master_seed_;
   std::unordered_map<std::string, std::unique_ptr<PRNG>> streams_;
+  std::unordered_set<std::string> allowed_stream_names_;
 };
 
 // Global stream manager instance

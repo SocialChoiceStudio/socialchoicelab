@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
 #include <vector>
 
 namespace socialchoicelab::preference::distance {
@@ -48,9 +50,10 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @tparam T Numeric type (float, double, etc.)
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative/candidate position
- * @param order_p Minkowski order parameter (p ≥ 1)
+ * @param order_p Minkowski order parameter (p ≥ 1, must be finite)
  * @param salience_weights Salience weights for each dimension (mandatory, one
- * per dimension).
+ * per dimension). Must be finite and ≥ 0; zero means that dimension is ignored
+ * (dimension masking).
  * @return Weighted Minkowski distance
  */
 template <typename Derived1, typename Derived2, typename T>
@@ -82,6 +85,33 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
 
   if (order_p < T{1}) {
     throw std::invalid_argument("Minkowski order_p must be >= 1");
+  }
+
+  if constexpr (std::is_floating_point_v<T>) {
+    if (!std::isfinite(order_p)) {
+      throw std::invalid_argument("order_p must be finite");
+    }
+  }
+
+  for (int i = 0; i < N; ++i) {
+    if (!std::isfinite(static_cast<double>(ideal_point[i]))) {
+      throw std::invalid_argument("ideal_point[" + std::to_string(i) +
+                                  "] is not finite");
+    }
+    if (!std::isfinite(static_cast<double>(alternative_point[i]))) {
+      throw std::invalid_argument("alternative_point[" + std::to_string(i) +
+                                  "] is not finite");
+    }
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(salience_weights[i])) {
+        throw std::invalid_argument("salience_weights[" + std::to_string(i) +
+                                    "] is not finite");
+      }
+    }
+    if (salience_weights[i] < T{0}) {
+      throw std::invalid_argument("salience_weights[" + std::to_string(i) +
+                                  "] must be >= 0");
+    }
   }
 
   const T eps = static_cast<T>(1e-9);
@@ -132,7 +162,8 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param salience_weights Salience weights for each dimension (mandatory, one
- * per dimension).
+ * per dimension). Must be finite and ≥ 0; zero means that dimension is ignored
+ * (dimension masking).
  * @return Euclidean distance
  */
 template <typename Derived1, typename Derived2, typename T>
@@ -152,7 +183,8 @@ T euclidean_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param salience_weights Salience weights for each dimension (mandatory, one
- * per dimension).
+ * per dimension). Must be finite and ≥ 0; zero means that dimension is ignored
+ * (dimension masking).
  * @return Manhattan distance
  */
 template <typename Derived1, typename Derived2, typename T>
@@ -172,7 +204,8 @@ T manhattan_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param salience_weights Salience weights for each dimension (mandatory, one
- * per dimension).
+ * per dimension). Must be finite and ≥ 0; zero means that dimension is ignored
+ * (dimension masking).
  * @return Chebyshev distance
  */
 template <typename Derived1, typename Derived2, typename T>
@@ -199,7 +232,26 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
         "dimensionality of the space");
   }
 
-  // For Chebyshev distance, we need to handle p=∞ specially
+  for (int i = 0; i < N; ++i) {
+    if (!std::isfinite(static_cast<double>(ideal_point[i]))) {
+      throw std::invalid_argument("ideal_point[" + std::to_string(i) +
+                                  "] is not finite");
+    }
+    if (!std::isfinite(static_cast<double>(alternative_point[i]))) {
+      throw std::invalid_argument("alternative_point[" + std::to_string(i) +
+                                  "] is not finite");
+    }
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(salience_weights[i])) {
+        throw std::invalid_argument("salience_weights[" + std::to_string(i) +
+                                    "] is not finite");
+      }
+    }
+    if (salience_weights[i] < T{0}) {
+      throw std::invalid_argument("salience_weights[" + std::to_string(i) +
+                                  "] must be >= 0");
+    }
+  }
 
   T max_weighted_diff = T{0};
   for (int i = 0; i < N; ++i) {
@@ -220,8 +272,10 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
  * @param distance_type Type of distance to calculate
- * @param order_p Minkowski order (only used for MINKOWSKI type)
- * @param salience_weights Optional salience weights
+ * @param order_p Minkowski order (only used for MINKOWSKI type; must be finite
+ * and ≥ 1)
+ * @param salience_weights Salience weights for each dimension (mandatory). Must
+ * be finite and ≥ 0; zero means that dimension is ignored (dimension masking).
  * @return Calculated distance
  */
 template <typename Derived1, typename Derived2, typename T>

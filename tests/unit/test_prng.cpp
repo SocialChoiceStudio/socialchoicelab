@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <vector>
 
 #include "socialchoicelab/core/rng/prng.h"
@@ -17,9 +18,7 @@ using socialchoicelab::core::rng::voters_rng;
 
 class PRNGTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    // Test setup
-  }
+  // No per-test setup needed
 };
 
 TEST_F(PRNGTest, Construction) {
@@ -92,6 +91,19 @@ TEST_F(PRNGTest, Exponential) {
   }
 }
 
+// Item 24: exponential mean = 1/lambda (statistical)
+TEST_F(PRNGTest, ExponentialMean) {
+  PRNG rng(k_default_master_seed);
+  const double lambda = 2.0;
+  double sum = 0.0;
+  const int n = 50000;
+  for (int i = 0; i < n; ++i) {
+    sum += rng.exponential(lambda);
+  }
+  double mean = sum / n;
+  EXPECT_NEAR(mean, 1.0 / lambda, 0.05);
+}
+
 TEST_F(PRNGTest, Bernoulli) {
   PRNG rng(k_default_master_seed);
 
@@ -150,6 +162,65 @@ TEST_F(PRNGTest, BetaInvalidParametersThrow) {
   EXPECT_THROW(rng.beta(1.0, -0.1), std::invalid_argument);
 }
 
+// Item 24: beta(alpha, beta) happy path — values in (0,1), mean ≈ alpha/(alpha+beta)
+TEST_F(PRNGTest, BetaHappyPath) {
+  PRNG rng(k_default_master_seed);
+  const double alpha = 2.0, beta_param = 5.0;
+  double sum = 0.0;
+  const int n = 20000;
+  for (int i = 0; i < n; ++i) {
+    double v = rng.beta(alpha, beta_param);
+    EXPECT_GT(v, 0.0);
+    EXPECT_LT(v, 1.0);
+    sum += v;
+  }
+  double mean = sum / n;
+  double expected_mean = alpha / (alpha + beta_param);
+  EXPECT_NEAR(mean, expected_mean, 0.03);
+}
+
+// Item 24: gamma(alpha, beta) happy path — positive, mean = alpha * beta (shape * scale per std::gamma_distribution)
+TEST_F(PRNGTest, GammaHappyPath) {
+  PRNG rng(k_default_master_seed);
+  const double alpha = 2.0, beta = 1.5;
+  double sum = 0.0;
+  const int n = 30000;
+  for (int i = 0; i < n; ++i) {
+    double v = rng.gamma(alpha, beta);
+    EXPECT_GT(v, 0.0);
+    sum += v;
+  }
+  double mean = sum / n;
+  double expected_mean = alpha * beta;
+  EXPECT_NEAR(mean, expected_mean, 0.2);
+}
+
+TEST_F(PRNGTest, InvalidDistributionParametersThrow) {
+  PRNG rng(k_default_master_seed);
+  const double inf = std::numeric_limits<double>::infinity();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  EXPECT_THROW(rng.uniform_int(10, 5), std::invalid_argument);
+  EXPECT_THROW(rng.uniform_real(1.0, 0.0), std::invalid_argument);
+  EXPECT_THROW(rng.uniform_real(0.0, 0.0), std::invalid_argument);
+  EXPECT_THROW(rng.uniform_real(nan, 1.0), std::invalid_argument);
+
+  EXPECT_THROW(rng.normal(0.0, 0.0), std::invalid_argument);
+  EXPECT_THROW(rng.normal(0.0, -1.0), std::invalid_argument);
+  EXPECT_THROW(rng.normal(0.0, nan), std::invalid_argument);
+
+  EXPECT_THROW(rng.exponential(0.0), std::invalid_argument);
+  EXPECT_THROW(rng.exponential(-0.1), std::invalid_argument);
+  EXPECT_THROW(rng.exponential(inf), std::invalid_argument);
+
+  EXPECT_THROW(rng.gamma(0.0, 1.0), std::invalid_argument);
+  EXPECT_THROW(rng.gamma(1.0, -0.1), std::invalid_argument);
+
+  EXPECT_THROW(rng.bernoulli(-0.1), std::invalid_argument);
+  EXPECT_THROW(rng.bernoulli(1.5), std::invalid_argument);
+  EXPECT_THROW(rng.bernoulli(nan), std::invalid_argument);
+}
+
 TEST_F(PRNGTest, Reset) {
   PRNG rng(k_default_master_seed);
 
@@ -169,38 +240,19 @@ TEST_F(PRNGTest, Skip) {
   PRNG rng1(k_default_master_seed);
   PRNG rng2(k_default_master_seed);
 
-  // Generate 10 numbers from rng1 first
+  // Item 25: Test engine position directly — draw 10 from rng1.engine(), discard 10 on rng2.engine()
   for (int i = 0; i < 10; ++i) {
-    rng1.uniform_int(0, 100);
+    (void)rng1.engine()();
   }
+  rng2.engine().discard(10);
 
-  // Skip ahead in rng2 to match rng1's position
-  rng2.skip(10);
-
-  // Note: Due to distribution object state, exact equality might not hold
-  // But the underlying engines should be in sync, so we test that the
-  // sequences are deterministic and different from the initial state
-  int val1 = rng1.uniform_int(0, 100);
-  int val2 = rng2.uniform_int(0, 100);
-
-  // Both should be valid random numbers in range
-  EXPECT_LE(val1, 100);
-  EXPECT_LE(val2, 100);
-
-  // Both engines advanced past the initial state (values differ from fresh rng)
-  PRNG rng_fresh(k_default_master_seed);
-  int fresh_val = rng_fresh.uniform_int(0, 100);
-  // After 10 draws (rng1) or skip(10) (rng2), both should be past position 0
-  // We can't guarantee exact equality due to distribution state, but we verify
-  // that skip() completes without crashing and produces in-range output.
-  (void)fresh_val;
+  // Next raw engine output should be equal
+  EXPECT_EQ(rng1.engine()(), rng2.engine()());
 }
 
 class StreamManagerTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    // Test setup
-  }
+  // No per-test setup needed
 };
 
 TEST_F(StreamManagerTest, BasicOperations) {
@@ -257,6 +309,99 @@ TEST_F(StreamManagerTest, StreamNames) {
               names.end());
 }
 
+// Item 23: StreamManager reset_stream, has_stream, remove_stream, clear, debug_info
+TEST_F(StreamManagerTest, HasStream) {
+  StreamManager manager(k_default_master_seed);
+  EXPECT_FALSE(manager.has_stream("voters"));
+  manager.get_stream("voters");
+  EXPECT_TRUE(manager.has_stream("voters"));
+  EXPECT_FALSE(manager.has_stream("candidates"));
+}
+
+TEST_F(StreamManagerTest, ResetStream) {
+  StreamManager manager(k_default_master_seed);
+  PRNG& v = manager.get_stream("voters");
+  int a = v.uniform_int(0, 1000);
+  manager.reset_stream("voters", 99999);
+  int b = manager.get_stream("voters").uniform_int(0, 1000);
+  // New seed should give different sequence (with overwhelming probability)
+  EXPECT_NE(a, b);
+  // reset_stream on non-existent stream creates it
+  EXPECT_FALSE(manager.has_stream("newstream"));
+  manager.reset_stream("newstream", 11111);
+  EXPECT_TRUE(manager.has_stream("newstream"));
+}
+
+TEST_F(StreamManagerTest, RemoveStream) {
+  StreamManager manager(k_default_master_seed);
+  manager.get_stream("voters");
+  EXPECT_TRUE(manager.has_stream("voters"));
+  manager.remove_stream("voters");
+  EXPECT_FALSE(manager.has_stream("voters"));
+  EXPECT_EQ(manager.size(), 0);
+  // Removing non-existent is no-op
+  manager.remove_stream("nonexistent");
+}
+
+TEST_F(StreamManagerTest, Clear) {
+  StreamManager manager(k_default_master_seed);
+  manager.get_stream("voters");
+  manager.get_stream("candidates");
+  EXPECT_EQ(manager.size(), 2);
+  manager.clear();
+  EXPECT_EQ(manager.size(), 0);
+  EXPECT_FALSE(manager.has_stream("voters"));
+  EXPECT_FALSE(manager.has_stream("candidates"));
+}
+
+TEST_F(StreamManagerTest, DebugInfo) {
+  StreamManager manager(k_default_master_seed);
+  manager.get_stream("voters");
+  std::string info = manager.debug_info();
+  EXPECT_TRUE(info.find("StreamManager") != std::string::npos);
+  EXPECT_TRUE(info.find("voters") != std::string::npos);
+  EXPECT_TRUE(info.find("master_seed") != std::string::npos);
+}
+
+// Item 23: reset_for_run — same (master_seed, run_index) => same sequences; different index => different
+TEST_F(StreamManagerTest, ResetForRunReproducibility) {
+  const uint64_t master = 42;
+  const uint64_t run0 = 0;
+
+  StreamManager m1(k_default_master_seed);
+  m1.reset_for_run(master, run0);
+  int a1 = m1.get_stream("voters").uniform_int(0, 1000000);
+  int b1 = m1.get_stream("voters").uniform_int(0, 1000000);
+
+  StreamManager m2(k_default_master_seed);
+  m2.reset_for_run(master, run0);
+  int a2 = m2.get_stream("voters").uniform_int(0, 1000000);
+  int b2 = m2.get_stream("voters").uniform_int(0, 1000000);
+
+  EXPECT_EQ(a1, a2) << "Same (master_seed, run_index) should give same first draw";
+  EXPECT_EQ(b1, b2) << "Same (master_seed, run_index) should give same second draw";
+}
+
+TEST_F(StreamManagerTest, ResetForRunDifferentIndicesDifferentSequences) {
+  const uint64_t master = 42;
+
+  StreamManager m0(k_default_master_seed);
+  m0.reset_for_run(master, 0);
+  int v0 = m0.get_stream("voters").uniform_int(0, 1000000);
+
+  StreamManager m1(k_default_master_seed);
+  m1.reset_for_run(master, 1);
+  int v1 = m1.get_stream("voters").uniform_int(0, 1000000);
+
+  StreamManager m2(k_default_master_seed);
+  m2.reset_for_run(master, 2);
+  int v2 = m2.get_stream("voters").uniform_int(0, 1000000);
+
+  EXPECT_NE(v0, v1);
+  EXPECT_NE(v1, v2);
+  EXPECT_NE(v0, v2);
+}
+
 TEST_F(StreamManagerTest, GlobalStreamManager) {
   // Test global convenience functions
   set_global_stream_manager_seed(k_default_master_seed);
@@ -266,4 +411,46 @@ TEST_F(StreamManagerTest, GlobalStreamManager) {
 
   // Should be different streams
   EXPECT_NE(voters.uniform_int(0, 100), candidates.uniform_int(0, 100));
+}
+
+// Item 27: set_global_stream_manager_seed second-call branch (reset existing)
+TEST_F(StreamManagerTest, SetGlobalStreamManagerSeedSecondCallProducesDifferentSequences) {
+  set_global_stream_manager_seed(11111);
+  int a1 = voters_rng().uniform_int(0, 1000000);
+  int b1 = voters_rng().uniform_int(0, 1000000);
+
+  set_global_stream_manager_seed(22222);
+  int a2 = voters_rng().uniform_int(0, 1000000);
+  int b2 = voters_rng().uniform_int(0, 1000000);
+
+  EXPECT_NE(a1, a2) << "Second seed should produce different sequence";
+  EXPECT_NE(b1, b2);
+}
+
+// Item 30: register_streams — allowlist enforcement
+TEST_F(StreamManagerTest, RegisterStreamsThenGetUnknownThrows) {
+  StreamManager mgr(12345);
+  mgr.register_streams({"voters", "candidates", "tiebreak"});
+  EXPECT_THROW(mgr.get_stream("voter"), std::invalid_argument);   // typo
+  EXPECT_THROW(mgr.get_stream("unknown"), std::invalid_argument);
+}
+
+TEST_F(StreamManagerTest, RegisterStreamsThenGetAllowedWorks) {
+  StreamManager mgr(12345);
+  mgr.register_streams({"voters", "candidates"});
+  PRNG& v = mgr.get_stream("voters");
+  PRNG& c = mgr.get_stream("candidates");
+  (void)v.uniform_int(0, 1);
+  (void)c.uniform_int(0, 1);
+  EXPECT_TRUE(mgr.has_stream("voters"));
+  EXPECT_TRUE(mgr.has_stream("candidates"));
+}
+
+TEST_F(StreamManagerTest, RegisterStreamsEmptyClearsAllowlist) {
+  StreamManager mgr(12345);
+  mgr.register_streams({"voters"});
+  EXPECT_THROW(mgr.get_stream("other"), std::invalid_argument);
+  mgr.register_streams({});
+  EXPECT_NO_THROW(mgr.get_stream("other"));
+  EXPECT_TRUE(mgr.has_stream("other"));
 }

@@ -2,9 +2,9 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Batch 4
-- **Next item:** 20 — Distance functions accept non-finite/invalid inputs — `order…. Severity: High.
-- **Last updated:** 2026-03-04
+- **Current phase:** Consensus plan (second review) complete
+- **Next item:** See `docs/status/roadmap.md` for near-/mid-/long-term work
+- **Last updated:** 2026-03-05
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in consensus_plan.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
 
@@ -126,3 +126,48 @@
 - Renamed 10 doc files to `snake_case.md` (all docs in `docs/` except `README.md` files); updated all cross-references in 16 files.
 - Added file naming convention to `docs/development/development.md` § File Naming Conventions.
 - Added `.cursor/rules/File-Naming-Conventions.mdc` Cursor rule for agents.
+
+### Session: 2026-03-05 — Item 20 (distance input validation)
+
+- **Item 20:** Distance functions now validate inputs: `order_p` must be finite (when T is floating point); each coordinate and salience weight must be finite; salience weights must be ≥ 0 (zero allowed for dimension masking). `std::invalid_argument` thrown with precise messages. Validation in `minkowski_distance` and `chebyshev_distance`; euclidean/manhattan inherit via minkowski.
+- Doxygen updated for all four distance functions and `calculate_distance`: salience weights "finite and ≥ 0; zero means that dimension is ignored (dimension masking)."
+- Design doc: distance bullet now states salience weights (finite, ≥0; zero = dimension masking) and invalid inputs throw.
+- Tests: `NonFiniteAndInvalidInputsThrow` (NaN/Inf order_p, NaN/Inf coordinates, NaN/Inf/negative weights), `ZeroSalienceWeightAllowed` (dimension masking). Marked Item 20 ✅ Done in consensus_plan.md.
+
+### Session: 2026-03-05 — Items 21 & 22 (loss and PRNG input validation)
+
+- **Item 21:** Loss functions now validate: sensitivity > 0 (linear, quadratic, threshold); max_loss > 0, steepness > 0 (gaussian); threshold >= 0 (threshold_loss); finite distance/params when T is floating point; in normalize_utility, finite utility and max_distance, max_distance >= 0. All throw std::invalid_argument with clear messages.
+- **Item 22:** PRNG wrappers now validate: uniform_int min <= max; uniform_real min < max and finite; normal stddev > 0 and finite; exponential lambda > 0 and finite; gamma alpha, beta > 0 and finite; bernoulli 0 <= probability <= 1 and finite. beta() already had guards. All throw std::invalid_argument.
+- Tests: LossFunctionsTest::InvalidLossParametersThrow; PRNGTest::InvalidDistributionParametersThrow. Marked Items 21 and 22 ✅ Done. Next item: 23.
+
+### Session: 2026-03-05 — Items 23–27 (test coverage gaps)
+
+- **Item 23:** StreamManager tests: HasStream, ResetStream, RemoveStream, Clear, DebugInfo, ResetForRunReproducibility (same master+run_index → same sequence), ResetForRunDifferentIndicesDifferentSequences.
+- **Item 24:** PRNG statistical tests: ExponentialMean (mean = 1/λ), BetaHappyPath (values in (0,1), mean α/(α+β)), GammaHappyPath (mean = α×β for std::gamma_distribution).
+- **Item 25:** Skip test now uses engine() directly: 10 draws from rng1.engine(), rng2.engine().discard(10), then EXPECT_EQ(rng1.engine()(), rng2.engine()()).
+- **Item 26:** MinkowskiAtChebyshevCutoffBoundary test (p = 100 and p = 100.1 match Chebyshev). Invalid-input EXPECT_THROW coverage was already in place from Items 20–21.
+- **Item 27:** SetGlobalStreamManagerSeedSecondCallProducesDifferentSequences — call set_global_stream_manager_seed twice with different seeds, verify second call yields different sequence.
+- Marked 23–27 ✅ Done. Next item: 28.
+
+### Session: 2026-03-05 — Item 28 (normalize_utility epsilon + numeric tolerance)
+
+- **Item 28:** Added `include/socialchoicelab/core/numeric_constants.h` with `k_near_zero_rel` (1e-9) and `k_near_zero_abs` (1e-12) as single source of truth for "negligible" in float comparisons. Scale is computed locally at each use (no global space size). `normalize_utility` now uses relative+absolute tolerance for degenerate range and returns 1.0 when range ≤ tol; Doxygen documents degenerate case. Integer T unchanged (exact equality).
+- **Docs:** `docs/development/development.md` § Numeric tolerance describes convention (PEP 485 style; scale local). `numeric_constants.h` documents usage.
+- **Test:** NormalizeUtilityDegenerateRangeReturnsOne (tiny max_distance triggers degenerate path → 1.0). Marked Item 28 ✅ Done.
+
+### Session: 2026-03-05 — Items 29–31 (c_api design inputs)
+
+- Items 29–31 are design inputs for when the c_api is built, not current implementation tasks. **Documented** in `docs/architecture/design_document.md` § c_api design inputs (table with 29: SCS_LossConfig; 30: register_streams consideration; 31: do not expose engine()).
+- **No C++ code changes.** Consensus plan updated to point to the design doc. **Decisions to make later:** (30) Add `register_streams` to C++ StreamManager now, or only enforce at c_api boundary? (31) Remove `PRNG::engine()` from public C++ API (would require changing the skip test) or keep it and only exclude from c_api?
+
+### Session: 2026-03-05 — Items 30 & 31 implemented and documented
+
+- **Item 30:** Implemented in C++. `StreamManager::register_streams(names)` sets an optional allowlist; when set, `get_stream(name)` and `reset_stream(name, seed)` throw `std::invalid_argument` for names not in the set. `register_streams({})` clears the allowlist. Documented in `stream_manager.h`, `stream_manager_design.md`, and design_document.md table; c_api will enforce same at boundary.
+- **Item 31:** No code change. `PRNG::engine()` remains in C++ API; Doxygen note added: internal/test use only, do not expose via c_api. Design doc table updated with decision.
+- **Tests:** `RegisterStreamsThenGetUnknownThrows`, `RegisterStreamsThenGetAllowedWorks`, `RegisterStreamsEmptyClearsAllowlist` in `test_prng.cpp`.
+
+### Session: 2026-03-05 — Items 32–35 (best-practice check, implemented)
+
+- **32 & 33:** SplitMix64-style finalizer applied in `stream_manager.h`: new `finalize_splitmix64()` used in `combine_seed()` and `generate_stream_seed()`. Improves avalanche; deterministic and portable. (Stream seed values change vs pre-32/33 code; same code version remains reproducible.)
+- **34:** CMake: compiler-ID guard added. `if(MSVC)` uses `/Zi /Od /W4` (Debug) and `/O2 /DNDEBUG` (Release); else GCC/Clang use `-g -O0 -Wall -Wextra` and `-O3 -DNDEBUG`. Single `SocialChoiceLab_compile_options` used for core library and all test targets.
+- **35:** Empty `SetUp()` overrides removed from `PRNGTest` and `StreamManagerTest` in `test_prng.cpp` (GTest best practice: omit when no per-test setup needed).

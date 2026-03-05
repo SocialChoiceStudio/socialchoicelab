@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include "socialchoicelab/preference/loss/loss_functions.h"
@@ -256,6 +257,45 @@ TEST_F(LossFunctionsTest, DistanceToUtilityConversion) {
   // Unknown enum value must throw, not silently fall back
   EXPECT_THROW(distance_to_utility(3.0, static_cast<LossFunctionType>(999)),
                std::invalid_argument);
+}
+
+// Test that invalid loss parameters throw (Item 21)
+TEST_F(LossFunctionsTest, InvalidLossParametersThrow) {
+  const double inf = std::numeric_limits<double>::infinity();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  EXPECT_THROW(linear_loss(1.0, 0.0), std::invalid_argument);
+  EXPECT_THROW(linear_loss(1.0, -0.1), std::invalid_argument);
+  EXPECT_THROW(linear_loss(nan, 1.0), std::invalid_argument);
+  EXPECT_THROW(quadratic_loss(1.0, -1.0), std::invalid_argument);
+  EXPECT_THROW(quadratic_loss(inf, 1.0), std::invalid_argument);
+
+  EXPECT_THROW(gaussian_loss(1.0, 0.0, 1.0), std::invalid_argument);
+  EXPECT_THROW(gaussian_loss(1.0, 1.0, -0.1), std::invalid_argument);
+  EXPECT_THROW(gaussian_loss(nan, 1.0, 1.0), std::invalid_argument);
+
+  EXPECT_THROW(threshold_loss(1.0, -0.1, 1.0), std::invalid_argument);
+  EXPECT_THROW(threshold_loss(1.0, 1.0, 0.0), std::invalid_argument);
+
+  EXPECT_THROW(distance_to_utility(nan, LossFunctionType::LINEAR),
+               std::invalid_argument);
+
+  EXPECT_THROW(normalize_utility(0.5, -1.0, LossFunctionType::LINEAR),
+               std::invalid_argument);
+  EXPECT_THROW(normalize_utility(nan, 10.0, LossFunctionType::LINEAR),
+               std::invalid_argument);
+}
+
+// Item 28: degenerate range (near-zero utility spread) returns 1.0
+TEST_F(LossFunctionsTest, NormalizeUtilityDegenerateRangeReturnsOne) {
+  double tiny_max_distance = 1e-15;
+  double raw_utility = distance_to_utility(0.0, LossFunctionType::LINEAR,
+                                           sensitivity, max_loss, steepness,
+                                           threshold);
+  double normalized =
+      normalize_utility(raw_utility, tiny_max_distance, LossFunctionType::LINEAR,
+                        sensitivity, max_loss, steepness, threshold);
+  EXPECT_DOUBLE_EQ(normalized, 1.0);
 }
 
 // Test utility normalization

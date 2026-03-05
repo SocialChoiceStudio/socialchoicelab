@@ -40,7 +40,7 @@ Use deterministic derivation only. No runtime entropy (`std::random_device`, `ra
 
 ### R4. Portable stream seed derivation
 
-StreamManager derives stream seeds from the master seed and stream name using FNV-1a (64-bit). This is deterministic across compilers and platforms. Do not replace FNV-1a with `std::hash` or any implementation-defined hash.
+StreamManager derives stream seeds from the master seed and stream name using FNV-1a (64-bit) plus a SplitMix64-style finalizer for better avalanche (consensus Items 32–33). This is deterministic across compilers and platforms. Do not replace FNV-1a with `std::hash` or any implementation-defined hash.
 
 ### R5. Fixed stream naming contract
 
@@ -56,6 +56,8 @@ Define a stable stream-name set and keep it versioned in docs and code. Suggeste
 | `analysis`      | Model output computations (sampling, tie-breaking in analysis) |
 
 Do not overload one stream for unrelated purposes unless explicitly justified.
+
+**Optional allowlist (Item 30):** Call `StreamManager::register_streams(names)` to lock the allowed set; thereafter `get_stream(name)` and `reset_stream(name, seed)` throw for unknown names (catches typos). Call `register_streams({})` to clear the allowlist. See design_document.md § c_api design inputs.
 
 ### R6. One responsibility per stream
 

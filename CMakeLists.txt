@@ -38,6 +38,7 @@ FetchContent_MakeAvailable(googletest eigen)
 
 # Create the core library
 add_library(socialchoicelab_core
+    include/socialchoicelab/core/numeric_constants.h
     include/socialchoicelab/core/rng/prng.h
     include/socialchoicelab/core/rng/stream_manager.h
     include/socialchoicelab/preference/distance/distance_functions.h
@@ -45,20 +46,23 @@ add_library(socialchoicelab_core
     src/core/rng/stream_manager.cpp
 )
 target_include_directories(socialchoicelab_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_compile_options(socialchoicelab_core PRIVATE
+# Compiler-specific flags (Item 34): GCC/Clang use -Wall; MSVC uses /W4
+if(MSVC)
+  set(SocialChoiceLab_compile_options
+    $<$<CONFIG:Debug>:/Zi /Od /W4>
+    $<$<CONFIG:Release>:/O2 /DNDEBUG>
+  )
+else()
+  set(SocialChoiceLab_compile_options
     $<$<CONFIG:Debug>:-g -O0 -Wall -Wextra>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
-)
+  )
+endif()
+target_compile_options(socialchoicelab_core PRIVATE ${SocialChoiceLab_compile_options})
 target_link_libraries(socialchoicelab_core PUBLIC Eigen3::Eigen)
 
 # Enable testing
 enable_testing()
-
-# Compile options for test executables (same as core in Debug/Release)
-set(SocialChoiceLab_compile_options
-    $<$<CONFIG:Debug>:-g -O0 -Wall -Wextra>
-    $<$<CONFIG:Release>:-O3 -DNDEBUG>
-)
 
 # Add unit tests (gtest_main pulls in gtest)
 add_executable(test_distance_functions tests/unit/test_distance_functions.cpp)

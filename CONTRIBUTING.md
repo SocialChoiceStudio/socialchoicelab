@@ -16,7 +16,10 @@ Thanks for your interest in contributing. This project is part of **SocialChoice
 4. **Add tests for new functionality**  
    New code should have tests; prefer `tests/unit/` and existing `test_*.cpp` patterns.
 
-5. **Update documentation as needed**  
+5. **Write clear end-user error messages**  
+   When adding or changing user-facing errors, follow the guidelines in [docs/development/development.md](docs/development/development.md#end-user-error-messages): state what failed, include what the user entered that caused it, and suggest how to fix it; when in doubt, ask the maintainer.
+
+6. **Update documentation as needed**  
    When you add or change behaviour, update the relevant docs. The docs index is [docs/README.md](docs/README.md); keep a single source of truth and avoid duplicating the same information in multiple files.
 
 ## Git workflow
