@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Regenerate docs/status/where_we_are.md from docs/status/consensus_plan.md.
+# Regenerate docs/status/where_we_are.md from the active consensus plan.
+# The active plan is the highest-numbered consensus_plan*.md in docs/status/.
 # Finds the first item not marked ✅ Done and updates the cached pointer.
 # Run from repo root.
 
@@ -7,13 +8,15 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-plan="docs/status/consensus_plan.md"
+# Find the highest-numbered consensus plan (e.g. consensus_plan_3.md beats consensus_plan.md)
+plan=$(ls docs/status/consensus_plan*.md 2>/dev/null | sort -V | tail -1)
 out="docs/status/where_we_are.md"
 
-if [ ! -f "$plan" ]; then
-  echo "Error: $plan not found."
+if [ -z "$plan" ] || [ ! -f "$plan" ]; then
+  echo "Error: no consensus_plan*.md found in docs/status/."
   exit 1
 fi
+echo "Active plan: $plan"
 
 if [ ! -f "$out" ]; then
   echo "Error: $out not found."
@@ -79,10 +82,10 @@ severity=$(echo "$next" | cut -d'|' -f4)
 today=$(date +%Y-%m-%d)
 
 # Update only the pointer block at the top (lines 1-7); preserve the Recent Work section below
-python3 - "$out" "$phase" "$num" "$title" "$severity" "$today" << 'PY'
+python3 - "$out" "$phase" "$num" "$title" "$severity" "$today" "$plan" << 'PY'
 import sys
 
-out_path, phase, num, title, severity, today = sys.argv[1:]
+out_path, phase, num, title, severity, today, plan_path = sys.argv[1:]
 
 with open(out_path) as f:
     content = f.read()
@@ -109,9 +112,9 @@ new_header = f"""# Where We Are
 {next_line}
 - **Last updated:** {today}
 
-**Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in consensus_plan.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
+**Authority:** This file is a cached pointer. The **Status** column in `{plan_path}` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and consensus_plan.md. Use the plan's Status column to confirm; if they disagree, update this file."""
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `{plan_path}`. Use the plan's Status column to confirm; if they disagree, update this file."""
 
 with open(out_path, "w") as f:
     f.write(new_header + rest)

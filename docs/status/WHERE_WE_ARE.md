@@ -2,13 +2,13 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Consensus plan third review — Batch 1 (Critical, Items 1–3)
-- **Next item:** Item 1 — Minkowski Doxygen convention mismatch (Critical)
+- **Current phase:** Batch 1
+- **Next item:** 1 — **Minkowski Doxygen formula vs code mismatch** — The Doxygen…. Severity: Critical.
 - **Last updated:** 2026-03-05
 
-**Authority:** This file is the single source for "what's next". Update it when you complete work or change focus. Keep the "Last updated" date in sync.
+**Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan_3.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and, if needed, [docs/status/roadmap.md](roadmap.md) for longer-term direction.
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/consensus_plan_3.md`. Use the plan's Status column to confirm; if they disagree, update this file.
 ---
 
 ## Recent Work

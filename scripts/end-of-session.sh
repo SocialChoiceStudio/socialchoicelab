@@ -41,8 +41,9 @@ echo "Next: $phase — Item $num: ${title%.}"
 # --- Step 2: Append a dated session entry to WHERE_WE_ARE Recent Work (skip if today already present) ---
 WHERE="$ROOT/docs/status/where_we_are.md"
 if ! grep -q "### Session: $today" "$WHERE" 2>/dev/null; then
-  printf '\n### Session: %s\n\nNext: %s — Item %s: %s.\nSee `docs/status/consensus_plan.md` for details.\n' \
-    "$today" "$phase" "$num" "${title%.}" >> "$WHERE"
+  active_plan=$(ls "$ROOT"/docs/status/consensus_plan*.md 2>/dev/null | sort -V | tail -1 | sed "s|$ROOT/||")
+  printf '\n### Session: %s\n\nNext: %s — Item %s: %s.\nSee `%s` for details.\n' \
+    "$today" "$phase" "$num" "${title%.}" "$active_plan" >> "$WHERE"
 fi
 
 # --- Step 3: Stage everything ---
