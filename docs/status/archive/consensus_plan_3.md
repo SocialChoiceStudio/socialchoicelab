@@ -5,7 +5,7 @@
 **Rounds to consensus:** 3  
 **Status:** CONSENSUS REACHED — both agents agree on all items below.
 
-The second review (35 items, all completed) is archived in `docs/status/project_log.md` (session 2026-03-05). Source review files: `agent_conversations/claude_r02.md`, `codex_r02.md`, `codex_r03.md`.
+The second review (35 items, all completed) is archived in [project_log.md](../project_log.md) (session 2026-03-05). Source review files: `agent_conversations/claude_r02.md`, `codex_r02.md`, `codex_r03.md`.
 
 ---
 
@@ -96,7 +96,7 @@ For each item: the **Origin** column shows which agent identified it (Claude = C
 Do these alongside the items they correspond to.
 
 | Test | Alongside item | File |
-|------|---------------|------|
+|------|----------------|------|
 | `discrete_choice`: all-zero weights throw | Item 2 | `tests/unit/test_prng.cpp` |
 | `discrete_choice`: single negative weight throws | Item 2 | `tests/unit/test_prng.cpp` |
 | `discrete_choice`: NaN/Inf weight throws | Item 2 | `tests/unit/test_prng.cpp` |

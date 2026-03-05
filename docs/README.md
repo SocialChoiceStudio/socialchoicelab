@@ -7,13 +7,15 @@ This file is the single entry point for project documentation.
 | What you need | Where to look |
 |---------------|---------------|
 | What's next / current position | `docs/status/where_we_are.md` |
-| Active backlog (fourth review) | `docs/status/consensus_plan_4.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
+| c_api run plan (spec → implement → test → document) | `docs/status/c_api_plan.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
+| Archived plans (consensus reviews, core completion) | `docs/status/archive/` |
 | Revisit before release or before opening to others | `docs/status/milestone_gates.md` § Revisit before release |
 | Chronological project history | `docs/status/project_log.md` |
 | Architecture intent | `docs/architecture/design_document.md` |
 | StreamManager design & rules | `docs/architecture/stream_manager_design.md` |
+| Indifference (level-set) API spec | `docs/architecture/indifference_design.md` |
 | Code style, build, test | `docs/development/development.md` |
 | Git and GitHub workflow | `docs/development/git_reference.md` |
 | Simulation terminology & example | `docs/development/sample_simulation_description.md` |
@@ -27,7 +29,7 @@ If two docs disagree for execution decisions, use this precedence:
 
 1. `docs/status/where_we_are.md`
 2. `docs/architecture/` (relevant design doc)
-3. `docs/status/consensus_plan_4.md` (active backlog; item status)
+3. `docs/status/roadmap.md` (near-/mid-/long-term)
 4. `docs/status/project_log.md` (history only)
 
 ## Documentation Layout
@@ -39,13 +41,19 @@ docs/
 ├── README.md                              ← you are here (master index)
 ├── status/
 │   ├── where_we_are.md                    ← current position + recent work log
-│   ├── consensus_plan_3.md                ← active backlog (third review, 26 items)
 │   ├── roadmap.md                         ← near-term, mid-term, long-term plans
+│   ├── c_api_plan.md                      ← c_api run plan (spec, implement, test, document)
 │   ├── milestone_gates.md                 ← definition of done per milestone
-│   └── project_log.md                     ← chronological narrative history
+│   ├── project_log.md                     ← chronological narrative history
+│   └── archive/                           ← completed short-term plans (for reference)
+│       ├── README.md
+│       ├── consensus_plan_3.md
+│       ├── consensus_plan_4.md
+│       └── core_completion_plan.md
 ├── architecture/
 │   ├── design_document.md                 ← living system architecture
-│   └── stream_manager_design.md            ← RNG single-owner policy and rules
+│   ├── stream_manager_design.md            ← RNG single-owner policy and rules
+│   └── indifference_design.md              ← level-set API spec (Layer 2)
 ├── development/
 │   ├── development.md                     ← code style, build, lint, test instructions
 │   ├── git_reference.md                   ← solo git/github workflow
@@ -77,7 +85,7 @@ Choose the subdirectory by the doc's purpose:
 For each completed development item:
 
 1. Update `docs/status/where_we_are.md` (next item, last updated date, add to Recent Work).
-2. Mark the item ✅ Done in the active consensus plan (`docs/status/consensus_plan_3.md` or current plan).
+2. If the work came from a plan, mark it ✅ Done in that plan (completed plans are in `docs/status/archive/`).
 3. Add a dated milestone note to `docs/status/project_log.md` when materially relevant.
 
 At **end-of-milestone** (when running `scripts/end-of-milestone.sh`), the script prompts to confirm `docs/status/roadmap.md` is still accurate for near/mid/long-term; update it if horizons have shifted.

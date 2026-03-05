@@ -41,10 +41,13 @@ FetchContent_MakeAvailable(googletest eigen)
 
 # Create the core library
 add_library(socialchoicelab_core
+    include/socialchoicelab/core/linalg.h
     include/socialchoicelab/core/numeric_constants.h
     include/socialchoicelab/core/rng/prng.h
+    include/socialchoicelab/core/types.h
     include/socialchoicelab/core/rng/stream_manager.h
     include/socialchoicelab/preference/distance/distance_functions.h
+    include/socialchoicelab/preference/indifference/level_set.h
     include/socialchoicelab/preference/loss/loss_functions.h
     src/core/rng/stream_manager.cpp
 )
@@ -93,6 +96,10 @@ add_executable(test_loss_functions tests/unit/test_loss_functions.cpp)
 target_compile_options(test_loss_functions PRIVATE ${SocialChoiceLab_compile_options})
 target_link_libraries(test_loss_functions PRIVATE socialchoicelab_core gtest_main)
 
+add_executable(test_core_types tests/unit/test_core_types.cpp)
+target_compile_options(test_core_types PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_core_types PRIVATE socialchoicelab_core gtest_main)
+
 # Register tests with CTest
 add_test(NAME DistanceFunctionsTest COMMAND test_distance_functions)
 add_test(NAME PRNGTest COMMAND test_prng)
@@ -100,11 +107,38 @@ add_test(NAME DistanceComparisonTest COMMAND test_distance_comparison)
 add_test(NAME DistanceSpeedTest COMMAND test_distance_speed)
 add_test(NAME PerformanceComparisonTest COMMAND test_performance_comparison)
 add_test(NAME LossFunctionsTest COMMAND test_loss_functions)
+add_test(NAME CoreTypesTest COMMAND test_core_types)
+
+add_executable(test_level_set tests/unit/test_level_set.cpp)
+target_compile_options(test_level_set PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_level_set PRIVATE socialchoicelab_core gtest_main)
+
+add_test(NAME LevelSetTest COMMAND test_level_set)
 
 # Performance/benchmark tests: report timing only, no strict thresholds.
 # Run only these: ctest -L benchmark. Exclude from fast runs: ctest -LE benchmark.
 set_tests_properties(DistanceSpeedTest PerformanceComparisonTest
     PROPERTIES LABELS "benchmark")
+
+# ---------------------------------------------------------------------------
+# scs_api: stable C API shared library (wraps socialchoicelab_core)
+# ---------------------------------------------------------------------------
+add_library(scs_api SHARED
+    include/scs_api.h
+    src/c_api/scs_api.cpp
+)
+target_include_directories(scs_api
+    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/socialchoicelab
+)
+target_compile_options(scs_api PRIVATE ${SocialChoiceLab_compile_options})
+target_compile_features(scs_api PUBLIC cxx_std_20)
+target_link_libraries(scs_api PRIVATE socialchoicelab_core)
+
+add_executable(test_c_api tests/unit/test_c_api.cpp)
+target_compile_options(test_c_api PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_c_api PRIVATE scs_api gtest_main)
+add_test(NAME CApiTest COMMAND test_c_api)
 
 # Format and lint targets (run from source dir; require clang-format and cpplint)
 add_custom_target(format

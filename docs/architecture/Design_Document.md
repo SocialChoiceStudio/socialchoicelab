@@ -34,17 +34,17 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 ## Layered Architecture
 
 ### 1. Foundation
-- **core::types** – Eigen vectors (Vector2d, Vector3d, VectorXd), CGAL exact types when needed
+- **core::types** – Canonical point/vector types: `core/types.h` defines `Point2d`, `Point3d`, `PointNd` (Eigen::Vector2d, Vector3d, VectorXd). Use these for ideal points, alternatives, and level-set points. CGAL exact types when needed (Layer 3).
 - **core::kernels** – CGAL kernel policy, numeric kernels
-- **core::linalg** – Eigen linear algebra (matrices, vectors, operations)
+- **core::linalg** – Eigen linear algebra; see `core/linalg.h` (index type, single include). Vectors, matrices, and operations used in distance/loss/indifference come from Eigen.
 - **core::rng** – Seeded PRNG, multiple streams
-- **core::serialization** – Protobuf for data exchange (planned; not yet implemented)
+- **core::serialization** – Deferred. Save/load of RNG or core config may be added in a later milestone when there is a concrete need (e.g. simulation checkpoint/resume). Config and repro use JSON/YAML (ModelConfig); no binary serialization in core for now.
 
 ### 2. Preference Services
 - **distance** – Minkowski (p≥1), Euclidean, Manhattan, Chebyshev, custom. Salience weights per dimension (finite, ≥0; zero = dimension masking). Invalid inputs throw `std::invalid_argument`. **Weighting convention (Convention B — dimension pre-scaling):** `d = (Σ (wᵢ |xᵢ - yᵢ|)^p)^(1/p)`. Weight is applied *before* exponentiation; doubling wᵢ halves the effective unit length in dimension i. This differs from Convention A (`d = (Σ wᵢ |xᵢ - yᵢ|^p)^(1/p)`) where weight is outside the exponent. All wrappers (Euclidean, Manhattan, Chebyshev) use Convention B via `minkowski_distance`.
 - **loss** – Linear, quadratic, Gaussian, and threshold loss functions; `distance_to_utility` and `normalize_utility`. Parameter domains enforced (sensitivity, max_loss, steepness, threshold, finite inputs); invalid inputs throw `std::invalid_argument`.
 - **utility** – Applies a loss function to a distance metric to produce utility values
-- **indifference** – Level-set construction; stateless service
+- **indifference** – Level-set construction; stateless service. Given ideal point, utility level, loss config, and distance config, returns points where u(x) = level: in 1D, 0/1/2 points; in 2D, an exact shape (circle, ellipse, superellipse, or polygon). See [Indifference design](indifference_design.md); implementation in `preference/indifference/level_set.h`.
 
 ### 3. Geometry Services *(planned, not yet built)*
 - **geom2d** – CGAL EPEC exact 2D operations
@@ -80,10 +80,12 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 
 ### Boundaries
 - **Core engine**: header-only exposure limited to your C++ domain types; no R/Python includes.
-- **c_api**: extern "C" functions with:
-  - Opaque handles: SCS_Handle*, SCS_Profile*, etc.
-  - POD config/result structs; lengths + pointers for arrays; error codes + message buffer.
-  - No exceptions cross the boundary (catch → return code).
+- **c_api**: stable C interface implemented in `include/scs_api.h` + `src/c_api/scs_api.cpp`.
+  Full specification: [c_api_design.md](c_api_design.md).
+  - Opaque handle: `SCS_StreamManager*` (wraps `core::rng::StreamManager`).
+  - POD config/result structs (`SCS_LossConfig`, `SCS_DistanceConfig`, `SCS_LevelSet2d`); lengths + pointers for arrays; error codes + message buffer.
+  - No exceptions cross the boundary (`catch` → return code).
+  - **Status:** c_api minimal milestone complete (Items 29–31 implemented).
 
 ### R binding (cpp11)
 - **Files**: r/src/cpp11_bindings.cpp, r/src/init.c (if needed for registration).

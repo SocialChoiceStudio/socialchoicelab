@@ -2,13 +2,13 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Batch 3
-- **Next item:** 11 — **C++20 required but no C++20 features used** — `set(CMAKE_C…. Severity: Low.
+- **Current phase:** c_api minimal complete. Core complete + c_api wrapper built and tested.
+- **Next:** R or Python bindings (see [roadmap.md](roadmap.md) near-term). c_api_plan.md is ready to archive.
 - **Last updated:** 2026-03-05
 
-**Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan_4.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.
+**Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/consensus_plan_4.md`. Use the plan's Status column to confirm; if they disagree, update this file.
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/roadmap.md`.
 ---
 
 ## Recent Work
@@ -202,6 +202,13 @@ See `docs/status/consensus_plan_4.md` for details.
 - **Item 30:** Implemented in C++. `StreamManager::register_streams(names)` sets an optional allowlist; when set, `get_stream(name)` and `reset_stream(name, seed)` throw `std::invalid_argument` for names not in the set. `register_streams({})` clears the allowlist. Documented in `stream_manager.h`, `stream_manager_design.md`, and design_document.md table; c_api will enforce same at boundary.
 - **Item 31:** No code change. `PRNG::engine()` remains in C++ API; Doxygen note added: internal/test use only, do not expose via c_api. Design doc table updated with decision.
 - **Tests:** `RegisterStreamsThenGetUnknownThrows`, `RegisterStreamsThenGetAllowedWorks`, `RegisterStreamsEmptyClearsAllowlist` in `test_prng.cpp`.
+
+### Session: 2026-03-05 — c_api minimal milestone (Steps 1–4 complete)
+
+- **Step 1 (Specify):** `include/scs_api.h` — public C header with `SCS_LossConfig`, `SCS_DistanceConfig`, `SCS_LevelSet2d`, `SCS_StreamManager*` opaque handle, all function declarations. Error-code + message-buffer contract; no STL across boundary (Items 29–31 satisfied).
+- **Step 2 (Implement):** `src/c_api/scs_api.cpp` — `extern "C"` wrapper over C++ core; `try/catch` → return-code + `set_error()`; maps C POD structs to C++ types via `Eigen::Map`; `SCS_StreamManagerImpl` owns the `StreamManager`.
+- **Step 3 (Test):** `tests/unit/test_c_api.cpp` — 35 GTest cases covering distance (4 metrics + error paths), loss/utility, level-set 1D/2D (all 4 shapes), `to_polygon` sampling, and StreamManager lifecycle/allowlist/reproducibility/all draw methods. All 35 pass.
+- **Step 4 (Document):** `docs/architecture/c_api_design.md` created (constraints table, file list, error contract, struct field table, function signatures, C usage example). Design doc § Boundaries updated. c_api_plan.md all steps ✅ Done.
 
 ### Session: 2026-03-05 — Items 32–35 (best-practice check, implemented)
 

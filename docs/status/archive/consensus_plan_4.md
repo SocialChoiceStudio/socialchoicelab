@@ -5,7 +5,7 @@
 **Rounds to consensus:** 5 (r01_claude → r02_GPT → r03_claude → r04_GPT → r05_claude)  
 **Status:** CONSENSUS REACHED — both agents agree on all items below.
 
-The third review (26 items, all completed) is archived in `docs/status/consensus_plan_3.md`. Source review files: `agent_conversations/r01_claude.md`, `r02_GPT.md`, `r03_claude.md`, `r04_GPT.md`, `r05_claude.md`.
+The third review (26 items, all completed) is archived in [consensus_plan_3.md](consensus_plan_3.md). Source review files: `agent_conversations/r01_claude.md`, `r02_GPT.md`, `r03_claude.md`, `r04_GPT.md`, `r05_claude.md`.
 
 ---
 
