@@ -33,7 +33,7 @@ class PRNG {
    * @param master_seed Master seed for reproducible generation
    */
   explicit PRNG(uint64_t master_seed = k_default_master_seed)
-      : master_seed_(master_seed), engine_(master_seed) {}
+      : master_seed_(master_seed), engine_(master_seed), draw_count_(0) {}
 
   /**
    * @brief Get master seed
@@ -48,6 +48,7 @@ class PRNG {
   void reset(uint64_t seed) {
     master_seed_ = seed;
     engine_.seed(seed);
+    draw_count_ = 0;
   }
 
   /**
@@ -58,13 +59,14 @@ class PRNG {
    * @return Random integer
    */
   template <typename T>
-  T uniform_int(T min, T max) {
+  [[nodiscard]] T uniform_int(T min, T max) {
     static_assert(std::is_integral_v<T> && !std::is_same_v<T, bool>,
                   "uniform_int requires an integral type (not bool)");
     if (min > max) {
       throw std::invalid_argument("uniform_int: min must be <= max");
     }
     std::uniform_int_distribution<T> dist(min, max);
+    ++draw_count_;
     return dist(engine_);
   }
 
@@ -76,7 +78,7 @@ class PRNG {
    * @return Random real number
    */
   template <typename T>
-  T uniform_real(T min, T max) {
+  [[nodiscard]] T uniform_real(T min, T max) {
     static_assert(std::is_floating_point_v<T>,
                   "uniform_real requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
@@ -88,6 +90,7 @@ class PRNG {
       throw std::invalid_argument("uniform_real: min must be < max");
     }
     std::uniform_real_distribution<T> dist(min, max);
+    ++draw_count_;
     return dist(engine_);
   }
 
@@ -99,7 +102,7 @@ class PRNG {
    * @return Random number from normal distribution
    */
   template <typename T>
-  T normal(T mean, T stddev) {
+  [[nodiscard]] T normal(T mean, T stddev) {
     static_assert(std::is_floating_point_v<T>,
                   "normal requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
@@ -111,6 +114,7 @@ class PRNG {
       throw std::invalid_argument("normal: stddev must be positive");
     }
     std::normal_distribution<T> dist(mean, stddev);
+    ++draw_count_;
     return dist(engine_);
   }
 
@@ -121,7 +125,7 @@ class PRNG {
    * @return Random number from exponential distribution
    */
   template <typename T>
-  T exponential(T lambda) {
+  [[nodiscard]] T exponential(T lambda) {
     static_assert(std::is_floating_point_v<T>,
                   "exponential requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
@@ -133,6 +137,7 @@ class PRNG {
       throw std::invalid_argument("exponential: lambda must be positive");
     }
     std::exponential_distribution<T> dist(lambda);
+    ++draw_count_;
     return dist(engine_);
   }
 
@@ -144,7 +149,7 @@ class PRNG {
    * @return Random number from gamma distribution
    */
   template <typename T>
-  T gamma(T alpha, T beta) {
+  [[nodiscard]] T gamma(T alpha, T beta) {
     static_assert(std::is_floating_point_v<T>,
                   "gamma requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
@@ -156,6 +161,7 @@ class PRNG {
       throw std::invalid_argument("gamma: alpha and beta must be positive");
     }
     std::gamma_distribution<T> dist(alpha, beta);
+    ++draw_count_;
     return dist(engine_);
   }
 
@@ -167,7 +173,7 @@ class PRNG {
    * @return Random number from beta distribution
    */
   template <typename T>
-  T beta(T alpha, T beta_param) {
+  [[nodiscard]] T beta(T alpha, T beta_param) {
     static_assert(std::is_floating_point_v<T>,
                   "beta requires a floating-point type");
     if constexpr (std::is_floating_point_v<T>) {
@@ -191,6 +197,7 @@ class PRNG {
       throw std::domain_error(
           "beta: both gamma draws were zero or negative (division by zero)");
     }
+    ++draw_count_;
     return x / sum;
   }
 
@@ -199,7 +206,7 @@ class PRNG {
    * @param probability Probability of true (default 0.5)
    * @return Random boolean
    */
-  bool bernoulli(double probability = 0.5) {
+  [[nodiscard]] bool bernoulli(double probability = 0.5) {
     if (!std::isfinite(probability)) {
       throw std::invalid_argument("bernoulli: probability must be finite");
     }
@@ -207,6 +214,7 @@ class PRNG {
       throw std::invalid_argument("bernoulli: probability must be in [0, 1]");
     }
     std::bernoulli_distribution dist(probability);
+    ++draw_count_;
     return dist(engine_);
   }
 
@@ -221,7 +229,7 @@ class PRNG {
    * or non-finite, or all weights are zero.
    */
   template <typename T>
-  size_t discrete_choice(const std::vector<T>& weights) {
+  [[nodiscard]] size_t discrete_choice(const std::vector<T>& weights) {
     if (weights.empty()) {
       throw std::invalid_argument("discrete_choice: weights must not be empty");
     }
@@ -249,6 +257,7 @@ class PRNG {
           "discrete_choice: at least one weight must be > 0");
     }
     std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
+    ++draw_count_;
     return dist(engine_);
   }
 
@@ -257,11 +266,12 @@ class PRNG {
    * @param size Number of choices (must be at least 1)
    * @return Random index in [0, size)
    */
-  size_t uniform_choice(size_t size) {
+  [[nodiscard]] size_t uniform_choice(size_t size) {
     if (size == 0) {
       throw std::invalid_argument("uniform_choice: size must be at least 1");
     }
-    return uniform_int<size_t>(0, size - 1);
+    return uniform_int<size_t>(0,
+                               size - 1);  // uniform_int increments draw_count_
   }
 
   /**
@@ -276,7 +286,8 @@ class PRNG {
    * @throws std::bad_alloc if string allocation fails
    */
   std::string state_string() const {
-    return "PRNG(master_seed=" + std::to_string(master_seed_) + ")";
+    return "PRNG(master_seed=" + std::to_string(master_seed_) +
+           ", draws=" + std::to_string(draw_count_) + ")";
   }
 
   /**
@@ -294,6 +305,8 @@ class PRNG {
  private:
   uint64_t master_seed_;
   engine_type engine_;
+  uint64_t draw_count_;  // Number of draws since construction or last reset
+                         // (Item 15)
 };
 
 }  // namespace socialchoicelab::core::rng

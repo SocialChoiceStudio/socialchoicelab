@@ -62,6 +62,7 @@ else()
   )
 endif()
 target_compile_options(socialchoicelab_core PRIVATE ${SocialChoiceLab_compile_options})
+target_compile_features(socialchoicelab_core PUBLIC cxx_std_20)
 target_link_libraries(socialchoicelab_core PUBLIC Eigen3::Eigen)
 
 # Enable testing

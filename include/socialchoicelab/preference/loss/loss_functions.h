@@ -3,12 +3,10 @@
 
 #pragma once
 
-#include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <type_traits>
-#include <vector>
 
 #include "socialchoicelab/core/numeric_constants.h"
 
@@ -42,9 +40,9 @@ enum class LossFunctionType {
  * @return Positive loss magnitude
  */
 template <typename T>
-T linear_loss(T distance, T sensitivity = T{1.0}) {
-  static_assert(std::is_arithmetic_v<T>,
-                "Linear loss requires arithmetic type");
+[[nodiscard]] T linear_loss(T distance, T sensitivity = T{1.0}) {
+  static_assert(std::is_floating_point_v<T>,
+                "Linear loss requires a floating-point type");
   if constexpr (std::is_floating_point_v<T>) {
     if (!std::isfinite(distance))
       throw std::invalid_argument("linear_loss: distance must be finite");
@@ -72,9 +70,9 @@ T linear_loss(T distance, T sensitivity = T{1.0}) {
  * @return Positive loss magnitude
  */
 template <typename T>
-T quadratic_loss(T distance, T sensitivity = T{1.0}) {
-  static_assert(std::is_arithmetic_v<T>,
-                "Quadratic loss requires arithmetic type");
+[[nodiscard]] T quadratic_loss(T distance, T sensitivity = T{1.0}) {
+  static_assert(std::is_floating_point_v<T>,
+                "Quadratic loss requires a floating-point type");
   if constexpr (std::is_floating_point_v<T>) {
     if (!std::isfinite(distance))
       throw std::invalid_argument("quadratic_loss: distance must be finite");
@@ -104,7 +102,8 @@ T quadratic_loss(T distance, T sensitivity = T{1.0}) {
  * @return Positive loss magnitude
  */
 template <typename T>
-T gaussian_loss(T distance, T max_loss = T{1.0}, T steepness = T{1.0}) {
+[[nodiscard]] T gaussian_loss(T distance, T max_loss = T{1.0},
+                              T steepness = T{1.0}) {
   static_assert(std::is_floating_point_v<T>,
                 "gaussian_loss requires a floating-point type");
   if constexpr (std::is_floating_point_v<T>) {
@@ -138,9 +137,10 @@ T gaussian_loss(T distance, T max_loss = T{1.0}, T steepness = T{1.0}) {
  * @return Positive loss magnitude
  */
 template <typename T>
-T threshold_loss(T distance, T threshold, T sensitivity = T{1.0}) {
-  static_assert(std::is_arithmetic_v<T>,
-                "Threshold loss requires arithmetic type");
+[[nodiscard]] T threshold_loss(T distance, T threshold,
+                               T sensitivity = T{1.0}) {
+  static_assert(std::is_floating_point_v<T>,
+                "Threshold loss requires a floating-point type");
   if constexpr (std::is_floating_point_v<T>) {
     if (!std::isfinite(distance))
       throw std::invalid_argument("threshold_loss: distance must be finite");
@@ -162,6 +162,14 @@ T threshold_loss(T distance, T threshold, T sensitivity = T{1.0}) {
  * @note For THRESHOLD loss, always pass @p threshold explicitly; the default
  * 0.5 may not match your model.
  *
+ * Parameter usage by loss type (unlisted parameters are ignored):
+ * | Loss type  | Used parameters   | Ignored parameters              |
+ * |------------|-------------------|---------------------------------|
+ * | LINEAR     | sensitivity       | max_loss, steepness, threshold  |
+ * | QUADRATIC  | sensitivity       | max_loss, steepness, threshold  |
+ * | GAUSSIAN   | max_loss, steepness | sensitivity, threshold        |
+ * | THRESHOLD  | threshold, sensitivity | max_loss, steepness         |
+ *
  * @tparam T Numeric type
  * @param distance Distance from ideal point
  * @param loss_type Type of loss function to apply
@@ -172,9 +180,10 @@ T threshold_loss(T distance, T threshold, T sensitivity = T{1.0}) {
  * @return Utility value (negative of loss)
  */
 template <typename T>
-T distance_to_utility(T distance, LossFunctionType loss_type,
-                      T sensitivity = T{1.0}, T max_loss = T{1.0},
-                      T steepness = T{1.0}, T threshold = T{0.5}) {
+[[nodiscard]] T distance_to_utility(T distance, LossFunctionType loss_type,
+                                    T sensitivity = T{1.0}, T max_loss = T{1.0},
+                                    T steepness = T{1.0},
+                                    T threshold = T{0.5}) {
   if constexpr (std::is_floating_point_v<T>) {
     if (!std::isfinite(distance))
       throw std::invalid_argument(
@@ -209,6 +218,10 @@ T distance_to_utility(T distance, LossFunctionType loss_type,
  * Uses the same loss parameters as were used to produce the raw utility,
  * so normalization is correct for GAUSSIAN and THRESHOLD types.
  *
+ * Parameter usage by loss type (same as distance_to_utility; unlisted are
+ * ignored): LINEAR/QUADRATIC → sensitivity; GAUSSIAN → max_loss, steepness;
+ * THRESHOLD → threshold, sensitivity.
+ *
  * For integer @p T, the result is 0 or 1 (binary clipping); continuous
  * [0,1] normalization is meaningful only for floating-point types.
  *
@@ -233,9 +246,10 @@ T distance_to_utility(T distance, LossFunctionType loss_type,
  * @return Normalized utility in [0, 1] (or 0/1 for integer T)
  */
 template <typename T>
-T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,
-                    T sensitivity = T{1.0}, T max_loss = T{1.0},
-                    T steepness = T{1.0}, T threshold = T{0.5}) {
+[[nodiscard]] T normalize_utility(T utility, T max_distance,
+                                  LossFunctionType loss_type,
+                                  T sensitivity = T{1.0}, T max_loss = T{1.0},
+                                  T steepness = T{1.0}, T threshold = T{0.5}) {
   if constexpr (std::is_floating_point_v<T>) {
     if (!std::isfinite(utility))
       throw std::invalid_argument("normalize_utility: utility must be finite");
@@ -273,5 +287,73 @@ T normalize_utility(T utility, T max_distance, LossFunctionType loss_type,
 
   return (utility - min_utility) / (max_utility - min_utility);
 }
+
+/**
+ * @brief Precomputes utility bounds once for batch normalization (Item 12)
+ *
+ * Use when normalizing many utilities with the same loss and max_distance:
+ * construct once with the loss parameters, then call normalize(utility) for
+ * each value. Avoids recomputing max_utility and min_utility on every call.
+ * Aligns with the planned c_api SCS_LossConfig (Item 29, third review).
+ *
+ * Parameter usage by loss type: same as distance_to_utility (LINEAR/QUADRATIC
+ * → sensitivity; GAUSSIAN → max_loss, steepness; THRESHOLD → threshold,
+ * sensitivity).
+ */
+template <typename T>
+class UtilityNormalizer {
+ public:
+  /**
+   * @brief Construct and precompute bounds for the given loss configuration
+   * @param max_distance Maximum possible distance (same meaning as
+   * normalize_utility)
+   * @param loss_type Loss function type
+   * @param sensitivity Sensitivity (α) for LINEAR, QUADRATIC, THRESHOLD
+   * @param max_loss Maximum loss for GAUSSIAN
+   * @param steepness Steepness for GAUSSIAN
+   * @param threshold Threshold for THRESHOLD
+   */
+  UtilityNormalizer(T max_distance, LossFunctionType loss_type,
+                    T sensitivity = T{1.0}, T max_loss = T{1.0},
+                    T steepness = T{1.0}, T threshold = T{0.5}) {
+    if (max_distance < T{0})
+      throw std::invalid_argument(
+          "UtilityNormalizer: max_distance must be >= 0");
+    max_utility_ = distance_to_utility(T{0}, loss_type, sensitivity, max_loss,
+                                       steepness, threshold);
+    min_utility_ = distance_to_utility(max_distance, loss_type, sensitivity,
+                                       max_loss, steepness, threshold);
+  }
+
+  /**
+   * @brief Normalize a single utility to [0, 1] using precomputed bounds
+   * @param utility Raw utility value (must be finite for floating-point T)
+   * @return Normalized utility in [0, 1] (or 0/1 for integer T)
+   */
+  [[nodiscard]] T normalize(T utility) const {
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(utility))
+        throw std::invalid_argument(
+            "UtilityNormalizer::normalize: utility must be finite");
+    }
+    if constexpr (std::is_floating_point_v<T>) {
+      T range = max_utility_ - min_utility_;
+      T scale =
+          std::max({std::abs(max_utility_), std::abs(min_utility_), T{1}});
+      T tol = std::max(
+          static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_rel) *
+              scale,
+          static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_abs));
+      if (std::abs(range) <= tol) return T{1.0};
+    } else {
+      if (max_utility_ == min_utility_) return T{1.0};
+    }
+    return (utility - min_utility_) / (max_utility_ - min_utility_);
+  }
+
+ private:
+  T max_utility_;
+  T min_utility_;
+};
 
 }  // namespace socialchoicelab::preference::loss

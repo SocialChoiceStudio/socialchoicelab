@@ -69,6 +69,12 @@ class StreamManager {
    * "tiebreak"})
    */
   void register_streams(const std::vector<std::string>& names) {
+    for (const auto& n : names) {
+      if (n.empty()) {
+        throw std::invalid_argument(
+            "StreamManager::register_streams: stream name must not be empty");
+      }
+    }
     allowed_stream_names_.clear();
     for (const auto& n : names) {
       allowed_stream_names_.insert(n);

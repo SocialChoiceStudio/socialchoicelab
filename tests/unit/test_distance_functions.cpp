@@ -283,3 +283,18 @@ TEST_F(DistanceFunctionsTest, MinkowskiAtChebyshevCutoffBoundary) {
   double d_above = minkowski_distance(point_a, point_b, 100.1, w);
   EXPECT_NEAR(d_above, d_cheb, 1e-6);
 }
+
+// Item 6: p=100 with large coordinates uses Chebyshev path (>= cutoff), no
+// overflow
+TEST_F(DistanceFunctionsTest, MinkowskiP100LargeCoordsNoOverflow) {
+  Eigen::Vector2d large_a(2500.0, 2500.0);
+  Eigen::Vector2d large_b(2600.0, 2600.0);
+  std::vector<double> w = {1.0, 1.0};
+  // With order_p >= 100.0 we route to Chebyshev; general pow path would
+  // overflow
+  double d_mink = minkowski_distance(large_a, large_b, 100.0, w);
+  double d_cheb = chebyshev_distance(large_a, large_b, w);
+  EXPECT_DOUBLE_EQ(d_mink, d_cheb);
+  EXPECT_TRUE(std::isfinite(d_mink))
+      << "p=100 with large coords must be finite";
+}

@@ -22,9 +22,11 @@ Thanks for your interest in contributing. This project is part of **SocialChoice
 6. **Update documentation as needed**  
    When you add or change behaviour, update the relevant docs. The docs index is [docs/README.md](docs/README.md); keep a single source of truth and avoid duplicating the same information in multiple files.
 
-## First-time setup: pre-commit hook
+## First-time setup
 
-Install the formatting hook once after cloning. It runs `./lint.sh format` automatically before every commit and blocks if anything is reformatted (so you can stage the changes and recommit):
+For a full clone-to-workflow checklist (tools, build, pre-commit, Cursor), see [docs/development/development.md](docs/development/development.md) § After cloning.
+
+**Pre-commit hook (optional):** Install the formatting hook once after cloning. It runs `./lint.sh format` automatically before every commit and blocks if anything is reformatted (so you can stage the changes and recommit):
 
 ```bash
 cp scripts/pre-commit.sh .git/hooks/pre-commit

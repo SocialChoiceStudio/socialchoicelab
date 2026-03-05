@@ -40,6 +40,21 @@ TEST_F(PRNGTest, Construction) {
   EXPECT_NE(rng1.uniform_int(0, 100), rng3.uniform_int(0, 100));
 }
 
+// Item 15: state_string() reflects draw count
+TEST_F(PRNGTest, StateStringReflectsDrawCount) {
+  PRNG rng(99999);
+  std::string s0 = rng.state_string();
+  EXPECT_NE(s0.find("draws=0"), std::string::npos) << s0;
+  (void)rng.uniform_int(0, 1);
+  (void)rng.uniform_int(0, 1);
+  (void)rng.uniform_real(0.0, 1.0);
+  std::string s3 = rng.state_string();
+  EXPECT_NE(s3.find("draws=3"), std::string::npos) << s3;
+  rng.reset(99999);
+  std::string s0_again = rng.state_string();
+  EXPECT_NE(s0_again.find("draws=0"), std::string::npos) << s0_again;
+}
+
 TEST_F(PRNGTest, UniformInt) {
   PRNG rng(k_default_master_seed);
 
@@ -483,6 +498,14 @@ TEST_F(StreamManagerTest, RegisterStreamsEmptyClearsAllowlist) {
   mgr.register_streams({});
   EXPECT_NO_THROW(mgr.get_stream("other"));
   EXPECT_TRUE(mgr.has_stream("other"));
+}
+
+// Item 14: register_streams rejects empty string as stream name
+TEST_F(StreamManagerTest, RegisterStreamsEmptyNameThrows) {
+  StreamManager mgr(12345);
+  EXPECT_THROW(mgr.register_streams({"", "voters"}), std::invalid_argument);
+  EXPECT_THROW(mgr.register_streams({"voters", ""}), std::invalid_argument);
+  EXPECT_THROW(mgr.register_streams({""}), std::invalid_argument);
 }
 
 // Item 2: discrete_choice weight validation

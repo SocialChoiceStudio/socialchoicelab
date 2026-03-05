@@ -2,9 +2,9 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Batch 1 (fourth review)
-- **Next item:** 1 — Dead includes in `loss_functions.h`. Severity: High.
-- **Last updated:** 2026-03-05 (CI paths filter + pip PEP 668 fix applied; Item 8 ✅ Done)
+- **Current phase:** Batch 3
+- **Next item:** 11 — **C++20 required but no C++20 features used** — `set(CMAKE_C…. Severity: Low.
+- **Last updated:** 2026-03-05
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan_4.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in the plan, (2) update this file. If this file and the plan disagree, the plan wins — fix this file.
 
@@ -12,6 +12,33 @@
 ---
 
 ## Recent Work
+
+### Session: 2026-03-05 — Batch 3 Items 12–16 complete
+
+- **Item 12:** Added `UtilityNormalizer<T>` in `loss_functions.h`: constructor precomputes max/min utility; `normalize(utility)` uses cached bounds. Test `UtilityNormalizerMatchesNormalizeUtility` in test_loss_functions.cpp.
+- **Item 13:** Added `target_compile_features(socialchoicelab_core PUBLIC cxx_std_20)` in CMakeLists.txt.
+- **Item 14:** `register_streams` now validates that no name is empty; throws `std::invalid_argument` with descriptive message. Test `RegisterStreamsEmptyNameThrows`.
+- **Item 15:** `PRNG::state_string()` now includes draw count (e.g. `draws=3`). Added `draw_count_` member, incremented in all draw methods, reset in `reset()`. Test `StateStringReflectsDrawCount`.
+- **Item 16:** CHANGELOG had no `### Fixed` section; no change needed (marked Done).
+- **Item 17:** Corrected Convention B formula in `consensus_plan_3.md` Item 1: was `(Σ wᵢ |xᵢ - yᵢ|^p)^(1/p)` (Convention A); now `(Σ (wᵢ |xᵢ - yᵢ|)^p)^(1/p)` (Convention B). Verified against design_document.md and code.
+
+### Session: 2026-03-05 — Batch 2 (Items 5–7, 9–10) complete
+
+- **Item 5:** Added roadmap pointer to where_we_are rule: when all consensus plan items complete, see docs/status/roadmap.md.
+- **Item 6:** Minkowski cutoff changed to `order_p >= k_minkowski_chebyshev_cutoff`; added test `MinkowskiP100LargeCoordsNoOverflow` (p=100, coords 2500).
+- **Item 7:** Added `[[nodiscard]]` to all distance functions, loss functions, `distance_to_utility`, `normalize_utility`, and PRNG draw methods (uniform_int, uniform_real, normal, exponential, gamma, beta, bernoulli, discrete_choice, uniform_choice).
+- **Item 8:** Already Done (CI pip PEP 668).
+- **Item 9:** Doxygen parameter-usage table added for `distance_to_utility` and `normalize_utility` (which params used per LossFunctionType).
+- **Item 10:** Extracted `detail::validate_distance_inputs` in `distance_functions.h`; `minkowski_distance` and `chebyshev_distance` call it (re-validation when minkowski routes to chebyshev accepted per plan).
+- Build and ctest (excl. benchmark) pass. Next: Batch 3.
+
+### Session: 2026-03-05 — Batch 1 (Items 1–4) complete
+
+- **Item 1:** Removed dead `#include <Eigen/Dense>` and `#include <vector>` from `loss_functions.h`.
+- **Item 2:** Replaced local `1e-9` in Minkowski p=1/p=2 fast path with `k_near_zero_rel` from `numeric_constants.h`; added include in `distance_functions.h`.
+- **Item 3:** Fixed signed/unsigned comparison: `static_cast<Eigen::Index>(salience_weights.size()) != N` in `minkowski_distance` and `chebyshev_distance`.
+- **Item 4:** Restricted `linear_loss`, `quadratic_loss`, `threshold_loss` to floating-point `T` via `static_assert(std::is_floating_point_v<T>)`; removed int instantiation from `test_loss_functions.cpp` TemplateInstantiation test.
+- Build and ctest (excl. benchmark) pass.
 
 ### Session: 2026-03-05 — Fourth review complete; consensus_plan_4.md created
 

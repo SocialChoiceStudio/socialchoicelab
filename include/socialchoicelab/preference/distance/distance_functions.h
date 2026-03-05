@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "socialchoicelab/core/numeric_constants.h"
+
 namespace socialchoicelab::preference::distance {
 
 /**
@@ -30,9 +32,56 @@ constexpr double k_minkowski_chebyshev_cutoff = 100.0;
 
 // Forward declaration so minkowski_distance can call chebyshev_distance.
 template <typename Derived1, typename Derived2, typename T>
-T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
-                     const Eigen::MatrixBase<Derived2>& alternative_point,
-                     const std::vector<T>& salience_weights);
+[[nodiscard]] T chebyshev_distance(
+    const Eigen::MatrixBase<Derived1>& ideal_point,
+    const Eigen::MatrixBase<Derived2>& alternative_point,
+    const std::vector<T>& salience_weights);
+
+namespace detail {
+
+template <typename Derived1, typename Derived2, typename T>
+void validate_distance_inputs(
+    const Eigen::MatrixBase<Derived1>& ideal_point,
+    const Eigen::MatrixBase<Derived2>& alternative_point,
+    const std::vector<T>& salience_weights) {
+  const Eigen::Index N = ideal_point.size();
+  if (N != alternative_point.size()) {
+    throw std::invalid_argument(
+        "Ideal point and alternative point must have same dimension");
+  }
+  if (salience_weights.empty()) {
+    throw std::invalid_argument(
+        "Weighted Minkowski distance requires a salience vector equal to the "
+        "dimensionality of the space");
+  }
+  if (static_cast<Eigen::Index>(salience_weights.size()) != N) {
+    throw std::invalid_argument(
+        "Weighted Minkowski distance requires a salience vector equal to the "
+        "dimensionality of the space");
+  }
+  for (Eigen::Index i = 0; i < N; ++i) {
+    if (!std::isfinite(static_cast<double>(ideal_point[i]))) {
+      throw std::invalid_argument("ideal_point[" + std::to_string(i) +
+                                  "] is not finite");
+    }
+    if (!std::isfinite(static_cast<double>(alternative_point[i]))) {
+      throw std::invalid_argument("alternative_point[" + std::to_string(i) +
+                                  "] is not finite");
+    }
+    if constexpr (std::is_floating_point_v<T>) {
+      if (!std::isfinite(salience_weights[i])) {
+        throw std::invalid_argument("salience_weights[" + std::to_string(i) +
+                                    "] is not finite");
+      }
+    }
+    if (salience_weights[i] < T{0}) {
+      throw std::invalid_argument("salience_weights[" + std::to_string(i) +
+                                  "] must be >= 0");
+    }
+  }
+}
+
+}  // namespace detail
 
 /**
  * @brief Minkowski distance with salience weights (Convention B)
@@ -68,31 +117,16 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @return Weighted Minkowski distance
  */
 template <typename Derived1, typename Derived2, typename T>
-T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
-                     const Eigen::MatrixBase<Derived2>& alternative_point,
-                     T order_p, const std::vector<T>& salience_weights) {
+[[nodiscard]] T minkowski_distance(
+    const Eigen::MatrixBase<Derived1>& ideal_point,
+    const Eigen::MatrixBase<Derived2>& alternative_point, T order_p,
+    const std::vector<T>& salience_weights) {
   static_assert(std::is_floating_point_v<T>,
                 "minkowski_distance requires a floating-point type");
 
+  detail::validate_distance_inputs(ideal_point, alternative_point,
+                                   salience_weights);
   const Eigen::Index N = ideal_point.size();
-  if (N != alternative_point.size()) {
-    throw std::invalid_argument(
-        "Ideal point and alternative point must have same dimension");
-  }
-
-  // Weighted Minkowski distance requires a salience vector equal to the
-  // dimensionality of the space
-  if (salience_weights.empty()) {
-    throw std::invalid_argument(
-        "Weighted Minkowski distance requires a salience vector equal to the "
-        "dimensionality of the space");
-  }
-
-  if (salience_weights.size() != N) {
-    throw std::invalid_argument(
-        "Weighted Minkowski distance requires a salience vector equal to the "
-        "dimensionality of the space");
-  }
 
   if (order_p < T{1}) {
     throw std::invalid_argument("Minkowski order_p must be >= 1");
@@ -104,28 +138,8 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
     }
   }
 
-  for (Eigen::Index i = 0; i < N; ++i) {
-    if (!std::isfinite(static_cast<double>(ideal_point[i]))) {
-      throw std::invalid_argument("ideal_point[" + std::to_string(i) +
-                                  "] is not finite");
-    }
-    if (!std::isfinite(static_cast<double>(alternative_point[i]))) {
-      throw std::invalid_argument("alternative_point[" + std::to_string(i) +
-                                  "] is not finite");
-    }
-    if constexpr (std::is_floating_point_v<T>) {
-      if (!std::isfinite(salience_weights[i])) {
-        throw std::invalid_argument("salience_weights[" + std::to_string(i) +
-                                    "] is not finite");
-      }
-    }
-    if (salience_weights[i] < T{0}) {
-      throw std::invalid_argument("salience_weights[" + std::to_string(i) +
-                                  "] must be >= 0");
-    }
-  }
-
-  const T eps = static_cast<T>(1e-9);
+  const T eps =
+      static_cast<T>(socialchoicelab::core::near_zero::k_near_zero_rel);
 
   // p=1: Manhattan (sum of absolute weighted differences), avoid std::pow
   if (std::abs(order_p - T{1}) < eps) {
@@ -150,7 +164,7 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
   }
 
   // For very large p, approximate by Chebyshev (L∞) to avoid overflow
-  if (order_p > static_cast<T>(k_minkowski_chebyshev_cutoff)) {
+  if (order_p >= static_cast<T>(k_minkowski_chebyshev_cutoff)) {
     return chebyshev_distance(ideal_point, alternative_point, salience_weights);
   }
 
@@ -178,9 +192,10 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @return Euclidean distance
  */
 template <typename Derived1, typename Derived2, typename T>
-T euclidean_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
-                     const Eigen::MatrixBase<Derived2>& alternative_point,
-                     const std::vector<T>& salience_weights) {
+[[nodiscard]] T euclidean_distance(
+    const Eigen::MatrixBase<Derived1>& ideal_point,
+    const Eigen::MatrixBase<Derived2>& alternative_point,
+    const std::vector<T>& salience_weights) {
   return minkowski_distance(ideal_point, alternative_point, T{2.0},
                             salience_weights);
 }
@@ -199,9 +214,10 @@ T euclidean_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @return Manhattan distance
  */
 template <typename Derived1, typename Derived2, typename T>
-T manhattan_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
-                     const Eigen::MatrixBase<Derived2>& alternative_point,
-                     const std::vector<T>& salience_weights) {
+[[nodiscard]] T manhattan_distance(
+    const Eigen::MatrixBase<Derived1>& ideal_point,
+    const Eigen::MatrixBase<Derived2>& alternative_point,
+    const std::vector<T>& salience_weights) {
   return minkowski_distance(ideal_point, alternative_point, T{1.0},
                             salience_weights);
 }
@@ -220,49 +236,13 @@ T manhattan_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @return Chebyshev distance
  */
 template <typename Derived1, typename Derived2, typename T>
-T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
-                     const Eigen::MatrixBase<Derived2>& alternative_point,
-                     const std::vector<T>& salience_weights) {
+[[nodiscard]] T chebyshev_distance(
+    const Eigen::MatrixBase<Derived1>& ideal_point,
+    const Eigen::MatrixBase<Derived2>& alternative_point,
+    const std::vector<T>& salience_weights) {
+  detail::validate_distance_inputs(ideal_point, alternative_point,
+                                   salience_weights);
   const Eigen::Index N = ideal_point.size();
-  if (N != alternative_point.size()) {
-    throw std::invalid_argument(
-        "Ideal point and alternative point must have same dimension");
-  }
-
-  // Weighted Chebyshev distance requires a salience vector equal to the
-  // dimensionality of the space
-  if (salience_weights.empty()) {
-    throw std::invalid_argument(
-        "Weighted Chebyshev distance requires a salience vector equal to the "
-        "dimensionality of the space");
-  }
-
-  if (salience_weights.size() != N) {
-    throw std::invalid_argument(
-        "Weighted Chebyshev distance requires a salience vector equal to the "
-        "dimensionality of the space");
-  }
-
-  for (Eigen::Index i = 0; i < N; ++i) {
-    if (!std::isfinite(static_cast<double>(ideal_point[i]))) {
-      throw std::invalid_argument("ideal_point[" + std::to_string(i) +
-                                  "] is not finite");
-    }
-    if (!std::isfinite(static_cast<double>(alternative_point[i]))) {
-      throw std::invalid_argument("alternative_point[" + std::to_string(i) +
-                                  "] is not finite");
-    }
-    if constexpr (std::is_floating_point_v<T>) {
-      if (!std::isfinite(salience_weights[i])) {
-        throw std::invalid_argument("salience_weights[" + std::to_string(i) +
-                                    "] is not finite");
-      }
-    }
-    if (salience_weights[i] < T{0}) {
-      throw std::invalid_argument("salience_weights[" + std::to_string(i) +
-                                  "] must be >= 0");
-    }
-  }
 
   T max_weighted_diff = T{0};
   for (Eigen::Index i = 0; i < N; ++i) {
@@ -290,10 +270,11 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @return Calculated distance
  */
 template <typename Derived1, typename Derived2, typename T>
-T calculate_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
-                     const Eigen::MatrixBase<Derived2>& alternative_point,
-                     DistanceType distance_type, T order_p,
-                     const std::vector<T>& salience_weights) {
+[[nodiscard]] T calculate_distance(
+    const Eigen::MatrixBase<Derived1>& ideal_point,
+    const Eigen::MatrixBase<Derived2>& alternative_point,
+    DistanceType distance_type, T order_p,
+    const std::vector<T>& salience_weights) {
   switch (distance_type) {
     case DistanceType::EUCLIDEAN:
       return euclidean_distance(ideal_point, alternative_point,

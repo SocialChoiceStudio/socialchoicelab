@@ -18,6 +18,7 @@ using socialchoicelab::preference::loss::LossFunctionType;
 using socialchoicelab::preference::loss::normalize_utility;
 using socialchoicelab::preference::loss::quadratic_loss;
 using socialchoicelab::preference::loss::threshold_loss;
+using socialchoicelab::preference::loss::UtilityNormalizer;
 
 class LossFunctionsTest : public ::testing::Test {
  protected:
@@ -346,8 +347,27 @@ TEST_F(LossFunctionsTest, TemplateInstantiation) {
   EXPECT_FLOAT_EQ(f_linear, 1.5f * 2.5f);
   EXPECT_FLOAT_EQ(f_quadratic, 1.5f * 2.5f * 2.5f);
 
-  // Test with int (should compile and work)
-  int i_distance = 3;
-  int i_linear = linear_loss(i_distance, 2);
-  EXPECT_EQ(i_linear, 6);  // 2 * 3 (positive loss)
+  // linear_loss, quadratic_loss, threshold_loss require floating-point T
+  // (Item 4: avoid unsigned + INT_MIN UB). Integer instantiation would not
+  // compile.
+}
+
+// Item 12: UtilityNormalizer precomputes bounds; normalize() matches
+// normalize_utility
+TEST_F(LossFunctionsTest, UtilityNormalizerMatchesNormalizeUtility) {
+  const double max_distance = 10.0;
+  UtilityNormalizer<double> normalizer(max_distance, LossFunctionType::LINEAR,
+                                       sensitivity);
+  for (double d : distances) {
+    double raw = distance_to_utility(d, LossFunctionType::LINEAR, sensitivity);
+    double expected = normalize_utility(raw, max_distance,
+                                        LossFunctionType::LINEAR, sensitivity);
+    EXPECT_DOUBLE_EQ(normalizer.normalize(raw), expected)
+        << "UtilityNormalizer::normalize should match normalize_utility at d="
+        << d;
+  }
+  // Degenerate range: max_distance 0 => max_utility == min_utility => normalize
+  // returns 1.0
+  UtilityNormalizer<double> deg(0.0, LossFunctionType::LINEAR, sensitivity);
+  EXPECT_DOUBLE_EQ(deg.normalize(0.0), 1.0);
 }
