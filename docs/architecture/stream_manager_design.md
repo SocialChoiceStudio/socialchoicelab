@@ -2,7 +2,7 @@
 
 **Authors:** Claude Opus 4.6 + GPT 5.3 (merged)  
 **Date:** 2026-02-14  
-**Status:** Adopted (Item 18 complete; see consensus_plan.md)  
+**Status:** Adopted (see project_log.md and where_we_are.md for history)  
 **Sources:** `GPTProposedCombinedStreamManagerImplementation.md`, `OpusProposedCombinedStreamManagerImplementation.md`
 
 ---
@@ -223,9 +223,9 @@ Per C1 above.
 
 Mark Item 18 as decided: single-owner StreamManager, no cross-thread sharing. Reference this document.
 
-### D4. Update `consensus_plan.md`
+### D4. Update status docs
 
-Mark Item 18 as done once code changes C1–C5 are implemented.
+Once code changes C1–C5 are implemented, update where_we_are.md (and project_log.md) as needed.
 
 ---
 
@@ -256,4 +256,4 @@ No fundamental disagreements were found.
 
 ## Implementation status (Item 18)
 
-All code changes C1–C5 were implemented on 2026-02-14. Item 18 is ✅ Done in consensus_plan.md. This document is the adopted reference for StreamManager ownership rules.
+All code changes C1–C5 were implemented on 2026-02-14. This document is the adopted reference for StreamManager ownership rules.

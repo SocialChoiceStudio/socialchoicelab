@@ -6,9 +6,9 @@
 - **Next item:** See `docs/status/roadmap.md` for near-/mid-/long-term work
 - **Last updated:** 2026-03-05
 
-**Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in consensus_plan.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
+**Authority:** This file is the single source for "what's next". Update it when you complete work or change focus. Keep the "Last updated" date in sync.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and consensus_plan.md. Use the plan's Status column to confirm; if they disagree, update this file.
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and, if needed, [docs/status/roadmap.md](roadmap.md) for longer-term direction.
 ---
 
 ## Recent Work

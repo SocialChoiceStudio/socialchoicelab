@@ -12,7 +12,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 |------|----------|
 | **Features** | No new feature requirements. Existing core (distance, loss, PRNG, StreamManager) unchanged and working. |
 | **Tests** | CI green on `main`: build + test (unit tests, exclude benchmarks) on Ubuntu and macOS; format check passes; `./lint.sh --strict lint` passes. |
-| **Docs** | `consensus_plan.md` Phase 3 items 28–33 done. `roadmap.md` and this file exist. `where_we_are.md` and docs index point to them. `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` added. |
+| **Docs** | Phase 3 complete (CI, roadmap, gates, CONTRIBUTING/SECURITY/CHANGELOG). `roadmap.md` and this file exist. `where_we_are.md` and docs index point to them. `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` added. |
 | **API stability** | N/A — we are not promising stability yet. Public C++ API may still change; no c_api exists. |
 
 **Check before tagging:** Run `scripts/end-of-milestone.sh <tag>`; it will prompt for CHANGELOG and ROADMAP.

@@ -5,7 +5,7 @@ Thanks for your interest in contributing. This project is part of **SocialChoice
 ## How to contribute
 
 1. **Check current position and backlog**  
-   See [docs/status/where_we_are.md](docs/status/where_we_are.md) for what we're working on next and [docs/status/consensus_plan.md](docs/status/consensus_plan.md) for the full prioritized backlog.
+   See [docs/status/where_we_are.md](docs/status/where_we_are.md) for what we're working on next and [docs/status/roadmap.md](docs/status/roadmap.md) for near-/mid-/long-term plans.
 
 2. **Follow code style and tooling**  
    Use the style and tooling described in [docs/development/development.md](docs/development/development.md): clang-format (version 21 in CI), cpplint, and the project's `.clang-format` and `lint.sh`. Run `./lint.sh format` and `./lint.sh lint` before committing.

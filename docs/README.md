@@ -7,7 +7,6 @@ This file is the single entry point for project documentation.
 | What you need | Where to look |
 |---------------|---------------|
 | What's next / current position | `docs/status/where_we_are.md` |
-| Backlog and phase/item status | `docs/status/consensus_plan.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
 | Chronological project history | `docs/status/project_log.md` |
@@ -25,8 +24,7 @@ This file is the single entry point for project documentation.
 If two docs disagree for execution decisions, use this precedence:
 
 1. `docs/status/where_we_are.md`
-2. `docs/status/consensus_plan.md`
-3. `docs/architecture/` (relevant design doc)
+2. `docs/architecture/` (relevant design doc)
 4. `docs/status/project_log.md` (history only)
 
 ## Documentation Layout
@@ -38,7 +36,6 @@ docs/
 ├── README.md                              ← you are here (master index)
 ├── status/
 │   ├── where_we_are.md                    ← current position + recent work log
-│   ├── consensus_plan.md                  ← prioritized backlog (source of truth for item status)
 │   ├── roadmap.md                         ← near-term, mid-term, long-term plans
 │   ├── milestone_gates.md                 ← definition of done per milestone
 │   └── project_log.md                     ← chronological narrative history
@@ -75,7 +72,7 @@ Choose the subdirectory by the doc's purpose:
 
 For each completed development item:
 
-1. Mark it ✅ Done in `docs/status/consensus_plan.md`.
+1. Update `docs/status/where_we_are.md` (and this file's layout if you add a new doc).
 2. Update `docs/status/where_we_are.md` (next item, last updated date, add to Recent Work).
 3. Add a dated milestone note to `docs/status/project_log.md` when materially relevant.
 
