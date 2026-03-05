@@ -40,9 +40,12 @@ When a step is done, mark it ✅ Done and update [where_we_are.md](where_we_are.
 
 ## Background: key concepts
 
-**Majority preference:** Given voter ideal points `p₁…pₙ` and two alternatives
-`x`, `y`, alternative `x` is *majority preferred* to `y` if more than half of
-voters are closer (under their distance metric) to `x` than to `y`.
+**Majority preference (k-majority):** Given voter ideal points `p₁…pₙ` and two
+alternatives `x`, `y`, alternative `x` is *k-majority preferred* to `y` if at
+least `k` voters are closer to `x` than to `y` under their distance metric.
+Simple majority is the special case `k = ⌊n/2⌋ + 1`. All functions in this
+plan accept `k` as an optional parameter (defaulting to simple majority) so
+supermajority rules (e.g. 2/3·n) and unanimity (k = n) work without extra code.
 
 **Winset W(q):** The set of all alternatives that beat status quo `q` by strict
 majority. In 2D Euclidean space this is the union of half-planes (one per voter
@@ -77,10 +80,10 @@ covers. It is a subset of the Pareto set and a superset of the Condorcet winner
 
 | Step | Task | Deliverable | Status |
 |------|------|-------------|--------|
-| **B1** | **Majority preference relation** | `include/socialchoicelab/geometry/majority.h`: `majority_prefers(alternatives x, y, voter_ideals, distance_config) → bool` — returns true if strictly more than half of voters are (strictly) closer to `x` than `y` under the configured distance. Also `preference_margin(x, y, voter_ideals, ...) → int` (net count: #prefer_x − #prefer_y). Tests: even/odd voter counts, ties, single voter, all prefer same. | ⬜ |
-| **B2** | **Pairwise comparison matrix** | `pairwise_matrix(alternatives, voter_ideals, dist_cfg) → Eigen::MatrixXi` where entry (i,j) = preference_margin(alt_i, alt_j). Used downstream for Condorcet winner detection and Borda count. Tests: known 3-alternative example with Condorcet cycle. | ⬜ |
-| **B3** | **Winset computation (2D)** | `include/socialchoicelab/geometry/winset.h`: `winset_2d(status_quo, voter_ideals, dist_cfg) → Polygon2E` — the exact convex polygon of all points that beat the status quo by strict majority under Euclidean distance. Algorithm: each voter's indifference circle through the SQ defines a half-plane (the closer side); the winset is the intersection of the majority-coalition half-planes. Use CGAL half-plane intersection (`CGAL::halfplane_intersection_2`). Tests: 3-voter triangle (known closed form), 5-voter symmetric case, degenerate (Condorcet winner → empty winset). | ⬜ |
-| **B4** | **Winset: Minkowski distance extension** | Extend `winset_2d` to support Manhattan and general Minkowski p via the `DistanceConfig`. For non-Euclidean metrics the indifference boundary is not a circle — use the exact `Polygon2d` representation from `level_set_2d` (already implemented) as the boundary for each voter, then compute the half-polygon intersection. Tests: Manhattan (diamond boundaries), Chebyshev (square boundaries). | ⬜ |
+| **B1** | **Majority preference relation (with k-majority)** | `include/socialchoicelab/geometry/majority.h`: `majority_prefers(x, y, voter_ideals, dist_cfg, k = n/2+1) → bool` — returns true if at least `k` voters are strictly closer to `x` than `y`. Default `k` is simple majority; caller can pass any value for supermajority (e.g. 2/3·n) or unanimity (n). Also `preference_margin(x, y, voter_ideals, dist_cfg) → int` (net count: #prefer_x − #prefer_y, sign indicates winner). Tests: simple majority (even/odd n, ties, single voter); k=n (unanimity); k=2/3·n (supermajority); all-prefer-same. | ⬜ |
+| **B2** | **Pairwise comparison matrix** | `pairwise_matrix(alternatives, voter_ideals, dist_cfg, k = n/2+1) → Eigen::MatrixXi` where entry (i,j) = preference_margin(alt_i, alt_j). `k` threshold propagated so the matrix reflects k-majority dominance. Used downstream for Condorcet winner detection and Borda count. Tests: known 3-alternative Condorcet cycle; supermajority that eliminates some dominance edges. | ⬜ |
+| **B3** | **Winset computation (2D, with k-majority)** | `include/socialchoicelab/geometry/winset.h`: `winset_2d(status_quo, voter_ideals, dist_cfg, k = n/2+1) → Polygon2E` — exact polygon of all points beating the status quo by at least `k` voters under Euclidean distance. Algorithm: each voter's indifference circle through the SQ defines a half-plane (the closer side); the winset is the intersection of the k-majority coalition half-planes. Use CGAL half-plane intersection (`CGAL::halfplane_intersection_2`). Tests: 3-voter triangle simple majority (known closed form); 5-voter symmetric case; supermajority (smaller winset); k=n (Pareto set); degenerate (Condorcet winner → empty winset). | ⬜ |
+| **B4** | **Winset: Minkowski distance extension** | Extend `winset_2d` to support Manhattan and general Minkowski p via the `DistanceConfig`. For non-Euclidean metrics the indifference boundary is not a circle — use the exact `Polygon2d` representation from `level_set_2d` (already implemented) as the boundary for each voter, then compute the half-polygon intersection. `k` parameter passes through unchanged. Tests: Manhattan (diamond boundaries), Chebyshev (square boundaries), each with simple and supermajority k. | ⬜ |
 
 ### Phase C — Yolk
 
@@ -94,9 +97,9 @@ covers. It is a subset of the Pareto set and a superset of the Condorcet winner
 
 | Step | Task | Deliverable | Status |
 |------|------|-------------|--------|
-| **D1** | **Covering relation** | `include/socialchoicelab/geometry/uncovered_set.h`: `covers(x, y, voter_ideals, dist_cfg) → bool` — x covers y iff (1) majority_prefers(x, y) and (2) for all z with majority_prefers(z, x), majority_prefers(z, y). For a finite set of alternatives. Tests: textbook Condorcet cycle (no covers), one alternative dominated by another, all voters identical (all alternatives tied). | ⬜ |
-| **D2** | **Uncovered set over a finite set** | `uncovered_set(alternatives, voter_ideals, dist_cfg) → std::vector<Point2d>` — the subset of alternatives not covered by any other. Tests: known examples from McKelvey (1986) and Miller (1980) with exact voter configurations; verify the uncovered set contains the Condorcet winner when one exists. | ⬜ |
-| **D3** | **Uncovered set boundary (continuous)** | `uncovered_set_boundary_2d(voter_ideals, dist_cfg, grid_resolution) → Polygon2E` — approximates the uncovered set region in continuous policy space by evaluating coverage on a grid of candidate points, then computing the convex hull of uncovered points. Document that this is an approximation; exact continuous uncovered set computation is left for a future milestone. Tests: verify region contains Yolk center; region shrinks as voter dispersion decreases. | ⬜ |
+| **D1** | **Covering relation (with k-majority)** | `include/socialchoicelab/geometry/uncovered_set.h`: `covers(x, y, alternatives, voter_ideals, dist_cfg, k = n/2+1) → bool` — x k-covers y iff (1) k_majority_prefers(x, y) and (2) for all z in alternatives with k_majority_prefers(z, x), k_majority_prefers(z, y). Tests: textbook Condorcet cycle (no covers under simple majority); supermajority k that changes which alternatives cover; Condorcet winner covers all others. | ⬜ |
+| **D2** | **Uncovered set over a finite set** | `uncovered_set(alternatives, voter_ideals, dist_cfg, k = n/2+1) → std::vector<Point2d>` — the subset of alternatives not k-covered by any other. Under simple majority (default) this is the standard uncovered set. Tests: known examples from McKelvey (1986) and Miller (1980); verify uncovered set contains the Condorcet winner when one exists; verify supermajority k expands the uncovered set. | ⬜ |
+| **D3** | **Uncovered set boundary (continuous)** | `uncovered_set_boundary_2d(voter_ideals, dist_cfg, grid_resolution, k = n/2+1) → Polygon2E` — approximates the uncovered set region in continuous policy space by evaluating k-coverage on a grid of candidate points, then computing the convex hull of uncovered points. Document that this is an approximation; exact continuous uncovered set computation is left for a future milestone. Tests: verify region contains Yolk center; region expands with larger k; region shrinks as voter dispersion decreases. | ⬜ |
 
 ### Phase E — Tests, documentation, and CI
 
