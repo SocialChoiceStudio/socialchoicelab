@@ -7,6 +7,7 @@ High-level direction for the project. This document does not duplicate detail; i
 | Architecture, layers, and integration pattern | [Design Document](../architecture/design_document.md) |
 | Feature and algorithm prioritization (Yolk, voting rules, etc.) | [Implementation Priority Guide](../references/implementation_priority.md) |
 | Current position and recent work | [where_we_are.md](where_we_are.md) |
+| Active backlog (third review) | [consensus_plan_3.md](consensus_plan_3.md) |
 | Definition of done per milestone (features, tests, docs, API stability) | [milestone_gates.md](milestone_gates.md) |
 
 **Dependency order** (from design): core C++ and foundation first → stable **c_api** → geometry primitives (e.g. CGAL 2D) → voting rules and outcome concepts → **then** R/Python bindings and GUI. Language bindings and advanced electoral methods depend on the C API and core geometry.

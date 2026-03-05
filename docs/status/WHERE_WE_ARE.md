@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Consensus plan (second review) complete
-- **Next item:** See `docs/status/roadmap.md` for near-/mid-/long-term work
+- **Current phase:** Consensus plan third review — Batch 1 (Critical, Items 1–3)
+- **Next item:** Item 1 — Minkowski Doxygen convention mismatch (Critical)
 - **Last updated:** 2026-03-05
 
 **Authority:** This file is the single source for "what's next". Update it when you complete work or change focus. Keep the "Last updated" date in sync.

@@ -7,6 +7,7 @@ This file is the single entry point for project documentation.
 | What you need | Where to look |
 |---------------|---------------|
 | What's next / current position | `docs/status/where_we_are.md` |
+| Active backlog (third review) | `docs/status/consensus_plan_3.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
 | Chronological project history | `docs/status/project_log.md` |
@@ -36,6 +37,7 @@ docs/
 ├── README.md                              ← you are here (master index)
 ├── status/
 │   ├── where_we_are.md                    ← current position + recent work log
+│   ├── consensus_plan_3.md                ← active backlog (third review, 26 items)
 │   ├── roadmap.md                         ← near-term, mid-term, long-term plans
 │   ├── milestone_gates.md                 ← definition of done per milestone
 │   └── project_log.md                     ← chronological narrative history
