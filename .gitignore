@@ -53,6 +53,9 @@ temp/
 debug/
 scratch/
 
+# Agent review conversations (local only, not tracked)
+agent_conversations/
+
 # PDF files (reference materials)
 *.pdf
 
