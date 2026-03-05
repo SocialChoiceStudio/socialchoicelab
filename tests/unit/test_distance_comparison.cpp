@@ -50,7 +50,7 @@ class DistanceComparisonTest : public ::testing::Test {
     return orders;
   }
 
-  // Calculate Raw C++ C++ Minkowski distance
+  // Calculate Raw C++ Minkowski distance
   double calculateRawMinkowski(const Eigen::Vector2d& a,
                                const Eigen::Vector2d& b, double order) {
     if (order > 100.0) {
@@ -82,7 +82,7 @@ TEST_F(DistanceComparisonTest, SmallTest) {
       double minkowski_socialchoicelab =
           minkowski_distance(point_a, point_b, order, equal_weights);
 
-      // Calculate using Raw C++ C++ math
+      // Calculate using Raw C++ math
       double minkowski_rawcpp = calculateRawMinkowski(point_a, point_b, order);
 
       // Compare results
@@ -111,7 +111,7 @@ TEST_F(DistanceComparisonTest, MediumTest) {
       double minkowski_socialchoicelab =
           minkowski_distance(point_a, point_b, order, equal_weights);
 
-      // Calculate using Raw C++ C++ math
+      // Calculate using Raw C++ math
       double minkowski_rawcpp = calculateRawMinkowski(point_a, point_b, order);
 
       // Compare results

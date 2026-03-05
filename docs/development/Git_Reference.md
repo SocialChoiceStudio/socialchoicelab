@@ -6,7 +6,7 @@ Solo developer workflow. No GitButler. No branches until the project is mature. 
 
 ## One-Time Setup (Do This First)
 
-This directory is not currently a git repo. Run this once from the project root:
+If this directory is not yet a git repo, run the following once from the project root. If it is already initialized, skip to [Daily Workflow (Manual Alternative)](#daily-workflow-manual-alternative).
 
 ```bash
 git init
@@ -160,7 +160,7 @@ git push
 | `git push --force` | Destroys history on GitHub. Never. |
 | `git rebase -i` (interactive rebase on pushed commits) | Rewrites shared history. Fine locally before pushing; don't do it after. |
 | GitButler, Git Tower, or other "smart" Git clients | They add complexity and hidden state. Plain Git is fine for this project. |
-| Branching | Not worth it until you have collaborators or a stable API to protect. Revisit at Phase 3 completion. |
+| Branching | Not worth it until you have collaborators or a stable API to protect. Phase 3 complete; branching deferred until the project has collaborators or a stable API to protect. Revisit at c_api milestone. |
 
 ---
 
@@ -174,8 +174,9 @@ Your files are unchanged; the commit is gone. Re-commit when ready.
 
 **Throw away all uncommitted changes (dangerous — irreversible):**
 ```bash
-git checkout -- .
+git restore .
 ```
+(On older Git versions, use `git checkout -- .` instead.)
 
 **See what a specific commit changed:**
 ```bash

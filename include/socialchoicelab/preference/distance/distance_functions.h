@@ -49,8 +49,8 @@ T chebyshev_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative/candidate position
  * @param order_p Minkowski order parameter (p ≥ 1)
- * @param salience_weights Importance weights for each dimension (default: equal
- * weights)
+ * @param salience_weights Salience weights for each dimension (mandatory, one
+ * per dimension).
  * @return Weighted Minkowski distance
  */
 template <typename Derived1, typename Derived2, typename T>
@@ -131,7 +131,8 @@ T minkowski_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @tparam T Numeric type
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
- * @param salience_weights Optional salience weights (default: equal)
+ * @param salience_weights Salience weights for each dimension (mandatory, one
+ * per dimension).
  * @return Euclidean distance
  */
 template <typename Derived1, typename Derived2, typename T>
@@ -150,7 +151,8 @@ T euclidean_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @tparam T Numeric type
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
- * @param salience_weights Optional salience weights (default: equal)
+ * @param salience_weights Salience weights for each dimension (mandatory, one
+ * per dimension).
  * @return Manhattan distance
  */
 template <typename Derived1, typename Derived2, typename T>
@@ -169,7 +171,8 @@ T manhattan_distance(const Eigen::MatrixBase<Derived1>& ideal_point,
  * @tparam T Numeric type
  * @param ideal_point Voter's ideal point
  * @param alternative_point Alternative position
- * @param salience_weights Optional salience weights (default: equal)
+ * @param salience_weights Salience weights for each dimension (mandatory, one
+ * per dimension).
  * @return Chebyshev distance
  */
 template <typename Derived1, typename Derived2, typename T>

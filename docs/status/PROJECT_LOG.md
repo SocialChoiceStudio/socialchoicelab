@@ -1,11 +1,8 @@
 # Project Log — SocialChoiceLab
 
-## 2026-03-03
-**What got done:**
-- Removed GitButler and all associated workflow tooling (`squash-and-push.sh`, `delete-outdated-branches.sh`, `scripts/end-of-session.sh`, `scripts/end-of-milestone.sh`, `scripts/check-setup.sh`, `docs/governance/Squash_Push_Merge_Cleanup_Workflow.md` (file has since been removed)).
-- Removed GitButler hooks from `.cursor/hooks.json`.
-- Removed git version control from local directory (`.git` deleted).
-- GitHub repository cleared. Git workflow to be re-established separately.
+Entries are in chronological order (oldest first, newest last).
+
+---
 
 ## 2025-08-12
 **What got done:**
@@ -108,6 +105,13 @@
 - **StreamManager ownership (Item 18):** Adopted single-owner policy. Removed mutex and all `std::lock_guard` from `StreamManager` (the old mutex provided false safety — `get_stream()` returns a reference that outlives the lock). Removed `const` overload of `get_stream()` (it silently mutated via `mutable` members, violating const semantics). Removed `mutable` from member declarations. Added `reset_for_run(master_seed, run_index)` for deterministic per-run seeding. Updated stream naming convention (`voters`, `candidates`, `tiebreak`, `movement`, `memory_update`, `analysis`). The global singleton's construction mutex in `stream_manager.cpp` is retained (it guards construction only, not concurrent StreamManager use). Full decision rationale: `docs/architecture/stream_manager_design.md`.
 
 **Test framework:** Google Test (GTest) is in use via CMake FetchContent; it is the project’s test framework. **Eigen migration:** Complete; no PointND or utility_functions.h remains (see 2025-09-11 and 2026-02-14).
+## 2026-03-03
+**What got done:**
+- Removed GitButler and all associated workflow tooling (`squash-and-push.sh`, `delete-outdated-branches.sh`, `scripts/end-of-session.sh`, `scripts/end-of-milestone.sh`, `scripts/check-setup.sh`, `docs/governance/Squash_Push_Merge_Cleanup_Workflow.md` (file has since been removed)).
+- Removed GitButler hooks from `.cursor/hooks.json`.
+- Removed git version control from local directory (`.git` deleted).
+- GitHub repository cleared. Git workflow to be re-established separately.
+
 ## 2026-03-04
 
 **Phase 2 complete** (documentation truthfulness, Items 22–27): README updated, stale PointND references removed, PROJECT_LOG chronological order fixed, reference index cleaned, design doc Rcpp→cpp11.

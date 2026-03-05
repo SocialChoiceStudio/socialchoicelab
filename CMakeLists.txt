@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(SocialChoiceLab VERSION 1.0.0 LANGUAGES CXX)
+project(SocialChoiceLab VERSION 0.1.0 LANGUAGES CXX)
 
 # C++ standard (applies to all targets)
 set(CMAKE_CXX_STANDARD 20)
@@ -21,7 +21,13 @@ FetchContent_Declare(
   GIT_TAG        v1.14.0
 )
 
-# Fetch Eigen
+# Prevent Eigen from registering its tests in CTest so only our project's tests run.
+# CMP0077 NEW makes our set() calls take priority over option() calls inside Eigen.
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(EIGEN_BUILD_TESTING OFF)
+set(EIGEN_BUILD_DOC OFF)
+set(EIGEN_BUILD_PKGCONFIG OFF)
+set(BUILD_TESTING OFF)
 FetchContent_Declare(
   eigen
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
@@ -42,11 +48,6 @@ target_include_directories(socialchoicelab_core PUBLIC ${CMAKE_CURRENT_SOURCE_DI
 target_compile_options(socialchoicelab_core PRIVATE
     $<$<CONFIG:Debug>:-g -O0 -Wall -Wextra>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
-)
-set_target_properties(socialchoicelab_core PROPERTIES
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
 )
 target_link_libraries(socialchoicelab_core PUBLIC Eigen3::Eigen)
 

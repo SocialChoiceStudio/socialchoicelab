@@ -213,9 +213,11 @@ So: **stream** = the thing that supplies the random numbers at each of the six p
 
 ---
 
-### Option A and Option B (StreamManager thread-safety)
+### Option A and Option B (StreamManager thread-safety) — historical
 
-These are two design choices for how StreamManager behaves when **multiple threads** in the same process might use it:
+**Adopted policy: Option B (single-threaded StreamManager).** The following describes the two options that were considered; Option B was adopted (see consensus plan Item 18).
+
+These were two design choices for how StreamManager behaves when **multiple threads** in the same process might use it:
 
 - **Option A (thread-safe StreamManager):** We design and implement StreamManager so that **multiple threads** in one process can call it at the same time without corrupting state or crashing. That means proper locking (or equivalent) so that one thread’s use does not interfere with another’s. We **document** that it is safe to use from many threads.
 

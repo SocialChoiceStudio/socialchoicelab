@@ -59,8 +59,7 @@ jobs:
           cmake --build build
 
       - name: Run tests
-        run: |
-          cd build && ./test_distance_functions && ./test_prng && ./test_distance_comparison && ./test_loss_functions && ./test_distance_speed && ./test_performance_comparison
+        run: cd build && ctest --output-on-failure -LE benchmark
 
       - name: Lint (strict)
         run: ./lint.sh --strict lint

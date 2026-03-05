@@ -18,8 +18,7 @@ struct GlobalStreamManagerState {
 // Meyers' singleton: initialized on first call, avoiding Static Initialization
 // Order Fiasco (SIOF). The mutex here guards construction of the global
 // StreamManager only — not concurrent access to the StreamManager itself.
-// The StreamManager's own single-owner contract means callers must not call
-// get_global_stream_manager() from multiple threads concurrently.
+// See get_global_stream_manager() for the single-owner contract.
 GlobalStreamManagerState& get_global_state() {
   static GlobalStreamManagerState state;
   return state;
@@ -27,6 +26,8 @@ GlobalStreamManagerState& get_global_state() {
 
 }  // namespace
 
+/// The lock guards lazy construction only. The returned StreamManager& is not
+/// thread-safe; the single-owner contract applies — use from one thread only.
 StreamManager& get_global_stream_manager() {
   GlobalStreamManagerState& state = get_global_state();
   std::lock_guard<std::mutex> lock(state.mutex);

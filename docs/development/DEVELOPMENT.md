@@ -63,7 +63,7 @@ We follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppgu
   - Functions: `snake_case` (e.g., `minkowski_distance`, `linear_loss`)
   - Variables: `snake_case` (e.g., `point_distance`)
   - Constants: `k_snake_case` (e.g., `k_default_master_seed`, `k_minkowski_chebyshev_cutoff`)
-- **Headers**: Self-contained with include guards
+- **Headers**: Self-contained, using `#pragma once` (project standard)
 - **Includes**: Ordered as: related header, C system, C++ standard, other libraries, project headers
 
 ### File Naming Conventions

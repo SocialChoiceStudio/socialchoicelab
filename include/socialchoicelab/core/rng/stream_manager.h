@@ -28,7 +28,7 @@ namespace socialchoicelab::core::rng {
  * tests. In multi-threaded programs, construct local StreamManager instances
  * with per-run seeds derived from (master_seed, run_index) via reset_for_run().
  *
- * Stream naming convention (see docs/governance/StreamManager_Design.md):
+ * Stream naming convention (see docs/architecture/stream_manager_design.md):
  *   "voters"        - voter initialization
  *   "candidates"    - candidate initialization
  *   "tiebreak"      - preference and vote tie-breaking
@@ -162,20 +162,6 @@ class StreamManager {
 
  private:
   /**
-   * @brief Generate deterministic seed for a stream based on name
-   *
-   * Uses FNV-1a (64-bit) to hash the stream name. We do not use std::hash
-   * here because std::hash<std::string> is implementation-defined and
-   * produces different values across compilers (GCC, Clang, MSVC) and
-   * platforms. That would break reproducibility: the same master seed and
-   * stream names would yield different RNG sequences on different toolchains.
-   * FNV-1a is deterministic and portable, so stream seeds are identical
-   * everywhere for the same inputs.
-   *
-   * @param name Stream name
-   * @return Seed for this stream
-   */
-  /**
    * @brief Combine a master seed and a run index into a single run seed
    *
    * Uses FNV-1a mixing so adjacent run indices produce unrelated seeds.
@@ -194,6 +180,20 @@ class StreamManager {
     return h;
   }
 
+  /**
+   * @brief Generate deterministic seed for a stream based on name
+   *
+   * Uses FNV-1a (64-bit) to hash the stream name. We do not use std::hash
+   * here because std::hash<std::string> is implementation-defined and
+   * produces different values across compilers (GCC, Clang, MSVC) and
+   * platforms. That would break reproducibility: the same master seed and
+   * stream names would yield different RNG sequences on different toolchains.
+   * FNV-1a is deterministic and portable, so stream seeds are identical
+   * everywhere for the same inputs.
+   *
+   * @param name Stream name
+   * @return Seed for this stream
+   */
   uint64_t generate_stream_seed(const std::string& name) const {
     // FNV-1a 64-bit constants (see e.g.
     // http://www.isthe.com/chongo/tech/comp/fnv/)

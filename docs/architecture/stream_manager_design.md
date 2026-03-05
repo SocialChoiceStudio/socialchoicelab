@@ -217,7 +217,7 @@ std::unordered_map<std::string, std::unique_ptr<PRNG>> streams_;
 
 Per C1 above.
 
-### D3. Update `SESSION_PROGRESS.md`
+### D3. Update `project_log.md`
 
 Mark Item 18 as decided: single-owner StreamManager, no cross-thread sharing. Reference this document.
 
