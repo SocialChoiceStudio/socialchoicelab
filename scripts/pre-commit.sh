@@ -7,7 +7,7 @@
 
 set -e
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
 if ! command -v clang-format &>/dev/null; then

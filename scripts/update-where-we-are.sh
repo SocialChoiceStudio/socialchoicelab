@@ -21,6 +21,7 @@ if [ ! -f "$out" ]; then
 fi
 
 # Parse plan: find first row not marked Done. Output: PHASE|NUM|TITLE|SEVERITY
+# When all actionable items are Done, output: All phases complete|—|See docs/status/roadmap.md|—
 next=$(python3 - "$plan" << 'PY'
 import re
 import sys
@@ -28,56 +29,47 @@ import sys
 with open(sys.argv[1]) as f:
     content = f.read()
 
-# Phase display names (phase number + subtitle)
-phase_names = {
-    "Phase 0": "Phase 0 (Immediate Stabilization)",
-    "Phase 1": "Phase 1 (Reproducibility, Safety, and Test Quality)",
-    "Phase 2": "Phase 2 (Documentation Truthfulness)",
-    "Phase 3": "Phase 3 (Developer Experience and Process)",
-    "Backlog": "Backlog (Quality and Modernization)",
-}
-
-def parse_table(text, phase_name):
-    """Find table rows, return (num, item, severity, status) for each."""
-    lines = text.split("\n")
+def parse_batch_table(text):
+    """Find table rows with #, Item, ..., Severity, Status. Item may contain '|'. Return list of (num, item, severity, status)."""
     rows = []
-    for line in lines:
-        if line.strip().startswith("|") and "---" not in line:
-            parts = [p.strip() for p in line.split("|")]
-            parts = [p for p in parts if p]
-            if len(parts) >= 4 and parts[0].isdigit():
-                num = parts[0]
-                item = parts[1]
-                severity = parts[3] if len(parts) > 3 else ""
-                status = parts[4] if len(parts) > 4 else ""
-                rows.append((num, item, severity, status))
+    for line in text.split("\n"):
+        if not line.strip().startswith("|") or "---" in line:
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        # Remove leading/trailing empty from markdown table
+        if not parts or not parts[0]:
+            parts = parts[1:]
+        if not parts or not parts[-1]:
+            parts = parts[:-1]
+        # Columns: # (1) | Item (2..n-4) | File | Origin | Severity | Status
+        if len(parts) >= 6 and parts[0].isdigit():
+            num = parts[0]
+            item = "|".join(parts[1:-4]).strip()  # Item cell may contain |
+            severity = parts[-2]
+            status = parts[-1]
+            rows.append((num, item, severity, status))
     return rows
 
-# Split by phase sections
-sections = re.split(r"(## Phase \d+ / Week \d+:|## Backlog:)", content)
-current_phase = None
-for i, section in enumerate(sections):
-    if re.match(r"## Phase \d+ / Week \d+:", section) or section == "## Backlog:":
-        m = re.search(r"Phase \d+", section)
-        current_phase = m.group(0) if m else ("Backlog" if "Backlog" in section else None)
+# Split by ## Batch N — (captures "Batch 1", "Batch 2", ...); bodies are following elements
+batch_sections = re.split(r"\n## (Batch \d+)", content)
+for i in range(1, len(batch_sections) - 1, 2):
+    current_batch = batch_sections[i]   # "Batch 1", "Batch 2", ...
+    section = batch_sections[i + 1]     # body including table
+    if "| # |" not in section:
         continue
-    if current_phase and "|" in section and "| # |" in section:
-        rows = parse_table(section, current_phase)
-        for num, item, severity, status in rows:
-            if "✅ Done" not in status:
-                display = phase_names.get(current_phase, current_phase)
-                print(f"{display}|{num}|{item}|{severity}")
-                sys.exit(0)
+    rows = parse_batch_table(section)
+    for num, item, severity, status in rows:
+        if "Done" not in status:
+            title = (item[:60] + "…") if len(item) > 60 else item
+            title = title.replace("|", " ")
+            print(f"{current_batch}|{num}|{title}|{severity}")
+            sys.exit(0)
 
-print("Phase 0 (Immediate Stabilization)|0|No items found|Unknown")
-sys.exit(1)
+# All actionable items are Done (or no Batch tables found)
+print("All phases complete|—|See docs/status/roadmap.md|—")
+sys.exit(0)
 PY
 )
-
-if [ $? -ne 0 ] && [ -z "$next" ]; then
-  echo "Error: Could not parse CONSENSUS_PLAN."
-  exit 1
-fi
 
 phase=$(echo "$next" | cut -d'|' -f1)
 num=$(echo "$next" | cut -d'|' -f2)
@@ -104,12 +96,17 @@ if idx == -1:
 
 rest = content[idx:]  # keeps the "---\n\n## Recent Work..." section
 
+if phase == "All phases complete":
+    next_line = "- **Next item:** All consensus items complete. See `docs/status/roadmap.md` for next steps."
+else:
+    next_line = f"- **Next item:** {num} — {title.rstrip('.')}. Severity: {severity}."
+
 new_header = f"""# Where We Are
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
 - **Current phase:** {phase}
-- **Next item:** {num} — {title.rstrip('.')}. Severity: {severity}.
+{next_line}
 - **Last updated:** {today}
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in consensus_plan.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.

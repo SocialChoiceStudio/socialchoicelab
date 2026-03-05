@@ -1,131 +1,147 @@
-# Consensus Plan: SocialChoiceLab Stabilization and Improvement
+# Consensus Plan — SocialChoiceLab Second Review
 
-**Date:** February 14, 2026
-**Sources:** Independent reviews by Claude Opus 4.6 and GPT 5.5 Codex (source docs consolidated into this plan during Feb 14 cleanup).
-**Status:** All disputes resolved. This is the final agreed plan.
+**Date:** 2026-03-05  
+**Reviewers:** Claude Opus 4.6 (independent), ChatGPT Codex (independent)  
+**Rounds to consensus:** 3  
+**Status:** CONSENSUS REACHED — both agents agree on all items below.
 
----
-
-## How to Use This Plan
-
-This is a prioritized backlog for any Cursor agent (or human) working on the SocialChoiceLab codebase. Work through phases in order. Within each phase, tackle Critical items before High, High before Medium, Medium before Low. Each item is tagged with its origin: **(Both)** means both agents independently identified it, **(Claude Only)** or **(ChatGPT Only)** means one agent found it and the other accepted it during review.
+The first review (46 items, all completed) is archived in `docs/status/project_log.md` (session 2026-02-14 and 2026-03-04).
 
 ---
 
-## Dispute Resolutions
+## How to use this plan
 
-Before finalizing the plan, the two agents debated six points. All were resolved:
+This is the actionable backlog produced by the second independent review of SocialChoiceLab. Work through batches in order. Batch 1 contains live bugs that will break the workflow if any script is run. Batches 2–3 can be parallelized. Batch 4 items should be done before or during c_api design work.
 
-| Dispute | Resolution |
-|---------|------------|
-| `.clang-format` missing? | **ChatGPT correct.** File exists at `socialchoicelab/.clang-format`. Removed from plan. |
-| Missing includes = Critical? | **ChatGPT correct on severity.** Code compiles today via transitive includes. Reclassified to Medium (portability risk). |
-| CMake modernization = Critical? | **ChatGPT correct on severity.** Build works for current scope. Moved to backlog as technical debt. |
-| Loss sign convention = bug or semantics? | **Both agree: correctness bug.** `distance_to_utility(5.0, LINEAR)` returns `+5.0` — utility increases with distance due to double negation. The code's own Doxygen cites Singh (2013) `u = -alpha|d|` which decreases with distance. Fix immediately. |
-| `std::hash` = broken now or future risk? | **Compromise.** Deterministic on a single machine/compiler today; will break across toolchains (GCC vs Clang produce different hashes). High priority for a reproducibility-focused library. |
-| `lint.sh` — remove `\|\| true` entirely? | **ChatGPT's approach adopted.** Strict mode for CI, permissive default for local development. |
+For each item: the **Origin** column shows which agent(s) identified it (Claude = C, Codex = X, Both = B).
 
 ---
 
-## Phase 0 / Week 1: Immediate Stabilization (Correctness + Compile Trust)
+## Findings summary
 
-| # | Item | Source | Severity | Status |
-|---|------|--------|----------|--------|
-| 1 | Fix loss function sign convention: `linear_loss`, `quadratic_loss`, and `threshold_loss` return negative values, then `distance_to_utility` negates again, making utility increase with distance. Adopt consistent convention: all loss functions return positive loss magnitude, `distance_to_utility` returns `-loss`. | **(Both)** | Critical | ✅ Done (Feb 14) |
-| 2 | Fix `normalize_utility` to accept all loss parameters (`max_loss`, `steepness`, `threshold`) — currently uses defaults internally, producing wrong normalization for GAUSSIAN and THRESHOLD types. | **(Both)** | Critical | ✅ Done (Feb 14) |
-| 3 | Rewrite or delete `utility_functions.h` — references deleted `PointND` type, wrong enum name (`loss::LossType` instead of `LossFunctionType`), non-existent `loss::get_loss_function<T>()`, and fabricated `EXPONENTIAL` enum value. Cannot compile. | **(Both)** | Critical | ✅ Done (deleted Feb 14) |
-| 4 | Delete or rewrite both example files (`basic_usage.cpp`, `distance_example.cpp`) — reference deleted types, call distance functions with wrong signatures (missing mandatory `salience_weights`). Cannot compile. | **(Both)** | Critical | ✅ Done (deleted Feb 14) |
-| 5 | Add `test_loss_functions` target to root `CMakeLists.txt` — this test file exists but is never built or run, which is why the sign convention and normalization bugs were never caught. | **(Both)** | Critical | ✅ Done (Feb 14) |
-| 6 | Delete dead `tests/CMakeLists.txt` and `examples/CMakeLists.txt` — never included by root build, use incompatible GTest strategy, contain wrong paths. | **(Both)** | High | ✅ Done (deleted Feb 14) |
-| 7 | Fix Eigen include directory ordering bug in CMake — line 20 references `${eigen_SOURCE_DIR}` before `FetchContent_MakeAvailable(eigen)` at line 39. Variable is empty at that point. Remove the line (Eigen includes are already provided via the `Eigen3::Eigen` target). | **(Claude Only)** | High | ✅ Done |
-| 8 | Add PRNG edge-case guards: `uniform_choice(size==0)` causes unsigned underflow to `SIZE_MAX`; `discrete_choice(weights.empty())` is UB. Also guard `beta()` against division by zero when both gamma draws return 0.0. Throw `std::invalid_argument` with clear messages. | **(Both)** | High | ✅ Done |
-| 9 | Validate `order_p >= 1` in Minkowski distance — `p < 1` is not a valid metric, `p == 0` causes division by zero. | **(Both)** | High | ✅ Done |
-| 10 | Fix `lint.sh`: fix `find` expression precedence bug (wrap `-name` conditions in parentheses); add `--strict` mode for CI that fails on lint errors (keep permissive default for local development). | **(Both)** | Medium | ✅ Done |
-| 11 | Align `make format` / `make lint` doc references with actual CMake targets — docs mention these but they don't exist. Add the targets or remove the docs. | **(Both)** | Medium | ✅ Done |
+| Finding | Detail |
+|---------|--------|
+| Correctness bugs in library source | **None.** Previous consensus plan was well-executed. |
+| Broken scripts | 2 (lint.sh, pre-commit.sh) — live bugs |
+| Script that corrupts docs if run | 1 (update-where-we-are.sh) — live bug |
+| CI/docs policy divergence | 1 (benchmark test exclusion) |
+| Stale documentation references | 7 specific inaccuracies |
+| Missing input validation | All 3 modules (distance, loss, PRNG) — High for c_api |
+| Test coverage gaps | 16 specific untested behaviours |
 
 ---
 
-## Phase 1 / Week 2: Reproducibility, Safety, and Test Quality
+## Batch 1 — Script fixes (do first; live bugs)
 
-| # | Item | Source | Severity | Status |
-|---|------|--------|----------|--------|
-| 12 | Replace `std::hash<std::string>` in `generate_stream_seed()` with a deterministic hash (e.g., FNV-1a) — `std::hash` is implementation-defined and produces different values across GCC/Clang/MSVC, breaking cross-platform reproducibility. | **(Both)** | High | ✅ Done |
-| 13 | Fix SIOF: convert file-scope statics in `stream_manager.cpp` to Meyers' singleton (function-local static). Latent — not yet triggered in current code, but becomes UB if any global constructor calls `get_global_stream_manager()`. Trivial 3-line fix. | **(Both)** | High (latent) | ✅ Done |
-| 14 | Fix non-deterministic test seeds — 4 of 5 test files use `std::random_device`, making failures irreproducible. Replace with fixed seeds. | **(Both)** | High | ✅ Done |
-| 15 | Add error-condition tests (`EXPECT_THROW`) for invalid inputs across distance, loss, and PRNG functions — currently zero error-condition tests in the entire suite. | **(Both)** | Medium | ✅ Done |
-| 16 | Add missing includes for portability: `<stdexcept>` in `distance_functions.h` and `loss_functions.h`; `<type_traits>` in `loss_functions.h`; `<vector>` in `prng.h` and `stream_manager.h`; `<numeric>` in `test_distance_speed.cpp`. | **(Both)** | Medium | ✅ Done |
-| 17 | Harden enum handling: replace silent `default` fallbacks in `calculate_distance` and `distance_to_utility` switch statements with `throw std::invalid_argument("Unknown type")` — current defaults silently use Euclidean/Linear for unrecognized enum values. | **(Both)** | Medium | ✅ Done |
-| 18 | Either remove thread-safety claims from `StreamManager` or fix with proper lock management. Current issues: `get_stream()` returns references that outlive the lock; `master_seed()` reads without lock while `reset_all()` writes under lock (data race); `const` overload of `get_stream()` silently creates streams via `mutable` members. If single-threaded use is intended, document that and remove the mutex overhead. | **(Both)** | Medium | ✅ Done — single-owner policy adopted. See `docs/architecture/stream_manager_design.md` for full decision and rationale. |
-| 19 | Fix or remove tautological/empty tests: `EXPECT_TRUE(true)` in Skip test; `EXPECT_GE(size_t, 0)` (always true for unsigned); `MemoryUsage` test that doesn't measure memory; tautological `utility == -loss` assertions. | **(Claude Only)** | Medium | ✅ Done |
-| 20 | Rename `beta()` parameter to avoid self-shadowing — `beta(T alpha, T beta)` shadows the function name. | **(Claude Only)** | Low | ✅ Done (already `beta_param` in prng.h) |
-| 21 | Separate performance benchmarks from unit tests — `test_distance_speed.cpp` and `test_performance_comparison.cpp` have arbitrary timing thresholds that will randomly fail on different machines. Use CTest labels or Google Benchmark. | **(Claude Only)** | Low | ✅ Done — timing assertions removed (report only); CTest label `benchmark` added; doc in development.md. |
+**Severity: High.** These are broken right now. Do not run `end-of-session.sh` or `lint.sh <file>` until fixed.
+
+| # | Item | File | Origin | Severity | Status |
+|---|------|------|--------|----------|--------|
+| 1 | `lint.sh` TARGET argument silently ignored — `TARGET` initialized to `"."` before the parse loop; `[ -z "$TARGET" ]` is always false so the file/directory argument can never override TARGET. `./lint.sh format include/foo.sh` formats ALL files. **Fix:** Initialize `TARGET=""` before the loop; set default `"."` after (the fallback at lines 32–34 already exists). | `lint.sh` line 14 | B | High | ✅ Done |
+| 2 | `pre-commit.sh` ROOT wrong when installed as git hook — `ROOT="$(cd "$(dirname "$0")/.." && pwd)"` evaluates to `.git/` when the script is at `.git/hooks/pre-commit` (per documented install instructions), making `./lint.sh` unreachable. **Fix:** `ROOT="$(git rev-parse --show-toplevel)"` — always correct regardless of where the script lives. | `scripts/pre-commit.sh` line 10 | B | High | ✅ Done |
+| 3 | `update-where-we-are.sh` corrupts `where_we_are.md` when backlog is complete — Python parser falls through to `print("Phase 0 (Immediate Stabilization)|0|No items found|Unknown")` and exits non-zero; bash then overwrites `where_we_are.md` header with "Next item: 0 — No items found." Since the backlog IS complete, this is a live bug. **Fix:** When all items are ✅ Done, emit `"All phases complete|—|See docs/status/roadmap.md|—"` and exit 0. Handle the sentinel in bash to write a proper "all done" pointer instead of overwriting the header. | `scripts/update-where-we-are.sh` lines 72–73; `scripts/end-of-session.sh` | B | High | ✅ Done |
 
 ---
 
-## Phase 2 / Week 3: Documentation Truthfulness
+## Batch 2 — Documentation truthfulness
 
-| # | Item | Source | Severity | Status |
-|---|------|--------|----------|--------|
-| 22 | Update README: separate "Implemented Now" (distance functions, loss functions, PRNG/StreamManager) from "Planned" (CGAL, voting rules, outcome concepts, R/Python bindings, GUI). | **(Both)** | High | ✅ Done |
-| 23 | Fix stale PointND references in docs — `development.md`, `docs/references/foundation/README.md`, and others still reference the deleted `PointND` type and `core::types` namespace. | **(Both)** | High | ✅ Done |
-| 24 | Fix PROJECT_LOG: restore chronological order (Sept 10 entry appears after Sept 14); resolve GTest contradiction (log says "abandoned" but GTest is in use); note that Eigen migration is complete (utility_functions.h was deleted Feb 14). | **(Both)** | Medium | ✅ Done |
-| 25 | Repair reference index structure: remove phantom subdirectories from `docs/references/README.md` and `reference_index.md` that were never created; consolidate the implementation priority list that appears identically in three files. | **(Both)** | Medium | ✅ Done |
-| 26 | Fix development.md: style guide says functions use `PascalCase` but actual code uses `snake_case`; remove instruction to install Google Test via Homebrew (project uses FetchContent). | **(Claude Only)** | Medium | ✅ Done (verified; already correct) |
-| 27 | Fix design doc: change "Rcpp" to "cpp11" in licensing section — the R binding layer uses cpp11, not Rcpp. | **(Claude Only)** | Low | ✅ Done |
+**Severity: Medium** (unless noted). Inaccuracies or stale references in docs and code comments. Fast to fix in one pass.
 
-Phase 2 edit record archived in `docs/status/project_log.md` (session 2026-02-14).
-
----
-
-## Phase 3 / Week 4: Developer Experience and Process
-
-| # | Item | Source | Severity | Status |
-|---|------|--------|----------|--------|
-| 28 | Add CI workflow (build + test on push/PR across major OS targets; include format/lint checks). | **(Both)** | High | ✅ Done |
-| 29 | Create `docs/status/roadmap.md` with near-term (1-2 months), mid-term (3-6 months), and long-term (6+ months) plans. Link to design doc and implementation priority instead of duplicating. | **(Both)** | Medium | ✅ Done |
-| 30 | Define milestone gates with "done" criteria: required features, tests, docs, and API stability expectations for each milestone. | **(Both)** | Medium | ✅ Done |
-| 31 | Add `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` — standard open-source project hygiene. | **(Both)** | Medium | ✅ Done |
-| 32 | Add `.clang-tidy` config and pre-commit hooks for automated quality enforcement. | **(Both)** | Medium | ✅ Done |
-| 33 | Add dependency-aware sequencing to roadmap (e.g., `c_api` before language bindings, geometry primitives before advanced electoral methods). | **(ChatGPT Only)** | Low | ✅ Done |
+| # | Item | File | Origin | Severity | Status |
+|---|------|------|--------|----------|--------|
+| 4 | `stream_manager.h` stale doc path — line 31 comment says `docs/governance/StreamManager_Design.md`; file was moved and renamed to `docs/architecture/stream_manager_design.md`. **Fix:** Update to `docs/architecture/stream_manager_design.md`. | `include/socialchoicelab/core/rng/stream_manager.h` line 31 | B | High | Pending |
+| 5 | `stream_manager.h` orphaned Doxygen block — Doxygen comment for `generate_stream_seed()` (lines 165–177) sits above `combine_seed()` (lines 178–186), not above `generate_stream_seed()` (line 197). Doxygen associates it with the wrong function. **Fix:** Move the block to immediately above `generate_stream_seed()`. | `include/socialchoicelab/core/rng/stream_manager.h` lines 165–177 | C | Medium | Pending |
+| 6 | `distance_functions.h` Doxygen claims salience weights are optional — four `@param salience_weights` blocks say "optional" or "default: equal weights" but the parameter is mandatory with no default argument. **Fix:** Remove "optional/default" wording from all four blocks (lines 52, 134, 153, 173). Replace with "Salience weights for each dimension (mandatory, one per dimension)." | `include/socialchoicelab/preference/distance/distance_functions.h` lines 52, 134, 153, 173 | B | High | Pending |
+| 7 | `stream_manager_design.md` stale reference — section D3 says "Update `SESSION_PROGRESS.md`"; file does not exist (renamed to `project_log.md`). **Fix:** Change to `project_log.md`. | `docs/architecture/stream_manager_design.md` | C | Medium | Pending |
+| 8 | `git_reference.md` "not a git repo" — line 9 says "This directory is not currently a git repo." Repo is active on `main` tracking `origin/main`. **Fix:** Replace with conditional wording: "If this directory is not yet a git repo, run the following setup commands. If it is already initialized, skip to [Workflow]." | `docs/development/git_reference.md` line 9 | B | Medium | Pending |
+| 9 | `git_reference.md` branching policy stale — says "Revisit at Phase 3 completion." Phase 3 is complete; no update was made. **Fix:** "Phase 3 complete. Branching deferred until the project has collaborators or a stable API to protect. Revisit at c_api milestone." | `docs/development/git_reference.md` line 163 | C | Low | Pending |
+| 10 | `git_reference.md` legacy undo command — `git checkout -- .` is outdated. **Fix:** Replace with `git restore .`; keep legacy form in a note for older Git versions. | `docs/development/git_reference.md` lines 175–178 | X | Low | Pending |
+| 11 | `project_log.md` not chronological — 2026-03-03 entry precedes older 2025 entries. **Fix:** Reorder all entries ascending by date. Add an explicit ordering rule in the file header. | `docs/status/project_log.md` | X | Medium | Pending |
+| 12 | `development.md` include-guard wording mismatches practice — style guide says "include guards" but project uses `#pragma once` throughout. **Fix:** Update to "self-contained, using `#pragma once` (project standard)." | `docs/development/development.md` | X | Medium | Pending |
+| 13 | `sample_simulation_description.md` presents Option A/B as active choices — single-owner policy (Option B) was adopted in the first plan Item 18, but the doc still frames both as open. **Fix:** Convert Option A/B section into a historical note and state the adopted policy near first mention. | `docs/development/sample_simulation_description.md` lines 216–225 | X | Low | Pending |
+| 14 | `test_distance_comparison.cpp` "Raw C++ C++" typo — "Raw C++ C++ Minkowski distance" doubled at lines 53, 85, 86, 115. **Fix:** Change all to "Raw C++ Minkowski distance." | `tests/unit/test_distance_comparison.cpp` lines 53, 85, 86, 115 | C | Medium | Pending |
+| 15 | `development.md` lint.sh usage examples document behaviour that doesn't work — targeted formatting examples have never worked due to the Item 1 TARGET bug. **Fix:** After fixing Item 1, verify all documented examples in lines 26–31 work as written. | `docs/development/development.md` lines 26–31 | C | Medium | Pending |
+| 16 | `stream_manager.cpp` locking Doxygen unclear — `get_global_stream_manager()` acquires a construction mutex and returns a reference after releasing it; can be misread as implying the returned manager is thread-safe. **Fix:** Add explicit Doxygen note: "Lock guards lazy construction only. The returned `StreamManager&` is not thread-safe; single-owner contract applies." | `src/core/rng/stream_manager.cpp` lines 30–39 | X | Medium | Pending |
 
 ---
 
-## Backlog: Quality and Modernization (No Rush)
+## Batch 3 — Build and CI alignment
 
-| # | Item | Source | Severity | Status |
-|---|------|--------|----------|--------|
-| 34 | Modernize CMakeLists.txt: use `target_include_directories()` instead of global `include_directories()`; use `target_compile_options()` with generator expressions instead of global `set()`; add `install()` targets; remove unused `C` language; remove redundant `gtest` linking. | **(Claude Only)** | Low | ✅ Done |
-| 35 | Unify namespace style to C++17 nested form (`namespace socialchoicelab::core::rng {`) — currently mixed with C++11 style. | **(Claude Only)** | Low | ✅ Done |
-| 36 | Extract magic number `12345` (default seed) to a named constant — appears in `prng.h`, `stream_manager.h`, and `stream_manager.cpp`. | **(Claude Only)** | Low | ✅ Done |
-| 37 | Special-case `p=1` and `p=2` in `minkowski_distance` to avoid `std::pow` in tight loop — use `std::abs` for p=1 and `x*x` for p=2. | **(Claude Only)** | Low | ✅ Done |
-| 38 | DRY: have `minkowski_distance` call `chebyshev_distance()` for high-p case instead of duplicating the Chebyshev logic. | **(Claude Only)** | Low | ✅ Done |
-| 39 | Fix broken indentation in `minkowski_distance` — main calculation block uses 12-space indent while rest of file uses 4; closing brace at column 0. | **(Claude Only)** | Low | ✅ Done (verified consistent; format run) |
-| 40 | Remove commented-out dead code in `distance_functions.h` (lines 197-200: unused type aliases with unresolved "Note:"). | **(Claude Only)** | Low | ✅ Done |
-| 41 | Add `noexcept` to simple accessors (`master_seed()`, `state_string()`, etc.). | **(Claude Only)** | Low | ✅ Done |
-| 42 | Remove unused `<algorithm>` include from `loss_functions.h`. | **(Claude Only)** | Low | (skipped: required for std::max in threshold_loss) |
-| 43 | Fix Doxygen `@tparam N` on distance wrapper functions that don't have a template parameter `N`. | **(Claude Only)** | Low | ✅ Done |
-| 44 | Add weighted and higher-dimensional distance tests — current tests almost exclusively use equal weights `{1.0, 1.0}` on 2D points. | **(Claude Only)** | Low | ✅ Done |
-| 45 | Add triangle inequality tests for distance metrics (`d(a,c) <= d(a,b) + d(b,c)`). | **(Claude Only)** | Low | ✅ Done |
-| 46 | Evaluate GPL v3 vs LGPL v3 for library adoption — GPL requires downstream programs to also be GPL, which may discourage academic use. | **(Claude Only)** | Low | Deferred: revisit when most functionality is built; staying GPL for now. See Design doc § Licensing. |
+**Severity: Mixed.** Item 17 is High (CI is running tests it should exclude). Items 18–19 are Medium/Low.
+
+| # | Item | File | Origin | Severity | Status |
+|---|------|------|--------|----------|--------|
+| 17 | CI runs benchmark tests via direct executables — runs `./test_distance_speed` and `./test_performance_comparison` directly, contrary to documented policy (`ctest -LE benchmark`). Also means new tests added to CMakeLists.txt are never picked up by CI automatically. **Fix:** Replace test step with `cd build && ctest --output-on-failure -LE benchmark`. | `.github/workflows/ci.yml` line 63 | B | High | Pending |
+| 18 | `CMakeLists.txt` VERSION 1.0.0 is premature — `milestone_gates.md` defines 1.0 as "first released R or Python package" with semver stability promise. **Fix:** Change to `VERSION 0.1.0`. Increment to 1.0.0 when first-binding milestone gates are met. | `CMakeLists.txt` line 2 | B | Medium | Pending |
+| 19 | CMakeLists.txt duplicate C++ standard setting — set globally (lines 5–7) and again on the target via `set_target_properties` (lines 47–49). **Fix:** Remove lines 47–49. | `CMakeLists.txt` lines 47–49 | C | Low | Pending |
 
 ---
 
-## Resolution Method for Future Disputes
+## Batch 4 — Input validation and test coverage
 
-- **If a claim is about current breakage:** prove with a reproducible failing build/test case.
-- **If a claim is about portability/design risk:** label as risk tier; defer after Phase 0 unless it blocks correctness. Note: some reproducibility bugs (e.g., `std::hash` cross-toolchain) are inherently cross-environment and cannot be demonstrated on a single machine.
+**Severity: High** (validation items), **Medium** (test items). Implement during or before c_api design — the c_api must map C++ errors to error codes, so C++ must throw on invalid input rather than silently producing NaN.
+
+### Input validation
+
+| # | Item | File | Origin | Severity | Status |
+|---|------|------|--------|----------|--------|
+| 20 | Distance functions accept non-finite/invalid inputs — `order_p`, coordinates, and salience weights are not checked for NaN, infinity, or negative values. Non-integer `p` with negative weighted differences passed to `std::pow` can silently produce NaN. **Fix:** Before computation in `minkowski_distance` (propagate to wrappers): `std::isfinite(order_p)` and `order_p >= 1`; each coordinate finite; each salience weight finite and `>= 0`. Throw `std::invalid_argument` with precise messages. (Whether zero weights are permitted — dimension masking — is a design decision; document it explicitly.) | `include/socialchoicelab/preference/distance/distance_functions.h` | B | High | Pending |
+| 21 | Loss functions do not enforce documented parameter domains — Doxygen specifies positive domains but none are enforced. Negative `sensitivity` inverts utility semantics. **Fix:** Add `std::invalid_argument` guards: `sensitivity > 0`; `max_loss > 0`; `steepness > 0`; `threshold >= 0`; finite numeric inputs; in `normalize_utility`, require finite `utility` and `max_distance >= 0`. | `include/socialchoicelab/preference/loss/loss_functions.h` | B | High | Pending |
+| 22 | PRNG wrappers forward invalid distribution parameters to STL without checking — STL behaviour with invalid params is implementation-defined (assert, exception, or silent nonsense). **Fix:** Add explicit guards for each wrapper: `min <= max` (integer); `min < max` (real); `stddev > 0`; `lambda > 0`; gamma shape/scale > 0; `0 <= probability <= 1`. Throw `std::invalid_argument`. | `include/socialchoicelab/core/rng/prng.h` | X | High | Pending |
+
+### Test coverage gaps
+
+| # | Item | File | Origin | Severity | Status |
+|---|------|------|--------|----------|--------|
+| 23 | `StreamManager` methods have zero test coverage — `reset_stream()`, `has_stream()`, `remove_stream()`, `clear()`, `debug_info()`, `reset_for_run()` untested. `reset_for_run()` is especially important: verify same `(master_seed, run_index)` always produces same sequences; different indices produce different sequences. | `tests/unit/test_prng.cpp` | C | Medium | Pending |
+| 24 | PRNG distribution happy paths untested — `gamma()` has zero tests. `beta()` only tests error conditions. `exponential()` only checks `>= 0`. **Fix:** Add statistical tests: sample N values, check mean/range within tolerance (same pattern as existing Bernoulli/Normal tests). | `tests/unit/test_prng.cpp` | C | Medium | Pending |
+| 25 | `PRNG::skip()` test only verifies no crash — checks output is in range, which passes even if `skip()` did nothing. **Fix:** Test engine position directly: draw 10 values from `rng1.engine()`, discard 10 on `rng2.engine()`, compare `rng1.engine()() == rng2.engine()()`. | `tests/unit/test_prng.cpp` lines 168–197 | C | Medium | Pending |
+| 26 | No tests for invalid-input edge cases — NaN/Inf coordinates, negative/zero salience weights, invalid loss params, `minkowski_distance` at exactly `p = k_minkowski_chebyshev_cutoff` (100.0) boundary, `normalize_utility` degenerate case. **Fix:** Once Items 20–22 are done, add corresponding `EXPECT_THROW` tests for each. | `tests/unit/test_distance_functions.cpp`, `tests/unit/test_loss_functions.cpp` | B | Medium | Pending |
+| 27 | `set_global_stream_manager_seed` second-call branch untested — function has two paths (create new / reset existing); only the create path is exercised. **Fix:** Call twice with different seeds; verify second call produces different sequences. | `tests/unit/test_prng.cpp` | C | Low | Pending |
+| 28 | `normalize_utility` uses exact floating-point equality — `if (max_utility == min_utility)` is fragile; returning `T{1.0}` on zero range is undocumented. **Fix:** Use epsilon comparison; document the degenerate-case convention; add a test. | `include/socialchoicelab/preference/loss/loss_functions.h` line 184 | C | Medium | Pending |
 
 ---
 
-## Summary
+## c_api design inputs (not implementation tasks — reference when designing c_api)
 
-| Category | Count |
+| # | Topic | Detail | Origin |
+|---|-------|--------|--------|
+| 29 | `distance_to_utility` parameter explosion | Six parameters, most conditionally used. C has no default arguments. **Recommended:** `SCS_LossConfig` POD struct with type discriminant + parameter union. | C |
+| 30 | Stream auto-creation vs pre-registration | `get_stream()` silently creates a stream for any name — typos create decoupled streams with no error. **Consider:** `register_streams(names)` to lock the allowed set; throw on unknown names at c_api boundary. | C |
+| 31 | Do not expose `PRNG::engine()` through c_api | Returns non-const ref to mt19937_64, bypassing reproducibility guarantees. Keep internal; consider removing if no internal code needs it. | C |
+
+---
+
+## Deferred — Style/preference, no urgency
+
+| # | Item | Origin | Note |
+|---|------|--------|------|
+| 32 | `generate_stream_seed` hash-mixing strength — XOR combining of master_seed and name_hash weaker than SplitMix64. Not a correctness issue. | C | Optional optimization |
+| 33 | `combine_seed` mixing — custom XOR-multiply sequence; SplitMix64 finalizer gives better avalanche. | C | Optional optimization |
+| 34 | CMake compiler flags not guarded by compiler-ID — `-g -O0 -Wall -O3` are GCC/Clang-only. Not a live issue. | C | Add if Windows CI planned |
+| 35 | Empty `SetUp()` overrides in test fixtures. | C | Minor cleanup |
+
+---
+
+## Severity breakdown
+
+| Severity | Count |
 |----------|-------|
-| **Both agents identified** | 26 items |
-| **ChatGPT only** | 1 item |
-| **Claude only** | 19 items |
-| **Total** | **46 actionable items** |
+| High | 8 (Items 1–4, 6, 17, 20–22) |
+| Medium | 14 (Items 5, 7–8, 11–12, 14–16, 18, 23–26, 28) |
+| Low | 6 (Items 9–10, 13, 19, 27) |
+| c_api design inputs | 3 (Items 29–31) |
+| Deferred | 4 (Items 32–35) |
+| **Total actionable** | **28** |
 
-**Priority order:** Correctness and reproducibility (Phases 0-1) before documentation and process (Phases 2-3) before backlog modernization.
+---
 
-**Status:** All 46 items resolved (45 done, 1 deferred). See `docs/status/roadmap.md` for what comes next.
+## Recommended implementation order
+
+1. **Items 1–3** — broken scripts. Fix before running any automation.
+2. **Items 4–16** — documentation sweep. One session.
+3. **Items 17–19** — CI and build alignment. One session.
+4. **Items 20–22** — input validation. Before or during c_api design.
+5. **Items 23–28** — test coverage. In parallel with or after validation.
+6. **Items 29–31** — c_api design inputs. Reference at start of c_api design work, not implementation tasks now.
+7. **Items 32–35** — deferred. Whenever convenient.

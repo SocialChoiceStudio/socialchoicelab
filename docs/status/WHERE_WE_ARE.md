@@ -2,14 +2,13 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** All consensus-plan phases complete (backlog done).
-- **Next item:** See `docs/status/roadmap.md` — near-term: c_api design, then CGAL 2D geometry.
-- **Last updated:** 2026-03-05
+- **Current phase:** Batch 2
+- **Next item:** 4 — `stream_manager.h` stale doc path — line 31 comment says `do…. Severity: High.
+- **Last updated:** 2026-03-04
 
 **Authority:** This file is a cached pointer. The **Status** column in `docs/status/consensus_plan.md` is the source of truth. When you complete an item: (1) mark it ✅ Done in consensus_plan.md, (2) update this file (next item = first row in CONSENSUS_PLAN not marked Done; update Last updated date). If this file and the plan disagree, the plan wins — fix this file.
 
 **Rule for agents:** When the user asks "where are we" or "what's next", read this file and consensus_plan.md. Use the plan's Status column to confirm; if they disagree, update this file.
-
 ---
 
 ## Recent Work

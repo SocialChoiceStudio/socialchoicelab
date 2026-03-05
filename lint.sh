@@ -11,7 +11,7 @@ cd "$SCRIPT_DIR"
 
 STRICT_MODE=0
 ACTION=""
-TARGET="."
+TARGET=""
 
 # Parse optional --strict and positional args
 for arg in "$@"; do
