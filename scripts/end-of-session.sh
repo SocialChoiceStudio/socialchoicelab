@@ -47,13 +47,24 @@ if git diff --cached --quiet; then
 fi
 git status --short
 
-# --- Step 3: Commit ---
+# --- Step 3: Commit (with auto-retry if pre-commit hook reformats files) ---
 echo ""
 echo "=== Committing ==="
 if [ -z "$MSG" ]; then
   MSG="End of session $today"
 fi
-git commit -m "$MSG"
+
+commit_attempt() {
+  git commit -m "$MSG"
+}
+
+if ! commit_attempt; then
+  # Pre-commit hook reformatted files and aborted. Re-stage and retry once.
+  echo ""
+  echo "Pre-commit hook reformatted files. Re-staging and retrying..."
+  git add -A
+  git commit -m "$MSG"
+fi
 
 # --- Step 4: Push ---
 if [ -z "$NO_PUSH" ]; then
