@@ -47,6 +47,8 @@
 #include <vector>
 
 using socialchoicelab::core::types::Point2d;
+using socialchoicelab::geometry::bounded_side;
+using socialchoicelab::geometry::BoundedSide;
 using socialchoicelab::geometry::convex_hull_2d;
 using socialchoicelab::geometry::copeland_scores;
 using socialchoicelab::geometry::copeland_winner;
@@ -55,6 +57,8 @@ using socialchoicelab::geometry::DistConfig;
 using socialchoicelab::geometry::heart_boundary_2d;
 using socialchoicelab::geometry::majority_prefers;
 using socialchoicelab::geometry::pairwise_matrix;
+using socialchoicelab::geometry::Polygon2E;
+using socialchoicelab::geometry::to_exact;
 using socialchoicelab::geometry::uncovered_set_boundary_2d;
 using socialchoicelab::geometry::weighted_majority_prefers;
 using socialchoicelab::geometry::weighted_winset_2d;

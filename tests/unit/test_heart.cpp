@@ -12,7 +12,9 @@
 
 using socialchoicelab::core::types::Point2d;
 using socialchoicelab::geometry::DistConfig;
+using socialchoicelab::geometry::heart;
 using socialchoicelab::geometry::heart_boundary_2d;
+using socialchoicelab::geometry::Polygon2E;
 using socialchoicelab::geometry::uncovered_set_boundary_2d;
 
 static const DistConfig kEuc{};
