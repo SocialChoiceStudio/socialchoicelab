@@ -183,6 +183,11 @@ target_compile_options(test_copeland PRIVATE ${SocialChoiceLab_compile_options})
 target_link_libraries(test_copeland PRIVATE socialchoicelab_geometry gtest_main)
 add_test(NAME CopelandTest COMMAND test_copeland)
 
+add_executable(test_heart tests/unit/test_heart.cpp)
+target_compile_options(test_heart PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_heart PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME HeartTest COMMAND test_heart)
+
 # ---------------------------------------------------------------------------
 # scs_api: stable C API shared library (wraps socialchoicelab_core)
 # ---------------------------------------------------------------------------

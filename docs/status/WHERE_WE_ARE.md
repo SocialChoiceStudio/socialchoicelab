@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Geometry (Layer 3). Phases A–F complete. Next: Phase G (Heart) or Phase E (integration tests + docs). See [geometry_plan.md](geometry_plan.md).
-- **Next:** Discuss with user whether to proceed to Phase G (Heart), Phase E (integration tests), or another priority.
+- **Current phase:** Geometry (Layer 3). Phases A–G complete. Next: Phase E (integration tests + documentation). See [geometry_plan.md](geometry_plan.md).
+- **Next:** E1 (integration tests) or E3 (documentation + citation verification). Discuss priority with user.
 - **Last updated:** 2026-03-06
 
 **Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
@@ -12,6 +12,13 @@
 ---
 
 ## Recent Work
+
+### Session: 2026-03-06 — Geometry Phase G (Heart) complete
+
+- **G1 (Heart, finite):** `heart(alternatives, voters, cfg, k) → vector<Point2d>` in `heart.h`. Pre-computes m×m beats matrix (O(m²n)), initialises with Uncovered Set (index-based in O(m³)), then iterates the fixed-point operator T(H) = {x∈H : ∀y that beats x, ∃z∈H that beats y} until stable. At most m iterations; total O(m²n + m⁴). Theorems verified: Heart⊆Uncovered Set, Heart non-empty, Condorcet winner → singleton Heart, Condorcet cycle → Heart = full set.
+- **G2 (Heart boundary, continuous):** `heart_boundary_2d(voters, cfg, grid_resolution=15, k) → Polygon2E`. Same bounding-box + 30%-margin strategy as `uncovered_set_boundary_2d`; applies `heart()` to the grid and returns the convex hull of surviving points. Tests: error handling; equilateral triangle → non-trivial polygon; collinear → centroid near median; Heart bbox ⊆ uncovered-set bbox; all-same ideal → polygon near that ideal.
+- **16 new tests in `test_heart.cpp`**, all passing. **18/18 ctest suites pass** (0.65s total).
+- **geometry_plan.md:** G1, G2 marked ✅ Done.
 
 ### Session: 2026-03-06 — Geometry Phase F (Extended Winset Services) complete
 
