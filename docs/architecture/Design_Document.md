@@ -46,10 +46,19 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **utility** – Applies a loss function to a distance metric to produce utility values
 - **indifference** – Level-set construction; stateless service. Given ideal point, utility level, loss config, and distance config, returns points where u(x) = level: in 1D, 0/1/2 points; in 2D, an exact shape (circle, ellipse, superellipse, or polygon). See [Indifference design](indifference_design.md); implementation in `preference/indifference/level_set.h`.
 
-### 3. Geometry Services *(planned, not yet built)*
-- **geom2d** – CGAL EPEC exact 2D operations
-- **geom3d** – CGAL exact 3D where needed
-- **geomND** – Numeric N-dimensional algorithms: convex hull, half-space intersection, kd-tree
+### 3. Geometry Services *(in progress — Phase A complete)*
+
+Full design: [geometry_design.md](geometry_design.md).
+
+- **kernels** – CGAL kernel aliases (`EpecKernel`, `EpicKernel`) in `core/kernels.h` ✅
+- **geom2d** – Exact 2D type layer: `Point2E`, `Segment2E`, `Polygon2E`; conversions `to_exact`/`to_numeric`; predicates `orientation`, `bounded_side` ✅
+- **convex_hull** – `convex_hull_2d`: exact CCW hull of voter ideal points; equals the Pareto set under Euclidean preferences ✅
+- **majority / winsets** – k-majority preference, pairwise matrix, winset computation (Euclidean + Minkowski) *(planned — Phase B)*
+- **yolk** – k-Yolk: smallest circle intersecting all k-quantile lines *(planned — Phase C)*
+- **uncovered_set** – k-covering relation, k-uncovered set (finite + continuous) *(planned — Phase D)*
+- **extended winset services** – set operations, core detection, Copeland/strong point, veto players, weighted voting *(planned — Phase F)*
+- **heart** – k-Heart: geometric stability region via fixed-point algorithm over k-majority win sets *(planned — Phase G)*
+- **geom3d / geomND** – 3D and N-D geometry *(out of scope for this plan)*
 
 ### 4. Profiles and Aggregation *(planned, not yet built)*
 - **profiles** – Generators, loaders, schema validation

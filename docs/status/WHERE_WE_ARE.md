@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Geometry (Layer 3). c_api minimal complete and archived; now building CGAL-based exact 2D geometry services.
-- **Next:** Step A1 — CGAL integration (see [geometry_plan.md](geometry_plan.md)).
+- **Current phase:** Geometry (Layer 3). Phases A–D complete (CGAL integration, exact types, convex hull, majority, winset, Yolk, uncovered set). Next: Phase F (Extended Winset Services).
+- **Next:** Step F1 — winset set operations (`winset_ops.h`). See [geometry_plan.md](geometry_plan.md).
 - **Last updated:** 2026-03-05
 
 **Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
@@ -12,6 +12,26 @@
 ---
 
 ## Recent Work
+
+### Session: 2026-03-05 — Geometry Phases C (Yolk) and D (Uncovered Set) complete
+
+- **C2 (k-Yolk):** `yolk_2d(voter_ideals, k, n_sample) → Yolk2d` in `yolk.h`. Dense directional sampling (default 720 angles + n(n−1)/2 critical directions) + subgradient descent minimax solver (10 000 iters, Polyak-style step, best-iterate tracking). Returns `Yolk2d{center, radius}`. Analytical test: equilateral triangle Yolk radius = √3/6 and centre = centroid, verified. Collinear-median test: radius ≤ 0.01 (Condorcet winner at median). Unanimity Yolk radius > simple majority radius for equilateral triangle.
+- **C3 (Yolk radius):** `yolk_radius(voter_ideals, k) → double` convenience wrapper. 8 new tests in `test_yolk.cpp`; 22 total, all passing.
+- **D1 (Covering relation):** `covers(x, y, alternatives, voter_ideals, cfg, k) → bool` in `uncovered_set.h`. x k-covers y iff (1) k-majority prefers x and (2) every z that beats x also beats y. Textbook Condorcet cycle test (no coverings), Condorcet winner test (covers all), supermajority test.
+- **D2 (Uncovered set, finite):** `uncovered_set(alternatives, voter_ideals, cfg, k)` — O(m²n) subset computation. Verified: Condorcet cycle → all three uncovered; Condorcet winner → sole uncovered element; unanimity expands the uncovered set.
+- **D3 (Uncovered set boundary):** `uncovered_set_boundary_2d(voter_ideals, cfg, grid_resolution, k) → Polygon2E` — bounding box + 30% margin, grid coverage checks, convex hull of uncovered points. Test: Feld–Grofman–Miller (1988) guarantee that Yolk centre lies in the uncovered set (bounding box check for equilateral triangle). 15 new tests in `test_uncovered_set.cpp`, all passing.
+- **CMakeLists.txt:** `test_uncovered_set` target added.
+- **geometry_plan.md:** C2, C3, D1, D2, D3 all marked ✅ Done.
+
+### Session: 2026-03-06 — Geometry Phase A complete
+
+- **A1 (CGAL integration):** `find_package(CGAL REQUIRED)` added to CMakeLists.txt. CI updated: Ubuntu adds `libcgal-dev libgmp-dev libmpfr-dev`; macOS adds `brew install cgal`. `include/socialchoicelab/core/kernels.h` defines `EpecKernel` and `EpicKernel` aliases. FetchContent gtest bumped to v1.17.0 to match Homebrew gtest ABI (CGAL adds `/opt/homebrew/include` before FetchContent headers; mismatched gtest versions caused linker error).
+- **A2 (Exact 2D type layer):** `include/socialchoicelab/geometry/geom2d.h`: `Point2E`, `Segment2E`, `Polygon2E` type aliases (EpecKernel); `to_exact`/`to_numeric` conversions; `orientation` and `bounded_side` predicates with `Orientation` and `BoundedSide` enums. Tests in `tests/unit/test_geom2d.cpp` (17 tests, all passing).
+- **A3 (Convex hull 2D):** `include/socialchoicelab/geometry/convex_hull.h`: `convex_hull_2d(vector<Point2d>) → Polygon2E`. Input validation (empty, non-finite). Degenerate cases (1 point, collinear). Tests in `tests/unit/test_convex_hull.cpp` (13 tests, all passing).
+- **A4 (Design doc):** `docs/architecture/geometry_design.md` created: kernel policy rationale, type layer design, conversion strategy, convex hull / Pareto set relationship, build integration, gtest ABI note. `design_document.md` Layer 3 updated to list Phase A items as complete and link to geometry_design.md.
+- **Build:** `socialchoicelab_geometry` INTERFACE library added to CMakeLists.txt. All 9 non-benchmark tests pass locally.
+
+## Recent Work (prior sessions)
 
 ### Session: 2026-03-05 — Batch 3 Items 12–16 complete
 

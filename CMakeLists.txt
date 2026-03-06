@@ -21,7 +21,7 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.14.0
+  GIT_TAG        v1.17.0
 )
 
 # Prevent Eigen from registering its tests in CTest so only our project's tests run.
@@ -38,6 +38,12 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(googletest eigen)
+
+# CGAL: system install required (too large and has system-level dependencies
+# that CMake FetchContent cannot satisfy).  Install via:
+#   Ubuntu: sudo apt-get install -y libcgal-dev libgmp-dev libmpfr-dev
+#   macOS:  brew install cgal
+find_package(CGAL REQUIRED)
 
 # Create the core library
 add_library(socialchoicelab_core
@@ -121,6 +127,47 @@ set_tests_properties(DistanceSpeedTest PerformanceComparisonTest
     PROPERTIES LABELS "benchmark")
 
 # ---------------------------------------------------------------------------
+# socialchoicelab_geometry: header-only exact 2D geometry layer (CGAL EPEC)
+# ---------------------------------------------------------------------------
+add_library(socialchoicelab_geometry INTERFACE)
+target_include_directories(socialchoicelab_geometry INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(socialchoicelab_geometry INTERFACE
+    socialchoicelab_core
+    CGAL::CGAL)
+target_compile_features(socialchoicelab_geometry INTERFACE cxx_std_20)
+
+add_executable(test_geom2d tests/unit/test_geom2d.cpp)
+target_compile_options(test_geom2d PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_geom2d PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME Geom2dTest COMMAND test_geom2d)
+
+add_executable(test_convex_hull tests/unit/test_convex_hull.cpp)
+target_compile_options(test_convex_hull PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_convex_hull PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME ConvexHullTest COMMAND test_convex_hull)
+
+add_executable(test_majority tests/unit/test_majority.cpp)
+target_compile_options(test_majority PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_majority PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME MajorityTest COMMAND test_majority)
+
+add_executable(test_winset tests/unit/test_winset.cpp)
+target_compile_options(test_winset PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_winset PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME WinsetTest COMMAND test_winset)
+
+add_executable(test_yolk tests/unit/test_yolk.cpp)
+target_compile_options(test_yolk PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_yolk PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME YolkTest COMMAND test_yolk)
+
+add_executable(test_uncovered_set tests/unit/test_uncovered_set.cpp)
+target_compile_options(test_uncovered_set PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_uncovered_set PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME UncoveredSetTest COMMAND test_uncovered_set)
+
+# ---------------------------------------------------------------------------
 # scs_api: stable C API shared library (wraps socialchoicelab_core)
 # ---------------------------------------------------------------------------
 add_library(scs_api SHARED
@@ -133,12 +180,23 @@ target_include_directories(scs_api
 )
 target_compile_options(scs_api PRIVATE ${SocialChoiceLab_compile_options})
 target_compile_features(scs_api PUBLIC cxx_std_20)
-target_link_libraries(scs_api PRIVATE socialchoicelab_core)
+target_link_libraries(scs_api PRIVATE socialchoicelab_core socialchoicelab_geometry)
 
 add_executable(test_c_api tests/unit/test_c_api.cpp)
 target_compile_options(test_c_api PRIVATE ${SocialChoiceLab_compile_options})
 target_link_libraries(test_c_api PRIVATE scs_api gtest_main)
 add_test(NAME CApiTest COMMAND test_c_api)
+
+# ---------------------------------------------------------------------------
+# Scratch: dump_winset — temporary visualisation helper (source is gitignored).
+# Only built when scratch/dump_winset.cpp is present locally.
+# ---------------------------------------------------------------------------
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/scratch/dump_winset.cpp")
+  add_executable(dump_winset scratch/dump_winset.cpp)
+  target_compile_options(dump_winset PRIVATE ${SocialChoiceLab_compile_options})
+  target_compile_features(dump_winset PUBLIC cxx_std_20)
+  target_link_libraries(dump_winset PRIVATE socialchoicelab_geometry)
+endif()
 
 # Format and lint targets (run from source dir; require clang-format and cpplint)
 add_custom_target(format

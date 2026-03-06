@@ -14,6 +14,8 @@
 
 #include "scs_api.h"  // NOLINT(build/include_subdir)
 
+#include <socialchoicelab/geometry/convex_hull.h>
+
 #include <cstdio>
 #include <cstring>
 #include <numbers>
@@ -411,6 +413,49 @@ extern "C" int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
     return SCS_ERROR_INVALID_ARGUMENT;
   } catch (const std::exception& e) {
     set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Geometry
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_convex_hull_2d(const double* points, int n_points,
+                                  double* out_xy, int* out_n, char* err_buf,
+                                  int err_buf_len) {
+  try {
+    if (points == nullptr || out_xy == nullptr || out_n == nullptr) {
+      set_error(err_buf, err_buf_len,
+                "scs_convex_hull_2d: null pointer argument.");
+      return SCS_ERROR_INVALID_ARGUMENT;
+    }
+    if (n_points < 1) {
+      set_error(err_buf, err_buf_len,
+                ("scs_convex_hull_2d: n_points must be >= 1 (got " +
+                 std::to_string(n_points) + ").")
+                    .c_str());
+      return SCS_ERROR_INVALID_ARGUMENT;
+    }
+    std::vector<socialchoicelab::core::types::Point2d> pts;
+    pts.reserve(static_cast<std::size_t>(n_points));
+    for (int i = 0; i < n_points; ++i) {
+      pts.emplace_back(points[2 * i], points[2 * i + 1]);
+    }
+    socialchoicelab::geometry::Polygon2E hull =
+        socialchoicelab::geometry::convex_hull_2d(pts);
+    *out_n = static_cast<int>(hull.size());
+    int k = 0;
+    for (auto it = hull.vertices_begin(); it != hull.vertices_end(); ++it) {
+      out_xy[k++] = CGAL::to_double(it->x());
+      out_xy[k++] = CGAL::to_double(it->y());
+    }
+    return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  } catch (...) {
+    set_error(err_buf, err_buf_len, "scs_convex_hull_2d: unknown exception.");
     return SCS_ERROR_INTERNAL;
   }
 }

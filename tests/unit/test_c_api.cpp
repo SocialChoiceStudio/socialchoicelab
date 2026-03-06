@@ -568,3 +568,60 @@ TEST(CApi_StreamManager, ErrorOnInvalidUniformRealRange) {
 
   scs_stream_manager_destroy(mgr);
 }
+
+// ---------------------------------------------------------------------------
+// scs_convex_hull_2d
+// ---------------------------------------------------------------------------
+
+TEST(CApi_ConvexHull, Triangle_ThreeVertices) {
+  double pts[] = {0.0, 0.0, 1.0, 0.0, 0.0, 1.0};
+  double out[6];
+  int n = 0;
+  char err[256] = {};
+  ASSERT_EQ(scs_convex_hull_2d(pts, 3, out, &n, err, 256), SCS_OK);
+  EXPECT_EQ(n, 3);
+}
+
+TEST(CApi_ConvexHull, InteriorPointExcluded) {
+  double pts[] = {0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.5, 0.5};
+  double out[10];
+  int n = 0;
+  char err[256] = {};
+  ASSERT_EQ(scs_convex_hull_2d(pts, 5, out, &n, err, 256), SCS_OK);
+  EXPECT_EQ(n, 4);
+}
+
+TEST(CApi_ConvexHull, FiorinaPlott1978S1) {
+  double pts[] = {
+    0.2166667, 0.3777778, 0.1666667, 0.2888889, 0.1388889,
+    0.4000000, 0.3444444, 0.6055556, 0.9166667, 0.1777778,
+  };
+  double out[10];
+  int n = 0;
+  char err[256] = {};
+  ASSERT_EQ(scs_convex_hull_2d(pts, 5, out, &n, err, 256), SCS_OK);
+  EXPECT_GE(n, 3);
+  EXPECT_LE(n, 5);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_GE(out[2 * i], 0.1);
+    EXPECT_LE(out[2 * i], 1.0);
+    EXPECT_GE(out[2 * i + 1], 0.1);
+    EXPECT_LE(out[2 * i + 1], 0.7);
+  }
+}
+
+TEST(CApi_ConvexHull, Error_NullPoints) {
+  double out[6];
+  int n = 0;
+  char err[256] = {};
+  EXPECT_NE(scs_convex_hull_2d(nullptr, 3, out, &n, err, 256), SCS_OK);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+TEST(CApi_ConvexHull, Error_ZeroPoints) {
+  double pts[] = {0.0, 0.0};
+  double out[2];
+  int n = 0;
+  char err[256] = {};
+  EXPECT_NE(scs_convex_hull_2d(pts, 0, out, &n, err, 256), SCS_OK);
+}

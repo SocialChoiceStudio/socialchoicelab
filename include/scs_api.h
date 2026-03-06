@@ -239,6 +239,29 @@ int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
                              int err_buf_len);
 
 // ---------------------------------------------------------------------------
+// Geometry functions
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute the 2D convex hull of a set of ideal points.
+ *
+ * Under Euclidean preferences the convex hull of the voter ideal points equals
+ * the Pareto set. Output vertices are in counter-clockwise order.
+ *
+ * @param points      Flat array of 2*n_points doubles [x0,y0,x1,y1,...].
+ * @param n_points    Number of input points (must be >= 1; all coordinates
+ *                    must be finite).
+ * @param[out] out_xy Output buffer for hull vertices (interleaved [x0,y0,...]).
+ *                    Must hold at least 2*n_points doubles.
+ * @param[out] out_n  Number of hull vertices written.
+ * @param err_buf     Optional error message buffer.
+ * @param err_buf_len Length of err_buf.
+ * @return SCS_OK or error code.
+ */
+int scs_convex_hull_2d(const double* points, int n_points, double* out_xy,
+                       int* out_n, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
 // StreamManager lifecycle  (Item 31: PRNG engine not exposed)
 // ---------------------------------------------------------------------------
 

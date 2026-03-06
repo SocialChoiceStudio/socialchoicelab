@@ -89,3 +89,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .github_token
+
+# Local scratch plotting scripts (not part of the codebase)
+scripts/plot_*.py
+
+# Scratch visualisation helpers (source + binaries — local only)
+scratch/
