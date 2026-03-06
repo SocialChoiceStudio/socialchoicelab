@@ -180,11 +180,11 @@ appears in user-facing documentation.
 
 | Step | Task | Deliverable | Status |
 |------|------|-------------|--------|
-| **V1** | **Plurality** | `include/socialchoicelab/aggregation/plurality.h`: `plurality_scores(profile) → std::vector<int>` — scores[j] = number of voters for whom alternative j is ranked first (pure information, no tie-breaking). `plurality_winner(profile, tie_break = kRandom, prng) → int` — single winner; tie-breaking per § Tie-breaking design. `plurality_winners(profile) → std::vector<int>` — all tied winners (Category 3 rule). Tests: Condorcet winner need not be plurality winner (explicit counterexample); kSmallestIndex tie-breaking deterministic; kRandom tie-breaking gives each tied alternative equal probability (statistical, n=1000); single voter; single alternative; Condorcet cycle. | ⬜ |
-| **V2** | **Borda count** | `include/socialchoicelab/aggregation/borda.h`: `borda_scores(profile) → std::vector<int>` — standard Borda: voter i gives score (m−1−r) to the alternative it ranks at position r. `borda_winner(profile, tie_break = kRandom, prng) → int` — Category 3, tie-breaking per § Tie-breaking design. `borda_winners(profile) → std::vector<int>` — all tied winners. `borda_ranking(profile, tie_break = kRandom, prng) → std::vector<int>` — alternatives sorted by descending Borda score (full social ordering; ties within score groups broken by tie_break). Tests: Condorcet winner is always the Borda winner for 3 alternatives (Fishburn 1977, Thm 1); scores sum to n×m(m−1)/2 across all alternatives; single voter; single alternative; Condorcet cycle — verify Borda produces a complete social ranking despite cycle. | ⬜ |
-| **V3** | **Approval voting** | `include/socialchoicelab/aggregation/approval.h`: `approval_scores_spatial(alternatives, voter_ideals, cfg, threshold_distance) → std::vector<int>` — voter i approves alternative j iff `dist(voter_ideals[i], alternatives[j]) ≤ threshold_distance`; score = total approvals. `approval_scores_topk(profile, k) → std::vector<int>` — voter i approves their top-k alternatives. `approval_winners_spatial(alternatives, voter_ideals, cfg, threshold_distance) → std::vector<int>` — all alternatives with the maximum approval score (Category 1: natively returns a set). `approval_winners_topk(profile, k) → std::vector<int>`. Tests: at threshold=0, no approvals (empty winners vector); at very large threshold, all approved → all alternatives tied → all returned; top-k=m → all approved (all returned); top-k=1 → same winners as plurality_winners; distance threshold selects alternatives within Euclidean radius; invalid k (k<1 or k>m) throws. | ⬜ |
-| **V4** | **Anti-plurality** | `include/socialchoicelab/aggregation/antiplurality.h`: `antiplurality_scores(profile) → std::vector<int>` — scores[j] = number of voters for whom alternative j is NOT ranked last (equivalently, all voters cast one "veto" against their last-ranked alternative). `antiplurality_winner(profile, tie_break = kRandom, prng) → int` — Category 3, tie-breaking per § Tie-breaking design. `antiplurality_winners(profile) → std::vector<int>` — all tied winners. Tests: single alternative wins trivially; winner of plurality can lose anti-plurality (explicit counterexample); scores sum to n×(m−1). | ⬜ |
-| **V5** | **Generic positional scoring rule** | `include/socialchoicelab/aggregation/scoring_rule.h`: `scoring_rule_scores(profile, score_vector) → std::vector<double>` — voter i contributes `score_vector[r]` to the score of the alternative it ranks at position r. `score_vector` must be non-increasing and have length m (= n_alts). `scoring_rule_winner(profile, score_vector, tie_break = kRandom, prng) → int`. `scoring_rule_winners(profile, score_vector) → std::vector<int>`. Verify: plurality = `(1,0,…,0)`, Borda = `(m-1,…,0)`, anti-plurality = `(1,…,1,0)` all match their dedicated functions (both scores and winner sets). Tests: explicit recovery of plurality/Borda/anti-plurality; invalid score_vector (wrong length, not non-increasing) throws; single voter; single alternative. | ⬜ |
+| **V1** | **Plurality** | `include/socialchoicelab/aggregation/plurality.h`: `plurality_scores(profile) → std::vector<int>` — scores[j] = number of voters for whom alternative j is ranked first (pure information, no tie-breaking). `plurality_all_winners(profile) → std::vector<int>` — all alternatives sharing the top score (Category 3 rule). `plurality_one_winner(profile, tie_break = kRandom, prng) → int` — single winner; tie-breaking per § Tie-breaking design. Tests: Condorcet winner need not be plurality winner (explicit counterexample); kSmallestIndex tie-breaking deterministic; kRandom tie-breaking gives each tied alternative equal probability (statistical, n=1000); single voter; single alternative; Condorcet cycle. | ⬜ |
+| **V2** | **Borda count** | `include/socialchoicelab/aggregation/borda.h`: `borda_scores(profile) → std::vector<int>` — standard Borda: voter i gives score (m−1−r) to the alternative it ranks at position r. `borda_all_winners(profile) → std::vector<int>` — all tied top-scorers. `borda_one_winner(profile, tie_break = kRandom, prng) → int` — Category 3, tie-breaking per § Tie-breaking design. `borda_ranking(profile, tie_break = kRandom, prng) → std::vector<int>` — alternatives sorted by descending Borda score (full social ordering; ties within score groups broken by tie_break). Tests: Condorcet winner is always the Borda winner for 3 alternatives (Fishburn 1977, Thm 1); scores sum to n×m(m−1)/2 across all alternatives; single voter; single alternative; Condorcet cycle — verify Borda produces a complete social ranking despite cycle. | ⬜ |
+| **V3** | **Approval voting** | `include/socialchoicelab/aggregation/approval.h`: `approval_scores_spatial(alternatives, voter_ideals, cfg, threshold_distance) → std::vector<int>` — voter i approves alternative j iff `dist(voter_ideals[i], alternatives[j]) ≤ threshold_distance`; score = total approvals. `approval_scores_topk(profile, k) → std::vector<int>` — voter i approves their top-k alternatives. `approval_all_winners_spatial(alternatives, voter_ideals, cfg, threshold_distance) → std::vector<int>` — all alternatives with the maximum approval score (Category 1: natively returns a set; no `_one_winner` variant). `approval_all_winners_topk(profile, k) → std::vector<int>`. Tests: at threshold=0, no approvals (empty winners vector); at very large threshold, all approved → all returned; top-k=m → all approved (all returned); top-k=1 → same set as `plurality_all_winners`; distance threshold selects alternatives within Euclidean radius; invalid k (k<1 or k>m) throws. | ⬜ |
+| **V4** | **Anti-plurality** | `include/socialchoicelab/aggregation/antiplurality.h`: `antiplurality_scores(profile) → std::vector<int>` — scores[j] = number of voters for whom alternative j is NOT ranked last. `antiplurality_all_winners(profile) → std::vector<int>` — all tied top-scorers. `antiplurality_one_winner(profile, tie_break = kRandom, prng) → int` — Category 3, tie-breaking per § Tie-breaking design. Tests: single alternative wins trivially; winner of plurality can lose anti-plurality (explicit counterexample); scores sum to n×(m−1). | ⬜ |
+| **V5** | **Generic positional scoring rule** | `include/socialchoicelab/aggregation/scoring_rule.h`: `scoring_rule_scores(profile, score_vector) → std::vector<double>` — voter i contributes `score_vector[r]` to the score of the alternative it ranks at position r. `score_vector` must be non-increasing and have length m (= n_alts). `scoring_rule_all_winners(profile, score_vector) → std::vector<int>`. `scoring_rule_one_winner(profile, score_vector, tie_break = kRandom, prng) → int`. Verify: plurality = `(1,0,…,0)`, Borda = `(m-1,…,0)`, anti-plurality = `(1,…,1,0)` all match their dedicated functions (both scores and winner sets). Tests: explicit recovery of plurality/Borda/anti-plurality; invalid score_vector (wrong length, not non-increasing) throws; single voter; single alternative. | ⬜ |
 
 ---
 
@@ -192,7 +192,7 @@ appears in user-facing documentation.
 
 | Step | Task | Deliverable | Status |
 |------|------|-------------|--------|
-| **W1** | **Social rankings (full orderings from rule outputs)** | `include/socialchoicelab/aggregation/social_ranking.h`: `rank_by_scores(scores, tie_break = kRandom, prng) → std::vector<int>` — returns alternative indices sorted by descending score (can be applied to any score vector from V1–V5 or from geometry/copeland). Ties within score groups broken by `tie_break` parameter (Category 3). `pairwise_ranking(pairwise_matrix, tie_break = kRandom, prng) → std::vector<int>` — sort by Copeland score derived from the geometry-layer pairwise matrix (calls `copeland_scores`; no new computation). Tests: consistent with individual voting rule winners; kSmallestIndex gives deterministic ordering; pairwise_ranking on Condorcet winner configuration places winner first. | ⬜ |
+| **W1** | **Social rankings (full orderings from rule outputs)** | `include/socialchoicelab/aggregation/social_ranking.h`: `rank_by_scores(scores, tie_break = kRandom, prng) → std::vector<int>` — returns alternative indices sorted by descending score (can be applied to any score vector from V1–V5 or from geometry/copeland). Ties within score groups broken by `tie_break` parameter (Category 3). `pairwise_ranking(pairwise_matrix, tie_break = kRandom, prng) → std::vector<int>` — sort by Copeland score derived from the geometry-layer pairwise matrix (calls `copeland_scores`; no new computation). Tests: consistent with `*_one_winner` calls; kSmallestIndex gives deterministic ordering; pairwise_ranking on Condorcet winner configuration places winner first. | ⬜ |
 | **W2** | **Pareto efficiency** | `include/socialchoicelab/aggregation/pareto.h`: `pareto_dominates(profile, a, b) → bool` — alternative a (index) Pareto-dominates alternative b (index): every voter weakly prefers a to b, and at least one strictly prefers a to b. `pareto_set(profile) → std::vector<int>` — indices of alternatives not Pareto-dominated by any other. `is_pareto_efficient(profile, winner) → bool` — checks the given winner is in the Pareto set. Tests: Condorcet winner is always Pareto efficient; all alternatives Pareto-efficient in a Condorcet cycle; a clearly dominated alternative (e.g. uniformly last-ranked) is Pareto-dominated; Pareto set is non-empty. | ⬜ |
 | **W3** | **Condorcet and majority consistency** | `include/socialchoicelab/aggregation/condorcet_consistency.h`: `has_condorcet_winner_profile(profile) → bool` — checks whether the majority relation derived from the profile has a Condorcet winner (using pairwise majority counts, no geometry). `condorcet_winner_profile(profile) → std::optional<int>` — returns the Condorcet winner index, or nullopt (Category 2: natively returns optional, no tie-breaking). `is_condorcet_consistent(profile, winner) → bool` — returns true if no Condorcet winner exists in the profile, or the given winner IS the Condorcet winner. `is_majority_consistent(profile, winner) → bool` — returns true if the winner beats every other alternative by strict majority. Note: these functions operate purely on ordinal profiles (rank comparisons), not on spatial geometry. Tests: Condorcet winner case; Condorcet cycle case; is_condorcet_consistent true when no winner exists; majority_consistent implies condorcet_consistent; a plurality winner need not be majority consistent (counterexample). | ⬜ |
 
@@ -236,11 +236,11 @@ not part of the rule; it would alter the rule's semantics if imposed.
 
 For these rules:
 - The `*_scores()` function returns all scores as usual.
-- The `*_winners()` function (note: plural) returns `std::vector<int>` — all
-  tied winners, sorted by index.
-- There is **no** `*_winner()` (singular) variant that silently drops ties.
-  If the caller needs exactly one, they apply a tie-breaker explicitly (see
-  below).
+- The `*_all_winners()` function returns `std::vector<int>` — all tied winners,
+  sorted by index. This is the canonical output of the rule.
+- There is **no** `*_one_winner()` variant — the rule's semantics do not define
+  a single winner. If the caller needs exactly one, they apply a tie-breaker
+  explicitly (see below).
 
 #### Category 2 — Rule natively returns ∅ or nullopt when no winner exists
 
@@ -273,13 +273,17 @@ alternatives share the top score.
 For these rules:
 - The `*_scores()` function always returns scores with no tie-breaking (pure
   information).
-- The `*_winner()` function takes an **optional** `TieBreak` parameter:
+- Two named functions with unambiguous intent:
+  - `*_all_winners(profile) → std::vector<int>` — all alternatives sharing the
+    top score, sorted by index. No tie-breaking; returns 1 element when the top
+    score is unique, 2+ when tied.
+  - `*_one_winner(profile, tie_break, prng) → int` — a single winner, with
+    tie-breaking applied when needed.
 
 ```cpp
 enum class TieBreak {
   kRandom,         // Uniform random among tied winners (default).
-  kSmallestIndex,  // Lowest index wins (deterministic).
-  kAll,            // Return all tied winners as a vector (changes return type).
+  kSmallestIndex,  // Lowest index wins (deterministic; use in tests).
 };
 ```
 
@@ -288,18 +292,13 @@ enum class TieBreak {
   The burden is on the test author, not on the end user.
 
 - When `kRandom` is selected, the function takes an additional `PRNG&` parameter
-  (from the core RNG layer). This keeps tie-breaking reproducible under seeded
+  (from the core RNG layer). This keeps tie-breaking reproducible under a seeded
   PRNG for simulation reproducibility.
 
-- When `kAll` is selected, the return type changes to `std::vector<int>`. This
-  can be handled via separate overloads or a variant return:
-  - Option A: `*_winner(profile, tie_break, prng)` → `int` for kRandom/kSmallestIndex;
-    `*_winners(profile)` → `std::vector<int>` for the "return all" case.
-  - Option B: Return `std::vector<int>` always (length 1 when tie is broken,
-    length > 1 when kAll).
-  - **Decision:** Use Option A (separate `_winner` / `_winners` functions) for
-    type safety — the caller knows at compile time whether they get one int or
-    many.
+- `kAll` is not a `TieBreak` value — "return all" is a different function
+  (`*_all_winners`), not a tie-breaking policy. The two functions have different
+  return types, which makes the distinction clear at the call site and at compile
+  time.
 
 ### "Unique winner" vs "tie-breaking" — are they the same?
 
@@ -319,16 +318,16 @@ handled by the category system above, not by a single "unique winner" flag.
 
 ```
 // Category 1 (natively returns a set):
-approval_winners_spatial(...)  → std::vector<int>   // all tied winners
-pareto_set(...)                → std::vector<int>   // all undominated
+approval_all_winners_spatial(...)  → std::vector<int>   // all tied winners
+pareto_set(...)                    → std::vector<int>   // all undominated
 
 // Category 2 (natively returns optional):
-condorcet_winner_profile(...)  → std::optional<int> // nullopt if no winner
+condorcet_winner_profile(...)      → std::optional<int> // nullopt if no winner
 
 // Category 3 (tie-breaking needed):
-plurality_scores(profile)      → std::vector<int>   // pure scores, no breaking
-plurality_winner(profile, tie_break = kRandom, prng) → int  // single winner
-plurality_winners(profile)     → std::vector<int>            // all tied winners
+plurality_scores(profile)                              → std::vector<int>
+plurality_all_winners(profile)                         → std::vector<int>
+plurality_one_winner(profile, tie_break = kRandom, prng) → int
 ```
 
 ---
