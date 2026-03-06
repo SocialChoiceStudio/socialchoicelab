@@ -7,8 +7,19 @@
 #include <gtest/gtest.h>
 #include <socialchoicelab/geometry/winset_ops.h>
 
-using namespace socialchoicelab::geometry;
+#include <vector>
+
 using socialchoicelab::core::types::Point2d;
+using socialchoicelab::geometry::DistConfig;
+using socialchoicelab::geometry::weighted_winset_2d;
+using socialchoicelab::geometry::winset_2d;
+using socialchoicelab::geometry::winset_difference;
+using socialchoicelab::geometry::winset_intersection;
+using socialchoicelab::geometry::winset_is_empty;
+using socialchoicelab::geometry::winset_symmetric_difference;
+using socialchoicelab::geometry::winset_union;
+using socialchoicelab::geometry::winset_with_veto_2d;
+using socialchoicelab::geometry::WinsetRegion;
 
 // ---------------------------------------------------------------------------
 // Helpers
