@@ -22,6 +22,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace socialchoicelab::aggregation {
