@@ -67,16 +67,21 @@ namespace socialchoicelab::geometry {
 // CGAL types for winset polygon sets
 // ---------------------------------------------------------------------------
 
-using WinsetTraits =
-    CGAL::Gps_segment_traits_2<socialchoicelab::core::EpecKernel>;
+// Short kernel alias following CGAL's own tutorial convention (see CGAL §2D
+// Boolean Set-Operations, "Kernel" section): defining `using K = Kernel;`
+// keeps all downstream CGAL template instantiations on a single line, which
+// avoids the cpplint whitespace/indent_namespace false-positive that fires on
+// indented line-continuation inside a namespace block.
+using EK = socialchoicelab::core::EpecKernel;
+
+using WinsetTraits = CGAL::Gps_segment_traits_2<EK>;
 
 /// A region of 2D policy space represented as a possibly non-convex,
 /// possibly disconnected union of polygons (with holes).  This is the
 /// return type of winset_2d and winset_2d_petal.
 using WinsetRegion = CGAL::General_polygon_set_2<WinsetTraits>;
 
-using PolygonWithHoles2E =
-    CGAL::Polygon_with_holes_2<socialchoicelab::core::EpecKernel>;
+using PolygonWithHoles2E = CGAL::Polygon_with_holes_2<EK>;
 
 // ---------------------------------------------------------------------------
 // Internal helpers
