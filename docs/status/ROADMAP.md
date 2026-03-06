@@ -30,7 +30,7 @@ High-level direction for the project. This document does not duplicate detail; i
 
 ## Mid-term (3–6 months)
 
-- **Voting and aggregation:** Implement voting rules (plurality, Borda, Condorcet, approval) and aggregation properties (transitivity, Pareto, IIA). See design doc layers 4–5 and [implementation priority](../references/implementation_priority.md) Phase 2.
+- **Voting and aggregation:** Implement voting rules (plurality, Borda, Condorcet, approval) and aggregation properties (transitivity, Pareto, IIA). Plan: [profiles_and_aggregation_plan.md](profiles_and_aggregation_plan.md). See design doc layers 4–5 and [implementation priority](../references/implementation_priority.md) Phase 2.
 - **c_api geometry extensions:** Expose geometry services (winset, Yolk, uncovered set, Copeland, veto players) through the stable C API so R/Python can call them.
 - **First R or Python binding:** Start `socialchoicelab` R (cpp11) or Python (pybind11) package calling the c_api. Geometry and preference services available from R/Python.
 - **Visualization layer:** Plot helpers in R and Python for spatial voting output: voter ideal points, status quo, winsets (with individual voter preferred regions drawn as overlapping circles), Yolk circle, uncovered set boundary, convex hull. Identical API across R and Python; Plotly output.
