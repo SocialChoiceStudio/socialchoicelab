@@ -153,6 +153,16 @@ Python can use the raw C++ indices without translation.
 the C++ core. Document the shift explicitly in every R helper that returns an
 alternative index (winner, ranking, Pareto set, etc.).
 
+**R surface API design note (defer to R binding plan):** Where possible, prefer
+returning the *named object* rather than its index. For example, `plurality_winner()`
+in R should ideally return the winning alternative's coordinates (or a named row
+from a data frame) rather than a raw position integer. This sidesteps the indexing
+question entirely for most user-facing functions — the 1-indexed shift only surfaces
+when the user explicitly needs to slice by position. When both an index and a value
+are useful, provide both (e.g. `list(winner = point, index = 1L)`). Document index
+values in R with parallel C++ (0-based) and R (1-based) examples wherever indexing
+appears in user-facing documentation.
+
 ---
 
 ## Phases
