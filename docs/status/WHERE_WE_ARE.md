@@ -2,11 +2,41 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** c_api geometry + aggregation extensions — **ACTIVE**. Expose geometry (winset, Yolk, uncovered set, Copeland, Heart, veto, weighted voting) and aggregation (profiles, voting rules, social rankings, Pareto, Condorcet) through the stable C API.
+- **Current phase:** c_api geometry + aggregation extensions — **ACTIVE**. Expose geometry (winset, Yolk, uncovered set, Copeland, Heart, veto, weighted voting) and aggregation (profiles, voting rules, social rankings, Pareto, Condorcet) through the stable C API. Plan: [c_api_extensions_plan.md](c_api_extensions_plan.md).
 - **Next:** After c_api extensions: first R/Python binding. See [ROADMAP.md](ROADMAP.md).
-- **Last updated:** 2026-03-07
+- **Last updated:** 2026-03-05
 
 **Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
+
+---
+
+## ⚠️ Known Issues — Revisit Before Exposing via c_api or Bindings
+
+### Yolk computation is approximate and may be wrong for some configurations
+
+**Status:** Flagged 2026-03-05. Do not treat `yolk_2d` results as exact until this is resolved.
+
+Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled directions plus the n(n−1)/2 critical directions. This is essentially computing an **LP yolk** (smallest circle intersecting the limiting median lines), not the true yolk. The two concepts are distinct:
+
+- **Stone, R.E. & Tovey, C.A. (1992).** "Limiting median lines do not suffice to determine the yolk." *Social Choice and Welfare*, 9(1), 33–35. — Proves by counter-example that limiting median lines alone do not determine the yolk. The LP yolk can be strictly smaller than the true yolk.
+- **Hu, R. & Bailey, J.P. (2024).** "On the approximability of the yolk in the spatial model of voting." arXiv:2410.10788. — For odd n in ℝ², the LP yolk radius is at least ½ the true yolk radius (tight bound), but the LP yolk centre can be arbitrarily far from the true yolk centre. For even n or dimension ≥ 3 the LP yolk can be arbitrarily small relative to the true yolk.
+
+**Candidate replacement algorithms to investigate:**
+- **Gudmundsson, J. & Wong, S. (2019).** "Computing the yolk in spatial voting games without computing median lines." arXiv:1902.04735. (AAAI 2019.) — Near-linear O(n log⁷ n) time for exact L1/L∞ yolk and (1+ε)-approximation for L2, using Megiddo's parametric search without precomputing limiting median lines. Most promising for us.
+- **Liu, Y. & Tovey, C.A. (2023).** "Polynomial-time algorithm for computing the yolk in fixed dimension." (Poster/preprint.) — Exact polynomial-time algorithm for fixed dimension, improving Tovey (1992)'s O(n⁴) bound; possible counter-example in 3D being investigated.
+- **Tovey, C.A. (1992).** "A polynomial-time algorithm for computing the yolk in fixed dimension." *Mathematical Programming*, 57(1), 259–277. — Original polynomial exact algorithm (O(n⁴) in 2D); proven correct but slow.
+
+**Action:** Before c_api exposes `SCS_Yolk2d`, replace or validate `yolk_2d`. Also see: `ROADMAP.md` § Test correctness review and `milestone_gates.md` § Revisit before release.
+
+### Heart boundary is an approximation; theoretical status is open
+
+**Status:** Flagged 2026-03-05. `heart_boundary_2d` results are for visualisation only.
+
+`heart_boundary_2d` (Phase G2) applies the finite-set `heart()` operator to a 15×15 grid of candidate alternatives and returns the convex hull of surviving points. This is a coarse approximation for two reasons:
+1. Grid resolution limits precision (default 15×15 = 225 points).
+2. The continuous analogue of the Heart in policy space is a **research-level open problem** — there is no exact algorithm or proven formula for it. The convex hull of grid survivors is a useful visualisation but not a rigorous solution concept.
+
+**Action:** Document this approximation status clearly in `geometry_design.md` and `c_api_design.md`. Do not expose `heart_boundary_2d` via c_api without noting it is approximate. Revisit when/if theoretical progress is made on the continuous Heart.
 
 **Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/ROADMAP.md`.
 ---
@@ -26,6 +56,25 @@
 - **I2 (Docs):** `aggregation_design.md` with full API, limitations, and citations. `design_document.md` Layers 4–5 updated to "implemented". Plan P1–I2 all ✅ Done. Citations to verify before formal I2 sign-off: Borda year, Fishburn (1977) Thm 1, Guilbaud (1952) accessibility.
 - **CMakeLists.txt:** `socialchoicelab_aggregation` INTERFACE library; 4 new test targets.
 - **Total non-benchmark tests:** 22 ctest suites, all passing (< 1s).
+
+### Session: 2026-03-05 — C API Phase C0 (hygiene and contracts) COMPLETE
+
+- **C0.1 — Version / visibility:** Added `SCS_API_VERSION_MAJOR/MINOR/PATCH` (0.1.0), `SCS_MAJORITY_SIMPLE`, `SCS_DEFAULT_WINSET_SAMPLES`, `SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION`, and `SCS_API` visibility macro to `scs_api.h`. Added `scs_api_version(out_major, out_minor, out_patch, ...)` returning the compile-time version.
+- **C0.2 — Error codes:** Added `SCS_ERROR_BUFFER_TOO_SMALL (3)` and `SCS_ERROR_OUT_OF_MEMORY (4)`.
+- **C0.3 — Pairwise domain:** Added `typedef int32_t SCS_PairwiseResult` with named constants `SCS_PAIRWISE_LOSS (-1)`, `SCS_PAIRWISE_TIE (0)`, `SCS_PAIRWISE_WIN (1)`. Fixed-width integers avoid C enum size ambiguity for `ctypes`/`cffi`/`.Call` bindings.
+- **C0.4 — `scs_level_set_to_polygon` update:** Added `out_capacity` parameter (counted in `(x,y)` pairs). Null `out_xy` is now a size-query (writes required count to `*out_n`, returns `SCS_OK`). Non-null `out_xy` with insufficient `out_capacity` returns `SCS_ERROR_BUFFER_TOO_SMALL` and sets `*out_n` to the required size.
+- **C0.5 — Thread-safety contract:** Added "Thread-safety contract" table to `docs/architecture/c_api_design.md`. Stateless computation functions are reentrant; `SCS_StreamManager` is not thread-safe. Also updated the stability note to reflect the new `scs_level_set_to_polygon` signature.
+- **Tests:** 48 tests in `test_c_api.cpp`, all passing. New tests: `CApi_Version.*` (2), `CApi_ErrorCodes.*` (2), `CApi_Pairwise.*` (2), `CApi_ToPolygon.SizeQueryNullBuffer`, `CApi_ToPolygon.BufferTooSmallReturnsError`. Existing `CApi_ToPolygon.*` tests updated for new signature.
+- **`c_api_extensions_plan.md`:** C0.1–C0.5 all marked ✅ Done.
+
+### Session: 2026-03-07 — Geometry centrality measures added
+
+- **`centrality.h`:** Three coordinate-wise centrality functions for 2D voter ideal points:
+  - `marginal_median_2d` — coordinate-wise median (issue-by-issue median voter; Black 1948); works on any real-valued coordinates including NOMINATE scale.
+  - `centroid_2d` — coordinate-wise arithmetic mean (barycenter / mean voter position); works on any real-valued coordinates.
+  - `geometric_mean_2d` — coordinate-wise geometric mean (`exp(mean(log(xᵢ)))`); requires strictly positive coordinates and throws a descriptive error for NOMINATE-scale [-1, 1] data, naming the function, reporting the coordinate range found, and suggesting `centroid_2d` or `marginal_median_2d` as alternatives.
+- **`test_centrality.cpp`:** 24 tests (7 MarginalMedian, 6 Centroid, 11 GeometricMean), all passing. Covers known results, single voter, even-n median averaging, NOMINATE-scale negative-coordinate acceptance (median/centroid) and rejection (geometric mean), and error-message content checks.
+- **CMakeLists.txt:** `test_centrality` target added (`CentralityTest`).
 
 ### Session: 2026-03-06 — Geometry Layer 3 COMPLETE (Phase E — integration tests + documentation)
 

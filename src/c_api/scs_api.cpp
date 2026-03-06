@@ -30,6 +30,26 @@
 #include "socialchoicelab/preference/loss/loss_functions.h"
 
 // ---------------------------------------------------------------------------
+// API version  (C0.1)
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_api_version(int* out_major, int* out_minor, int* out_patch,
+                               char* err_buf, int err_buf_len) {
+  if (!out_major || !out_minor || !out_patch) {
+    if (err_buf && err_buf_len > 0) {
+      std::strncpy(err_buf, "scs_api_version: null output pointer",
+                   static_cast<size_t>(err_buf_len) - 1u);
+      err_buf[err_buf_len - 1] = '\0';
+    }
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  *out_major = SCS_API_VERSION_MAJOR;
+  *out_minor = SCS_API_VERSION_MINOR;
+  *out_patch = SCS_API_VERSION_PATCH;
+  return SCS_OK;
+}
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
@@ -334,9 +354,9 @@ extern "C" int scs_level_set_2d(double ideal_x, double ideal_y,
 
 extern "C" int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
                                         int num_samples, double* out_xy,
-                                        int* out_n, char* err_buf,
-                                        int err_buf_len) {
-  if (!level_set || !out_xy || !out_n) {
+                                        int out_capacity, int* out_n,
+                                        char* err_buf, int err_buf_len) {
+  if (!level_set || !out_n) {
     set_error(err_buf, err_buf_len,
               "scs_level_set_to_polygon: null pointer argument");
     return SCS_ERROR_INVALID_ARGUMENT;
@@ -402,8 +422,22 @@ extern "C" int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
         ls, static_cast<std::size_t>(level_set->type == SCS_LEVEL_SET_POLYGON
                                          ? level_set->n_vertices
                                          : num_samples));
-    *out_n = static_cast<int>(poly.vertices.size());
-    for (int i = 0; i < *out_n; ++i) {
+    const int required = static_cast<int>(poly.vertices.size());
+    *out_n = required;
+
+    // Size-query mode: caller passes null buffer to discover required capacity.
+    if (out_xy == nullptr) {
+      return SCS_OK;
+    }
+
+    if (out_capacity < required) {
+      set_error(err_buf, err_buf_len,
+                "scs_level_set_to_polygon: out_xy buffer too small; check "
+                "*out_n for the required number of (x,y) pairs");
+      return SCS_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    for (int i = 0; i < required; ++i) {
       out_xy[2 * i] = poly.vertices[static_cast<size_t>(i)](0);
       out_xy[2 * i + 1] = poly.vertices[static_cast<size_t>(i)](1);
     }

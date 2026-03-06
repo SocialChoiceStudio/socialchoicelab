@@ -1,10 +1,10 @@
 # Milestone Gates: Definition of Done
 
-For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates that must be satisfied before we consider it "done". See [roadmap.md](roadmap.md) for time horizons; this document defines *what* must be true.
+For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates that must be satisfied before we consider it "done". See [ROADMAP.md](ROADMAP.md) for time horizons; this document defines *what* must be true.
 
 ---
 
-## Phase 3 complete (tag: e.g. `phase-3`) ✅ Already reached (2026-03-04)
+## Phase 3 complete (tag: `phase-3`) ✅ 2026-03-04
 
 **Scope:** Developer experience and process. No new product features; process and docs only.
 
@@ -12,46 +12,72 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 |------|----------|
 | **Features** | No new feature requirements. Existing core (distance, loss, PRNG, StreamManager) unchanged and working. |
 | **Tests** | CI green on `main`: build + test (unit tests, exclude benchmarks) on Ubuntu and macOS; format check passes; `./lint.sh --strict lint` passes. |
-| **Docs** | Phase 3 complete (CI, roadmap, gates, CONTRIBUTING/SECURITY/CHANGELOG). `roadmap.md` and this file exist. `where_we_are.md` and docs index point to them. `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` added. |
+| **Docs** | Phase 3 complete (CI, roadmap, gates, CONTRIBUTING/SECURITY/CHANGELOG). `ROADMAP.md` and this file exist. `where_we_are.md` and docs index point to them. `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` added. |
 | **API stability** | N/A — we are not promising stability yet. Public C++ API may still change; no c_api exists. |
 
 **Check before tagging:** Run `scripts/end-of-milestone.sh <tag>`; it will prompt for CHANGELOG and ROADMAP.
 
 ---
 
-## c_api minimal (tag: e.g. `c-api-minimal` or `v0.2.0`)
+## c_api minimal (tag: `c-api-minimal`) ✅ 2026-03-05
 
 **Scope:** A stable C ABI surface over the current C++ core so that R/Python bindings can depend on it. See [Design Document](../architecture/design_document.md) § FFI & Interfaces.
 
 | Gate | Criteria |
 |------|----------|
-| **Features** | c_api exists: extern "C" entry points for the operations needed by a first binding (e.g. create/destroy handles, run distance/loss/PRNG operations via POD structs). No STL across the boundary; error codes + message buffer instead of exceptions. |
-| **Tests** | CI green. New tests (C or C++) that call the c_api and verify behaviour. No regressions in existing C++ unit tests. |
-| **Docs** | Design doc § c_api updated to reflect actual surface. Public c_api functions and structs documented (Doxygen or equivalent). ROADMAP near-term updated if c_api scope changed. |
-| **API stability** | c_api surface is declared stable for this release: no breaking changes to function signatures or struct layout without a new milestone/tag. C++ internals may still change behind the c_api. |
+| **Features** | c_api exists: `extern "C"` entry points for distance, loss, utility, level sets, convex hull, and StreamManager/PRNG. No STL across the boundary; error codes + message buffer instead of exceptions. `SCS_LossConfig`, `SCS_DistanceConfig`, `SCS_LevelSet2d` POD structs. `SCS_StreamManager` opaque handle. |
+| **Tests** | CI green. 35 GTest cases in `test_c_api.cpp` calling the c_api using only C types. No regressions in existing C++ unit tests. |
+| **Docs** | `docs/architecture/c_api_design.md` documents constraints, error contract, struct layout, all function signatures, and a C usage example. |
+| **API stability** | c_api surface declared stable for this tag: no breaking changes to function signatures or struct layout without a new milestone/tag. C++ internals may still change behind the c_api. |
 
 ---
 
-## Geometry + voting (mid-term) (tag: e.g. `v0.3.0`)
+## Geometry Layer 3 (tag: `geometry-complete`) ✅ 2026-03-06
 
-**Scope:** Exact 2D geometry (CGAL), voting rules, outcome concepts. See [ROADMAP](roadmap.md) mid-term and [Implementation Priority](../references/implementation_priority.md).
+**Scope:** Exact 2D geometry via CGAL EPEC: convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, core detection, veto players, weighted voting.
 
 | Gate | Criteria |
 |------|----------|
-| **Features** | CGAL-based 2D geometry where specified (e.g. Yolk, uncovered set, convex hull); voting rules (plurality, Borda, Condorcet, approval) and aggregation properties; outcome concepts (e.g. Copeland, Yolk, Heart) as per design and implementation priority. c_api extended to expose what bindings need. |
-| **Tests** | CI green. Unit tests for new geometry and voting behaviour; regression tests; optional geometric validation against references. |
-| **Docs** | Design doc and implementation priority reflected. Public API (C++ and c_api) documented. ROADMAP mid-term updated. |
-| **API stability** | Public C++ and c_api surfaces used by bindings are stable; breaking changes require a new minor/major version and callout in CHANGELOG. |
+| **Features** | All of Phases A–G and E complete: CGAL integration, exact 2D types, convex hull, majority/pairwise/weighted, winset + boolean ops + veto + weighted, Yolk, uncovered set (discrete + boundary), core detection, Copeland, Heart (discrete + boundary). |
+| **Tests** | CI green. 250+ tests across 14 test files. Integration tests chain full pipeline. All correctness assertions verified against theory. |
+| **Docs** | `docs/architecture/geometry_design.md` with full API, kernel policy, and 14 verified citations. Design doc Layer 3 updated. |
+| **API stability** | Geometry C++ API stable behind the c_api boundary. |
 
 ---
 
-## First binding / 1.0 (tag: e.g. `v1.0.0`)
+## Profiles & Aggregation Layers 4–5 (tag: `aggregation-complete`) ✅ 2026-03-06
 
-**Scope:** First released R or Python package (or both) that calls the c_api. See [ROADMAP](roadmap.md) long-term.
+**Scope:** Profile construction, synthetic generators, positional voting rules, approval voting, social rankings, Pareto efficiency, Condorcet/majority consistency.
 
 | Gate | Criteria |
 |------|----------|
-| **Features** | At least one of: R package (cpp11 → c_api) or Python package (pybind11 → c_api) that builds, installs, and supports the core operations (distance, loss, RNG) and is usable by downstream code. |
+| **Features** | All of Phases P1–P2, V1–V5, W1–W3, I1–I2 complete: `Profile`, spatial/utility/synthetic construction, plurality/Borda/approval/anti-plurality/scoring rules, `rank_by_scores`, `pairwise_ranking`, Pareto, Condorcet/majority consistency. `TieBreak` enum with `kRandom` default and `kSmallestIndex` for testing. |
+| **Tests** | CI green. 100 tests across 4 test files (unit + integration). All pass. |
+| **Docs** | `docs/architecture/aggregation_design.md` with full API, tie-breaking policy, and citation table. Design doc Layers 4–5 updated. |
+| **API stability** | Aggregation C++ API stable behind the c_api boundary. |
+
+---
+
+## c_api extensions (tag: `c-api-extensions`) 🔲 In progress
+
+**Scope:** Expose all geometry and aggregation C++ services through the stable C API. After this milestone, R/Python bindings can call every implemented feature. See [c_api_extensions_plan.md](c_api_extensions_plan.md).
+
+| Gate | Criteria |
+|------|----------|
+| **Features** | All of C1–C7 complete: majority/pairwise (C1), `SCS_Winset*` opaque handle + boolean ops (C2), `SCS_Yolk2d` + `scs_yolk_2d` (C3), uncovered set/Copeland/core/Heart (C4), `SCS_Profile*` + generators (C5), all voting rules (C6), social rankings + Pareto + Condorcet properties (C7). |
+| **Tests** | CI green. `test_c_api.cpp` extended to cover all new functions (C8). Key error paths tested. |
+| **Docs** | `docs/architecture/c_api_design.md` updated with all new types and functions; lifecycle contracts for `SCS_Winset*` and `SCS_Profile*`; updated mapping table and usage example (C9). |
+| **API stability** | Extended c_api surface declared stable for this tag. No breaking changes to existing function signatures or struct layouts. |
+
+---
+
+## First binding / 1.0 (tag: `v1.0.0`) 🔲 Future
+
+**Scope:** First released R or Python package (or both) that calls the c_api. See [ROADMAP.md](ROADMAP.md) long-term.
+
+| Gate | Criteria |
+|------|----------|
+| **Features** | At least one of: R package (cpp11 → c_api) or Python package (pybind11 → c_api) that builds, installs, and exposes core + geometry + aggregation operations. |
 | **Tests** | CI green for core and for the binding(s). Binding tests (R or Python) run in CI. |
 | **Docs** | User-facing docs for the binding (README, vignette or equivalent, API reference). Design doc and ROADMAP updated. |
 | **API stability** | 1.0 API stability promise: semantic versioning in effect; breaking changes require major version bump and CHANGELOG. |
@@ -60,12 +86,14 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ## Summary
 
-| Milestone | Features | Tests | Docs | API stability |
-|-----------|----------|-------|------|----------------|
-| Phase 3 complete | None new | CI green, format, lint | Plan + ROADMAP + gates | N/A |
-| c_api minimal | C ABI over core | CI + c_api tests | Design + c_api docs | c_api frozen for tag |
-| Geometry + voting | CGAL 2D, voting, outcomes | CI + new tests | Updated design/priority | Public API stable |
-| First binding / 1.0 | R or Python package | CI + binding tests | User docs | Semver from 1.0 |
+| Milestone | Features | Tests | Docs | API stability | Status |
+|-----------|----------|-------|------|----------------|--------|
+| Phase 3 complete | None new | CI green, format, lint | Plan + ROADMAP + gates | N/A | ✅ 2026-03-04 |
+| c_api minimal | C ABI over core | CI + c_api tests | Design + c_api docs | c_api frozen for tag | ✅ 2026-03-05 |
+| Geometry Layer 3 | CGAL 2D, winset, Yolk, uncovered set, Heart, Copeland | CI + 250+ tests | geometry_design.md | C++ API stable | ✅ 2026-03-06 |
+| Profiles & Aggregation | Profile, voting rules, Pareto, Condorcet | CI + 100 tests | aggregation_design.md | C++ API stable | ✅ 2026-03-06 |
+| c_api extensions | Full c_api for geometry + aggregation | CI + extended c_api tests | c_api_design.md updated | Extended c_api frozen | 🔲 Active |
+| First binding / 1.0 | R or Python package | CI + binding tests | User docs | Semver from 1.0 | 🔲 Future |
 
 When in doubt, tighten the gate rather than ship: "done" means the criteria above are satisfied, not "we moved on".
 
@@ -78,3 +106,6 @@ Single list of items to revisit before we tag a release or open the project to o
 | Item | Source | Note |
 |------|--------|------|
 | **C++20 vs C++17** | Consensus plan 4, Batch 3 #11 | We keep `CMAKE_CXX_STANDARD 20` and expect to use C++20 features as we build out. Before release: either adopt C++20 features (e.g. concepts, `[[nodiscard("reason")]]`) so the requirement is justified, or lower to C++17 if we do not need them. |
+| **Citations to verify** | aggregation_design.md | Borda year (1781 presentation vs 1784 publication); Fishburn (1977) Thm 1 scope; Guilbaud (1952) accessibility. Verify before formal I2 sign-off. |
+| **Yolk computation correctness** | where_we_are.md § Known Issues, 2026-03-05 | `yolk_2d` uses subgradient descent over sampled directions and is effectively computing an LP yolk (smallest ball through limiting median lines), not the true yolk. Stone & Tovey (1992) prove limiting median lines alone do not suffice to determine the yolk. Hu & Bailey (2024) show the LP yolk radius is at least ½ the true yolk radius for odd n in ℝ² (tight bound), but the LP yolk centre can be arbitrarily far from the true centre; for even n or dimension ≥ 3 the gap is unbounded. Must replace `yolk_2d` with an exact or well-characterised algorithm before re-certifying `geometry-complete` and before exposing `SCS_Yolk2d` via c_api. Top candidate: Gudmundsson & Wong (2019) O(n log⁷ n) near-linear algorithm (avoids computing limiting median lines); also see Liu & Tovey (2023) poster. |
+| **Heart boundary is approximate** | where_we_are.md § Known Issues, 2026-03-05 | `heart_boundary_2d` applies the finite-set Heart operator to a grid and returns the convex hull of survivors. The continuous Heart in policy space has no known exact algorithm; this is a research-level open problem. Do not expose via c_api without labelling it as approximate. Revisit when theoretical progress is available. |

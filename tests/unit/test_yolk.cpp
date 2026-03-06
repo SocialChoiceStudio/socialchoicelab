@@ -28,8 +28,11 @@
 
 using socialchoicelab::core::types::Point2d;
 using socialchoicelab::geometry::distance_to_line;
+using socialchoicelab::geometry::limiting_quantile_lines_2d;
 using socialchoicelab::geometry::Line2E;
 using socialchoicelab::geometry::quantile_lines_2d;
+using socialchoicelab::geometry::quantile_lines_2d_annotated;
+using socialchoicelab::geometry::QuantileLine2d;
 using socialchoicelab::geometry::Yolk2d;
 using socialchoicelab::geometry::yolk_2d;
 using socialchoicelab::geometry::yolk_radius;
@@ -389,4 +392,160 @@ TEST(YolkRadius, MatchesYolk2d) {
   EXPECT_DOUBLE_EQ(r, y.radius)
       << "yolk_radius convenience function must return the same value as "
          "yolk_2d.radius";
+}
+
+// ===========================================================================
+// C1b: Annotated and limiting k-quantile lines
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// Right-triangle: n=3, k=2 → all 3 critical-direction lines are limiting
+// (each pair's common projection IS the median).
+// ---------------------------------------------------------------------------
+
+TEST(AnnotatedLines, RightTriangle_AllLimiting) {
+  std::vector<Point2d> voters = {Point2d(0.0, 0.0), Point2d(1.0, 0.0),
+                                 Point2d(0.0, 1.0)};
+  auto annotated = quantile_lines_2d_annotated(voters);
+  ASSERT_EQ(annotated.size(), 3u);
+  for (const auto& ql : annotated) {
+    EXPECT_TRUE(ql.is_limiting)
+        << "For n=3 right-triangle with k=2, every critical-direction line "
+           "should be limiting (pair "
+        << ql.voter_i << "," << ql.voter_j << ")";
+  }
+}
+
+TEST(AnnotatedLines, RightTriangle_VoterPairIndices) {
+  std::vector<Point2d> voters = {Point2d(0.0, 0.0), Point2d(1.0, 0.0),
+                                 Point2d(0.0, 1.0)};
+  auto annotated = quantile_lines_2d_annotated(voters);
+  ASSERT_EQ(annotated.size(), 3u);
+  EXPECT_EQ(annotated[0].voter_i, 0);
+  EXPECT_EQ(annotated[0].voter_j, 1);
+  EXPECT_EQ(annotated[1].voter_i, 0);
+  EXPECT_EQ(annotated[1].voter_j, 2);
+  EXPECT_EQ(annotated[2].voter_i, 1);
+  EXPECT_EQ(annotated[2].voter_j, 2);
+}
+
+// ---------------------------------------------------------------------------
+// Laing-Olmsted-Bear 5-voter: 10 lines total, 6 limiting, 4 non-limiting
+// ---------------------------------------------------------------------------
+
+TEST(AnnotatedLines, LaingOlmstedBear_LimitingCount) {
+  std::vector<Point2d> voters = {
+    Point2d(20.8, 79.6),    // P1
+    Point2d(100.4, 69.2),   // P2
+    Point2d(121.2, 115.2),  // P3
+    Point2d(100.4, 6.4),    // P4
+    Point2d(7.2, 20.0),     // P5
+  };
+  auto annotated = quantile_lines_2d_annotated(voters);
+  ASSERT_EQ(annotated.size(), 10u);
+
+  int n_limiting = 0;
+  for (const auto& ql : annotated) {
+    if (ql.is_limiting) ++n_limiting;
+  }
+  EXPECT_EQ(n_limiting, 6)
+      << "Laing-Olmsted-Bear should have exactly 6 limiting median lines";
+}
+
+TEST(AnnotatedLines, LaingOlmstedBear_LimitingPairs) {
+  std::vector<Point2d> voters = {
+    Point2d(20.8, 79.6),    // P1=0
+    Point2d(100.4, 69.2),   // P2=1
+    Point2d(121.2, 115.2),  // P3=2
+    Point2d(100.4, 6.4),    // P4=3
+    Point2d(7.2, 20.0),     // P5=4
+  };
+  auto annotated = quantile_lines_2d_annotated(voters);
+
+  // Expected limiting pairs: (0,1),(0,3),(1,2),(1,3),(1,4),(2,4)
+  auto is_pair = [](const QuantileLine2d& ql, int a, int b) {
+    return ql.voter_i == a && ql.voter_j == b;
+  };
+
+  for (const auto& ql : annotated) {
+    bool expected_limiting = is_pair(ql, 0, 1) || is_pair(ql, 0, 3) ||
+                             is_pair(ql, 1, 2) || is_pair(ql, 1, 3) ||
+                             is_pair(ql, 1, 4) || is_pair(ql, 2, 4);
+    EXPECT_EQ(ql.is_limiting, expected_limiting)
+        << "Pair (" << ql.voter_i << "," << ql.voter_j << ") limiting flag "
+        << "should be " << expected_limiting;
+  }
+}
+
+TEST(AnnotatedLines, LimitingLines_PassThroughBothVoters) {
+  std::vector<Point2d> voters = {
+    Point2d(20.8, 79.6), Point2d(100.4, 69.2), Point2d(121.2, 115.2),
+    Point2d(100.4, 6.4), Point2d(7.2, 20.0),
+  };
+  auto annotated = quantile_lines_2d_annotated(voters);
+
+  for (const auto& ql : annotated) {
+    double d_i = dist(voters[static_cast<std::size_t>(ql.voter_i)], ql.line);
+    double d_j = dist(voters[static_cast<std::size_t>(ql.voter_j)], ql.line);
+    if (ql.is_limiting) {
+      EXPECT_NEAR(d_i, 0.0, 1e-8)
+          << "Limiting line for pair (" << ql.voter_i << "," << ql.voter_j
+          << ") should pass through voter " << ql.voter_i;
+      EXPECT_NEAR(d_j, 0.0, 1e-8)
+          << "Limiting line for pair (" << ql.voter_i << "," << ql.voter_j
+          << ") should pass through voter " << ql.voter_j;
+    }
+  }
+}
+
+TEST(AnnotatedLines, NonLimitingLines_DoNotPassThroughBoth) {
+  std::vector<Point2d> voters = {
+    Point2d(20.8, 79.6), Point2d(100.4, 69.2), Point2d(121.2, 115.2),
+    Point2d(100.4, 6.4), Point2d(7.2, 20.0),
+  };
+  auto annotated = quantile_lines_2d_annotated(voters);
+
+  for (const auto& ql : annotated) {
+    if (ql.is_limiting) continue;
+    double d_i = dist(voters[static_cast<std::size_t>(ql.voter_i)], ql.line);
+    double d_j = dist(voters[static_cast<std::size_t>(ql.voter_j)], ql.line);
+    bool both_on = (d_i < 1e-8) && (d_j < 1e-8);
+    EXPECT_FALSE(both_on)
+        << "Non-limiting line for pair (" << ql.voter_i << "," << ql.voter_j
+        << ") should NOT pass through both voters of the pair";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// limiting_quantile_lines_2d convenience wrapper
+// ---------------------------------------------------------------------------
+
+TEST(LimitingLines, ConvenienceWrapper_ReturnsOnlyLimiting) {
+  std::vector<Point2d> voters = {
+    Point2d(20.8, 79.6), Point2d(100.4, 69.2), Point2d(121.2, 115.2),
+    Point2d(100.4, 6.4), Point2d(7.2, 20.0),
+  };
+  auto limiting = limiting_quantile_lines_2d(voters);
+  EXPECT_EQ(static_cast<int>(limiting.size()), 6);
+}
+
+TEST(LimitingLines, RightTriangle_AllThreeReturned) {
+  std::vector<Point2d> voters = {Point2d(0.0, 0.0), Point2d(1.0, 0.0),
+                                 Point2d(0.0, 1.0)};
+  auto limiting = limiting_quantile_lines_2d(voters);
+  EXPECT_EQ(static_cast<int>(limiting.size()), 3);
+}
+
+// ---------------------------------------------------------------------------
+// Error handling for annotated/limiting functions
+// ---------------------------------------------------------------------------
+
+TEST(AnnotatedLines, ThrowsOnSingleVoter) {
+  std::vector<Point2d> voters = {Point2d(0.0, 0.0)};
+  EXPECT_THROW(quantile_lines_2d_annotated(voters), std::invalid_argument);
+}
+
+TEST(LimitingLines, ThrowsOnSingleVoter) {
+  std::vector<Point2d> voters = {Point2d(0.0, 0.0)};
+  EXPECT_THROW(limiting_quantile_lines_2d(voters), std::invalid_argument);
 }

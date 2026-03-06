@@ -23,7 +23,7 @@ High-level direction for the project. This document does not duplicate detail; i
 ## Near-term (1–2 months)
 
 - **Core and c_api:** Complete ✅. C++ core (distance, loss, PRNG, indifference) and stable C API (`scs_api`) are done and CI green.
-- **Geometry Layer 3:** Complete ✅. CGAL EPEC integration, exact 2D types, convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, veto players, weighted voting. See [archive/geometry_plan.md](archive/geometry_plan.md).
+- **Geometry Layer 3:** Complete ✅ *(Yolk and Heart need revisiting — see below)*. CGAL EPEC integration, exact 2D types, convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, veto players, weighted voting. See [archive/geometry_plan.md](archive/geometry_plan.md). **⚠️ Note:** `yolk_2d` is currently an LP-yolk approximation (subgradient over sampled directions), not the exact yolk — Stone & Tovey (1992) showed limiting median lines alone do not determine the yolk. `heart_boundary_2d` is a coarse grid approximation. Both must be addressed before the `geometry-complete` milestone is considered fully valid. See [where_we_are.md § Known Issues](where_we_are.md) and [milestone_gates.md § Revisit before release](milestone_gates.md).
 - **Profiles & Aggregation Layers 4–5:** Complete ✅. Profile struct, spatial/utility/synthetic profile construction, plurality/Borda/approval/anti-plurality/scoring rules, social rankings, Pareto, Condorcet/majority consistency. See [archive/profiles_and_aggregation_plan.md](archive/profiles_and_aggregation_plan.md).
 - **c_api geometry + aggregation extensions (active):** Expose geometry and aggregation services through the stable C API so R/Python can call them.
 
@@ -70,6 +70,21 @@ These are not on the active roadmap but are worth keeping in view as the project
 | **Long** | Full packages, GUI-lite, web app, advanced spatial and empirical features. |
 
 ---
+
+## Yolk and Heart algorithm investigation (needed before geometry milestone re-certification)
+
+The current `yolk_2d` implementation (subgradient descent over sampled directions including n(n−1)/2 critical directions) computes an **LP yolk** — the smallest ball intersecting all *limiting* median lines — rather than the true yolk which must intersect *all* median lines. These are different concepts:
+
+- **Stone, R.E. & Tovey, C.A. (1992).** "Limiting median lines do not suffice to determine the yolk." *Social Choice and Welfare*, 9(1), 33–35. — Proves by counter-example that the LP yolk can be strictly smaller than the true yolk.
+- **Hu, R. & Bailey, J.P. (2024).** "On the approximability of the yolk in the spatial model of voting." arXiv:2410.10788. — For odd n in ℝ², LP yolk radius ≥ ½ × true yolk radius (tight bound), but centre can be arbitrarily far; for even n or dimension ≥ 3 the LP yolk can be arbitrarily small relative to the true yolk.
+
+Candidate algorithms to investigate and potentially adopt:
+
+1. **Gudmundsson, J. & Wong, S. (2019).** "Computing the yolk in spatial voting games without computing median lines." arXiv:1902.04735. (AAAI 2019.) — O(n log⁷ n) near-linear time for exact L1/L∞ yolk; O(n log⁷ n · log⁴(1/ε)) time for (1+ε)-approximation of L2 yolk. Avoids computing limiting median lines entirely (breaks prior O(n^{4/3}) bottleneck). Uses Megiddo's parametric search. **Most promising near-term option for 2D L2.**
+2. **Liu, Y. & Tovey, C.A. (2023).** "Polynomial-time algorithm for computing the yolk in fixed dimension." (Poster/preprint.) — Extends Tovey (1992)'s exact algorithm, O(n^{m+1}²) in m dimensions. A possible counter-example in 3D is under investigation; 2D case believed sound.
+3. **Tovey, C.A. (1992).** "A polynomial-time algorithm for computing the yolk in fixed dimension." *Mathematical Programming*, 57(1), 259–277. — Original O(n⁴) exact algorithm in 2D; known correct but slow.
+
+**For the `heart_boundary_2d`:** The continuous Heart in policy space has no known exact algorithm or closed-form characterisation. The current grid + convex-hull approach is a visualisation aid, not a rigorous solution concept. Mark as approximate in all documentation and c_api exposure.
 
 ## Test correctness review
 

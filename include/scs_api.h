@@ -23,15 +23,75 @@ extern "C" {
 #endif
 
 // ---------------------------------------------------------------------------
+// API version  (C0.1)
+// ---------------------------------------------------------------------------
+
+#define SCS_API_VERSION_MAJOR 0
+#define SCS_API_VERSION_MINOR 1
+#define SCS_API_VERSION_PATCH 0
+
+// ---------------------------------------------------------------------------
+// Symbol visibility  (C0.1)
+// ---------------------------------------------------------------------------
+
+#if defined(_WIN32)
+#if defined(SCS_API_BUILD)
+#define SCS_API __declspec(dllexport)
+#else
+#define SCS_API __declspec(dllimport)
+#endif
+#else
+#define SCS_API __attribute__((visibility("default")))
+#endif
+
+// ---------------------------------------------------------------------------
+// Majority / supermajority sentinels  (C0.1)
+// ---------------------------------------------------------------------------
+
+/** Pass as the `k` parameter to request simple majority (⌊n/2⌋ + 1 voters). */
+#define SCS_MAJORITY_SIMPLE (-1)
+
+// ---------------------------------------------------------------------------
+// Default sampling constants  (C0.1)
+// ---------------------------------------------------------------------------
+
+/** Default number of samples for winset boundary export. */
+#define SCS_DEFAULT_WINSET_SAMPLES 64
+/** Default number of samples for yolk/boundary grid resolution. */
+#define SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION 15
+
+// ---------------------------------------------------------------------------
 // Error codes
 // ---------------------------------------------------------------------------
 
 /** Success. */
 #define SCS_OK 0
-/** Invalid argument (e.g. wrong dimension, out-of-range parameter). */
+/** Invalid argument (e.g. wrong dimension, out-of-range parameter,
+ *  null pointer where one is required). */
 #define SCS_ERROR_INVALID_ARGUMENT 1
 /** Internal / unexpected error. */
 #define SCS_ERROR_INTERNAL 2
+/** Caller-provided output buffer is valid but too small.
+ *  When returned from a variable-size output function, *out_n (if present)
+ *  is set to the number of elements required. (C0.2) */
+#define SCS_ERROR_BUFFER_TOO_SMALL 3
+/** A handle construction or internal heap allocation failed. (C0.2) */
+#define SCS_ERROR_OUT_OF_MEMORY 4
+
+// ---------------------------------------------------------------------------
+// Pairwise comparison result domain  (C0.3)
+// ---------------------------------------------------------------------------
+
+/** ABI-stable scalar type for pairwise majority comparison results.
+ *  Use the named constants below; do not compare against raw integers. */
+typedef int32_t SCS_PairwiseResult;
+
+/** Candidate A loses to candidate B under the given majority rule. */
+#define SCS_PAIRWISE_LOSS ((SCS_PairwiseResult) - 1)
+/** Candidates A and B tie (neither achieves the required majority). */
+#define SCS_PAIRWISE_TIE ((SCS_PairwiseResult)0)
+/** Candidate A beats candidate B under the given majority rule. */
+#define SCS_PAIRWISE_WIN ((SCS_PairwiseResult)1)
 
 // ---------------------------------------------------------------------------
 // Loss configuration  (Item 29: single struct instead of six parameters)
@@ -75,8 +135,11 @@ typedef enum {
 
 /**
  * @brief Distance configuration.
- * salience_weights must be a pointer to n_weights doubles (length must equal
- * the dimension of the points passed to the distance/level-set functions).
+ *
+ * salience_weights is borrowed input storage — it must remain valid for the
+ * duration of the call. Do not cache this pointer in long-lived handles.
+ * n_weights must equal the dimension of the points passed to the distance /
+ * level-set functions.
  */
 typedef struct {
   SCS_DistanceType distance_type;
@@ -101,11 +164,12 @@ typedef enum {
  * @brief 2D level-set result.
  *
  * Fields by type:
- *   CIRCLE:      center_x/y, param0 = radius.
- *   ELLIPSE:     center_x/y, param0 = semi_axis_0, param1 = semi_axis_1.
+ *   CIRCLE:       center_x/y, param0 = radius.
+ *   ELLIPSE:      center_x/y, param0 = semi_axis_0, param1 = semi_axis_1.
  *   SUPERELLIPSE: center_x/y, param0 = semi_axis_0, param1 = semi_axis_1,
- * exponent_p. POLYGON:     center_x/y, n_vertices (always 4),
- * vertices[0..2*n_vertices-1] as [x0,y0, x1,y1, x2,y2, x3,y3].
+ *                 exponent_p.
+ *   POLYGON:      center_x/y, n_vertices (always 4),
+ *                 vertices[0..2*n_vertices-1] as [x0,y0, x1,y1, x2,y2, x3,y3].
  */
 typedef struct {
   SCS_LevelSetType type;
@@ -126,6 +190,23 @@ typedef struct {
 typedef struct SCS_StreamManagerImpl SCS_StreamManager;
 
 // ---------------------------------------------------------------------------
+// API version query  (C0.1)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Query the compiled API version.
+ *
+ * @param[out] out_major  Major version (breaking changes).
+ * @param[out] out_minor  Minor version (additive changes).
+ * @param[out] out_patch  Patch version (behavioural / doc fixes).
+ * @param err_buf         Optional error message buffer.
+ * @param err_buf_len     Length of err_buf.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_api_version(int* out_major, int* out_minor, int* out_patch,
+                            char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
 // Distance functions
 // ---------------------------------------------------------------------------
 
@@ -135,16 +216,16 @@ typedef struct SCS_StreamManagerImpl SCS_StreamManager;
  * @param ideal_point     Array of n_dims doubles.
  * @param alt_point       Array of n_dims doubles.
  * @param n_dims          Dimension (must match dist_cfg->n_weights).
- * @param dist_cfg        Distance configuration (salience_weights.n_weights ==
- * n_dims).
+ * @param dist_cfg        Distance configuration.
  * @param[out] out        Computed distance.
  * @param err_buf         Optional buffer for error message (may be NULL).
  * @param err_buf_len     Length of err_buf (may be 0).
  * @return SCS_OK or error code.
  */
-int scs_calculate_distance(const double* ideal_point, const double* alt_point,
-                           int n_dims, const SCS_DistanceConfig* dist_cfg,
-                           double* out, char* err_buf, int err_buf_len);
+SCS_API int scs_calculate_distance(const double* ideal_point,
+                                   const double* alt_point, int n_dims,
+                                   const SCS_DistanceConfig* dist_cfg,
+                                   double* out, char* err_buf, int err_buf_len);
 
 // ---------------------------------------------------------------------------
 // Loss / utility functions
@@ -160,8 +241,9 @@ int scs_calculate_distance(const double* ideal_point, const double* alt_point,
  * @param err_buf_len     Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_distance_to_utility(double distance, const SCS_LossConfig* loss_cfg,
-                            double* out, char* err_buf, int err_buf_len);
+SCS_API int scs_distance_to_utility(double distance,
+                                    const SCS_LossConfig* loss_cfg, double* out,
+                                    char* err_buf, int err_buf_len);
 
 /**
  * @brief Normalize utility to [0, 1] given the maximum possible distance.
@@ -169,15 +251,15 @@ int scs_distance_to_utility(double distance, const SCS_LossConfig* loss_cfg,
  * @param utility         Raw utility (from scs_distance_to_utility).
  * @param max_distance    Maximum distance used to define the worst utility.
  * @param loss_cfg        Loss configuration (must match how utility was
- * computed).
+ *                        computed).
  * @param[out] out        Normalized utility in [0, 1].
  * @param err_buf         Optional error message buffer.
  * @param err_buf_len     Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_normalize_utility(double utility, double max_distance,
-                          const SCS_LossConfig* loss_cfg, double* out,
-                          char* err_buf, int err_buf_len);
+SCS_API int scs_normalize_utility(double utility, double max_distance,
+                                  const SCS_LossConfig* loss_cfg, double* out,
+                                  char* err_buf, int err_buf_len);
 
 // ---------------------------------------------------------------------------
 // Indifference / level-set functions
@@ -196,9 +278,9 @@ int scs_normalize_utility(double utility, double max_distance,
  * @param err_buf_len     Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_level_set_1d(double ideal, double weight, double utility_level,
-                     const SCS_LossConfig* loss_cfg, double* out_points,
-                     int* out_n, char* err_buf, int err_buf_len);
+SCS_API int scs_level_set_1d(double ideal, double weight, double utility_level,
+                             const SCS_LossConfig* loss_cfg, double* out_points,
+                             int* out_n, char* err_buf, int err_buf_len);
 
 /**
  * @brief 2D level set: exact shape (circle, ellipse, superellipse, or polygon).
@@ -213,30 +295,43 @@ int scs_level_set_1d(double ideal, double weight, double utility_level,
  * @param err_buf_len     Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_level_set_2d(double ideal_x, double ideal_y, double utility_level,
-                     const SCS_LossConfig* loss_cfg,
-                     const SCS_DistanceConfig* dist_cfg, SCS_LevelSet2d* out,
-                     char* err_buf, int err_buf_len);
+SCS_API int scs_level_set_2d(double ideal_x, double ideal_y,
+                             double utility_level,
+                             const SCS_LossConfig* loss_cfg,
+                             const SCS_DistanceConfig* dist_cfg,
+                             SCS_LevelSet2d* out, char* err_buf,
+                             int err_buf_len);
 
 /**
  * @brief Sample a SCS_LevelSet2d as a polygon (interleaved x,y vertices).
  *
- * For CIRCLE/ELLIPSE/SUPERELLIPSE: samples num_samples points around the curve.
- * For POLYGON: copies the 4 exact vertices (num_samples is ignored).
+ * For CIRCLE/ELLIPSE/SUPERELLIPSE: samples num_samples points around the
+ * curve. For POLYGON: copies the 4 exact vertices (num_samples is ignored).
+ *
+ * **Size-query mode:** pass out_xy = NULL (and any out_capacity). The function
+ * writes the required number of (x,y) pairs into *out_n and returns SCS_OK.
+ * Use this to allocate the right buffer before the fill call.
+ *
+ * **Fill mode:** pass a non-null out_xy with out_capacity set to the number
+ * of (x,y) pairs the buffer can hold. If out_capacity is too small,
+ * SCS_ERROR_BUFFER_TOO_SMALL is returned and *out_n is set to the required
+ * size. Otherwise the vertices are written and *out_n is set to the count
+ * written.
  *
  * @param level_set       Input level-set (from scs_level_set_2d).
- * @param num_samples     Samples for smooth shapes (e.g. 64 or 128; >= 3).
- * @param[out] out_xy     Caller buffer for interleaved [x0,y0,x1,y1,...].
- *                        Must be at least 2*num_samples doubles for smooth
- *                        shapes, or 2*4 = 8 for polygon type.
- * @param[out] out_n      Number of (x,y) pairs written.
+ * @param num_samples     Samples for smooth shapes (>= 3); ignored for POLYGON.
+ * @param[out] out_xy     Caller buffer for interleaved [x0,y0,x1,y1,...],
+ *                        or NULL for size-query.
+ * @param out_capacity    Capacity of out_xy in (x,y) pairs; ignored if NULL.
+ * @param[out] out_n      Number of (x,y) pairs required / written.
  * @param err_buf         Optional error message buffer.
  * @param err_buf_len     Length of err_buf.
- * @return SCS_OK or error code.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
  */
-int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
-                             double* out_xy, int* out_n, char* err_buf,
-                             int err_buf_len);
+SCS_API int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
+                                     int num_samples, double* out_xy,
+                                     int out_capacity, int* out_n,
+                                     char* err_buf, int err_buf_len);
 
 // ---------------------------------------------------------------------------
 // Geometry functions
@@ -258,8 +353,9 @@ int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
  * @param err_buf_len Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_convex_hull_2d(const double* points, int n_points, double* out_xy,
-                       int* out_n, char* err_buf, int err_buf_len);
+SCS_API int scs_convex_hull_2d(const double* points, int n_points,
+                               double* out_xy, int* out_n, char* err_buf,
+                               int err_buf_len);
 
 // ---------------------------------------------------------------------------
 // StreamManager lifecycle  (Item 31: PRNG engine not exposed)
@@ -274,15 +370,15 @@ int scs_convex_hull_2d(const double* points, int n_points, double* out_xy,
  * @return Opaque handle (caller owns; must call scs_stream_manager_destroy),
  *         or NULL on error.
  */
-SCS_StreamManager* scs_stream_manager_create(uint64_t master_seed,
-                                             char* err_buf, int err_buf_len);
+SCS_API SCS_StreamManager* scs_stream_manager_create(uint64_t master_seed,
+                                                     char* err_buf,
+                                                     int err_buf_len);
 
 /**
  * @brief Destroy a StreamManager and release its resources.
- * @param mgr Handle from scs_stream_manager_create (may be NULL, which is a
- * no-op).
+ * @param mgr Handle from scs_stream_manager_create (may be NULL — no-op).
  */
-void scs_stream_manager_destroy(SCS_StreamManager* mgr);
+SCS_API void scs_stream_manager_destroy(SCS_StreamManager* mgr);
 
 /**
  * @brief Register allowed stream names.
@@ -297,8 +393,8 @@ void scs_stream_manager_destroy(SCS_StreamManager* mgr);
  * @param err_buf_len Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_register_streams(SCS_StreamManager* mgr, const char** names,
-                         int n_names, char* err_buf, int err_buf_len);
+SCS_API int scs_register_streams(SCS_StreamManager* mgr, const char** names,
+                                 int n_names, char* err_buf, int err_buf_len);
 
 /**
  * @brief Reset all streams with a new master seed.
@@ -309,8 +405,8 @@ int scs_register_streams(SCS_StreamManager* mgr, const char** names,
  * @param err_buf_len Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_reset_all(SCS_StreamManager* mgr, uint64_t master_seed, char* err_buf,
-                  int err_buf_len);
+SCS_API int scs_reset_all(SCS_StreamManager* mgr, uint64_t master_seed,
+                          char* err_buf, int err_buf_len);
 
 /**
  * @brief Reset a specific named stream to a given seed.
@@ -322,15 +418,15 @@ int scs_reset_all(SCS_StreamManager* mgr, uint64_t master_seed, char* err_buf,
  * @param err_buf_len Length of err_buf.
  * @return SCS_OK or error code.
  */
-int scs_reset_stream(SCS_StreamManager* mgr, const char* stream_name,
-                     uint64_t seed, char* err_buf, int err_buf_len);
+SCS_API int scs_reset_stream(SCS_StreamManager* mgr, const char* stream_name,
+                             uint64_t seed, char* err_buf, int err_buf_len);
 
 /**
  * @brief Skip (discard) n values in a named stream.
  * @return SCS_OK or error code.
  */
-int scs_skip(SCS_StreamManager* mgr, const char* stream_name, uint64_t n,
-             char* err_buf, int err_buf_len);
+SCS_API int scs_skip(SCS_StreamManager* mgr, const char* stream_name,
+                     uint64_t n, char* err_buf, int err_buf_len);
 
 // ---------------------------------------------------------------------------
 // PRNG draw functions  (each takes mgr + stream_name → out)
@@ -340,39 +436,42 @@ int scs_skip(SCS_StreamManager* mgr, const char* stream_name, uint64_t n,
  * @brief Draw a uniform real in [min, max) from the named stream.
  * @return SCS_OK or error code.
  */
-int scs_uniform_real(SCS_StreamManager* mgr, const char* stream_name,
-                     double min, double max, double* out, char* err_buf,
-                     int err_buf_len);
+SCS_API int scs_uniform_real(SCS_StreamManager* mgr, const char* stream_name,
+                             double min, double max, double* out, char* err_buf,
+                             int err_buf_len);
 
 /**
  * @brief Draw a normal variate with given mean and stddev from the named
- * stream.
+ *        stream.
  * @return SCS_OK or error code.
  */
-int scs_normal(SCS_StreamManager* mgr, const char* stream_name, double mean,
-               double stddev, double* out, char* err_buf, int err_buf_len);
+SCS_API int scs_normal(SCS_StreamManager* mgr, const char* stream_name,
+                       double mean, double stddev, double* out, char* err_buf,
+                       int err_buf_len);
 
 /**
  * @brief Draw a Bernoulli variate (0 or 1) with given probability.
  * @return SCS_OK or error code.
  */
-int scs_bernoulli(SCS_StreamManager* mgr, const char* stream_name,
-                  double probability, int* out, char* err_buf, int err_buf_len);
+SCS_API int scs_bernoulli(SCS_StreamManager* mgr, const char* stream_name,
+                          double probability, int* out, char* err_buf,
+                          int err_buf_len);
 
 /**
  * @brief Draw a uniform integer in [min, max] from the named stream.
  * @return SCS_OK or error code.
  */
-int scs_uniform_int(SCS_StreamManager* mgr, const char* stream_name,
-                    int64_t min, int64_t max, int64_t* out, char* err_buf,
-                    int err_buf_len);
+SCS_API int scs_uniform_int(SCS_StreamManager* mgr, const char* stream_name,
+                            int64_t min, int64_t max, int64_t* out,
+                            char* err_buf, int err_buf_len);
 
 /**
  * @brief Draw a uniform choice index in [0, n) from the named stream.
  * @return SCS_OK or error code.
  */
-int scs_uniform_choice(SCS_StreamManager* mgr, const char* stream_name,
-                       int64_t n, int64_t* out, char* err_buf, int err_buf_len);
+SCS_API int scs_uniform_choice(SCS_StreamManager* mgr, const char* stream_name,
+                               int64_t n, int64_t* out, char* err_buf,
+                               int err_buf_len);
 
 #ifdef __cplusplus
 }  // extern "C"

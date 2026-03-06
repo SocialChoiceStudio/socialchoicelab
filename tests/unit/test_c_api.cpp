@@ -309,11 +309,70 @@ TEST(CApi_LevelSet2d, ErrorOnWrongWeightCount) {
 }
 
 // ---------------------------------------------------------------------------
+// API version tests  (C0.1)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Version, ReturnsCompiledVersion) {
+  int major = -1, minor = -1, patch = -1;
+  char err[256] = {};
+  int rc = scs_api_version(&major, &minor, &patch, err, 256);
+  EXPECT_EQ(rc, SCS_OK) << err;
+  EXPECT_EQ(major, SCS_API_VERSION_MAJOR);
+  EXPECT_EQ(minor, SCS_API_VERSION_MINOR);
+  EXPECT_EQ(patch, SCS_API_VERSION_PATCH);
+}
+
+TEST(CApi_Version, ErrorOnNullOutput) {
+  char err[256] = {};
+  int rc = scs_api_version(nullptr, nullptr, nullptr, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// Error code distinctness tests  (C0.2)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_ErrorCodes, AllDistinct) {
+  EXPECT_NE(SCS_OK, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_NE(SCS_OK, SCS_ERROR_INTERNAL);
+  EXPECT_NE(SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL);
+  EXPECT_NE(SCS_OK, SCS_ERROR_OUT_OF_MEMORY);
+  EXPECT_NE(SCS_ERROR_INVALID_ARGUMENT, SCS_ERROR_INTERNAL);
+  EXPECT_NE(SCS_ERROR_INVALID_ARGUMENT, SCS_ERROR_BUFFER_TOO_SMALL);
+  EXPECT_NE(SCS_ERROR_INTERNAL, SCS_ERROR_BUFFER_TOO_SMALL);
+  EXPECT_NE(SCS_ERROR_BUFFER_TOO_SMALL, SCS_ERROR_OUT_OF_MEMORY);
+}
+
+TEST(CApi_ErrorCodes, SentinelValues) {
+  EXPECT_EQ(SCS_OK, 0);
+  EXPECT_EQ(SCS_ERROR_INVALID_ARGUMENT, 1);
+  EXPECT_EQ(SCS_ERROR_INTERNAL, 2);
+  EXPECT_EQ(SCS_ERROR_BUFFER_TOO_SMALL, 3);
+  EXPECT_EQ(SCS_ERROR_OUT_OF_MEMORY, 4);
+}
+
+// ---------------------------------------------------------------------------
+// SCS_PairwiseResult domain tests  (C0.3)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Pairwise, ConstantValues) {
+  EXPECT_EQ(SCS_PAIRWISE_LOSS, static_cast<SCS_PairwiseResult>(-1));
+  EXPECT_EQ(SCS_PAIRWISE_TIE, static_cast<SCS_PairwiseResult>(0));
+  EXPECT_EQ(SCS_PAIRWISE_WIN, static_cast<SCS_PairwiseResult>(1));
+}
+
+TEST(CApi_Pairwise, AllDistinct) {
+  EXPECT_NE(SCS_PAIRWISE_LOSS, SCS_PAIRWISE_TIE);
+  EXPECT_NE(SCS_PAIRWISE_TIE, SCS_PAIRWISE_WIN);
+  EXPECT_NE(SCS_PAIRWISE_LOSS, SCS_PAIRWISE_WIN);
+}
+
+// ---------------------------------------------------------------------------
 // Level set → polygon sampling tests
 // ---------------------------------------------------------------------------
 
 TEST(CApi_ToPolygon, CircleSamples64) {
-  // Build a circle at origin, radius 1.
   SCS_LevelSet2d ls{};
   ls.type = SCS_LEVEL_SET_CIRCLE;
   ls.center_x = 0.0;
@@ -324,7 +383,7 @@ TEST(CApi_ToPolygon, CircleSamples64) {
   double xy[2 * N] = {};
   int n = 0;
   char err[256] = {};
-  int rc = scs_level_set_to_polygon(&ls, N, xy, &n, err, 256);
+  int rc = scs_level_set_to_polygon(&ls, N, xy, N, &n, err, 256);
   EXPECT_EQ(rc, SCS_OK) << err;
   EXPECT_EQ(n, N);
   // Every sampled point should be ~1 unit from origin.
@@ -336,7 +395,6 @@ TEST(CApi_ToPolygon, CircleSamples64) {
 }
 
 TEST(CApi_ToPolygon, PolygonPassthroughVertices) {
-  // Build a 4-vertex polygon (Manhattan diamond at origin, radius 2).
   SCS_LevelSet2d ls{};
   ls.type = SCS_LEVEL_SET_POLYGON;
   ls.n_vertices = 4;
@@ -351,7 +409,7 @@ TEST(CApi_ToPolygon, PolygonPassthroughVertices) {
 
   double xy[8] = {};
   int n = 0;
-  int rc = scs_level_set_to_polygon(&ls, 64, xy, &n, nullptr, 0);
+  int rc = scs_level_set_to_polygon(&ls, 64, xy, 4, &n, nullptr, 0);
   EXPECT_EQ(rc, SCS_OK);
   EXPECT_EQ(n, 4);
   EXPECT_NEAR(xy[0], 2.0, 1e-12);
@@ -366,8 +424,42 @@ TEST(CApi_ToPolygon, ErrorOnFewSamplesForSmoothShape) {
   double xy[20] = {};
   int n = 0;
   char err[256] = {};
-  int rc = scs_level_set_to_polygon(&ls, 2, xy, &n, err, 256);
+  int rc = scs_level_set_to_polygon(&ls, 2, xy, 20, &n, err, 256);
   EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+}
+
+TEST(CApi_ToPolygon, SizeQueryNullBuffer) {
+  // Size-query mode: pass null buffer, receive required capacity in *out_n.
+  SCS_LevelSet2d ls{};
+  ls.type = SCS_LEVEL_SET_CIRCLE;
+  ls.center_x = 0.0;
+  ls.center_y = 0.0;
+  ls.param0 = 1.0;
+
+  constexpr int N = 32;
+  int n = 0;
+  char err[256] = {};
+  int rc = scs_level_set_to_polygon(&ls, N, nullptr, 0, &n, err, 256);
+  EXPECT_EQ(rc, SCS_OK) << err;
+  EXPECT_EQ(n, N);
+}
+
+TEST(CApi_ToPolygon, BufferTooSmallReturnsError) {
+  SCS_LevelSet2d ls{};
+  ls.type = SCS_LEVEL_SET_CIRCLE;
+  ls.center_x = 0.0;
+  ls.center_y = 0.0;
+  ls.param0 = 1.0;
+
+  constexpr int N = 64;
+  double xy[2 * 8] = {};  // only 8 pairs — far too small for 64 samples
+  int n = 0;
+  char err[256] = {};
+  int rc = scs_level_set_to_polygon(&ls, N, xy, 8, &n, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_BUFFER_TOO_SMALL);
+  // *out_n must report the required capacity so the caller can resize.
+  EXPECT_EQ(n, N);
+  EXPECT_GT(std::strlen(err), 0u);
 }
 
 // ---------------------------------------------------------------------------

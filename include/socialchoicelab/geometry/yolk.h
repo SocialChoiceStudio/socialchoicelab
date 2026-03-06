@@ -143,6 +143,120 @@ namespace socialchoicelab::geometry {
 }
 
 // ---------------------------------------------------------------------------
+// C1b — Annotated k-quantile lines (with metadata and limiting flag)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Metadata-carrying k-quantile line.
+ *
+ * Each entry records the exact line, the voter-pair indices that defined
+ * the critical direction, and whether the line is "limiting" (passes
+ * through both voters of the pair).
+ *
+ * A limiting median line is one where the defining pair's common projection
+ * equals the k-th sorted projection value.  At such a direction the line
+ * passes through two (or more) ideal points.  Non-limiting lines at a
+ * critical direction pass through exactly one ideal point — whichever
+ * voter provides the k-th projection.
+ *
+ * Reference:
+ *   Miller, N. R. (2015), "The Spatial Model of Social Choice and Voting,"
+ *     in Handbook of Social Choice and Voting, pp. 163–181.
+ */
+struct QuantileLine2d {
+  Line2E line;       ///< Exact CGAL line (ax + by + c = 0).
+  int voter_i;       ///< Index of first voter of the defining pair (0-based).
+  int voter_j;       ///< Index of second voter of the defining pair (0-based).
+  bool is_limiting;  ///< True iff the pair's projection is the k-th value.
+};
+
+/**
+ * @brief Compute annotated k-quantile lines for a 2D voter configuration.
+ *
+ * Identical algorithm to quantile_lines_2d, but each returned entry carries
+ * the voter-pair indices and a flag indicating whether the line is limiting.
+ *
+ * @param voter_ideals  At least 2 voter ideal points in 2D.
+ * @param k             Majority threshold; -1 = ⌊n/2⌋ + 1 (simple majority).
+ * @return              Annotated k-quantile lines (n(n−1)/2 entries).
+ * @throws std::invalid_argument if n < 2 or k ∉ [1, n].
+ */
+[[nodiscard]] inline std::vector<QuantileLine2d> quantile_lines_2d_annotated(
+    const std::vector<core::types::Point2d>& voter_ideals, int k = -1) {
+  const int n = static_cast<int>(voter_ideals.size());
+  if (n < 2) {
+    throw std::invalid_argument(
+        "quantile_lines_2d_annotated: need at least 2 voter ideals (got " +
+        std::to_string(n) + ").");
+  }
+  const int threshold = detail::resolve_k(k, n);
+
+  std::vector<Point2E> pts;
+  pts.reserve(static_cast<std::size_t>(n));
+  for (const auto& v : voter_ideals) pts.push_back(to_exact(v));
+
+  using FT = core::EpecKernel::FT;
+
+  std::vector<QuantileLine2d> result;
+  result.reserve(static_cast<std::size_t>(n * (n - 1) / 2));
+
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j) {
+      FT dx = pts[static_cast<std::size_t>(j)].x() -
+              pts[static_cast<std::size_t>(i)].x();
+      FT dy = pts[static_cast<std::size_t>(j)].y() -
+              pts[static_cast<std::size_t>(i)].y();
+
+      FT ndx = -dy;
+      FT ndy = dx;
+
+      std::vector<FT> projs;
+      projs.reserve(static_cast<std::size_t>(n));
+      for (const auto& p : pts) {
+        projs.push_back(ndx * p.x() + ndy * p.y());
+      }
+      std::sort(projs.begin(), projs.end());
+
+      FT pk = projs[static_cast<std::size_t>(threshold - 1)];
+      FT pair_proj = ndx * pts[static_cast<std::size_t>(i)].x() +
+                     ndy * pts[static_cast<std::size_t>(i)].y();
+
+      result.push_back({Line2E(ndx, ndy, -pk), i, j, pair_proj == pk});
+    }
+  }
+
+  return result;
+}
+
+/**
+ * @brief Return only the limiting k-quantile lines.
+ *
+ * Limiting median lines pass through two (or more) voter ideal points.
+ * They are the lines where the defining pair's common projection is the
+ * k-th sorted value.
+ *
+ * For n odd under simple majority, these form the finite set of boundary
+ * lines that Miller (2015) calls "limiting median lines."  Non-limiting
+ * median lines are sandwiched between pairs of limiting lines that pass
+ * through each ideal point.
+ *
+ * @param voter_ideals  At least 2 voter ideal points in 2D.
+ * @param k             Majority threshold; -1 = ⌊n/2⌋ + 1 (simple majority).
+ * @return              Only the limiting lines (subset of n(n−1)/2).
+ * @throws std::invalid_argument if n < 2 or k ∉ [1, n].
+ */
+[[nodiscard]] inline std::vector<Line2E> limiting_quantile_lines_2d(
+    const std::vector<core::types::Point2d>& voter_ideals, int k = -1) {
+  auto annotated = quantile_lines_2d_annotated(voter_ideals, k);
+  std::vector<Line2E> result;
+  result.reserve(annotated.size());
+  for (const auto& ql : annotated) {
+    if (ql.is_limiting) result.push_back(ql.line);
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // C1 — helpers
 // ---------------------------------------------------------------------------
 

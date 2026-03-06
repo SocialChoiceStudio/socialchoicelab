@@ -20,12 +20,24 @@ linked directly by R or Python code.
 
 | File | Role |
 |------|------|
-| `include/scs_api.h` | Public C header — all enums, POD structs, and function declarations |
+| `include/scs_api.h` | Public C header — scalar domains, POD structs, opaque handles, and function declarations |
 | `src/c_api/scs_api.cpp` | `extern "C"` implementation — maps C types ↔ C++ types, catches exceptions → error codes |
 | `tests/unit/test_c_api.cpp` | GTest suite calling the C API using only C types |
 
 The library is built as a **shared library** (`libscs_api.dylib` / `libscs_api.so`).
 R and Python bindings link only against this artifact; they do not see Eigen or STL.
+
+Exported declarations use `SCS_API`. On non-Windows builds this expands to
+default symbol visibility; on Windows it should map to
+`__declspec(dllexport)` / `__declspec(dllimport)` via an `SCS_API_BUILD`
+switch.
+
+Versioning policy for the stable surface:
+
+- Matching major versions are intended to be ABI-compatible.
+- Minor versions are additive.
+- Patch versions change behavior, tests, or documentation without changing
+  signatures or public struct layout.
 
 ---
 
@@ -38,6 +50,8 @@ Every function returns `int`:
 | `SCS_OK` (0) | Success |
 | `SCS_ERROR_INVALID_ARGUMENT` (1) | Bad argument (null pointer, wrong dimension, out-of-range value, unregistered stream name) |
 | `SCS_ERROR_INTERNAL` (2) | Unexpected internal error |
+| `SCS_ERROR_BUFFER_TOO_SMALL` (3) | Caller-provided output buffer is valid but not large enough |
+| `SCS_ERROR_OUT_OF_MEMORY` (4) | Handle construction or internal allocation failed |
 
 If `err_buf != NULL` and `err_buf_len > 0`, a null-terminated message is written
 into `err_buf` on any non-zero return. Bindings should always provide a buffer
@@ -46,9 +60,71 @@ into `err_buf` on any non-zero return. Bindings should always provide a buffer
 `scs_stream_manager_create` returns `NULL` on failure (rare; only on allocation
 error) and writes the message into `err_buf`.
 
+For optional-result APIs, "not found" is not an error: the function returns
+`SCS_OK` and writes `*out_found = 0`. Remaining outputs should be documented per
+function; prefer leaving them untouched when nothing is found.
+
+For variable-size outputs, the stable contract is:
+
+- Fixed-size outputs require a caller-provided buffer with explicit capacity.
+- Variable-size outputs support a safe query-first pattern via `NULL` output
+  buffers or zero capacity.
+- If a non-null buffer is too small, the function returns
+  `SCS_ERROR_BUFFER_TOO_SMALL` rather than truncating silently.
+
+All non-destroy opaque-handle APIs should reject a null handle with
+`SCS_ERROR_INVALID_ARGUMENT`. Destroy functions treat `NULL` as a no-op.
+
 ---
 
-## POD structs
+## Thread Safety / Reentrancy
+
+The public contract should be explicit rather than inferred from the C++
+implementation:
+
+- Public functions are reentrant unless they operate on shared mutable state.
+- Read-only queries on distinct `SCS_Profile*` / `SCS_Winset*` handles are safe
+  to call concurrently.
+- Concurrent access to the same `SCS_Profile*` or `SCS_Winset*` is only safe for
+  read-only operations if the implementation stores no lazy caches; otherwise
+  callers must synchronize externally.
+- `SCS_StreamManager*` is not thread-safe for concurrent draws, resets, or
+  registration changes without external locking.
+- Python bindings may release the GIL only around calls that satisfy the rules
+  above; R bindings should document the same caveat on external-pointer wrappers.
+
+---
+
+## Scalar Domains And POD Structs
+
+### Scalar domains
+
+New ABI-visible result and mode values should use fixed-width integer
+representations rather than public enums whose size is implementation-defined.
+This keeps the ABI predictable for `ctypes`, `cffi`, and `.Call`.
+
+```c
+typedef int32_t SCS_PairwiseResult;
+#define SCS_PAIRWISE_LOSS ((int32_t)-1)
+#define SCS_PAIRWISE_TIE  ((int32_t)0)
+#define SCS_PAIRWISE_WIN  ((int32_t)1)
+
+typedef int32_t SCS_TieBreak;
+#define SCS_TIEBREAK_RANDOM         ((int32_t)0)
+#define SCS_TIEBREAK_SMALLEST_INDEX ((int32_t)1)
+```
+
+Named stable constants should also be provided for sentinel/default values used
+across the expanded surface:
+
+```c
+#define SCS_MAJORITY_SIMPLE (-1)
+#define SCS_DEFAULT_WINSET_SAMPLES 64
+#define SCS_DEFAULT_YOLK_SAMPLES 720
+#define SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION 15
+```
+
+### POD structs
 
 ### `SCS_LossConfig`
 
@@ -82,6 +158,9 @@ typedef struct {
 } SCS_DistanceConfig;
 ```
 
+`salience_weights` is borrowed caller-owned storage valid only for the duration
+of the call unless a function explicitly documents that it deep-copies the data.
+
 ### `SCS_LevelSet2d`
 
 Shape-tagged union encoded as a flat POD struct. Fields used per `type`:
@@ -96,9 +175,125 @@ Shape-tagged union encoded as a flat POD struct. Fields used per `type`:
 No heap allocation: polygon vertices are stored inline (max 4 for all current
 level-set shapes).
 
+### `SCS_Yolk2d`
+
+```c
+typedef struct {
+  double center_x;
+  double center_y;
+  double radius;
+} SCS_Yolk2d;
+```
+
 ---
 
-## Functions
+## Stable-Surface Function Rules
+
+The current minimal milestone exposes only a subset of the eventual stable C
+surface. The following rules apply both to the existing API and to the planned
+geometry / aggregation expansion in `docs/status/c_api_extensions_plan.md`.
+
+### Version / visibility
+
+```c
+int scs_api_version(
+    int* out_major, int* out_minor, int* out_patch,
+    char* err_buf, int err_buf_len);
+```
+
+### Legacy and preferred polygon sampling APIs
+
+The original minimal surface includes:
+
+```c
+int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
+    double* out_xy, int* out_n, char* err_buf, int err_buf_len);
+```
+
+This remains supported for backward compatibility, but new binding code should
+prefer the additive size-query helpers:
+
+```c
+int scs_level_set_polygon_size(
+    const SCS_LevelSet2d* level_set, int num_samples,
+    int* out_xy_pairs,
+    char* err_buf, int err_buf_len);
+
+int scs_level_set_sample_polygon(
+    const SCS_LevelSet2d* level_set, int num_samples,
+    double* out_xy, int out_capacity,   // counted in (x,y) pairs
+    int* out_n,
+    char* err_buf, int err_buf_len);
+```
+
+Both paths must produce identical sampled coordinates.
+
+### Planned opaque handles
+
+The expanded stable surface uses opaque handles for C++ types that cannot be
+represented safely as flat POD:
+
+```c
+typedef struct SCS_StreamManagerImpl SCS_StreamManager;
+typedef struct SCS_WinsetImpl SCS_Winset;
+typedef struct SCS_ProfileImpl SCS_Profile;
+```
+
+All such handles follow explicit ownership via create/destroy pairs.
+
+### Planned geometry export rules
+
+For sampled multi-path geometry such as winset boundaries:
+
+- Paths are represented as interleaved `(x,y)` pairs.
+- `out_path_starts[i]` gives the starting pair index for path `i`.
+- Sampled paths do not repeat the first point at the end.
+- Hole vs outer-boundary status is explicit via `out_path_is_hole[i]`; bindings
+  must not infer topology from winding orientation.
+
+For example:
+
+```c
+int scs_winset_sample_boundary_2d(
+    const SCS_Winset* ws,
+    int num_samples_per_path,
+    double* out_xy, int out_xy_capacity,
+    int* out_xy_n,
+    int* out_path_starts, int out_path_capacity,
+    int* out_path_is_hole,
+    int* out_n_paths,
+    char* err_buf, int err_buf_len);
+```
+
+Bounding-box queries over possibly empty geometry should expose that possibility
+explicitly:
+
+```c
+int scs_winset_bbox_2d(
+    const SCS_Winset* ws,
+    int* out_found,
+    double* out_min_x, double* out_min_y,
+    double* out_max_x, double* out_max_y,
+    char* err_buf, int err_buf_len);
+```
+
+### Planned ranking rule consistency
+
+Generic ranking helpers should accept `double` score vectors so they remain
+compatible with fractional scoring rules:
+
+```c
+int scs_rank_by_scores(
+    const double* scores, int n_alts,
+    SCS_TieBreak tie_break,
+    SCS_StreamManager* mgr, const char* stream_name,
+    int* out_ranking, int out_len,
+    char* err_buf, int err_buf_len);
+```
+
+---
+
+## Current Minimal Functions
 
 ### Distance
 
@@ -193,7 +388,12 @@ If a stream allowlist is active, using an unlisted name returns
 | `SCS_LossConfig` | `preference::indifference::LossConfig` (via `to_cpp_loss_config`) |
 | `SCS_DistanceConfig` + pointer/len | `preference::indifference::DistanceConfig` + `std::vector<double>` |
 | `SCS_LevelSet2d` | `preference::indifference::LevelSet2d` (`std::variant`) |
+| `SCS_Yolk2d` | trivial POD result struct |
+| `SCS_PairwiseResult` | fixed-width result domain (`int32_t`) |
+| `SCS_TieBreak` | fixed-width tie-break domain (`int32_t`) |
 | `SCS_StreamManager*` | `SCS_StreamManagerImpl { core::rng::StreamManager mgr; }` |
+| `SCS_Winset*` | `SCS_WinsetImpl { ...WinsetRegion / CGAL polygon-set state... }` |
+| `SCS_Profile*` | `SCS_ProfileImpl { ...Profile ranking state... }` |
 | `double*, int n_dims` | `Eigen::Map<const Eigen::VectorXd>` |
 
 ---
@@ -230,9 +430,27 @@ scs_stream_manager_destroy(mgr);
 
 ---
 
+## Thread-safety contract  (C0.5)
+
+| Context | Rule |
+|---------|------|
+| **Stateless functions** | All pure-computation functions (`scs_calculate_distance`, `scs_distance_to_utility`, `scs_normalize_utility`, `scs_level_set_1d`, `scs_level_set_2d`, `scs_level_set_to_polygon`, `scs_convex_hull_2d`, and all geometry functions added in Phase C1–C4) are **thread-safe** — they take no global mutable state. Callers may invoke them concurrently from multiple threads without synchronisation. |
+| **SCS_StreamManager** | A `SCS_StreamManager` handle is **not thread-safe**. Concurrent calls on the same handle produce undefined behaviour. The caller is responsible for serialising access (e.g. one manager per thread, or an external mutex). |
+| **scs_api_version** | Thread-safe — reads compile-time constants only. |
+| **Error buffers** | `err_buf` is caller-owned per-call storage. Concurrent calls with distinct buffers are safe. Never share an `err_buf` between concurrent calls. |
+
+This contract is intentionally minimal: the API imposes no internal locking, so callers pay no synchronisation cost for the common single-threaded or per-thread-manager patterns.
+
+---
+
 ## Stability note
 
-This is the **c_api minimal** milestone surface. Functions marked in the header
-are stable for R/Python binding use. Additional functions (e.g. for geometry
-layers 3+) will be added in a future milestone without breaking existing
-callers.
+This is the **c_api minimal** milestone surface plus the stable-surface rules
+for the upcoming geometry / aggregation expansion. Functions already marked in
+the header are stable for R/Python binding use. Additional functions from the
+extension milestone are added additively rather than by signature-breaking changes.
+
+`scs_level_set_to_polygon` gained an `out_capacity` parameter in Phase C0.
+Variable-size output functions follow the explicit size-query / `SCS_ERROR_BUFFER_TOO_SMALL`
+contract: pass `out_xy = NULL` to discover the required capacity, then allocate
+and call again with the buffer.
