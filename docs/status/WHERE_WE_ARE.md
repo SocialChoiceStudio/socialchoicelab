@@ -2,9 +2,9 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Geometry (Layer 3). Phases A–D complete (CGAL integration, exact types, convex hull, majority, winset, Yolk, uncovered set). Next: Phase F (Extended Winset Services).
-- **Next:** Step F1 — winset set operations (`winset_ops.h`). See [geometry_plan.md](geometry_plan.md).
-- **Last updated:** 2026-03-05
+- **Current phase:** Geometry (Layer 3). Phases A–F complete. Next: Phase G (Heart) or Phase E (integration tests + docs). See [geometry_plan.md](geometry_plan.md).
+- **Next:** Discuss with user whether to proceed to Phase G (Heart), Phase E (integration tests), or another priority.
+- **Last updated:** 2026-03-06
 
 **Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
 
@@ -12,6 +12,17 @@
 ---
 
 ## Recent Work
+
+### Session: 2026-03-06 — Geometry Phase F (Extended Winset Services) complete
+
+- **F1 (Winset set operations):** `winset_ops.h` — `winset_union`, `winset_intersection`, `winset_difference`, `winset_symmetric_difference` as free-function wrappers around CGAL `General_polygon_set_2` in-place boolean ops. 10 tests in `test_winset_ops.cpp`.
+- **F2 (Core detection):** `core.h` — `has_condorcet_winner`, `condorcet_winner` (finite alternative set), `core_2d` (continuous space, checks Yolk centre + voter ideals). 10 tests in `test_core.cpp`. Genuinely spatial Condorcet cycle test constructed analytically.
+- **F3 (Copeland / strong point):** `copeland.h` — `copeland_scores`, `copeland_winner` (O(m²n)); tie-breaks by first-in-vector. 13 tests in `test_copeland.cpp` (includes F5 weighted majority tests).
+- **F4 (Veto players):** `winset_with_veto_2d` added to `winset.h` — standard winset intersected with each veto player's `pts_polygon`; early-exit on empty. 5 tests in `test_winset_ops.cpp`.
+- **F5 (Weighted voting):** `weighted_majority_prefers` in `majority.h` (weight-sum threshold); `weighted_winset_2d` in `winset.h` (voter-expansion + GCD reduction so equal weights don't expand needlessly). 4 weighted-winset tests in `test_winset_ops.cpp`; 4 weighted-majority tests in `test_copeland.cpp`.
+- **CMakeLists.txt:** `test_winset_ops`, `test_core`, `test_copeland` targets added.
+- **All 17 correctness tests pass** (100%, 0.96s); `DistanceSpeedTest` (benchmark) still excluded.
+- **geometry_plan.md:** F1–F5 all marked ✅ Done.
 
 ### Session: 2026-03-05 — Geometry Phases C (Yolk) and D (Uncovered Set) complete
 

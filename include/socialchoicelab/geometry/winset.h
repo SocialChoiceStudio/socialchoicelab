@@ -56,6 +56,7 @@
 #include <socialchoicelab/preference/indifference/level_set.h>
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
 #include <string>
@@ -399,6 +400,183 @@ inline void gps_insert_if_valid(WinsetRegion& gps, const Polygon2E& p) {
   }
 
   return winset;
+}
+
+// ===========================================================================
+// F4 — Winset with veto players
+// ===========================================================================
+
+/**
+ * @brief Compute the k-majority winset constrained by veto players.
+ *
+ * A veto player is an actor whose consent is required for any policy change.
+ * In formal models a veto player at ideal point v blocks any move to a point
+ * x unless x is strictly inside the veto player's preferred-to set at the
+ * status quo:  d(v, x) < d(v, sq).
+ *
+ * Algorithm:
+ *   1. Compute the standard k-majority winset W = winset_2d(sq, …).
+ *   2. For each veto player v_i, form their preferred-to polygon P_i
+ *      (the Lp ball of radius d(v_i, sq) centred at v_i, sampled at
+ *      num_samples points — the same construction used inside winset_2d).
+ *   3. Return W ∩ P_1 ∩ P_2 ∩ … ∩ P_r.
+ *
+ * Special cases:
+ *   - If a veto player is at the SQ (d(v, sq) ≈ 0) their preferred region
+ *     is empty, so the constrained winset is empty: no change from sq is
+ *     simultaneously majority-preferred and veto-approved.
+ *   - If a veto player is far from sq their preferred region covers the
+ *     entire relevant policy space and adds no constraint.
+ *
+ * Reference:
+ *   Tsebelis (1995), "Decision Making in Political Systems: Veto Players in
+ *     Presidentialism, Parliamentarism, Multicameralism and Multipartyism,"
+ *     British Journal of Political Science 25(3), 289–325.
+ *
+ * @param sq            Status quo point.
+ * @param voter_ideals  Voter ideal points (the majority-rule electorate).
+ * @param cfg           Distance configuration.
+ * @param veto_ideals   Ideal points of veto players (may be empty).
+ * @param k             Majority threshold; -1 = ⌊n/2⌋+1.
+ * @param num_samples   Polygon approximation quality (default 64).
+ * @return              Constrained winset (WinsetRegion, possibly empty).
+ * @throws std::invalid_argument if voter_ideals is empty.
+ */
+[[nodiscard]] inline WinsetRegion winset_with_veto_2d(
+    const core::types::Point2d& sq,
+    const std::vector<core::types::Point2d>& voter_ideals,
+    const DistConfig& cfg, const std::vector<core::types::Point2d>& veto_ideals,
+    int k = -1, int num_samples = 64) {
+  // Step 1: standard winset.
+  WinsetRegion ws = winset_2d(sq, voter_ideals, cfg, k, num_samples);
+  if (ws.is_empty()) return ws;
+
+  // Step 2: intersect with each veto player's preferred-to set.
+  for (const auto& veto_ideal : veto_ideals) {
+    Polygon2E veto_pts = detail::pts_polygon(veto_ideal, sq, cfg, num_samples);
+    if (veto_pts.size() < 3) {
+      // Veto player at sq: preferred region is empty → constrained winset
+      // is empty (no policy change satisfies both majority and this veto).
+      return WinsetRegion{};
+    }
+    WinsetRegion veto_region;
+    detail::gps_insert_if_valid(veto_region, veto_pts);
+    ws.intersection(veto_region);
+    if (ws.is_empty()) return ws;  // early exit
+  }
+
+  return ws;
+}
+
+// ===========================================================================
+// F5 — Weighted winset
+// ===========================================================================
+
+/**
+ * @brief Compute the weighted k-majority winset of a status quo.
+ *
+ * A point x is in the weighted winset iff the total voting weight of
+ * voters who prefer x to sq is at least @p threshold × (total weight):
+ *
+ *   x ∈ W_w(sq)  ⟺  Σ_{i: d(vᵢ,x) < d(vᵢ,sq)} wᵢ  ≥  threshold × Σᵢ wᵢ
+ *
+ * Algorithm — integer voter expansion:
+ *   Weights are normalised relative to the minimum weight and then rounded
+ *   to positive integers w'_i.  Each voter i is expanded to w'_i copies at
+ *   the same ideal point.  The resulting integer-weight problem is solved by
+ *   the standard winset_2d with k = ⌈threshold × Σ w'_i⌉.
+ *   This is exact up to the rounding precision (controlled by
+ *   @p weight_scale).
+ *
+ * Complexity: O(N_exp × k_exp × m log m) where N_exp = Σ w'_i (expanded
+ * voter count) and k_exp is the expanded threshold.  For weights that are
+ * small integers (the common case) N_exp is modest.
+ *
+ * @param sq            Status quo point.
+ * @param voter_ideals  Voter ideal points.
+ * @param weights       Voting weights (positive; same length as
+ *                      voter_ideals).
+ * @param cfg           Distance configuration.
+ * @param threshold     Weight fraction required for majority (default 0.5
+ *                      for simple majority — strict majority of weight).
+ * @param num_samples   Polygon approximation quality (default 64).
+ * @param weight_scale  Precision scale: weights are rounded to multiples of
+ *                      (min_weight / weight_scale). Default 100 → 2 decimal
+ *                      places of relative precision.
+ * @return              Weighted-majority winset.
+ * @throws std::invalid_argument if inputs are invalid.
+ */
+[[nodiscard]] inline WinsetRegion weighted_winset_2d(
+    const core::types::Point2d& sq,
+    const std::vector<core::types::Point2d>& voter_ideals,
+    const std::vector<double>& weights, const DistConfig& cfg = {},
+    double threshold = 0.5, int num_samples = 64, int weight_scale = 100) {
+  const int n = static_cast<int>(voter_ideals.size());
+  if (n == 0) {
+    throw std::invalid_argument(
+        "weighted_winset_2d: voter_ideals must not be empty.");
+  }
+  if (static_cast<int>(weights.size()) != n) {
+    throw std::invalid_argument(
+        "weighted_winset_2d: weights must have the same length as "
+        "voter_ideals (got " +
+        std::to_string(weights.size()) + " weights for " + std::to_string(n) +
+        " voters).");
+  }
+  if (threshold <= 0.0 || threshold > 1.0) {
+    throw std::invalid_argument(
+        "weighted_winset_2d: threshold must be in (0, 1] (got " +
+        std::to_string(threshold) + ").");
+  }
+
+  // Validate and find minimum weight.
+  double w_min = std::numeric_limits<double>::max();
+  for (int i = 0; i < n; ++i) {
+    if (weights[static_cast<std::size_t>(i)] <= 0.0) {
+      throw std::invalid_argument(
+          "weighted_winset_2d: all weights must be positive (weight[" +
+          std::to_string(i) +
+          "] = " + std::to_string(weights[static_cast<std::size_t>(i)]) + ").");
+    }
+    w_min = std::min(w_min, weights[static_cast<std::size_t>(i)]);
+  }
+
+  // Convert to integer weights relative to minimum.
+  // w'_i = round(w_i / w_min * weight_scale).
+  std::vector<int> int_weights(static_cast<std::size_t>(n));
+  int total_int = 0;
+  for (int i = 0; i < n; ++i) {
+    int wi =
+        static_cast<int>(std::round(weights[static_cast<std::size_t>(i)] /
+                                    w_min * static_cast<double>(weight_scale)));
+    if (wi < 1) wi = 1;
+    int_weights[static_cast<std::size_t>(i)] = wi;
+    total_int += wi;
+  }
+
+  // Reduce by GCD so equal-weight voters produce minimal expansion
+  // (e.g. {100,100,100} → {1,1,1}, total 3, not 300).
+  int g = 0;
+  for (int w : int_weights) g = std::gcd(g, w);
+  if (g > 1) {
+    for (int& w : int_weights) w /= g;
+    total_int /= g;
+  }
+
+  // Expand voter list and compute the expanded threshold.
+  std::vector<core::types::Point2d> expanded_voters;
+  expanded_voters.reserve(static_cast<std::size_t>(total_int));
+  for (int i = 0; i < n; ++i) {
+    for (int rep = 0; rep < int_weights[static_cast<std::size_t>(i)]; ++rep) {
+      expanded_voters.push_back(voter_ideals[static_cast<std::size_t>(i)]);
+    }
+  }
+
+  // k_exp = smallest integer >= threshold * total_int.
+  const int k_exp =
+      static_cast<int>(std::ceil(threshold * static_cast<double>(total_int)));
+
+  return winset_2d(sq, expanded_voters, cfg, k_exp, num_samples);
 }
 
 }  // namespace socialchoicelab::geometry

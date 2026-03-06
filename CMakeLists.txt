@@ -167,6 +167,22 @@ target_compile_options(test_uncovered_set PRIVATE ${SocialChoiceLab_compile_opti
 target_link_libraries(test_uncovered_set PRIVATE socialchoicelab_geometry gtest_main)
 add_test(NAME UncoveredSetTest COMMAND test_uncovered_set)
 
+# Phase F — Extended winset services
+add_executable(test_winset_ops tests/unit/test_winset_ops.cpp)
+target_compile_options(test_winset_ops PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_winset_ops PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME WinsetOpsTest COMMAND test_winset_ops)
+
+add_executable(test_core tests/unit/test_core.cpp)
+target_compile_options(test_core PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_core PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME CoreTest COMMAND test_core)
+
+add_executable(test_copeland tests/unit/test_copeland.cpp)
+target_compile_options(test_copeland PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_copeland PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME CopelandTest COMMAND test_copeland)
+
 # ---------------------------------------------------------------------------
 # scs_api: stable C API shared library (wraps socialchoicelab_core)
 # ---------------------------------------------------------------------------

@@ -211,4 +211,73 @@ inline double voter_distance(const Point2d& p, const Point2d& alt,
   return M;
 }
 
+// ===========================================================================
+// F5 — Weighted majority preference relation
+// ===========================================================================
+
+/**
+ * @brief Returns true if the total weight of voters preferring x to y meets
+ *        the given weight threshold.
+ *
+ * Voter i strictly prefers x to y iff d(pᵢ, x) < d(pᵢ, y).  Ties
+ * contribute 0 weight to either side.  The result is:
+ *
+ *   Σ_{i: d(pᵢ,x) < d(pᵢ,y)} wᵢ  ≥  threshold × Σᵢ wᵢ
+ *
+ * With uniform weights (all wᵢ = c) and threshold = 0.5 this reduces to
+ * majority_prefers with k = ⌈n/2⌉.
+ *
+ * @param x             First alternative.
+ * @param y             Second alternative.
+ * @param voter_ideals  Voter ideal points.
+ * @param weights       Voting weights (positive; same length as voter_ideals).
+ * @param cfg           Distance configuration.
+ * @param threshold     Weight fraction for majority (default 0.5).
+ * @return              true iff weighted majority prefers x to y.
+ * @throws std::invalid_argument if inputs are invalid.
+ */
+[[nodiscard]] inline bool weighted_majority_prefers(
+    const Point2d& x, const Point2d& y,
+    const std::vector<Point2d>& voter_ideals,
+    const std::vector<double>& weights, const DistConfig& cfg = {},
+    double threshold = 0.5) {
+  const int n = static_cast<int>(voter_ideals.size());
+  if (n == 0) {
+    throw std::invalid_argument(
+        "weighted_majority_prefers: voter_ideals must not be empty.");
+  }
+  if (static_cast<int>(weights.size()) != n) {
+    throw std::invalid_argument(
+        "weighted_majority_prefers: weights must have the same length as "
+        "voter_ideals (got " +
+        std::to_string(weights.size()) + " weights for " + std::to_string(n) +
+        " voters).");
+  }
+  if (threshold <= 0.0 || threshold > 1.0) {
+    throw std::invalid_argument(
+        "weighted_majority_prefers: threshold must be in (0, 1] (got " +
+        std::to_string(threshold) + ").");
+  }
+
+  double total_weight = 0.0;
+  double x_weight = 0.0;
+  for (int i = 0; i < n; ++i) {
+    const double w = weights[static_cast<std::size_t>(i)];
+    if (w <= 0.0) {
+      throw std::invalid_argument(
+          "weighted_majority_prefers: all weights must be positive "
+          "(weight[" +
+          std::to_string(i) + "] = " + std::to_string(w) + ").");
+    }
+    total_weight += w;
+    if (detail::voter_distance(voter_ideals[static_cast<std::size_t>(i)], x,
+                               cfg) <
+        detail::voter_distance(voter_ideals[static_cast<std::size_t>(i)], y,
+                               cfg)) {
+      x_weight += w;
+    }
+  }
+  return x_weight >= threshold * total_weight;
+}
+
 }  // namespace socialchoicelab::geometry
