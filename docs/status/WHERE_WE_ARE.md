@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Geometry (Layer 3). Phases A–G complete. Next: Phase E (integration tests + documentation). See [geometry_plan.md](geometry_plan.md).
-- **Next:** E1 (integration tests) or E3 (documentation + citation verification). Discuss priority with user.
+- **Current phase:** Geometry (Layer 3) — **COMPLETE**. All steps A1–G2, E1–E3 done. See [geometry_plan.md](geometry_plan.md).
+- **Next:** Layer 4 (Profiles & Aggregation), Layer 5 (Voting Rules), or c_api geometry extensions. Discuss with user.
 - **Last updated:** 2026-03-06
 
 **Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
@@ -12,6 +12,12 @@
 ---
 
 ## Recent Work
+
+### Session: 2026-03-06 — Geometry Layer 3 COMPLETE (Phase E — integration tests + documentation)
+
+- **E1 (Integration tests):** `test_geometry_integration.cpp` — 32 tests across 8 suites chaining the full pipeline from convex hull through Heart. Two voter configurations: 5-voter 2D cluster (Condorcet winner kA) and verified 3-alt cycle. Tests verify correctness of each layer individually and all cross-layer theorems (Heart ⊆ Uncovered Set, Yolk centre inside hull, median voter has empty winset, core_2d finds median, Copeland winner = Condorcet winner, etc.). All 32 pass (77ms).
+- **E3 (Documentation + citations):** `geometry_design.md` completed with 16 sections covering all implemented APIs (majority, winset + ops, Yolk, uncovered set, core, Copeland, Heart, veto players, weighted voting). Citation table: 14 concepts verified ✅; 2 recommendations (Tovey/Koehler for Yolk; voter-expansion note). `design_document.md` Layer 3 updated to "implemented". All phases A–G, E1–E3 now ✅ Done.
+- **Overall:** 19 test files, 19 ctest suites, 250+ tests, all passing. Full geometry pipeline implemented, tested, and documented.
 
 ### Session: 2026-03-06 — Geometry Phase G (Heart) complete
 

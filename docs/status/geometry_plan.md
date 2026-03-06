@@ -244,9 +244,9 @@ are purely geometric. CGAL provides exact polygon boolean operations for all fou
 
 | Step | Task | Deliverable | Status |
 |------|------|-------------|--------|
-| **E1** | **Integration tests** | `tests/unit/test_geometry_integration.cpp`: end-to-end tests that chain convex hull → majority relation → winset → Yolk → uncovered set on a single voter configuration. Verifies the layers compose correctly. | ⬜ |
+| **E1** | **Integration tests** | `tests/unit/test_geometry_integration.cpp`: 32 tests chaining convex hull → majority (pairwise matrix) → winset (empty/non-empty, ops, veto, weighted) → Yolk → uncovered set (finite + boundary) → Heart (finite + boundary) → Copeland → core_2d → weighted majority. Two voter configurations: 5-voter 2D cluster (Condorcet winner) and verified 3-alt cycle. Tests verify correctness of each layer and all cross-layer subset theorems (Heart ⊆ Uncovered Set, etc.). | ✅ |
 | **E2** | **CI: CGAL on Ubuntu and macOS** | Verify CI green on both platforms after CGAL install steps are in `.github/workflows/ci.yml`. | ✅ Done |
-| **E3** | **Documentation and citation verification** | Complete `docs/architecture/geometry_design.md` with full API surface and known limitations. **Verify all citations**: for every concept implemented (majority preference, winset, Yolk, uncovered set, Heart, core, Copeland/strong point, veto players, weighted voting), confirm the primary reference is cited correctly and check whether a more recent or more accessible secondary reference should be added. Flag any concept whose citation is uncertain or missing. Update `design_document.md` Layer 3 to "implemented". Update `where_we_are.md`. | ⬜ |
+| **E3** | **Documentation and citation verification** | `docs/architecture/geometry_design.md` completed with full API surface (sections 4–15) for all implemented concepts (type layer, convex hull, majority, winset + ops, Yolk, uncovered set, core, Copeland, Heart, veto players, weighted voting), known limitations, and citation table (section 16). All 14 concept citations verified ✅. Two recommendations flagged: add Tovey (1990)/Koehler (1992) for Yolk algorithm; document voter-expansion equivalence in code. `design_document.md` Layer 3 updated to "implemented". `where_we_are.md` updated. | ✅ |
 
 ---
 
