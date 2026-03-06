@@ -9,15 +9,18 @@ and raise each open question with the user before writing any code or plan.
 
 ---
 
-## Already decided (do not re-open without user request)
+## Tentatively decided — revisit with user before writing binding code
 
-| Decision | Resolution |
-|----------|------------|
-| R binding mechanism | cpp11 (not Rcpp) |
-| Python binding mechanism | pybind11 (not ctypes, cffi, or nanobind) |
-| What bindings call | `scs_api.h` C API only — never C++ or CGAL directly |
-| R indexing | Translate 0-indexed C → 1-indexed R at the binding boundary only |
-| Python indexing | Keep 0-indexed (matches C and Python convention) |
+These were decided earlier but the user has asked to revisit all of them at the
+start of the binding plan session. Do not treat any of these as locked in.
+
+| Decision | Current assumption | Revisit? |
+|----------|--------------------|----------|
+| R binding mechanism | cpp11 (not Rcpp) | ✅ Yes |
+| Python binding mechanism | pybind11 (not ctypes, cffi, or nanobind) | ✅ Yes |
+| What bindings call | `scs_api.h` C API only — never C++ or CGAL directly | ✅ Yes |
+| R indexing | Translate 0-indexed C → 1-indexed R at the binding boundary only | ✅ Yes |
+| Python indexing | Keep 0-indexed (matches C and Python convention) | ✅ Yes |
 
 ---
 
