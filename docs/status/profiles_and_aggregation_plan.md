@@ -114,13 +114,44 @@ These are one-directional dependencies: Layer 3 does not depend on Layer 4.
 
 ### Profile indexing convention
 
-Throughout this plan, rankings are **0-indexed** vectors of alternative indices,
-ordered from **most preferred to least preferred**.
+**The C++ core uses 0-based indexing throughout.** All alternative indices and
+voter indices run from 0 to (count − 1), consistent with C++ and Python
+conventions. Rankings are ordered **most preferred first**:
 
-`rankings[i][0]` = index of voter i's first choice.
-`rankings[i][m-1]` = index of voter i's last choice.
+```
+rankings[i][0]   = index of voter i's first choice  (most preferred)
+rankings[i][1]   = index of voter i's second choice
+rankings[i][m-1] = index of voter i's last choice   (least preferred)
 
-`scores[j]` = total score for alternative j.
+scores[j]        = total score for alternative j
+```
+
+For example, with alternatives {A=0, B=1, C=2} and a voter who prefers B > C > A:
+```
+rankings[voter] = [1, 2, 0]
+                   ^  ^  ^
+                   B  C  A  (B is best, A is worst)
+```
+
+The rank of alternative j for voter i is the position at which j appears:
+`rank = std::find(rankings[i].begin(), rankings[i].end(), j) - rankings[i].begin()`.
+Borda assigns score `(m − 1 − rank)` to alternative j for voter i.
+
+#### Binding implications
+
+**R (1-indexed):** R vectors are 1-indexed. When the c_api and R binding are
+built, every alternative index returned to R must be incremented by 1.
+`rankings[i][0] = 1` in R means the first alternative (`alternatives[[1]]`).
+Failure to shift will silently produce off-by-one errors. The R binding layer
+is responsible for this translation; the C++ core always uses 0-based indices.
+
+**Python (0-indexed):** Python lists and NumPy arrays are 0-indexed, matching
+the C++ convention directly. No index shift is needed. A `Profile` exposed to
+Python can use the raw C++ indices without translation.
+
+**Binding rule:** Convert indices at the binding boundary only, never inside
+the C++ core. Document the shift explicitly in every R helper that returns an
+alternative index (winner, ranking, Pareto set, etc.).
 
 ---
 
