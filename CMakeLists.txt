@@ -194,6 +194,38 @@ target_link_libraries(test_geometry_integration PRIVATE socialchoicelab_geometry
 add_test(NAME GeometryIntegrationTest COMMAND test_geometry_integration)
 
 # ---------------------------------------------------------------------------
+# socialchoicelab_aggregation: header-only profiles & voting rules layer
+# Depends on socialchoicelab_geometry (for DistConfig, voter_distance,
+# pairwise_matrix, copeland_scores).
+# ---------------------------------------------------------------------------
+add_library(socialchoicelab_aggregation INTERFACE)
+target_include_directories(socialchoicelab_aggregation INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(socialchoicelab_aggregation INTERFACE
+    socialchoicelab_geometry)
+target_compile_features(socialchoicelab_aggregation INTERFACE cxx_std_20)
+
+add_executable(test_profile tests/unit/test_profile.cpp)
+target_compile_options(test_profile PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_profile PRIVATE socialchoicelab_aggregation gtest_main)
+add_test(NAME ProfileTest COMMAND test_profile)
+
+add_executable(test_voting_rules tests/unit/test_voting_rules.cpp)
+target_compile_options(test_voting_rules PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_voting_rules PRIVATE socialchoicelab_aggregation gtest_main)
+add_test(NAME VotingRulesTest COMMAND test_voting_rules)
+
+add_executable(test_aggregation_properties tests/unit/test_aggregation_properties.cpp)
+target_compile_options(test_aggregation_properties PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_aggregation_properties PRIVATE socialchoicelab_aggregation gtest_main)
+add_test(NAME AggregationPropertiesTest COMMAND test_aggregation_properties)
+
+add_executable(test_aggregation_integration tests/unit/test_aggregation_integration.cpp)
+target_compile_options(test_aggregation_integration PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_aggregation_integration PRIVATE socialchoicelab_aggregation gtest_main)
+add_test(NAME AggregationIntegrationTest COMMAND test_aggregation_integration)
+
+# ---------------------------------------------------------------------------
 # scs_api: stable C API shared library (wraps socialchoicelab_core)
 # ---------------------------------------------------------------------------
 add_library(scs_api SHARED
