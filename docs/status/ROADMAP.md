@@ -23,15 +23,14 @@ High-level direction for the project. This document does not duplicate detail; i
 ## Near-term (1–2 months)
 
 - **Core and c_api:** Complete ✅. C++ core (distance, loss, PRNG, indifference) and stable C API (`scs_api`) are done and CI green.
-- **Geometry foundation (active):** CGAL EPEC integration, exact 2D types, convex hull, majority preference (k-majority + weighted), winsets, Yolk, uncovered set. See [geometry_plan.md](geometry_plan.md) Phases A–D.
-- **Extended winset services (active):** Winset set operations, core detection, Copeland winner, veto players, weighted voting, transaction costs. See [geometry_plan.md](geometry_plan.md) Phase F.
+- **Geometry Layer 3:** Complete ✅. CGAL EPEC integration, exact 2D types, convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, veto players, weighted voting. See [archive/geometry_plan.md](archive/geometry_plan.md).
+- **Profiles & Aggregation Layers 4–5:** Complete ✅. Profile struct, spatial/utility/synthetic profile construction, plurality/Borda/approval/anti-plurality/scoring rules, social rankings, Pareto, Condorcet/majority consistency. See [archive/profiles_and_aggregation_plan.md](archive/profiles_and_aggregation_plan.md).
+- **c_api geometry + aggregation extensions (active):** Expose geometry and aggregation services through the stable C API so R/Python can call them.
 
 ---
 
 ## Mid-term (3–6 months)
 
-- **Voting and aggregation:** Implement voting rules (plurality, Borda, Condorcet, approval) and aggregation properties (transitivity, Pareto, IIA). Plan: [profiles_and_aggregation_plan.md](profiles_and_aggregation_plan.md). See design doc layers 4–5 and [implementation priority](../references/implementation_priority.md) Phase 2.
-- **c_api geometry extensions:** Expose geometry services (winset, Yolk, uncovered set, Copeland, veto players) through the stable C API so R/Python can call them.
 - **First R or Python binding:** Start `socialchoicelab` R (cpp11) or Python (pybind11) package calling the c_api. Geometry and preference services available from R/Python.
 - **Visualization layer:** Plot helpers in R and Python for spatial voting output: voter ideal points, status quo, winsets (with individual voter preferred regions drawn as overlapping circles), Yolk circle, uncovered set boundary, convex hull. Identical API across R and Python; Plotly output.
 
@@ -66,8 +65,8 @@ These are not on the active roadmap but are worth keeping in view as the project
 
 | Horizon  | Focus |
 |----------|-------|
-| **Near** | CGAL 2D geometry (foundation + extended winset services). |
-| **Mid**  | Voting rules, c_api geometry extensions, first R/Python binding, visualization layer. |
+| **Near** | c_api geometry + aggregation extensions (active). |
+| **Mid**  | First R/Python binding, visualization layer. |
 | **Long** | Full packages, GUI-lite, web app, advanced spatial and empirical features. |
 
 ---

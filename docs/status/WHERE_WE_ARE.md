@@ -2,13 +2,13 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Profiles & Aggregation (Layers 4–5) — **COMPLETE**. All steps P1–P2, V1–V5, W1–W3, I1–I2 done. See [profiles_and_aggregation_plan.md](profiles_and_aggregation_plan.md).
-- **Next:** c_api extensions for aggregation layer; then R/Python bindings. See [ROADMAP.md](ROADMAP.md).
-- **Last updated:** 2026-03-06
+- **Current phase:** c_api geometry + aggregation extensions — **ACTIVE**. Expose geometry (winset, Yolk, uncovered set, Copeland, Heart, veto, weighted voting) and aggregation (profiles, voting rules, social rankings, Pareto, Condorcet) through the stable C API.
+- **Next:** After c_api extensions: first R/Python binding. See [ROADMAP.md](ROADMAP.md).
+- **Last updated:** 2026-03-07
 
-**Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
+**Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/roadmap.md`.
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/ROADMAP.md`.
 ---
 
 ## Recent Work
