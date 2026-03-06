@@ -46,28 +46,54 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **utility** – Applies a loss function to a distance metric to produce utility values
 - **indifference** – Level-set construction; stateless service. Given ideal point, utility level, loss config, and distance config, returns points where u(x) = level: in 1D, 0/1/2 points; in 2D, an exact shape (circle, ellipse, superellipse, or polygon). See [Indifference design](indifference_design.md); implementation in `preference/indifference/level_set.h`.
 
-### 3. Geometry Services *(in progress — Phase A complete)*
+### 3. Geometry Services *(implemented — Phases A–G complete)*
 
 Full design: [geometry_design.md](geometry_design.md).
 
 - **kernels** – CGAL kernel aliases (`EpecKernel`, `EpicKernel`) in `core/kernels.h` ✅
-- **geom2d** – Exact 2D type layer: `Point2E`, `Segment2E`, `Polygon2E`; conversions `to_exact`/`to_numeric`; predicates `orientation`, `bounded_side` ✅
+- **geom2d** – Exact 2D type layer: `Point2E`, `Segment2E`, `Polygon2E`, `WinsetRegion`; conversions `to_exact`/`to_numeric`; predicates `orientation`, `bounded_side` ✅
 - **convex_hull** – `convex_hull_2d`: exact CCW hull of voter ideal points; equals the Pareto set under Euclidean preferences ✅
-- **majority / winsets** – k-majority preference, pairwise matrix, winset computation (Euclidean + Minkowski) *(planned — Phase B)*
-- **yolk** – k-Yolk: smallest circle intersecting all k-quantile lines *(planned — Phase C)*
-- **uncovered_set** – k-covering relation, k-uncovered set (finite + continuous) *(planned — Phase D)*
-- **extended winset services** – set operations, core detection, Copeland/strong point, veto players, weighted voting *(planned — Phase F)*
-- **heart** – k-Heart: geometric stability region via fixed-point algorithm over k-majority win sets *(planned — Phase G)*
+- **majority** – `majority_prefers`, `pairwise_matrix`, `preference_margin`, `weighted_majority_prefers` ✅
+- **winset** – `winset_2d` (Euclidean + Minkowski), `winset_is_empty`, `winset_area`, `winset_with_veto_2d`, `weighted_winset_2d` ✅
+- **winset_ops** – `winset_union`, `winset_intersection`, `winset_difference`, `winset_symmetric_difference` ✅
+- **yolk** – `yolk_2d`: smallest circle intersecting all k-quantile lines ✅
+- **uncovered_set** – `covers`, `uncovered_set`, `uncovered_set_boundary_2d` (finite + continuous approximation) ✅
+- **core** – `has_condorcet_winner`, `condorcet_winner`, `core_2d` ✅
+- **copeland** – `copeland_scores`, `copeland_winner` ✅
+- **heart** – `heart` (fixed-point over finite alternatives), `heart_boundary_2d` (continuous approximation) ✅
 - **geom3d / geomND** – 3D and N-D geometry *(out of scope for this plan)*
 
-### 4. Profiles and Aggregation *(planned, not yet built)*
-- **profiles** – Generators, loaders, schema validation
-- **directional_voting** – Support for directional preferences (voters can have preferred directions of change)
-- **aggregation** – Convert utilities to ranks, scores, approvals
+### 4. Profiles and Aggregation *(implemented — Layers 4–5 complete)*
 
-### 5. Voting Rules & Aggregation Properties *(planned, not yet built)*
-- **voting_rules** – Plurality, Borda, Condorcet, etc...
-- **aggregation_properties** – Transitivity, Pareto efficiency, IIA, monotonicity, etc...
+All headers are header-only in `include/socialchoicelab/aggregation/`.
+See [aggregation_design.md](aggregation_design.md) for full API and citations.
+
+- **`profile.h`** — `Profile` struct (n voters × m alternatives, 0-indexed, most-preferred
+  first); `build_spatial_profile` (Lp-distance ranking); `profile_from_utility_matrix`
+  (sort each utility row descending); `is_well_formed`.
+- **`profile_generators.h`** — `uniform_spatial_profile`, `gaussian_spatial_profile`,
+  `impartial_culture` (Fisher-Yates; all seeded via `PRNG`).
+- **`tie_break.h`** — `enum class TieBreak { kRandom, kSmallestIndex }` and `break_tie()`.
+  Default is `kRandom`; tests use `kSmallestIndex` explicitly.
+
+### 5. Voting Rules & Aggregation Properties *(implemented — Layers 4–5 complete)*
+
+- **`plurality.h`** — `plurality_scores`, `plurality_all_winners`, `plurality_one_winner`.
+- **`borda.h`** — `borda_scores`, `borda_all_winners`, `borda_one_winner`, `borda_ranking`.
+- **`approval.h`** — Spatial (`approval_scores_spatial`, `approval_all_winners_spatial`)
+  and ordinal top-k (`approval_scores_topk`, `approval_all_winners_topk`) variants.
+  Category 1 rule: no `_one_winner` variant.
+- **`antiplurality.h`** — `antiplurality_scores`, `antiplurality_all_winners`,
+  `antiplurality_one_winner`.
+- **`scoring_rule.h`** — `scoring_rule_scores`, `scoring_rule_all_winners`,
+  `scoring_rule_one_winner`. Recovers plurality, Borda, and anti-plurality as
+  special cases.
+- **`social_ranking.h`** — `rank_by_scores` (sort any score vector with tie-breaking);
+  `pairwise_ranking` (Copeland scores from geometry-layer pairwise matrix).
+- **`pareto.h`** — `pareto_dominates`, `pareto_set`, `is_pareto_efficient`.
+- **`condorcet_consistency.h`** — `has_condorcet_winner_profile`,
+  `condorcet_winner_profile` (Category 2: `std::optional<int>`),
+  `is_condorcet_consistent`, `is_majority_consistent`.
 
 ### 6. Outcome Concepts *(planned, not yet built)*
 - **outcome_concepts** – Copeland, Strong Point, Heart, Yolk, Uncovered sets, k-majority winsets

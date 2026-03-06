@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Geometry (Layer 3) — **COMPLETE**. All steps A1–G2, E1–E3 done. See [geometry_plan.md](geometry_plan.md).
-- **Next:** Layer 4 (Profiles & Aggregation), Layer 5 (Voting Rules), or c_api geometry extensions. Discuss with user.
+- **Current phase:** Profiles & Aggregation (Layers 4–5) — **COMPLETE**. All steps P1–P2, V1–V5, W1–W3, I1–I2 done. See [profiles_and_aggregation_plan.md](profiles_and_aggregation_plan.md).
+- **Next:** c_api extensions for aggregation layer; then R/Python bindings. See [ROADMAP.md](ROADMAP.md).
 - **Last updated:** 2026-03-06
 
 **Authority:** This file and `docs/status/roadmap.md` are the source for "what's next." Completed short-term plans (consensus_plan_3, consensus_plan_4, core_completion_plan) live in `docs/status/archive/` for reference.
@@ -12,6 +12,20 @@
 ---
 
 ## Recent Work
+
+### Session: 2026-03-06 — Profiles & Aggregation (Layers 4–5) COMPLETE
+
+- **P1 (`profile.h`):** `struct Profile { int n_voters; int n_alts; vector<vector<int>> rankings; }`. `build_spatial_profile` (Lp-distance ranking, ties by index), `profile_from_utility_matrix` (descending utility sort, ties by index), `is_well_formed`. All 0-indexed; R bindings must shift at boundary.
+- **P2 (`profile_generators.h`):** `uniform_spatial_profile`, `gaussian_spatial_profile`, `impartial_culture` (Fisher-Yates). All seeded via `PRNG`.
+- **tie_break.h:** `enum class TieBreak { kRandom, kSmallestIndex }` + `break_tie()`. Default `kRandom`; tests use `kSmallestIndex` explicitly.
+- **V1–V5:** `plurality.h`, `borda.h` (+ `borda_ranking`), `approval.h` (spatial + top-k, Category 1), `antiplurality.h`, `scoring_rule.h`. Category-3 rules have `*_scores`, `*_all_winners`, `*_one_winner(profile, tie_break, prng)`.
+- **W1 (`social_ranking.h`):** `rank_by_scores` (descending score, ties per policy); `pairwise_ranking` (Copeland scores from geometry `pairwise_matrix`).
+- **W2 (`pareto.h`):** `pareto_dominates`, `pareto_set`, `is_pareto_efficient`.
+- **W3 (`condorcet_consistency.h`):** `has_condorcet_winner_profile`, `condorcet_winner_profile` (Category 2: `optional<int>`), `is_condorcet_consistent`, `is_majority_consistent`.
+- **I1 (Tests):** `test_profile.cpp` (38 tests), `test_voting_rules.cpp` (28 tests), `test_aggregation_properties.cpp` (22 tests), `test_aggregation_integration.cpp` (12 tests). All 100 pass.
+- **I2 (Docs):** `aggregation_design.md` with full API, limitations, and citations. `design_document.md` Layers 4–5 updated to "implemented". Plan P1–I2 all ✅ Done. Citations to verify before formal I2 sign-off: Borda year, Fishburn (1977) Thm 1, Guilbaud (1952) accessibility.
+- **CMakeLists.txt:** `socialchoicelab_aggregation` INTERFACE library; 4 new test targets.
+- **Total non-benchmark tests:** 22 ctest suites, all passing (< 1s).
 
 ### Session: 2026-03-06 — Geometry Layer 3 COMPLETE (Phase E — integration tests + documentation)
 
