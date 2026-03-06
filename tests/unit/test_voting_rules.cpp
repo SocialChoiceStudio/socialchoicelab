@@ -16,7 +16,26 @@
 #include <numeric>
 #include <vector>
 
-using namespace socialchoicelab::aggregation;
+using socialchoicelab::aggregation::antiplurality_all_winners;
+using socialchoicelab::aggregation::antiplurality_one_winner;
+using socialchoicelab::aggregation::antiplurality_scores;
+using socialchoicelab::aggregation::approval_all_winners_spatial;
+using socialchoicelab::aggregation::approval_all_winners_topk;
+using socialchoicelab::aggregation::approval_scores_spatial;
+using socialchoicelab::aggregation::approval_scores_topk;
+using socialchoicelab::aggregation::borda_all_winners;
+using socialchoicelab::aggregation::borda_one_winner;
+using socialchoicelab::aggregation::borda_ranking;
+using socialchoicelab::aggregation::borda_scores;
+using socialchoicelab::aggregation::DistConfig;
+using socialchoicelab::aggregation::plurality_all_winners;
+using socialchoicelab::aggregation::plurality_one_winner;
+using socialchoicelab::aggregation::plurality_scores;
+using socialchoicelab::aggregation::Profile;
+using socialchoicelab::aggregation::scoring_rule_all_winners;
+using socialchoicelab::aggregation::scoring_rule_one_winner;
+using socialchoicelab::aggregation::scoring_rule_scores;
+using socialchoicelab::aggregation::TieBreak;
 using socialchoicelab::core::rng::PRNG;
 using socialchoicelab::core::types::Point2d;
 

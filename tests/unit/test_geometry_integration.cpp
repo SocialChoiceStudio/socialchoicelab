@@ -44,9 +44,27 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
-using namespace socialchoicelab::geometry;
 using socialchoicelab::core::types::Point2d;
+using socialchoicelab::geometry::convex_hull_2d;
+using socialchoicelab::geometry::copeland_scores;
+using socialchoicelab::geometry::copeland_winner;
+using socialchoicelab::geometry::core_2d;
+using socialchoicelab::geometry::DistConfig;
+using socialchoicelab::geometry::heart_boundary_2d;
+using socialchoicelab::geometry::majority_prefers;
+using socialchoicelab::geometry::pairwise_matrix;
+using socialchoicelab::geometry::uncovered_set_boundary_2d;
+using socialchoicelab::geometry::weighted_majority_prefers;
+using socialchoicelab::geometry::weighted_winset_2d;
+using socialchoicelab::geometry::winset_2d;
+using socialchoicelab::geometry::winset_intersection;
+using socialchoicelab::geometry::winset_is_empty;
+using socialchoicelab::geometry::winset_union;
+using socialchoicelab::geometry::winset_with_veto_2d;
+using socialchoicelab::geometry::WinsetRegion;
+using socialchoicelab::geometry::yolk_2d;
 
 // ---------------------------------------------------------------------------
 // Shared fixtures

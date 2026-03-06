@@ -8,9 +8,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
-using namespace socialchoicelab::geometry;
 using socialchoicelab::core::types::Point2d;
+using socialchoicelab::geometry::DistConfig;
+using socialchoicelab::geometry::heart_boundary_2d;
+using socialchoicelab::geometry::uncovered_set_boundary_2d;
 
 static const DistConfig kEuc{};
 

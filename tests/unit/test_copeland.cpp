@@ -9,9 +9,14 @@
 #include <socialchoicelab/geometry/majority.h>
 
 #include <numeric>
+#include <vector>
 
-using namespace socialchoicelab::geometry;
 using socialchoicelab::core::types::Point2d;
+using socialchoicelab::geometry::copeland_scores;
+using socialchoicelab::geometry::copeland_winner;
+using socialchoicelab::geometry::DistConfig;
+using socialchoicelab::geometry::majority_prefers;
+using socialchoicelab::geometry::weighted_majority_prefers;
 
 static const DistConfig kEuc{};
 

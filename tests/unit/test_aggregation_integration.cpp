@@ -35,7 +35,25 @@
 #include <numeric>
 #include <vector>
 
-using namespace socialchoicelab::aggregation;
+using socialchoicelab::aggregation::antiplurality_all_winners;
+using socialchoicelab::aggregation::antiplurality_one_winner;
+using socialchoicelab::aggregation::borda_all_winners;
+using socialchoicelab::aggregation::borda_one_winner;
+using socialchoicelab::aggregation::borda_scores;
+using socialchoicelab::aggregation::build_spatial_profile;
+using socialchoicelab::aggregation::condorcet_winner_profile;
+using socialchoicelab::aggregation::has_condorcet_winner_profile;
+using socialchoicelab::aggregation::impartial_culture;
+using socialchoicelab::aggregation::is_condorcet_consistent;
+using socialchoicelab::aggregation::is_majority_consistent;
+using socialchoicelab::aggregation::is_well_formed;
+using socialchoicelab::aggregation::pairwise_ranking;
+using socialchoicelab::aggregation::pareto_set;
+using socialchoicelab::aggregation::plurality_all_winners;
+using socialchoicelab::aggregation::plurality_one_winner;
+using socialchoicelab::aggregation::Profile;
+using socialchoicelab::aggregation::TieBreak;
+using socialchoicelab::aggregation::uniform_spatial_profile;
 using socialchoicelab::core::rng::PRNG;
 using socialchoicelab::core::types::Point2d;
 using socialchoicelab::geometry::condorcet_winner;

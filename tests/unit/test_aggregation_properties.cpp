@@ -14,7 +14,18 @@
 #include <algorithm>
 #include <vector>
 
-using namespace socialchoicelab::aggregation;
+using socialchoicelab::aggregation::borda_scores;
+using socialchoicelab::aggregation::condorcet_winner_profile;
+using socialchoicelab::aggregation::has_condorcet_winner_profile;
+using socialchoicelab::aggregation::is_condorcet_consistent;
+using socialchoicelab::aggregation::is_majority_consistent;
+using socialchoicelab::aggregation::is_pareto_efficient;
+using socialchoicelab::aggregation::pairwise_ranking;
+using socialchoicelab::aggregation::pareto_dominates;
+using socialchoicelab::aggregation::pareto_set;
+using socialchoicelab::aggregation::Profile;
+using socialchoicelab::aggregation::rank_by_scores;
+using socialchoicelab::aggregation::TieBreak;
 using socialchoicelab::core::rng::PRNG;
 
 // ---------------------------------------------------------------------------

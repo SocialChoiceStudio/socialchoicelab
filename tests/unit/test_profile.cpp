@@ -15,7 +15,13 @@
 #include <numeric>
 #include <vector>
 
-using namespace socialchoicelab::aggregation;
+using socialchoicelab::aggregation::build_spatial_profile;
+using socialchoicelab::aggregation::gaussian_spatial_profile;
+using socialchoicelab::aggregation::impartial_culture;
+using socialchoicelab::aggregation::is_well_formed;
+using socialchoicelab::aggregation::Profile;
+using socialchoicelab::aggregation::profile_from_utility_matrix;
+using socialchoicelab::aggregation::uniform_spatial_profile;
 using socialchoicelab::core::rng::PRNG;
 using socialchoicelab::core::types::Point2d;
 using socialchoicelab::geometry::DistConfig;
