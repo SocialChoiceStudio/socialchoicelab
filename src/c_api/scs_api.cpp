@@ -27,8 +27,10 @@
 #include <socialchoicelab/geometry/yolk.h>
 
 #include <Eigen/Dense>
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <numbers>
 #include <string>
 #include <utility>
