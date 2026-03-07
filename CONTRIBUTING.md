@@ -39,6 +39,58 @@ chmod +x .git/hooks/pre-commit
 
 For the solo/maintainer workflow (branching, committing, pushing), see [docs/development/git_reference.md](docs/development/git_reference.md).
 
+## Binding development (R and Python)
+
+The R and Python packages link against `libscs_api` at runtime — they do not
+compile any C or C++ code themselves. You must build `libscs_api` first and
+point the binding packages at it via the `SCS_LIB_PATH` environment variable.
+
+### 1 — Build libscs_api
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target scs_api
+```
+
+The library lands at `build/libscs_api.dylib` (macOS) or `build/libscs_api.so`
+(Linux).
+
+### 2 — R package (local development)
+
+```bash
+export SCS_LIB_PATH=/absolute/path/to/socialchoicelab/build
+
+# Install the package from source (links against libscs_api):
+R CMD INSTALL r/
+
+# Run tests:
+cd r && Rscript -e "devtools::test()"
+
+# Or run R CMD check:
+R CMD check r/
+```
+
+Alternatively, add `SCS_LIB_PATH=...` to `~/.Renviron` so it is set in every
+R session without having to export it each time.
+
+### 3 — Python package (local development)
+
+```bash
+export SCS_LIB_PATH=/absolute/path/to/socialchoicelab/build
+
+# Install in editable mode (no compilation — cffi links at import time):
+pip install -e "./python[dev]"
+
+# Run tests:
+pytest python/tests/
+```
+
+### 4 — Type-mapping and error-handling conventions
+
+See [docs/status/binding_plan.md](docs/status/binding_plan.md) §§ B1.2–B1.3
+for the canonical type-mapping table and the error-propagation conventions
+(R: `scs_check` → `Rf_error`; Python: `_check` → exception subclass).
+
 ## Questions
 
 Open an issue on GitHub or contact the maintainers through the SocialChoiceStudio project.

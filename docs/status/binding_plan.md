@@ -506,13 +506,13 @@ jobs:
 
 | Phase | Item | Status |
 |-------|------|--------|
-| B0 | B0.1 Directory layout | ⬜ |
-| B0 | B0.2 R package skeleton | ⬜ |
-| B0 | B0.3 Python package skeleton | ⬜ |
-| B0 | B0.4 CI workflow update | ⬜ |
-| B1 | B1.1 Library distribution strategy | ⬜ |
-| B1 | B1.2 Error handling conventions | ⬜ |
-| B1 | B1.3 Type mapping document | ⬜ |
+| B0 | B0.1 Directory layout | ✅ Done |
+| B0 | B0.2 R package skeleton | ✅ Done |
+| B0 | B0.3 Python package skeleton | ✅ Done |
+| B0 | B0.4 CI workflow update | ✅ Done |
+| B1 | B1.1 Library distribution strategy | ✅ Done |
+| B1 | B1.2 Error handling conventions | ✅ Done |
+| B1 | B1.3 Type mapping document | ✅ Done |
 | B2 | B2.1 StreamManager R6 class | ⬜ |
 | B2 | B2.2 Winset R6 class | ⬜ |
 | B2 | B2.3 Profile R6 class | ⬜ |
