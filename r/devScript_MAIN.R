@@ -273,6 +273,36 @@ version <- scs_version()
 cat("C API version:", version$major, ".", version$minor, ".", version$patch, "\n")
 
 # ===========================================================================
+# 10. VISUALIZATION (requires plotly — install.packages("plotly") once)
+# ===========================================================================
+
+cat("\n=== 10. VISUALIZATION ===\n")
+
+sq   <- c(0.0, 0.0)
+hull <- convex_hull_2d(voters)
+ws   <- winset_2d(sq, voters)
+bnd  <- uncovered_set_boundary_2d(voters, grid_resolution = 10L)
+
+# Base plot: voters + alternatives + status quo
+fig <- plot_spatial_voting(
+  voters, alts,
+  sq          = sq,
+  voter_names = paste0("V", 1:5),
+  alt_names   = c("SQ", "A", "B"),
+  title       = "5-voter legislature (devScript)"
+)
+
+# Add layers
+fig <- layer_winset(fig, ws)
+fig <- layer_uncovered_set(fig, bnd)
+fig <- layer_convex_hull(fig, hull)
+fig <- layer_yolk(fig, center_x = 0.05, center_y = 0.1, radius = 0.2)
+
+# Display (opens in RStudio Viewer / browser)
+print(fig)
+cat("Plot displayed in Viewer. Hover over points for details.\n")
+
+# ===========================================================================
 # END OF SCRIPT
 # ===========================================================================
 
