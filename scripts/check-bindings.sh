@@ -93,7 +93,7 @@ if [[ $ERRORS -gt 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# R CMD check
+# R CMD check (no devtools required)
 # ---------------------------------------------------------------------------
 
 R_RC=0
@@ -104,7 +104,24 @@ if [[ $RUN_R -eq 1 ]]; then
   else
     echo "=== R CMD check ==="
     cd "$ROOT/r"
-    if ! Rscript -e "devtools::check(error_on='error')"; then
+    # Build the source tarball, then run R CMD check.
+    # _R_CHECK_FORCE_SUGGESTS_=false: don't fail when testthat isn't installed
+    # (B8 tests are not yet written; we only guard against compilation errors,
+    # namespace problems, and R code issues).
+    if R CMD build . --no-build-vignettes 2>&1; then
+      PKG=$(ls socialchoicelab_*.tar.gz 2>/dev/null | head -1)
+      if [[ -n "$PKG" ]]; then
+        if ! _R_CHECK_FORCE_SUGGESTS_=false \
+             R CMD check "$PKG" --no-manual --no-build-vignettes 2>&1; then
+          R_RC=1
+        fi
+        rm -f "$PKG"
+        rm -rf socialchoicelab.Rcheck
+      else
+        echo "check-bindings: R CMD build produced no tarball." >&2
+        R_RC=1
+      fi
+    else
       R_RC=1
     fi
     cd "$ROOT"

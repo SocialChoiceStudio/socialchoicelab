@@ -11,7 +11,13 @@
 #' @export
 Winset <- R6::R6Class(
   "Winset",
-  private = list(ptr = NULL),
+  private = list(
+    ptr = NULL,
+    finalize = function() {
+      .Call("r_scs_winset_destroy", private$ptr,
+            PACKAGE = "socialchoicelab")
+    }
+  ),
   public = list(
 
     #' @description Internal. Use factory functions instead.
@@ -21,16 +27,11 @@ Winset <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Release the underlying C handle. Safe to call manually for
-    #'   deterministic cleanup; also called automatically by the GC.
-    finalize = function() {
-      .Call("r_scs_winset_destroy", private$ptr)
-    },
-
     #' @description Test whether the winset is empty (no policy beats the SQ).
     #' @return Logical scalar.
     is_empty = function() {
-      .Call("r_scs_winset_is_empty", private$ptr)
+      .Call("r_scs_winset_is_empty", private$ptr,
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Test whether a point lies strictly inside the winset.
@@ -38,14 +39,16 @@ Winset <- R6::R6Class(
     #' @return Logical scalar.
     contains = function(x, y) {
       .Call("r_scs_winset_contains_point_2d", private$ptr,
-            as.double(x), as.double(y))
+            as.double(x), as.double(y),
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Axis-aligned bounding box of the winset.
     #' @return Named list \code{list(min_x, min_y, max_x, max_y)}, or
     #'   \code{NULL} if the winset is empty.
     bbox = function() {
-      .Call("r_scs_winset_bbox_2d", private$ptr)
+      .Call("r_scs_winset_bbox_2d", private$ptr,
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Export the boundary as a matrix of sampled vertices.
@@ -58,34 +61,39 @@ Winset <- R6::R6Class(
     #'     \item{is_hole}{Logical vector; \code{TRUE} if the path is a hole.}
     #'   }
     boundary = function() {
-      .Call("r_scs_winset_boundary_2d", private$ptr)
+      .Call("r_scs_winset_boundary_2d", private$ptr,
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Deep copy of this winset.
     #' @return A new \code{Winset} object.
     clone_winset = function() {
-      Winset$new(.Call("r_scs_winset_clone", private$ptr))
+      Winset$new(.Call("r_scs_winset_clone", private$ptr,
+      PACKAGE = "socialchoicelab"))
     },
 
     #' @description Union with another winset (this ∪ other).
     #' @param other A \code{Winset} object.
     #' @return A new \code{Winset}.
     union = function(other) {
-      Winset$new(.Call("r_scs_winset_union", private$ptr, .ws_ptr(other)))
+      Winset$new(.Call("r_scs_winset_union", private$ptr, .ws_ptr(other),
+      PACKAGE = "socialchoicelab"))
     },
 
     #' @description Intersection with another winset (this ∩ other).
     #' @param other A \code{Winset} object.
     #' @return A new \code{Winset}.
     intersection = function(other) {
-      Winset$new(.Call("r_scs_winset_intersection", private$ptr, .ws_ptr(other)))
+      Winset$new(.Call("r_scs_winset_intersection", private$ptr, .ws_ptr(other),
+      PACKAGE = "socialchoicelab"))
     },
 
     #' @description Set difference (this \ other).
     #' @param other A \code{Winset} object.
     #' @return A new \code{Winset}.
     difference = function(other) {
-      Winset$new(.Call("r_scs_winset_difference", private$ptr, .ws_ptr(other)))
+      Winset$new(.Call("r_scs_winset_difference", private$ptr, .ws_ptr(other),
+      PACKAGE = "socialchoicelab"))
     },
 
     #' @description Symmetric difference (this △ other).
@@ -93,7 +101,8 @@ Winset <- R6::R6Class(
     #' @return A new \code{Winset}.
     symmetric_difference = function(other) {
       Winset$new(.Call("r_scs_winset_symmetric_difference",
-                       private$ptr, .ws_ptr(other)))
+                       private$ptr, .ws_ptr(other),
+      PACKAGE = "socialchoicelab"))
     }
   )
 )
@@ -128,7 +137,8 @@ winset_2d <- function(status_quo,
                    sq[1], sq[2], vi,
                    .resolve_k(k),
                    as.integer(n_samples),
-                   dist_config))
+                   dist_config,
+      PACKAGE = "socialchoicelab"))
 }
 
 #' Compute the weighted-majority 2D winset of a status quo
@@ -159,7 +169,8 @@ weighted_winset_2d <- function(status_quo,
                    sq[1], sq[2], vi, w,
                    as.double(threshold),
                    as.integer(n_samples),
-                   dist_config))
+                   dist_config,
+      PACKAGE = "socialchoicelab"))
 }
 
 #' Compute the k-majority winset constrained by veto players
@@ -189,5 +200,6 @@ winset_with_veto_2d <- function(status_quo,
                    sq[1], sq[2], vi, veto,
                    .resolve_k(k),
                    as.integer(n_samples),
-                   dist_config))
+                   dist_config,
+      PACKAGE = "socialchoicelab"))
 }

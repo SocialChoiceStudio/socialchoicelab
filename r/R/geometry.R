@@ -25,7 +25,8 @@ copeland_scores_2d <- function(alts, voter_ideals,
   alt_xy <- as.double(alts)
   n_alts <- as.integer(length(alt_xy) / 2L)
   scores <- .Call("r_scs_copeland_scores_2d",
-                  alt_xy, as.double(voter_ideals), dist_config, .resolve_k(k))
+                  alt_xy, as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
   names(scores) <- paste0("alt", seq_len(n_alts))
   scores
 }
@@ -41,7 +42,8 @@ copeland_winner_2d <- function(alts, voter_ideals,
                                 dist_config = make_dist_config(),
                                 k = "simple") {
   .Call("r_scs_copeland_winner_2d",
-        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k))
+        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -59,7 +61,8 @@ has_condorcet_winner_2d <- function(alts, voter_ideals,
                                      dist_config = make_dist_config(),
                                      k = "simple") {
   .Call("r_scs_has_condorcet_winner_2d",
-        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k))
+        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Find the Condorcet winner in a finite alternative set
@@ -72,7 +75,8 @@ condorcet_winner_2d <- function(alts, voter_ideals,
                                  dist_config = make_dist_config(),
                                  k = "simple") {
   .Call("r_scs_condorcet_winner_2d",
-        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k))
+        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -95,7 +99,8 @@ core_2d <- function(voter_ideals,
                     dist_config = make_dist_config(),
                     k = "simple") {
   .Call("r_scs_core_2d",
-        as.double(voter_ideals), dist_config, .resolve_k(k))
+        as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -114,7 +119,8 @@ uncovered_set_2d <- function(alts, voter_ideals,
                               dist_config = make_dist_config(),
                               k = "simple") {
   .Call("r_scs_uncovered_set_2d",
-        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k))
+        as.double(alts), as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Approximate the boundary of the continuous uncovered set
@@ -135,5 +141,6 @@ uncovered_set_boundary_2d <- function(voter_ideals,
                                        k = "simple") {
   .Call("r_scs_uncovered_set_boundary_2d",
         as.double(voter_ideals), dist_config,
-        as.integer(grid_resolution), .resolve_k(k))
+        as.integer(grid_resolution), .resolve_k(k),
+      PACKAGE = "socialchoicelab")
 }

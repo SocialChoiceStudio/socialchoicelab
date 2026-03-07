@@ -10,10 +10,18 @@
 #'   sm$uniform_real("sim", 0, 1)
 #'   sm$reset_all(42)
 #' }
+#' @importFrom R6 R6Class
 #' @export
 StreamManager <- R6::R6Class(
   "StreamManager",
-  private = list(ptr = NULL),
+  private = list(
+    ptr = NULL,
+    # Called automatically by R's GC; also invoked by the C-level finalizer.
+    finalize = function() {
+      .Call("r_scs_stream_manager_destroy", private$ptr,
+            PACKAGE = "socialchoicelab")
+    }
+  ),
   public = list(
 
     #' @description Create a new StreamManager.
@@ -23,18 +31,14 @@ StreamManager <- R6::R6Class(
     #'   immediately after creation.
     initialize = function(master_seed, stream_names = NULL) {
       private$ptr <- .Call("r_scs_stream_manager_create",
-                           as.double(master_seed))
+                           as.double(master_seed),
+                           PACKAGE = "socialchoicelab")
       if (!is.null(stream_names)) {
         .Call("r_scs_register_streams", private$ptr,
-              as.character(stream_names))
+              as.character(stream_names),
+              PACKAGE = "socialchoicelab")
       }
       invisible(self)
-    },
-
-    #' @description Release the underlying C handle. Called automatically by
-    #'   R's garbage collector; safe to call manually for deterministic cleanup.
-    finalize = function() {
-      .Call("r_scs_stream_manager_destroy", private$ptr)
     },
 
     #' @description Register allowed stream names. Only registered names may
@@ -42,7 +46,8 @@ StreamManager <- R6::R6Class(
     #' @param stream_names Character vector of stream names.
     #' @return \code{self} invisibly.
     register = function(stream_names) {
-      .Call("r_scs_register_streams", private$ptr, as.character(stream_names))
+      .Call("r_scs_register_streams", private$ptr, as.character(stream_names),
+      PACKAGE = "socialchoicelab")
       invisible(self)
     },
 
@@ -50,7 +55,8 @@ StreamManager <- R6::R6Class(
     #' @param master_seed New master seed.
     #' @return \code{self} invisibly.
     reset_all = function(master_seed) {
-      .Call("r_scs_reset_all", private$ptr, as.double(master_seed))
+      .Call("r_scs_reset_all", private$ptr, as.double(master_seed),
+      PACKAGE = "socialchoicelab")
       invisible(self)
     },
 
@@ -60,7 +66,8 @@ StreamManager <- R6::R6Class(
     #' @return \code{self} invisibly.
     reset_stream = function(stream_name, seed) {
       .Call("r_scs_reset_stream", private$ptr, as.character(stream_name),
-            as.double(seed))
+            as.double(seed),
+      PACKAGE = "socialchoicelab")
       invisible(self)
     },
 
@@ -70,7 +77,8 @@ StreamManager <- R6::R6Class(
     #' @return \code{self} invisibly.
     skip = function(stream_name, n) {
       .Call("r_scs_skip", private$ptr, as.character(stream_name),
-            as.double(n))
+            as.double(n),
+      PACKAGE = "socialchoicelab")
       invisible(self)
     },
 
@@ -80,7 +88,8 @@ StreamManager <- R6::R6Class(
     #' @return Scalar double.
     uniform_real = function(stream_name, min = 0.0, max = 1.0) {
       .Call("r_scs_uniform_real", private$ptr, as.character(stream_name),
-            as.double(min), as.double(max))
+            as.double(min), as.double(max),
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Draw a normal variate N(mean, sd^2).
@@ -89,7 +98,8 @@ StreamManager <- R6::R6Class(
     #' @return Scalar double.
     normal = function(stream_name, mean = 0.0, sd = 1.0) {
       .Call("r_scs_normal", private$ptr, as.character(stream_name),
-            as.double(mean), as.double(sd))
+            as.double(mean), as.double(sd),
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Draw a Bernoulli variate.
@@ -98,7 +108,8 @@ StreamManager <- R6::R6Class(
     #' @return Logical scalar.
     bernoulli = function(stream_name, prob) {
       .Call("r_scs_bernoulli", private$ptr, as.character(stream_name),
-            as.double(prob))
+            as.double(prob),
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Draw a uniform integer in \code{[min, max]}.
@@ -107,7 +118,8 @@ StreamManager <- R6::R6Class(
     #' @return Scalar double (to accommodate values beyond R's 32-bit integer).
     uniform_int = function(stream_name, min, max) {
       .Call("r_scs_uniform_int", private$ptr, as.character(stream_name),
-            as.double(min), as.double(max))
+            as.double(min), as.double(max),
+      PACKAGE = "socialchoicelab")
     },
 
     #' @description Draw a uniform choice index in \code{[0, n)} (0-based).
@@ -116,7 +128,8 @@ StreamManager <- R6::R6Class(
     #' @return Integer scalar (0-based index).
     uniform_choice = function(stream_name, n) {
       .Call("r_scs_uniform_choice", private$ptr, as.character(stream_name),
-            as.double(n))
+            as.double(n),
+      PACKAGE = "socialchoicelab")
     }
   )
 )

@@ -13,7 +13,8 @@
 #' @return Named list \code{list(major, minor, patch)}.
 #' @export
 scs_version <- function() {
-  .Call("r_scs_api_version", NULL)
+  .Call("r_scs_api_version", NULL,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -30,7 +31,8 @@ scs_version <- function() {
 #' @export
 calculate_distance <- function(ideal, alt, dist_config = make_dist_config()) {
   .Call("r_scs_calculate_distance",
-        as.double(ideal), as.double(alt), dist_config)
+        as.double(ideal), as.double(alt), dist_config,
+      PACKAGE = "socialchoicelab")
 }
 
 #' Convert a distance to a utility value
@@ -40,7 +42,8 @@ calculate_distance <- function(ideal, alt, dist_config = make_dist_config()) {
 #' @return Scalar double (≤ 0 for the supported loss functions).
 #' @export
 distance_to_utility <- function(distance, loss_config = make_loss_config()) {
-  .Call("r_scs_distance_to_utility", as.double(distance), loss_config)
+  .Call("r_scs_distance_to_utility", as.double(distance), loss_config,
+      PACKAGE = "socialchoicelab")
 }
 
 #' Normalize a utility value to \code{[0, 1]}
@@ -53,7 +56,8 @@ distance_to_utility <- function(distance, loss_config = make_loss_config()) {
 normalize_utility <- function(utility, max_distance,
                                loss_config = make_loss_config()) {
   .Call("r_scs_normalize_utility",
-        as.double(utility), as.double(max_distance), loss_config)
+        as.double(utility), as.double(max_distance), loss_config,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -76,7 +80,8 @@ level_set_1d <- function(ideal, weight = 1.0, utility_level,
                           loss_config = make_loss_config()) {
   .Call("r_scs_level_set_1d",
         as.double(ideal), as.double(weight), as.double(utility_level),
-        loss_config)
+        loss_config,
+      PACKAGE = "socialchoicelab")
 }
 
 #' Compute the exact 2D level set (indifference curve)
@@ -108,7 +113,8 @@ level_set_2d <- function(ideal_x, ideal_y, utility_level,
                           dist_config = make_dist_config()) {
   .Call("r_scs_level_set_2d",
         as.double(ideal_x), as.double(ideal_y), as.double(utility_level),
-        loss_config, dist_config)
+        loss_config, dist_config,
+      PACKAGE = "socialchoicelab")
 }
 
 #' Sample a 2D level set as a closed polygon
@@ -125,7 +131,8 @@ level_set_2d <- function(ideal_x, ideal_y, utility_level,
 #' @return Numeric matrix (n_vertices × 2) with columns \code{x} and \code{y}.
 #' @export
 level_set_to_polygon <- function(level_set, n_samples = 64L) {
-  .Call("r_scs_level_set_to_polygon", level_set, as.integer(n_samples))
+  .Call("r_scs_level_set_to_polygon", level_set, as.integer(n_samples),
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -142,7 +149,8 @@ level_set_to_polygon <- function(level_set, n_samples = 64L) {
 #' @return Numeric matrix (n_hull × 2) with columns \code{x} and \code{y}.
 #' @export
 convex_hull_2d <- function(points) {
-  .Call("r_scs_convex_hull_2d", as.double(points))
+  .Call("r_scs_convex_hull_2d", as.double(points),
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -169,7 +177,8 @@ majority_prefers_2d <- function(a, b, voter_ideals,
   av <- as.double(a); bv <- as.double(b)
   .Call("r_scs_majority_prefers_2d",
         av[1], av[2], bv[1], bv[2],
-        as.double(voter_ideals), dist_config, .resolve_k(k))
+        as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Compute the n_alts × n_alts pairwise preference matrix
@@ -192,7 +201,8 @@ pairwise_matrix_2d <- function(alts, voter_ideals,
   alt_xy <- as.double(alts)
   n_alts <- as.integer(length(alt_xy) / 2L)
   result <- .Call("r_scs_pairwise_matrix_2d",
-                  alt_xy, as.double(voter_ideals), dist_config, .resolve_k(k))
+                  alt_xy, as.double(voter_ideals), dist_config, .resolve_k(k),
+      PACKAGE = "socialchoicelab")
   alt_names <- paste0("alt", seq_len(n_alts))
   dimnames(result) <- list(alt_names, alt_names)
   result
@@ -218,5 +228,6 @@ weighted_majority_prefers_2d <- function(a, b, voter_ideals, weights,
   .Call("r_scs_weighted_majority_prefers_2d",
         av[1], av[2], bv[1], bv[2],
         as.double(voter_ideals), as.double(weights),
-        dist_config, as.double(threshold))
+        dist_config, as.double(threshold),
+      PACKAGE = "socialchoicelab")
 }

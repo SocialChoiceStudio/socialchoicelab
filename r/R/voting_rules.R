@@ -30,7 +30,8 @@
 #' @return Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
 #' @export
 plurality_scores <- function(profile) {
-  scores <- .Call("r_scs_plurality_scores", .prof_ptr(profile))
+  scores <- .Call("r_scs_plurality_scores", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
   names(scores) <- paste0("alt", seq_along(scores))
   scores
 }
@@ -41,7 +42,8 @@ plurality_scores <- function(profile) {
 #' @return Integer vector of 1-based alternative indices.
 #' @export
 plurality_all_winners <- function(profile) {
-  .Call("r_scs_plurality_all_winners", .prof_ptr(profile))
+  .Call("r_scs_plurality_all_winners", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Return a single plurality winner with tie-breaking
@@ -60,7 +62,8 @@ plurality_one_winner <- function(profile,
                                   stream_name    = NULL) {
   tba <- .tb_args(tie_break, stream_manager, stream_name)
   .Call("r_scs_plurality_one_winner", .prof_ptr(profile),
-        tba$tb, tba$mgr, tba$sn)
+        tba$tb, tba$mgr, tba$sn,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -76,7 +79,8 @@ plurality_one_winner <- function(profile,
 #' @return Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
 #' @export
 borda_scores <- function(profile) {
-  scores <- .Call("r_scs_borda_scores", .prof_ptr(profile))
+  scores <- .Call("r_scs_borda_scores", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
   names(scores) <- paste0("alt", seq_along(scores))
   scores
 }
@@ -87,7 +91,8 @@ borda_scores <- function(profile) {
 #' @return Integer vector of 1-based alternative indices.
 #' @export
 borda_all_winners <- function(profile) {
-  .Call("r_scs_borda_all_winners", .prof_ptr(profile))
+  .Call("r_scs_borda_all_winners", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Return a single Borda winner with tie-breaking
@@ -101,7 +106,8 @@ borda_one_winner <- function(profile,
                               stream_name    = NULL) {
   tba <- .tb_args(tie_break, stream_manager, stream_name)
   .Call("r_scs_borda_one_winner", .prof_ptr(profile),
-        tba$tb, tba$mgr, tba$sn)
+        tba$tb, tba$mgr, tba$sn,
+      PACKAGE = "socialchoicelab")
 }
 
 #' Full social ordering by descending Borda score
@@ -116,7 +122,8 @@ borda_ranking <- function(profile,
                            stream_name    = NULL) {
   tba <- .tb_args(tie_break, stream_manager, stream_name)
   .Call("r_scs_borda_ranking", .prof_ptr(profile),
-        tba$tb, tba$mgr, tba$sn)
+        tba$tb, tba$mgr, tba$sn,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -132,7 +139,8 @@ borda_ranking <- function(profile,
 #' @return Integer vector of length n_alts.
 #' @export
 antiplurality_scores <- function(profile) {
-  scores <- .Call("r_scs_antiplurality_scores", .prof_ptr(profile))
+  scores <- .Call("r_scs_antiplurality_scores", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
   names(scores) <- paste0("alt", seq_along(scores))
   scores
 }
@@ -143,7 +151,8 @@ antiplurality_scores <- function(profile) {
 #' @return Integer vector of 1-based alternative indices.
 #' @export
 antiplurality_all_winners <- function(profile) {
-  .Call("r_scs_antiplurality_all_winners", .prof_ptr(profile))
+  .Call("r_scs_antiplurality_all_winners", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Return a single anti-plurality winner with tie-breaking
@@ -157,7 +166,8 @@ antiplurality_one_winner <- function(profile,
                                       stream_name    = NULL) {
   tba <- .tb_args(tie_break, stream_manager, stream_name)
   .Call("r_scs_antiplurality_one_winner", .prof_ptr(profile),
-        tba$tb, tba$mgr, tba$sn)
+        tba$tb, tba$mgr, tba$sn,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -174,7 +184,8 @@ antiplurality_one_winner <- function(profile,
 #' @export
 scoring_rule_scores <- function(profile, score_weights) {
   scores <- .Call("r_scs_scoring_rule_scores",
-                  .prof_ptr(profile), as.double(score_weights))
+                  .prof_ptr(profile), as.double(score_weights),
+      PACKAGE = "socialchoicelab")
   names(scores) <- paste0("alt", seq_along(scores))
   scores
 }
@@ -186,7 +197,8 @@ scoring_rule_scores <- function(profile, score_weights) {
 #' @export
 scoring_rule_all_winners <- function(profile, score_weights) {
   .Call("r_scs_scoring_rule_all_winners",
-        .prof_ptr(profile), as.double(score_weights))
+        .prof_ptr(profile), as.double(score_weights),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Return a single winner under a positional scoring rule with tie-breaking
@@ -202,7 +214,8 @@ scoring_rule_one_winner <- function(profile, score_weights,
   tba <- .tb_args(tie_break, stream_manager, stream_name)
   .Call("r_scs_scoring_rule_one_winner",
         .prof_ptr(profile), as.double(score_weights),
-        tba$tb, tba$mgr, tba$sn)
+        tba$tb, tba$mgr, tba$sn,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -225,7 +238,8 @@ approval_scores_spatial <- function(alts, voter_ideals, threshold,
                                      dist_config = make_dist_config()) {
   scores <- .Call("r_scs_approval_scores_spatial",
                   as.double(alts), as.double(voter_ideals),
-                  as.double(threshold), dist_config)
+                  as.double(threshold), dist_config,
+      PACKAGE = "socialchoicelab")
   names(scores) <- paste0("alt", seq_along(scores))
   scores
 }
@@ -240,7 +254,8 @@ approval_all_winners_spatial <- function(alts, voter_ideals, threshold,
                                           dist_config = make_dist_config()) {
   .Call("r_scs_approval_all_winners_spatial",
         as.double(alts), as.double(voter_ideals),
-        as.double(threshold), dist_config)
+        as.double(threshold), dist_config,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -257,7 +272,8 @@ approval_all_winners_spatial <- function(alts, voter_ideals, threshold,
 #' @export
 approval_scores_topk <- function(profile, k) {
   scores <- .Call("r_scs_approval_scores_topk",
-                  .prof_ptr(profile), as.integer(k))
+                  .prof_ptr(profile), as.integer(k),
+      PACKAGE = "socialchoicelab")
   names(scores) <- paste0("alt", seq_along(scores))
   scores
 }
@@ -270,5 +286,6 @@ approval_scores_topk <- function(profile, k) {
 #' @export
 approval_all_winners_topk <- function(profile, k) {
   .Call("r_scs_approval_all_winners_topk",
-        .prof_ptr(profile), as.integer(k))
+        .prof_ptr(profile), as.integer(k),
+      PACKAGE = "socialchoicelab")
 }

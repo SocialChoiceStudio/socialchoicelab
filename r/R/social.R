@@ -27,7 +27,8 @@ rank_by_scores <- function(scores,
   tb  <- .resolve_tie_break(tie_break)
   mgr <- if (is.null(stream_manager)) NULL else .sm_ptr(stream_manager)
   sn  <- if (is.null(stream_name)) character(0L) else as.character(stream_name)
-  .Call("r_scs_rank_by_scores", as.double(scores), tb, mgr, sn)
+  .Call("r_scs_rank_by_scores", as.double(scores), tb, mgr, sn,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -56,7 +57,8 @@ pairwise_ranking_from_matrix <- function(matrix,
   mgr <- if (is.null(stream_manager)) NULL else .sm_ptr(stream_manager)
   sn  <- if (is.null(stream_name)) character(0L) else as.character(stream_name)
   .Call("r_scs_pairwise_ranking_from_matrix",
-        as.integer(matrix), as.integer(n_alts), tb, mgr, sn)
+        as.integer(matrix), as.integer(n_alts), tb, mgr, sn,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -72,7 +74,8 @@ pairwise_ranking_from_matrix <- function(matrix,
 #' @return Integer vector of 1-based alternative indices.
 #' @export
 pareto_set <- function(profile) {
-  .Call("r_scs_pareto_set", .prof_ptr(profile))
+  .Call("r_scs_pareto_set", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Test whether a single alternative is Pareto-efficient
@@ -88,7 +91,8 @@ is_pareto_efficient <- function(profile, alt) {
     stop("is_pareto_efficient: alt ", alt, " is out of range [1, ",
          d$n_alts, "].")
   }
-  .Call("r_scs_is_pareto_efficient", .prof_ptr(profile), alt - 1L)
+  .Call("r_scs_is_pareto_efficient", .prof_ptr(profile), alt - 1L,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
@@ -104,7 +108,8 @@ is_pareto_efficient <- function(profile, alt) {
 #' @return Logical scalar.
 #' @export
 has_condorcet_winner_profile <- function(profile) {
-  .Call("r_scs_has_condorcet_winner_profile", .prof_ptr(profile))
+  .Call("r_scs_has_condorcet_winner_profile", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Return the Condorcet winner from a profile
@@ -113,7 +118,8 @@ has_condorcet_winner_profile <- function(profile) {
 #' @return Integer (1-based), or \code{NA_integer_} if no Condorcet winner.
 #' @export
 condorcet_winner_profile <- function(profile) {
-  .Call("r_scs_condorcet_winner_profile", .prof_ptr(profile))
+  .Call("r_scs_condorcet_winner_profile", .prof_ptr(profile),
+      PACKAGE = "socialchoicelab")
 }
 
 #' Test whether an alternative is Condorcet-consistent
@@ -132,7 +138,8 @@ is_condorcet_consistent <- function(profile, alt) {
     stop("is_condorcet_consistent: alt ", alt, " is out of range [1, ",
          d$n_alts, "].")
   }
-  .Call("r_scs_is_condorcet_consistent", .prof_ptr(profile), alt - 1L)
+  .Call("r_scs_is_condorcet_consistent", .prof_ptr(profile), alt - 1L,
+      PACKAGE = "socialchoicelab")
 }
 
 #' Test whether an alternative is majority-consistent
@@ -152,7 +159,8 @@ is_majority_consistent <- function(profile, alt) {
     stop("is_majority_consistent: alt ", alt, " is out of range [1, ",
          d$n_alts, "].")
   }
-  .Call("r_scs_is_majority_consistent", .prof_ptr(profile), alt - 1L)
+  .Call("r_scs_is_majority_consistent", .prof_ptr(profile), alt - 1L,
+      PACKAGE = "socialchoicelab")
 }
 
 # ---------------------------------------------------------------------------
