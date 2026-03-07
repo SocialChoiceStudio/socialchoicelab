@@ -154,3 +154,80 @@ condorcet_winner_profile(prof)    # 1-based index or NA
 # Check whether alt 1 is Condorcet-consistent:
 is_condorcet_consistent(prof, 1L)
 ```
+
+## 9 — Interactive visualization
+
+`socialchoicelab` includes a thin Plotly-based visualization layer.  All
+plotting functions return `plotly` figures that can be displayed inline in
+RStudio, saved as self-contained HTML, or composed by piping the figure from
+one layer function into the next.
+
+### 9.1 — Base plot
+
+```{r plot-base}
+# Flat [x0, y0, x1, y1, ...] representation of all actors.
+alts_flat <- c(sq, a, b)   # 3 alternatives
+
+fig <- plot_spatial_voting(
+  voters,
+  alts_flat,
+  sq          = sq,
+  voter_names = paste0("V", 1:5),
+  alt_names   = c("SQ", "A", "B"),
+  title       = "5-voter legislature"
+)
+fig
+```
+
+### 9.2 — Winset layer
+
+```{r plot-winset}
+ws  <- winset_2d(sq, voters)
+fig <- plot_spatial_voting(voters, alts_flat, sq = sq)
+fig <- layer_winset(fig, ws)
+fig
+```
+
+### 9.3 — Uncovered set layer
+
+```{r plot-uncovered}
+bnd <- uncovered_set_boundary_2d(voters, grid_resolution = 12L)
+fig <- plot_spatial_voting(voters, alts_flat, sq = sq)
+fig <- layer_uncovered_set(fig, bnd)
+fig
+```
+
+### 9.4 — Convex hull of voter ideal points
+
+```{r plot-hull}
+hull <- convex_hull_2d(voters)
+fig  <- plot_spatial_voting(voters, alts_flat, sq = sq)
+fig  <- layer_convex_hull(fig, hull)
+fig
+```
+
+### 9.5 — Yolk (manually specified center and radius)
+
+The yolk is the smallest circle intersecting all median hyperplanes.
+Supply its center and radius directly (e.g., from a numerical estimate):
+
+```{r plot-yolk}
+fig <- plot_spatial_voting(voters, alts_flat, sq = sq)
+fig <- layer_yolk(fig, center_x = 0.1, center_y = 0.0, radius = 0.25)
+fig
+```
+
+### 9.6 — Full composite plot
+
+Layers compose freely — each function returns the same figure with an
+additional trace added:
+
+```{r plot-composite}
+fig <- plot_spatial_voting(voters, alts_flat, sq = sq,
+                           title = "Full spatial analysis")
+fig <- layer_winset(fig, ws)
+fig <- layer_uncovered_set(fig, bnd)
+fig <- layer_convex_hull(fig, hull)
+fig <- layer_yolk(fig, center_x = 0.1, center_y = 0.0, radius = 0.25)
+fig
+```

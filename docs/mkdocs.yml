@@ -48,9 +48,10 @@ nav:
     - Geometry: geometry.md
     - Voting Rules: voting_rules.md
     - Social Rankings: social.md
+    - Plotting: plots.md
     - Exceptions: errors.md
   - Examples:
-    - Spatial Voting Notebook: ../../../python/notebooks/spatial_voting.ipynb
+    - Spatial Voting Notebook: notebooks/spatial_voting.ipynb
 
 markdown_extensions:
   - pymdownx.highlight:
