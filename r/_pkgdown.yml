@@ -105,6 +105,17 @@ reference:
       - is_condorcet_consistent
       - is_majority_consistent
 
+  - title: "Visualization"
+    desc: >
+      Interactive Plotly-based plots for spatial voting analysis.
+      Compose layers by passing the figure from one function into the next.
+    contents:
+      - plot_spatial_voting
+      - layer_winset
+      - layer_yolk
+      - layer_uncovered_set
+      - layer_convex_hull
+
   - title: "Stream Manager"
     desc: "Reproducible pseudo-random number streams."
     contents:
