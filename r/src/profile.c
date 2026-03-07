@@ -1,13 +1,12 @@
 /* profile.c — .Call() wrappers for SCS_Profile.
- * snprintf() requires <stdio.h> which may not be pulled in transitively. */
-
-#include <stdio.h>
  *
  * All factory functions return a new EXTPTR owning a heap-allocated profile.
  * Index translation: the C API is 0-based; R wrappers accept/return 1-based
  * voter and alternative indices.
+ * snprintf() requires <stdio.h> which may not be pulled in transitively.
  */
 
+#include <stdio.h>
 #include "scs_r_helpers.h"
 
 /* ---------------------------------------------------------------------------
