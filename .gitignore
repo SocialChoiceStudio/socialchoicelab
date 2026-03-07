@@ -95,3 +95,5 @@ scripts/plot_*.py
 
 # Scratch visualisation helpers (source + binaries — local only)
 scratch/
+r/.Renviron
+r/*.Rproj

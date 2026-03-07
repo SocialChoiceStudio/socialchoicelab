@@ -1,3 +1,7 @@
+#' @useDynLib socialchoicelab, .registration = TRUE
+#' @keywords internal
+"_PACKAGE"
+
 #' Create a distance configuration
 #'
 #' Returns a named list understood by all C API wrappers that accept a distance
