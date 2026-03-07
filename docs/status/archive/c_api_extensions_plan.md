@@ -1159,17 +1159,31 @@ Update `docs/architecture/c_api_design.md`:
 | C5.5 | Profile lifecycle + inspection (`destroy`, `dims`, `get_ranking`) | ✅ Done |
 | C5.6 | Optional `scs_profile_export_rankings` | ✅ Done |
 | C5.7 | Optional `scs_profile_clone` | ✅ Done |
-| C6.1 | Plurality (`scores`, `all_winners`, `one_winner`) | 🔲 |
-| C6.2 | Borda (`scores`, `all_winners`, `one_winner`, `ranking`) | 🔲 |
-| C6.3 | Anti-plurality (`scores`, `all_winners`, `one_winner`) | 🔲 |
-| C6.4 | Generic scoring rule (`scores`, `all_winners`, `one_winner`) | 🔲 |
-| C6.5 | Approval voting (`scores_spatial`, `all_winners_spatial`, `scores_topk`, `all_winners_topk`) | 🔲 |
-| C7.1 | `scs_rank_by_scores` | 🔲 |
-| C7.2 | `scs_pairwise_ranking_from_matrix` | 🔲 |
-| C7.3 | Pareto (`scs_pareto_set`, `scs_is_pareto_efficient`) | 🔲 |
-| C7.4 | Condorcet / majority-selection predicates | 🔲 |
-| C8 | Tests for C0–C7 | 🔲 |
-| C9 | Update `c_api_design.md` | 🔲 |
+| C6.1 | Plurality (`scores`, `all_winners`, `one_winner`) | ✅ Done |
+| C6.2 | Borda (`scores`, `all_winners`, `one_winner`, `ranking`) | ✅ Done |
+| C6.3 | Anti-plurality (`scores`, `all_winners`, `one_winner`) | ✅ Done |
+| C6.4 | Generic scoring rule (`scores`, `all_winners`, `one_winner`) | ✅ Done |
+| C6.5 | Approval voting (`scores_spatial`, `all_winners_spatial`, `scores_topk`, `all_winners_topk`) | ✅ Done |
+| C7.1 | `scs_rank_by_scores` | ✅ Done |
+| C7.2 | `scs_pairwise_ranking_from_matrix` | ✅ Done |
+| C7.3 | Pareto (`scs_pareto_set`, `scs_is_pareto_efficient`) | ✅ Done |
+| C7.4 | Condorcet / majority-selection predicates | ✅ Done |
+| C8 | Tests for C0–C7 | ✅ Done (see note below) |
+| C9 | Update `c_api_design.md` | ✅ Done |
+
+---
+
+### C8 implementation note
+
+All coverage targets were addressed during C0–C7 (tests written alongside each
+phase) plus the C8 sweep.  One known gap remains:
+
+**Non-finite input rejection** — The plan calls for `NaN` / `Inf` in voter
+coordinates or utility matrices to return `SCS_ERROR_INVALID_ARGUMENT`.
+Neither the C API wrappers nor the underlying C++ aggregation/geometry functions
+currently validate for non-finite floats.  Hardening the wrappers with
+`std::isfinite` checks is a separate task; these tests are deliberately
+omitted from C8 until that validation work is approved and implemented.
 
 ---
 

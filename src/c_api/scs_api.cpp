@@ -14,8 +14,17 @@
 
 #include "scs_api.h"  // NOLINT(build/include_subdir)
 
+#include <socialchoicelab/aggregation/antiplurality.h>
+#include <socialchoicelab/aggregation/approval.h>
+#include <socialchoicelab/aggregation/borda.h>
+#include <socialchoicelab/aggregation/condorcet_consistency.h>
+#include <socialchoicelab/aggregation/pareto.h>
+#include <socialchoicelab/aggregation/plurality.h>
 #include <socialchoicelab/aggregation/profile.h>
 #include <socialchoicelab/aggregation/profile_generators.h>
+#include <socialchoicelab/aggregation/scoring_rule.h>
+#include <socialchoicelab/aggregation/social_ranking.h>
+#include <socialchoicelab/aggregation/tie_break.h>
 #include <socialchoicelab/geometry/convex_hull.h>
 #include <socialchoicelab/geometry/copeland.h>
 #include <socialchoicelab/geometry/core.h>
@@ -28,6 +37,7 @@
 
 #include <Eigen/Dense>
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <limits>
@@ -91,6 +101,26 @@ void set_error(char* err_buf, int err_buf_len, const char* msg) {
   }
 }
 
+// Validate that all elements in p[0..count-1] are finite (no NaN or Inf).
+// Returns false and sets err_buf on first non-finite value; true otherwise.
+// If p is null or count <= 0, returns true (nothing to validate).
+bool validate_finite_doubles(const double* p, int count, const char* context,
+                             char* err_buf, int err_buf_len) {
+  if (!p || count <= 0) return true;
+  for (int i = 0; i < count; ++i) {
+    if (!std::isfinite(p[i])) {
+      set_error(
+          err_buf, err_buf_len,
+          (std::string(context) + ": non-finite value at index " +
+           std::to_string(i) +
+           " (NaN or Inf). All coordinates and numeric inputs must be finite.")
+              .c_str());
+      return false;
+    }
+  }
+  return true;
+}
+
 // Convert a C SCS_DistanceConfig to the C++ geometry::DistConfig.
 // Validates that dist_cfg is non-null and has exactly 2 weights.
 // Returns false and sets err_buf on failure.
@@ -110,6 +140,11 @@ bool to_dist_config(const SCS_DistanceConfig* dist_cfg,
   if (!dist_cfg->salience_weights) {
     set_error(err_buf, err_buf_len,
               "dist_cfg->salience_weights must not be null");
+    return false;
+  }
+  if (!validate_finite_doubles(dist_cfg->salience_weights, dist_cfg->n_weights,
+                               "dist_cfg->salience_weights", err_buf,
+                               err_buf_len)) {
     return false;
   }
   switch (dist_cfg->distance_type) {
@@ -227,6 +262,15 @@ extern "C" int scs_calculate_distance(const double* ideal_point,
               "scs_calculate_distance: n_weights must equal n_dims");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!validate_finite_doubles(ideal_point, n_dims, "ideal_point", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(alt_point, n_dims, "alt_point", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(dist_cfg->salience_weights, n_dims,
+                               "dist_cfg->salience_weights", err_buf,
+                               err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   try {
     using socialchoicelab::preference::distance::chebyshev_distance;
     using socialchoicelab::preference::distance::euclidean_distance;
@@ -277,6 +321,12 @@ extern "C" int scs_distance_to_utility(double distance,
               "scs_distance_to_utility: null pointer argument");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!std::isfinite(distance)) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_distance_to_utility: distance must be finite (no NaN or Inf)");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   try {
     using socialchoicelab::preference::loss::distance_to_utility;
     *out = distance_to_utility(distance, to_cpp_loss(loss_cfg->loss_type),
@@ -299,6 +349,11 @@ extern "C" int scs_normalize_utility(double utility, double max_distance,
   if (!loss_cfg || !out) {
     set_error(err_buf, err_buf_len,
               "scs_normalize_utility: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(utility) || !std::isfinite(max_distance)) {
+    set_error(err_buf, err_buf_len,
+              "scs_normalize_utility: utility and max_distance must be finite");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
@@ -328,6 +383,13 @@ extern "C" int scs_level_set_1d(double ideal, double weight,
                                 int err_buf_len) {
   if (!loss_cfg || !out_points || !out_n) {
     set_error(err_buf, err_buf_len, "scs_level_set_1d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(ideal) || !std::isfinite(weight) ||
+      !std::isfinite(utility_level)) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_level_set_1d: ideal, weight, and utility_level must be finite");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
@@ -371,6 +433,18 @@ extern "C" int scs_level_set_2d(double ideal_x, double ideal_y,
   if (dist_cfg->n_weights != 2 || !dist_cfg->salience_weights) {
     set_error(err_buf, err_buf_len,
               "scs_level_set_2d: dist_cfg must have n_weights == 2");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(ideal_x) || !std::isfinite(ideal_y) ||
+      !std::isfinite(utility_level)) {
+    set_error(err_buf, err_buf_len,
+              "scs_level_set_2d: ideal_x, ideal_y, and utility_level must be "
+              "finite");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(dist_cfg->salience_weights, 2,
+                               "scs_level_set_2d dist_cfg->salience_weights",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
@@ -449,6 +523,35 @@ extern "C" int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
               "scs_level_set_to_polygon: num_samples must be >= 3 for smooth "
               "shapes");
     return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  {
+    const double* d = nullptr;
+    int nd = 0;
+    switch (level_set->type) {
+      case SCS_LEVEL_SET_CIRCLE:
+        d = &level_set->center_x;
+        nd = 3;  // center_x, center_y, param0
+        break;
+      case SCS_LEVEL_SET_ELLIPSE:
+        d = &level_set->center_x;
+        nd = 4;  // center_x, center_y, param0, param1
+        break;
+      case SCS_LEVEL_SET_SUPERELLIPSE:
+        d = &level_set->center_x;
+        nd = 5;  // center_x, center_y, param0, param1, exponent_p
+        break;
+      case SCS_LEVEL_SET_POLYGON:
+        d = level_set->vertices;
+        nd = level_set->n_vertices * 2;
+        if (nd > 8) nd = 8;
+        break;
+      default:
+        break;
+    }
+    if (d && nd > 0 &&
+        !validate_finite_doubles(d, nd, "level_set", err_buf, err_buf_len)) {
+      return SCS_ERROR_INVALID_ARGUMENT;
+    }
   }
   try {
     using socialchoicelab::preference::indifference::Circle2d;
@@ -547,6 +650,10 @@ extern "C" int scs_convex_hull_2d(const double* points, int n_points,
                 "scs_convex_hull_2d: null pointer argument.");
       return SCS_ERROR_INVALID_ARGUMENT;
     }
+    if (!validate_finite_doubles(points, n_points * 2, "points", err_buf,
+                                 err_buf_len)) {
+      return SCS_ERROR_INVALID_ARGUMENT;
+    }
     if (n_points < 1) {
       set_error(err_buf, err_buf_len,
                 ("scs_convex_hull_2d: n_points must be >= 1 (got " +
@@ -598,6 +705,16 @@ extern "C" int scs_majority_prefers_2d(double point_a_x, double point_a_y,
               ("scs_majority_prefers_2d: n_voters must be >= 1 (got " +
                std::to_string(n_voters) + ")")
                   .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(point_a_x) || !std::isfinite(point_a_y) ||
+      !std::isfinite(point_b_x) || !std::isfinite(point_b_y)) {
+    set_error(err_buf, err_buf_len,
+              "scs_majority_prefers_2d: point coordinates must be finite");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -659,6 +776,12 @@ extern "C" int scs_pairwise_matrix_2d(const double* alt_xy, int n_alts,
             .c_str());
     return SCS_ERROR_BUFFER_TOO_SMALL;
   }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
@@ -715,6 +838,20 @@ extern "C" int scs_weighted_majority_prefers_2d(
                   .c_str());
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len) ||
+      !validate_finite_doubles(weights, n_voters, "weights", err_buf,
+                               err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(point_a_x) || !std::isfinite(point_a_y) ||
+      !std::isfinite(point_b_x) || !std::isfinite(point_b_y) ||
+      !std::isfinite(threshold)) {
+    set_error(err_buf, err_buf_len,
+              "scs_weighted_majority_prefers_2d: point coordinates and "
+              "threshold must be finite");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
@@ -745,7 +882,7 @@ extern "C" int scs_weighted_majority_prefers_2d(
 // Geometry — winset factory  (C2.2–C2.4)
 // ---------------------------------------------------------------------------
 
-// Shared null/size validation used by all three winset factories.
+// Shared null/size/finite validation used by all three winset factories.
 static bool validate_winset_inputs(const double* voter_ideals_xy, int n_voters,
                                    int num_samples, char* err_buf,
                                    int err_buf_len) {
@@ -766,6 +903,10 @@ static bool validate_winset_inputs(const double* voter_ideals_xy, int n_voters,
             .c_str());
     return false;
   }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return false;
+  }
   return true;
 }
 
@@ -778,6 +919,11 @@ extern "C" SCS_Winset* scs_winset_2d(double status_quo_x, double status_quo_y,
   if (!validate_winset_inputs(voter_ideals_xy, n_voters, num_samples, err_buf,
                               err_buf_len))
     return nullptr;
+  if (!std::isfinite(status_quo_x) || !std::isfinite(status_quo_y)) {
+    set_error(err_buf, err_buf_len,
+              "scs_winset_2d: status_quo coordinates must be finite");
+    return nullptr;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len)) return nullptr;
   try {
@@ -802,6 +948,17 @@ extern "C" SCS_Winset* scs_weighted_winset_2d(
     return nullptr;
   if (!weights) {
     set_error(err_buf, err_buf_len, "weights must not be null");
+    return nullptr;
+  }
+  if (!validate_finite_doubles(weights, n_voters, "weights", err_buf,
+                               err_buf_len)) {
+    return nullptr;
+  }
+  if (!std::isfinite(status_quo_x) || !std::isfinite(status_quo_y) ||
+      !std::isfinite(threshold)) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_weighted_winset_2d: status_quo and threshold must be finite");
     return nullptr;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -836,6 +993,16 @@ extern "C" SCS_Winset* scs_winset_with_veto_2d(
   }
   if (n_veto < 0) {
     set_error(err_buf, err_buf_len, "n_veto must be >= 0");
+    return nullptr;
+  }
+  if (n_veto > 0 &&
+      !validate_finite_doubles(veto_ideals_xy, n_veto * 2, "veto_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return nullptr;
+  }
+  if (!std::isfinite(status_quo_x) || !std::isfinite(status_quo_y)) {
+    set_error(err_buf, err_buf_len,
+              "scs_winset_with_veto_2d: status_quo coordinates must be finite");
     return nullptr;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1117,6 +1284,10 @@ extern "C" int scs_yolk_2d(const double* voter_ideals_xy, int n_voters,
                   .c_str());
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   // dist_cfg is validated by to_dist_config but yolk_2d only uses the k
   // parameter and voter positions — the distance metric is not used.
   // We validate the pointer to catch accidental null, but do not apply it.
@@ -1214,6 +1385,12 @@ extern "C" int scs_copeland_scores_2d(const double* alt_xy, int n_alts,
                   .c_str());
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
@@ -1251,6 +1428,12 @@ extern "C" int scs_copeland_winner_2d(const double* alt_xy, int n_alts,
               ("scs_copeland_winner_2d: n_alts must be >= 1 (got " +
                std::to_string(n_alts) + ")")
                   .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1291,6 +1474,12 @@ extern "C" int scs_has_condorcet_winner_2d(const double* alt_xy, int n_alts,
               "scs_has_condorcet_winner_2d: null pointer argument");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
@@ -1318,6 +1507,12 @@ extern "C" int scs_condorcet_winner_2d(
   if (!alt_xy || !voter_ideals_xy || !out_found || !out_winner_idx) {
     set_error(err_buf, err_buf_len,
               "scs_condorcet_winner_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1352,6 +1547,10 @@ extern "C" int scs_core_2d(const double* voter_ideals_xy, int n_voters,
                            char* err_buf, int err_buf_len) {
   if (!voter_ideals_xy || !out_found || !out_x || !out_y) {
     set_error(err_buf, err_buf_len, "scs_core_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1392,6 +1591,12 @@ extern "C" int scs_uncovered_set_2d(const double* alt_xy, int n_alts,
   if (!alt_xy || !voter_ideals_xy || !out_n) {
     set_error(err_buf, err_buf_len,
               "scs_uncovered_set_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1435,6 +1640,10 @@ extern "C" int scs_uncovered_set_boundary_size_2d(
               "scs_uncovered_set_boundary_size_2d: null pointer argument");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
@@ -1463,6 +1672,10 @@ extern "C" int scs_uncovered_set_boundary_2d(const double* voter_ideals_xy,
   if (!voter_ideals_xy || !out_n) {
     set_error(err_buf, err_buf_len,
               "scs_uncovered_set_boundary_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1494,6 +1707,12 @@ extern "C" int scs_heart_2d(const double* alt_xy, int n_alts,
                             char* err_buf, int err_buf_len) {
   if (!alt_xy || !voter_ideals_xy || !out_n) {
     set_error(err_buf, err_buf_len, "scs_heart_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1538,6 +1757,10 @@ extern "C" int scs_heart_boundary_size_2d(const double* voter_ideals_xy,
               "scs_heart_boundary_size_2d: null pointer argument");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
@@ -1565,6 +1788,10 @@ extern "C" int scs_heart_boundary_2d(const double* voter_ideals_xy,
   if (!voter_ideals_xy || !out_n) {
     set_error(err_buf, err_buf_len,
               "scs_heart_boundary_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1596,6 +1823,12 @@ extern "C" SCS_Profile* scs_profile_build_spatial(
   if (!alt_xy || !voter_ideals_xy) {
     set_error(err_buf, err_buf_len,
               "scs_profile_build_spatial: null pointer argument");
+    return nullptr;
+  }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
     return nullptr;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1633,6 +1866,10 @@ extern "C" SCS_Profile* scs_profile_from_utility_matrix(const double* utilities,
     set_error(err_buf, err_buf_len,
               "scs_profile_from_utility_matrix: n_voters and n_alts must be "
               ">= 1");
+    return nullptr;
+  }
+  if (!validate_finite_doubles(utilities, n_voters * n_alts, "utilities",
+                               err_buf, err_buf_len)) {
     return nullptr;
   }
   try {
@@ -1711,6 +1948,11 @@ extern "C" SCS_Profile* scs_profile_uniform_spatial(
                   .c_str());
     return nullptr;
   }
+  if (!std::isfinite(lo) || !std::isfinite(hi)) {
+    set_error(err_buf, err_buf_len,
+              "scs_profile_uniform_spatial: lo and hi must be finite");
+    return nullptr;
+  }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len)) return nullptr;
   try {
@@ -1761,6 +2003,11 @@ extern "C" SCS_Profile* scs_profile_gaussian_spatial(
               ("scs_profile_gaussian_spatial: stddev must be positive (got " +
                std::to_string(stddev) + ")")
                   .c_str());
+    return nullptr;
+  }
+  if (!std::isfinite(mean) || !std::isfinite(stddev)) {
+    set_error(err_buf, err_buf_len,
+              "scs_profile_gaussian_spatial: mean and stddev must be finite");
     return nullptr;
   }
   socialchoicelab::geometry::DistConfig cfg;
@@ -1869,6 +2116,555 @@ extern "C" int scs_profile_export_rankings(const SCS_Profile* p,
     }
   }
   return SCS_OK;
+}
+
+// ---------------------------------------------------------------------------
+// Aggregation — C6 internal helpers
+// ---------------------------------------------------------------------------
+
+namespace {
+
+using CppTieBreak = socialchoicelab::aggregation::TieBreak;
+using CppPRNG = socialchoicelab::core::rng::PRNG;
+
+// Convert SCS_TieBreak to the C++ enum.
+CppTieBreak to_cpp_tie_break(SCS_TieBreak tb) {
+  return (tb == SCS_TIEBREAK_SMALLEST_INDEX) ? CppTieBreak::kSmallestIndex
+                                             : CppTieBreak::kRandom;
+}
+
+// Resolve a PRNG* for _one_winner calls.
+// Returns false and sets error if kRandom is requested but mgr/stream_name
+// are null.
+bool resolve_prng(SCS_TieBreak tb, SCS_StreamManager* mgr,
+                  const char* stream_name, CppPRNG** out_prng, char* err_buf,
+                  int err_buf_len) {
+  if (tb == SCS_TIEBREAK_RANDOM) {
+    if (!mgr || !stream_name) {
+      set_error(err_buf, err_buf_len,
+                "SCS_TIEBREAK_RANDOM requires a non-null SCS_StreamManager "
+                "and stream_name");
+      return false;
+    }
+    *out_prng = &mgr->mgr.get_stream(stream_name);
+  } else {
+    *out_prng = nullptr;
+  }
+  return true;
+}
+
+// Copy a vector<int> winners list into a caller buffer with size-query support.
+int fill_int_winners(const std::vector<int>& winners, int* out_winners,
+                     int out_capacity, int* out_n, char* err_buf,
+                     int err_buf_len) {
+  const int n = static_cast<int>(winners.size());
+  if (out_n) *out_n = n;
+  if (!out_winners || out_capacity == 0) return SCS_OK;  // size-query
+  if (out_capacity < n) {
+    set_error(err_buf, err_buf_len,
+              ("output buffer too small: need " + std::to_string(n) +
+               " winner indices, capacity " + std::to_string(out_capacity))
+                  .c_str());
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int i = 0; i < n; ++i) out_winners[i] = winners[i];
+  return SCS_OK;
+}
+
+}  // anonymous namespace
+
+// ---------------------------------------------------------------------------
+// C6.1 — Plurality
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_plurality_scores(const SCS_Profile* p, int* out_scores,
+                                    int out_len, char* err_buf,
+                                    int err_buf_len) {
+  if (!p || !out_scores) {
+    set_error(err_buf, err_buf_len,
+              "scs_plurality_scores: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < p->profile.n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_plurality_scores: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " +
+               std::to_string(p->profile.n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto s = socialchoicelab::aggregation::plurality_scores(p->profile);
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) out_scores[i] = s[i];
+    return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_plurality_all_winners(const SCS_Profile* p, int* out_winners,
+                                         int out_capacity, int* out_n,
+                                         char* err_buf, int err_buf_len) {
+  if (!p || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_plurality_all_winners: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto w = socialchoicelab::aggregation::plurality_all_winners(p->profile);
+    return fill_int_winners(w, out_winners, out_capacity, out_n, err_buf,
+                            err_buf_len);
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_plurality_one_winner(
+    const SCS_Profile* p, SCS_TieBreak tie_break, SCS_StreamManager* mgr,
+    const char* stream_name, int* out_winner, char* err_buf, int err_buf_len) {
+  if (!p || !out_winner) {
+    set_error(err_buf, err_buf_len,
+              "scs_plurality_one_winner: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  CppPRNG* prng = nullptr;
+  if (!resolve_prng(tie_break, mgr, stream_name, &prng, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    *out_winner = socialchoicelab::aggregation::plurality_one_winner(
+        p->profile, to_cpp_tie_break(tie_break), prng);
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C6.2 — Borda Count
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_borda_scores(const SCS_Profile* p, int* out_scores,
+                                int out_len, char* err_buf, int err_buf_len) {
+  if (!p || !out_scores) {
+    set_error(err_buf, err_buf_len, "scs_borda_scores: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < p->profile.n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_borda_scores: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " +
+               std::to_string(p->profile.n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto s = socialchoicelab::aggregation::borda_scores(p->profile);
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) out_scores[i] = s[i];
+    return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_borda_all_winners(const SCS_Profile* p, int* out_winners,
+                                     int out_capacity, int* out_n,
+                                     char* err_buf, int err_buf_len) {
+  if (!p || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_borda_all_winners: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto w = socialchoicelab::aggregation::borda_all_winners(p->profile);
+    return fill_int_winners(w, out_winners, out_capacity, out_n, err_buf,
+                            err_buf_len);
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_borda_one_winner(const SCS_Profile* p,
+                                    SCS_TieBreak tie_break,
+                                    SCS_StreamManager* mgr,
+                                    const char* stream_name, int* out_winner,
+                                    char* err_buf, int err_buf_len) {
+  if (!p || !out_winner) {
+    set_error(err_buf, err_buf_len,
+              "scs_borda_one_winner: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  CppPRNG* prng = nullptr;
+  if (!resolve_prng(tie_break, mgr, stream_name, &prng, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    *out_winner = socialchoicelab::aggregation::borda_one_winner(
+        p->profile, to_cpp_tie_break(tie_break), prng);
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_borda_ranking(const SCS_Profile* p, SCS_TieBreak tie_break,
+                                 SCS_StreamManager* mgr,
+                                 const char* stream_name, int* out_ranking,
+                                 int out_len, char* err_buf, int err_buf_len) {
+  if (!p || !out_ranking) {
+    set_error(err_buf, err_buf_len, "scs_borda_ranking: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < p->profile.n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_borda_ranking: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " +
+               std::to_string(p->profile.n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  CppPRNG* prng = nullptr;
+  if (!resolve_prng(tie_break, mgr, stream_name, &prng, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    auto r = socialchoicelab::aggregation::borda_ranking(
+        p->profile, to_cpp_tie_break(tie_break), prng);
+    for (int i = 0; i < static_cast<int>(r.size()); ++i) out_ranking[i] = r[i];
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C6.3 — Anti-plurality
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_antiplurality_scores(const SCS_Profile* p, int* out_scores,
+                                        int out_len, char* err_buf,
+                                        int err_buf_len) {
+  if (!p || !out_scores) {
+    set_error(err_buf, err_buf_len,
+              "scs_antiplurality_scores: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < p->profile.n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_antiplurality_scores: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " +
+               std::to_string(p->profile.n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto s = socialchoicelab::aggregation::antiplurality_scores(p->profile);
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) out_scores[i] = s[i];
+    return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_antiplurality_all_winners(const SCS_Profile* p,
+                                             int* out_winners, int out_capacity,
+                                             int* out_n, char* err_buf,
+                                             int err_buf_len) {
+  if (!p || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_antiplurality_all_winners: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto w =
+        socialchoicelab::aggregation::antiplurality_all_winners(p->profile);
+    return fill_int_winners(w, out_winners, out_capacity, out_n, err_buf,
+                            err_buf_len);
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_antiplurality_one_winner(
+    const SCS_Profile* p, SCS_TieBreak tie_break, SCS_StreamManager* mgr,
+    const char* stream_name, int* out_winner, char* err_buf, int err_buf_len) {
+  if (!p || !out_winner) {
+    set_error(err_buf, err_buf_len,
+              "scs_antiplurality_one_winner: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  CppPRNG* prng = nullptr;
+  if (!resolve_prng(tie_break, mgr, stream_name, &prng, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    *out_winner = socialchoicelab::aggregation::antiplurality_one_winner(
+        p->profile, to_cpp_tie_break(tie_break), prng);
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C6.4 — Generic positional scoring rule
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_scoring_rule_scores(const SCS_Profile* p,
+                                       const double* score_weights,
+                                       int n_weights, double* out_scores,
+                                       int out_len, char* err_buf,
+                                       int err_buf_len) {
+  if (!p || !score_weights || !out_scores) {
+    set_error(err_buf, err_buf_len,
+              "scs_scoring_rule_scores: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(score_weights, n_weights, "score_weights",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < p->profile.n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_scoring_rule_scores: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " +
+               std::to_string(p->profile.n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    std::vector<double> sv(score_weights, score_weights + n_weights);
+    auto s = socialchoicelab::aggregation::scoring_rule_scores(p->profile, sv);
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) out_scores[i] = s[i];
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_scoring_rule_all_winners(const SCS_Profile* p,
+                                            const double* score_weights,
+                                            int n_weights, int* out_winners,
+                                            int out_capacity, int* out_n,
+                                            char* err_buf, int err_buf_len) {
+  if (!p || !score_weights || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_scoring_rule_all_winners: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(score_weights, n_weights, "score_weights",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    std::vector<double> sv(score_weights, score_weights + n_weights);
+    auto w =
+        socialchoicelab::aggregation::scoring_rule_all_winners(p->profile, sv);
+    return fill_int_winners(w, out_winners, out_capacity, out_n, err_buf,
+                            err_buf_len);
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_scoring_rule_one_winner(
+    const SCS_Profile* p, const double* score_weights, int n_weights,
+    SCS_TieBreak tie_break, SCS_StreamManager* mgr, const char* stream_name,
+    int* out_winner, char* err_buf, int err_buf_len) {
+  if (!p || !score_weights || !out_winner) {
+    set_error(err_buf, err_buf_len,
+              "scs_scoring_rule_one_winner: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(score_weights, n_weights, "score_weights",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  CppPRNG* prng = nullptr;
+  if (!resolve_prng(tie_break, mgr, stream_name, &prng, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    std::vector<double> sv(score_weights, score_weights + n_weights);
+    *out_winner = socialchoicelab::aggregation::scoring_rule_one_winner(
+        p->profile, sv, to_cpp_tie_break(tie_break), prng);
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C6.5 — Approval voting
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_approval_scores_spatial(const double* alt_xy, int n_alts,
+                                           const double* voter_ideals_xy,
+                                           int n_voters, double threshold,
+                                           const SCS_DistanceConfig* dist_cfg,
+                                           int* out_scores, int out_len,
+                                           char* err_buf, int err_buf_len) {
+  if (!alt_xy || !voter_ideals_xy || !out_scores) {
+    set_error(err_buf, err_buf_len,
+              "scs_approval_scores_spatial: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_approval_scores_spatial: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " + std::to_string(n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(threshold)) {
+    set_error(err_buf, err_buf_len,
+              "scs_approval_scores_spatial: threshold must be finite");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  socialchoicelab::geometry::DistConfig cfg;
+  if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    auto alts = build_voters(alt_xy, n_alts);
+    auto voters = build_voters(voter_ideals_xy, n_voters);
+    auto s = socialchoicelab::aggregation::approval_scores_spatial(
+        alts, voters, cfg, threshold);
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) out_scores[i] = s[i];
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_approval_all_winners_spatial(
+    const double* alt_xy, int n_alts, const double* voter_ideals_xy,
+    int n_voters, double threshold, const SCS_DistanceConfig* dist_cfg,
+    int* out_winners, int out_capacity, int* out_n, char* err_buf,
+    int err_buf_len) {
+  if (!alt_xy || !voter_ideals_xy || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_approval_all_winners_spatial: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(alt_xy, n_alts * 2, "alt_xy", err_buf,
+                               err_buf_len) ||
+      !validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(threshold)) {
+    set_error(err_buf, err_buf_len,
+              "scs_approval_all_winners_spatial: threshold must be finite");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  socialchoicelab::geometry::DistConfig cfg;
+  if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    auto alts = build_voters(alt_xy, n_alts);
+    auto voters = build_voters(voter_ideals_xy, n_voters);
+    auto w = socialchoicelab::aggregation::approval_all_winners_spatial(
+        alts, voters, cfg, threshold);
+    return fill_int_winners(w, out_winners, out_capacity, out_n, err_buf,
+                            err_buf_len);
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_approval_scores_topk(const SCS_Profile* p, int k,
+                                        int* out_scores, int out_len,
+                                        char* err_buf, int err_buf_len) {
+  if (!p || !out_scores) {
+    set_error(err_buf, err_buf_len,
+              "scs_approval_scores_topk: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < p->profile.n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_approval_scores_topk: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " +
+               std::to_string(p->profile.n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto s = socialchoicelab::aggregation::approval_scores_topk(p->profile, k);
+    for (int i = 0; i < static_cast<int>(s.size()); ++i) out_scores[i] = s[i];
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_approval_all_winners_topk(const SCS_Profile* p, int k,
+                                             int* out_winners, int out_capacity,
+                                             int* out_n, char* err_buf,
+                                             int err_buf_len) {
+  if (!p || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_approval_all_winners_topk: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto w =
+        socialchoicelab::aggregation::approval_all_winners_topk(p->profile, k);
+    return fill_int_winners(w, out_winners, out_capacity, out_n, err_buf,
+                            err_buf_len);
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2094,6 +2890,244 @@ extern "C" int scs_uniform_choice(SCS_StreamManager* mgr,
   try {
     *out = static_cast<int64_t>(mgr->mgr.get_stream(stream_name)
                                     .uniform_choice(static_cast<size_t>(n)));
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C7.1 — Rank by scores
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_rank_by_scores(const double* scores, int n_alts,
+                                  SCS_TieBreak tie_break,
+                                  SCS_StreamManager* mgr,
+                                  const char* stream_name, int* out_ranking,
+                                  int out_len, char* err_buf, int err_buf_len) {
+  if (!scores || !out_ranking) {
+    set_error(err_buf, err_buf_len,
+              "scs_rank_by_scores: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_alts < 1) {
+    set_error(err_buf, err_buf_len,
+              ("scs_rank_by_scores: n_alts must be >= 1 (got " +
+               std::to_string(n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_rank_by_scores: out_len must be >= n_alts (got " +
+               std::to_string(out_len) + " < " + std::to_string(n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(scores, n_alts, "scores", err_buf,
+                               err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  CppPRNG* prng = nullptr;
+  if (!resolve_prng(tie_break, mgr, stream_name, &prng, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    std::vector<double> sv(scores, scores + n_alts);
+    auto r = socialchoicelab::aggregation::rank_by_scores(
+        sv, to_cpp_tie_break(tie_break), prng);
+    for (int i = 0; i < static_cast<int>(r.size()); ++i) out_ranking[i] = r[i];
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C7.2 — Pairwise ranking from matrix
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_pairwise_ranking_from_matrix(
+    const SCS_PairwiseResult* pairwise_matrix, int n_alts,
+    SCS_TieBreak tie_break, SCS_StreamManager* mgr, const char* stream_name,
+    int* out_ranking, int out_len, char* err_buf, int err_buf_len) {
+  if (!pairwise_matrix || !out_ranking) {
+    set_error(err_buf, err_buf_len,
+              "scs_pairwise_ranking_from_matrix: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_alts < 1) {
+    set_error(err_buf, err_buf_len,
+              ("scs_pairwise_ranking_from_matrix: n_alts must be >= 1 (got " +
+               std::to_string(n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < n_alts) {
+    set_error(err_buf, err_buf_len,
+              ("scs_pairwise_ranking_from_matrix: out_len must be >= n_alts "
+               "(got " +
+               std::to_string(out_len) + " < " + std::to_string(n_alts) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  CppPRNG* prng = nullptr;
+  if (!resolve_prng(tie_break, mgr, stream_name, &prng, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    Eigen::MatrixXi mat(n_alts, n_alts);
+    for (int i = 0; i < n_alts; ++i)
+      for (int j = 0; j < n_alts; ++j)
+        mat(i, j) = static_cast<int>(pairwise_matrix[i * n_alts + j]);
+    auto r = socialchoicelab::aggregation::pairwise_ranking(
+        mat, to_cpp_tie_break(tie_break), prng);
+    for (int i = 0; i < static_cast<int>(r.size()); ++i) out_ranking[i] = r[i];
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C7.3 — Pareto efficiency
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_pareto_set(const SCS_Profile* p, int* out_indices,
+                              int out_capacity, int* out_n, char* err_buf,
+                              int err_buf_len) {
+  if (!p || !out_n) {
+    set_error(err_buf, err_buf_len, "scs_pareto_set: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto ps = socialchoicelab::aggregation::pareto_set(p->profile);
+    return fill_int_winners(ps, out_indices, out_capacity, out_n, err_buf,
+                            err_buf_len);
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_is_pareto_efficient(const SCS_Profile* p, int alt_idx,
+                                       int* out, char* err_buf,
+                                       int err_buf_len) {
+  if (!p || !out) {
+    set_error(err_buf, err_buf_len,
+              "scs_is_pareto_efficient: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    *out =
+        socialchoicelab::aggregation::is_pareto_efficient(p->profile, alt_idx)
+            ? 1
+            : 0;
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// C7.4 — Condorcet and majority-selection predicates
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_has_condorcet_winner_profile(const SCS_Profile* p,
+                                                int* out_found, char* err_buf,
+                                                int err_buf_len) {
+  if (!p || !out_found) {
+    set_error(err_buf, err_buf_len,
+              "scs_has_condorcet_winner_profile: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    *out_found =
+        socialchoicelab::aggregation::has_condorcet_winner_profile(p->profile)
+            ? 1
+            : 0;
+    return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_condorcet_winner_profile(const SCS_Profile* p,
+                                            int* out_found, int* out_winner,
+                                            char* err_buf, int err_buf_len) {
+  if (!p || !out_found) {
+    set_error(err_buf, err_buf_len,
+              "scs_condorcet_winner_profile: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    const auto cw =
+        socialchoicelab::aggregation::condorcet_winner_profile(p->profile);
+    *out_found = cw.has_value() ? 1 : 0;
+    if (cw.has_value() && out_winner) *out_winner = *cw;
+    return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_is_selected_by_condorcet_consistent_rules(
+    const SCS_Profile* p, int alt_idx, int* out, char* err_buf,
+    int err_buf_len) {
+  if (!p || !out) {
+    set_error(err_buf, err_buf_len,
+              "scs_is_selected_by_condorcet_consistent_rules: "
+              "null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    *out = socialchoicelab::aggregation::is_condorcet_consistent(p->profile,
+                                                                 alt_idx)
+               ? 1
+               : 0;
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_is_selected_by_majority_consistent_rules(
+    const SCS_Profile* p, int alt_idx, int* out, char* err_buf,
+    int err_buf_len) {
+  if (!p || !out) {
+    set_error(err_buf, err_buf_len,
+              "scs_is_selected_by_majority_consistent_rules: "
+              "null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    *out = socialchoicelab::aggregation::is_majority_consistent(p->profile,
+                                                                alt_idx)
+               ? 1
+               : 0;
     return SCS_OK;
   } catch (const std::invalid_argument& e) {
     set_error(err_buf, err_buf_len, e.what());

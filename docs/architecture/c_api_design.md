@@ -48,7 +48,7 @@ Every function returns `int`:
 | Return value | Meaning |
 |---|---|
 | `SCS_OK` (0) | Success |
-| `SCS_ERROR_INVALID_ARGUMENT` (1) | Bad argument (null pointer, wrong dimension, out-of-range value, unregistered stream name) |
+| `SCS_ERROR_INVALID_ARGUMENT` (1) | Bad argument (null pointer, wrong dimension, out-of-range value, unregistered stream name, non-finite double) |
 | `SCS_ERROR_INTERNAL` (2) | Unexpected internal error |
 | `SCS_ERROR_BUFFER_TOO_SMALL` (3) | Caller-provided output buffer is valid but not large enough |
 | `SCS_ERROR_OUT_OF_MEMORY` (4) | Handle construction or internal allocation failed |
@@ -74,6 +74,13 @@ For variable-size outputs, the stable contract is:
 
 All non-destroy opaque-handle APIs should reject a null handle with
 `SCS_ERROR_INVALID_ARGUMENT`. Destroy functions treat `NULL` as a no-op.
+
+**Input validation (non-finite doubles).** At the C API boundary, all double
+inputs that represent coordinates, utilities, weights, thresholds, or similar
+numeric parameters are validated for finiteness. If any such value is NaN or
+infinite, the function returns `SCS_ERROR_INVALID_ARGUMENT` (or `NULL` for
+handle-returning APIs) and writes a message into `err_buf`. The C++ core is not
+required to tolerate non-finite input; validation is done once in the wrappers.
 
 ---
 
@@ -201,37 +208,31 @@ int scs_api_version(
     char* err_buf, int err_buf_len);
 ```
 
-### Legacy and preferred polygon sampling APIs
-
-The original minimal surface includes:
+### Level-set to polygon sampling (C0.4)
 
 ```c
 int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
-    double* out_xy, int* out_n, char* err_buf, int err_buf_len);
-```
-
-This remains supported for backward compatibility, but new binding code should
-prefer the additive size-query helpers:
-
-```c
-int scs_level_set_polygon_size(
-    const SCS_LevelSet2d* level_set, int num_samples,
-    int* out_xy_pairs,
-    char* err_buf, int err_buf_len);
-
-int scs_level_set_sample_polygon(
-    const SCS_LevelSet2d* level_set, int num_samples,
-    double* out_xy, int out_capacity,   // counted in (x,y) pairs
-    int* out_n,
+    double* out_xy, int out_capacity, int* out_n,
     char* err_buf, int err_buf_len);
 ```
 
-Both paths must produce identical sampled coordinates.
+- **Size-query mode:** pass `out_xy = NULL` or `out_capacity = 0`. The function
+  returns `SCS_OK` and sets `*out_n` to the number of `(x,y)` pairs required.
+- **Fill mode:** provide a buffer of length `>= *out_n` (from a prior size query
+  or from the known requirement: `num_samples` for circle/ellipse/superellipse,
+  or 4 for polygon). The function writes interleaved `[x0,y0,x1,y1,...]` and
+  sets `*out_n` to the number of pairs written.
+- **Insufficient buffer:** if `out_xy != NULL` and `out_capacity > 0` but
+  `out_capacity <` required size, the function returns
+  `SCS_ERROR_BUFFER_TOO_SMALL` and sets `*out_n` to the required size.
 
-### Planned opaque handles
+For circle/ellipse/superellipse, `num_samples` must be ≥ 3. For polygon, the
+four vertices are copied and `num_samples` is ignored.
 
-The expanded stable surface uses opaque handles for C++ types that cannot be
-represented safely as flat POD:
+### Opaque handles (C2, C5)
+
+The stable surface uses opaque handles for C++ types that cannot be represented
+safely as flat POD:
 
 ```c
 typedef struct SCS_StreamManagerImpl SCS_StreamManager;
@@ -239,56 +240,91 @@ typedef struct SCS_WinsetImpl SCS_Winset;
 typedef struct SCS_ProfileImpl SCS_Profile;
 ```
 
-All such handles follow explicit ownership via create/destroy pairs.
+All such handles use create/destroy pairs; the **caller owns** the handle and
+must call the corresponding `scs_*_destroy` when done. Passing `NULL` to any
+destroy function is a no-op and is safe.
 
-### Planned geometry export rules
+**SCS_Winset\*** (C2): Created by `scs_winset_2d`, `scs_weighted_winset_2d`,
+`scs_winset_with_veto_2d`, or `scs_winset_clone`. The boundary is exported via
+`scs_winset_boundary_size_2d` (size query) and `scs_winset_sample_boundary_2d`
+(fill). The sampled boundary is an **approximation**; path count and vertex
+count depend on the internal representation. Use `out_path_starts` and
+`out_path_is_hole` to split the flat vertex array into rings and to distinguish
+outer boundaries from holes. For an empty winset, `scs_winset_bbox_2d` sets
+`*out_found = 0` and leaves the min/max outputs untouched. Query helpers:
+`scs_winset_is_empty`, `scs_winset_contains_point_2d`, `scs_winset_bbox_2d`.
+Boolean set operations: `scs_winset_union`, `scs_winset_intersection`,
+`scs_winset_difference`, `scs_winset_symmetric_difference`.
 
-For sampled multi-path geometry such as winset boundaries:
+**SCS_Profile\*** (C5): Created by `scs_profile_build_spatial`,
+`scs_profile_from_utility_matrix`, `scs_profile_impartial_culture`,
+`scs_profile_uniform_spatial`, `scs_profile_gaussian_spatial`, or
+`scs_profile_clone`. Inspect with `scs_profile_dims`, `scs_profile_get_ranking`,
+`scs_profile_export_rankings`. Used as input to all C6 voting-rule and C7
+aggregation-property functions. Caller must not use a profile after
+`scs_profile_destroy`.
 
-- Paths are represented as interleaved `(x,y)` pairs.
-- `out_path_starts[i]` gives the starting pair index for path `i`.
-- Sampled paths do not repeat the first point at the end.
-- Hole vs outer-boundary status is explicit via `out_path_is_hole[i]`; bindings
-  must not infer topology from winding orientation.
+### Winset boundary export (C2.6)
 
-For example:
+For sampled multi-path geometry:
+
+- Call `scs_winset_boundary_size_2d` first to get `out_xy_pairs` and
+  `out_n_paths`. Then allocate buffers and call `scs_winset_sample_boundary_2d`.
+- Paths are interleaved `(x,y)` pairs in a single `out_xy` array.
+- `out_path_starts[i]` is the starting pair index for path `i`.
+- Sampled rings do **not** repeat the closing vertex (first point is not
+  duplicated at the end).
+- `out_path_is_hole[i]` is 0 for an outer boundary, 1 for a hole; bindings must
+  not infer topology from winding.
 
 ```c
-int scs_winset_sample_boundary_2d(
-    const SCS_Winset* ws,
-    int num_samples_per_path,
-    double* out_xy, int out_xy_capacity,
-    int* out_xy_n,
-    int* out_path_starts, int out_path_capacity,
-    int* out_path_is_hole,
-    int* out_n_paths,
+int scs_winset_boundary_size_2d(const SCS_Winset* ws, int* out_xy_pairs,
+    int* out_n_paths, char* err_buf, int err_buf_len);
+
+int scs_winset_sample_boundary_2d(const SCS_Winset* ws,
+    double* out_xy, int out_xy_capacity, int* out_xy_n,
+    int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
+    int* out_n_paths, char* err_buf, int err_buf_len);
+```
+
+If either buffer is too small, the function returns `SCS_ERROR_BUFFER_TOO_SMALL`.
+Pass `out_xy = NULL` / `out_path_starts = NULL` or capacity 0 for size-query
+only.
+
+Bounding box for possibly empty winsets:
+
+```c
+int scs_winset_bbox_2d(const SCS_Winset* ws, int* out_found,
+    double* out_min_x, double* out_min_y, double* out_max_x, double* out_max_y,
     char* err_buf, int err_buf_len);
 ```
 
-Bounding-box queries over possibly empty geometry should expose that possibility
-explicitly:
+When the winset is empty, `*out_found = 0` and the min/max outputs are left
+untouched.
+
+### SCS_TieBreak and randomness (C5, C6, C7)
+
+Voting rules that break ties (`*_one_winner`, `*_ranking`, `scs_rank_by_scores`,
+`scs_pairwise_ranking_from_matrix`, `scs_borda_ranking`) take
+`SCS_TieBreak tie_break`, `SCS_StreamManager* mgr`, and `const char* stream_name`:
+
+- **SCS_TIEBREAK_SMALLEST_INDEX:** Deterministic; choose the tied alternative
+  with the smallest index. `mgr` and `stream_name` may be `NULL`.
+- **SCS_TIEBREAK_RANDOM:** Choose uniformly at random among tied alternatives.
+  **Requires** `mgr != NULL` and `stream_name != NULL` (a non-null, registered
+  stream). Passing `NULL` for either returns `SCS_ERROR_INVALID_ARGUMENT`.
+
+Bindings that want reproducible results without a stream manager should use
+`SCS_TIEBREAK_SMALLEST_INDEX`.
+
+### Ranking and aggregation helpers (C7)
+
+Generic ranking accepts `double` score vectors (fractional scoring rules):
 
 ```c
-int scs_winset_bbox_2d(
-    const SCS_Winset* ws,
-    int* out_found,
-    double* out_min_x, double* out_min_y,
-    double* out_max_x, double* out_max_y,
-    char* err_buf, int err_buf_len);
-```
-
-### Planned ranking rule consistency
-
-Generic ranking helpers should accept `double` score vectors so they remain
-compatible with fractional scoring rules:
-
-```c
-int scs_rank_by_scores(
-    const double* scores, int n_alts,
-    SCS_TieBreak tie_break,
-    SCS_StreamManager* mgr, const char* stream_name,
-    int* out_ranking, int out_len,
-    char* err_buf, int err_buf_len);
+int scs_rank_by_scores(const double* scores, int n_alts,
+    SCS_TieBreak tie_break, SCS_StreamManager* mgr, const char* stream_name,
+    int* out_ranking, int out_len, char* err_buf, int err_buf_len);
 ```
 
 ---
@@ -381,51 +417,91 @@ If a stream allowlist is active, using an unlisted name returns
 
 ---
 
+## Phases C0–C7 at a glance
+
+| Phase | Scope |
+|-------|--------|
+| **C0** | Version query (`scs_api_version`), error codes (`BUFFER_TOO_SMALL`, `OUT_OF_MEMORY`), `SCS_PairwiseResult` / `SCS_TieBreak` scalar domains, `SCS_MAJORITY_SIMPLE` (-1), `scs_level_set_to_polygon` size-query + `out_capacity`, thread-safety note |
+| **C1** | Majority: `scs_majority_prefers_2d`, `scs_pairwise_matrix_2d`, `scs_weighted_majority_prefers_2d` |
+| **C2** | Winset: `SCS_Winset*`, create/destroy, `is_empty`, `contains_point_2d`, `bbox_2d`, boundary size + sample, boolean ops, clone |
+| **C3** | Yolk: `SCS_Yolk2d`, `scs_yolk_2d` |
+| **C4** | Geometry: Copeland scores/winner, Condorcet winner 2d, core, uncovered set (discrete + boundary), Heart (discrete + boundary) |
+| **C5** | Profile: `SCS_Profile*`, build_spatial, from_utility_matrix, generators (impartial culture, uniform/Gaussian spatial), lifecycle, export_rankings, clone |
+| **C6** | Voting rules: plurality, Borda, anti-plurality, generic scoring rule, approval (spatial + top-k); each with scores / all_winners / one_winner (and Borda ranking) |
+| **C7** | Social properties: `scs_rank_by_scores`, `scs_pairwise_ranking_from_matrix`, Pareto set / is_pareto_efficient, Condorcet/majority profile predicates |
+
+See `docs/status/c_api_extensions_plan.md` for the full checklist and contracts.
+
+---
+
 ## Mapping summary: C type ↔ C++ type
 
 | C type | C++ type |
-|---|---|
+|--------|----------|
 | `SCS_LossConfig` | `preference::indifference::LossConfig` (via `to_cpp_loss_config`) |
-| `SCS_DistanceConfig` + pointer/len | `preference::indifference::DistanceConfig` + `std::vector<double>` |
+| `SCS_DistanceConfig` + pointer/len | `preference::indifference::DistanceConfig` + `std::vector<double>`; `salience_weights` is **borrowed** (caller-owned, not copied) |
 | `SCS_LevelSet2d` | `preference::indifference::LevelSet2d` (`std::variant`) |
-| `SCS_Yolk2d` | trivial POD result struct |
-| `SCS_PairwiseResult` | fixed-width result domain (`int32_t`) |
-| `SCS_TieBreak` | fixed-width tie-break domain (`int32_t`) |
+| `SCS_Yolk2d` | POD: `center_x`, `center_y`, `radius` |
+| `SCS_PairwiseResult` | `int32_t` (-1 / 0 / 1) |
+| `SCS_TieBreak` | `int32_t` (0 = kRandom, 1 = kSmallestIndex) |
 | `SCS_StreamManager*` | `SCS_StreamManagerImpl { core::rng::StreamManager mgr; }` |
-| `SCS_Winset*` | `SCS_WinsetImpl { ...WinsetRegion / CGAL polygon-set state... }` |
-| `SCS_Profile*` | `SCS_ProfileImpl { ...Profile ranking state... }` |
-| `double*, int n_dims` | `Eigen::Map<const Eigen::VectorXd>` |
+| `SCS_Winset*` | `SCS_WinsetImpl` (internal winset region / CGAL state) |
+| `SCS_Profile*` | `SCS_ProfileImpl { aggregation::Profile profile; }` |
+| `double*` point arrays, `int n` | `std::vector<Point2d>` or `Eigen::Map` as appropriate |
 
 ---
 
 ## Usage example (C pseudocode)
 
+End-to-end workflow: fixed voter/alternative positions → spatial profile →
+Borda winner → winset boundary sample → Yolk → Condorcet check.
+
 ```c
-// Create a manager and draw voter positions.
 char err[512] = {0};
-SCS_StreamManager* mgr = scs_stream_manager_create(42, err, 512);
-assert(mgr);
-
-const char* names[] = {"voters", "candidates"};
-scs_register_streams(mgr, names, 2, err, 512);
-
-double x = 0.0;
-scs_uniform_real(mgr, "voters", -10.0, 10.0, &x, err, 512);
-
-// Compute distance from voter ideal to candidate.
-double ideal[2] = {x, 0.0};
-double cand[2]  = {3.0, 4.0};
-double w[2]     = {1.0, 1.0};
+double w[2] = {1.0, 1.0};
 SCS_DistanceConfig dc = {SCS_DIST_EUCLIDEAN, 2.0, w, 2};
-double dist = 0.0;
-scs_calculate_distance(ideal, cand, 2, &dc, &dist, err, 512);
 
-// Convert to utility.
-SCS_LossConfig lc = {SCS_LOSS_QUADRATIC, 1.0, 1.0, 1.0, 0.5};
-double u = 0.0;
-scs_distance_to_utility(dist, &lc, &u, err, 512);
+// Alternatives and voter ideal points (e.g. 2 alts, 3 voters).
+double alts[]    = {0.0, 0.0,  2.0, 0.0};
+double voters[]  = {0.0, 0.0,  1.0, 0.0,  2.0, 0.0};
 
-scs_stream_manager_destroy(mgr);
+// Build ordinal profile from spatial data (distance → ranking).
+SCS_Profile* p = scs_profile_build_spatial(alts, 2, voters, 3, &dc, err, 512);
+if (!p) { /* handle err */ }
+
+// Borda scores and single winner (deterministic tie-break).
+int scores[2] = {0};
+scs_borda_scores(p, scores, 2, err, 512);
+int winner = -1;
+scs_borda_one_winner(p, SCS_TIEBREAK_SMALLEST_INDEX, NULL, NULL, &winner, err, 512);
+
+// Winset for same geometry; sample boundary.
+SCS_Winset* ws = scs_winset_2d(1.0, 1.0, voters, 3, &dc, SCS_MAJORITY_SIMPLE,
+                               SCS_DEFAULT_WINSET_SAMPLES, err, 512);
+if (ws) {
+  int xy_pairs = 0, n_paths = 0;
+  scs_winset_boundary_size_2d(ws, &xy_pairs, &n_paths, err, 512);
+  double* boundary_xy = (double*)malloc((size_t)(2 * xy_pairs) * sizeof(double));
+  int *starts = (int*)malloc((size_t)n_paths * sizeof(int));
+  int *holes  = (int*)malloc((size_t)n_paths * sizeof(int));
+  int out_xy_n = 0, out_n_paths = 0;
+  scs_winset_sample_boundary_2d(ws, boundary_xy, xy_pairs, &out_xy_n,
+                                starts, n_paths, holes, &out_n_paths, err, 512);
+  // ... use boundary_xy, starts, holes ...
+  free(boundary_xy); free(starts); free(holes);
+  scs_winset_destroy(ws);
+}
+
+// Yolk (smallest circle intersecting all median lines).
+SCS_Yolk2d yolk = {0};
+scs_yolk_2d(voters, 3, &dc, SCS_MAJORITY_SIMPLE, 720, &yolk, err, 512);
+
+// Condorcet winner from profile (ordinal).
+int cw_found = 0, cw_idx = -1;
+scs_condorcet_winner_profile(p, &cw_found, &cw_idx, err, 512);
+if (cw_found) { /* cw_idx is the Condorcet winner */ }
+
+scs_profile_destroy(p);
 ```
 
 ---
@@ -443,14 +519,26 @@ This contract is intentionally minimal: the API imposes no internal locking, so 
 
 ---
 
-## Stability note
+## ABI and shared library
 
-This is the **c_api minimal** milestone surface plus the stable-surface rules
-for the upcoming geometry / aggregation expansion. Functions already marked in
-the header are stable for R/Python binding use. Additional functions from the
-extension milestone are added additively rather than by signature-breaking changes.
+All exported declarations use the **SCS_API** macro (default visibility on
+Unix; `__declspec(dllexport/dllimport)` on Windows when building/using the
+library). The shared library (`libscs_api`) should eventually use explicit
+**VERSION** / **SOVERSION** in CMake so that soname compatibility is clear;
+until then, matching source and header versions is the contract.
 
-`scs_level_set_to_polygon` gained an `out_capacity` parameter in Phase C0.
-Variable-size output functions follow the explicit size-query / `SCS_ERROR_BUFFER_TOO_SMALL`
-contract: pass `out_xy = NULL` to discover the required capacity, then allocate
-and call again with the buffer.
+---
+
+## Stability and deprecation
+
+The C API surface documented here (C0–C7) is **stable** for R/Python binding
+use. Once these functions ship:
+
+- **Additive only:** New functions and new optional parameters may be added.
+- **No signature-breaking changes:** Existing function signatures and the
+  layout of public POD structs will not be changed in a backward-incompatible
+  way. If a change is ever required, it will be done via a new function or
+  struct and a deprecation period for the old one.
+- **Size-query contract:** Variable-size output functions support null-buffer
+  or zero-capacity size queries and return `SCS_ERROR_BUFFER_TOO_SMALL` when
+  the provided buffer is too small; they do not truncate silently.

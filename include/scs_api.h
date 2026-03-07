@@ -1177,6 +1177,344 @@ SCS_API int scs_profile_export_rankings(const SCS_Profile* p, int* out_rankings,
 SCS_API SCS_Profile* scs_profile_clone(const SCS_Profile* p, char* err_buf,
                                        int err_buf_len);
 
+// ---------------------------------------------------------------------------
+// Aggregation — Voting rules  (C6)
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// C6.1 — Plurality
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute plurality scores (first-place vote counts per alternative).
+ * @param out_len Must be >= p->n_alts.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_plurality_scores(const SCS_Profile* p, int* out_scores,
+                                 int out_len, char* err_buf, int err_buf_len);
+
+/**
+ * @brief Return all plurality winners (alternatives tied for the most
+ * first-place votes).
+ *
+ * **Size-query mode:** pass out_winners = NULL or out_capacity = 0.
+ *
+ * @param[out] out_n  Number of winners required / written.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_plurality_all_winners(const SCS_Profile* p, int* out_winners,
+                                      int out_capacity, int* out_n,
+                                      char* err_buf, int err_buf_len);
+
+/**
+ * @brief Return a single plurality winner, applying tie_break if needed.
+ *
+ * @param tie_break   SCS_TIEBREAK_RANDOM or SCS_TIEBREAK_SMALLEST_INDEX.
+ * @param mgr         Required when tie_break == SCS_TIEBREAK_RANDOM; may be
+ *                    NULL when SCS_TIEBREAK_SMALLEST_INDEX.
+ * @param stream_name Named stream for randomness; required with kRandom.
+ * @param[out] out_winner  0-based index of the winner.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_plurality_one_winner(const SCS_Profile* p,
+                                     SCS_TieBreak tie_break,
+                                     SCS_StreamManager* mgr,
+                                     const char* stream_name, int* out_winner,
+                                     char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// C6.2 — Borda Count
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute Borda scores (sum of positional weights n_alts-1, n_alts-2,
+ * ..., 0 per voter).
+ * @param out_len Must be >= p->n_alts.
+ */
+SCS_API int scs_borda_scores(const SCS_Profile* p, int* out_scores, int out_len,
+                             char* err_buf, int err_buf_len);
+
+/** @brief All Borda winners (tied for highest Borda score). Size-query mode
+ * supported. */
+SCS_API int scs_borda_all_winners(const SCS_Profile* p, int* out_winners,
+                                  int out_capacity, int* out_n, char* err_buf,
+                                  int err_buf_len);
+
+/** @brief Single Borda winner with tie-breaking. */
+SCS_API int scs_borda_one_winner(const SCS_Profile* p, SCS_TieBreak tie_break,
+                                 SCS_StreamManager* mgr,
+                                 const char* stream_name, int* out_winner,
+                                 char* err_buf, int err_buf_len);
+
+/**
+ * @brief Full social ordering by descending Borda score.
+ *
+ * out_ranking[0] is the most-preferred alternative; ties within score groups
+ * are broken by tie_break.
+ *
+ * @param out_len Must be >= p->n_alts.
+ */
+SCS_API int scs_borda_ranking(const SCS_Profile* p, SCS_TieBreak tie_break,
+                              SCS_StreamManager* mgr, const char* stream_name,
+                              int* out_ranking, int out_len, char* err_buf,
+                              int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// C6.3 — Anti-plurality
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute anti-plurality scores.
+ *
+ * scores[j] = number of voters for whom alternative j is NOT ranked last.
+ * Higher is better; the winner maximises this count (equivalently, minimises
+ * last-place appearances).
+ *
+ * @param out_len Must be >= p->n_alts.
+ */
+SCS_API int scs_antiplurality_scores(const SCS_Profile* p, int* out_scores,
+                                     int out_len, char* err_buf,
+                                     int err_buf_len);
+
+/** @brief All anti-plurality winners. Size-query mode supported. */
+SCS_API int scs_antiplurality_all_winners(const SCS_Profile* p,
+                                          int* out_winners, int out_capacity,
+                                          int* out_n, char* err_buf,
+                                          int err_buf_len);
+
+/** @brief Single anti-plurality winner with tie-breaking. */
+SCS_API int scs_antiplurality_one_winner(
+    const SCS_Profile* p, SCS_TieBreak tie_break, SCS_StreamManager* mgr,
+    const char* stream_name, int* out_winner, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// C6.4 — Generic positional scoring rule
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute scores under a generic positional scoring rule.
+ *
+ * @param score_weights  Non-increasing array of length n_weights == p->n_alts.
+ *                       score_weights[r] is the score awarded to the
+ *                       alternative ranked r-th (0 = best).
+ * @param out_scores     Output as doubles to avoid truncation. Length >=
+ *                       p->n_alts.
+ */
+SCS_API int scs_scoring_rule_scores(const SCS_Profile* p,
+                                    const double* score_weights, int n_weights,
+                                    double* out_scores, int out_len,
+                                    char* err_buf, int err_buf_len);
+
+/** @brief All scoring-rule winners. Size-query mode supported. */
+SCS_API int scs_scoring_rule_all_winners(const SCS_Profile* p,
+                                         const double* score_weights,
+                                         int n_weights, int* out_winners,
+                                         int out_capacity, int* out_n,
+                                         char* err_buf, int err_buf_len);
+
+/** @brief Single scoring-rule winner with tie-breaking. */
+SCS_API int scs_scoring_rule_one_winner(
+    const SCS_Profile* p, const double* score_weights, int n_weights,
+    SCS_TieBreak tie_break, SCS_StreamManager* mgr, const char* stream_name,
+    int* out_winner, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// C6.5 — Approval voting (spatial and ordinal top-k variants)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute approval scores under the spatial threshold model.
+ *
+ * A voter approves an alternative if its distance from the voter's ideal point
+ * is at most @p threshold.
+ *
+ * @param threshold   Non-negative approval radius.
+ * @param out_len     Must be >= n_alts.
+ */
+SCS_API int scs_approval_scores_spatial(const double* alt_xy, int n_alts,
+                                        const double* voter_ideals_xy,
+                                        int n_voters, double threshold,
+                                        const SCS_DistanceConfig* dist_cfg,
+                                        int* out_scores, int out_len,
+                                        char* err_buf, int err_buf_len);
+
+/**
+ * @brief All spatial-approval winners. Size-query mode supported.
+ *
+ * Returns alternatives with the highest approval count (at least one approver).
+ * If no alternative receives any approval, the output set is empty.
+ */
+SCS_API int scs_approval_all_winners_spatial(const double* alt_xy, int n_alts,
+                                             const double* voter_ideals_xy,
+                                             int n_voters, double threshold,
+                                             const SCS_DistanceConfig* dist_cfg,
+                                             int* out_winners, int out_capacity,
+                                             int* out_n, char* err_buf,
+                                             int err_buf_len);
+
+/**
+ * @brief Compute ordinal top-k approval scores.
+ *
+ * Each voter approves their top @p k ranked alternatives. Score = approval
+ * count.
+ *
+ * @param k  Must be in [1, n_alts].
+ */
+SCS_API int scs_approval_scores_topk(const SCS_Profile* p, int k,
+                                     int* out_scores, int out_len,
+                                     char* err_buf, int err_buf_len);
+
+/** @brief All top-k approval winners. Size-query mode supported. */
+SCS_API int scs_approval_all_winners_topk(const SCS_Profile* p, int k,
+                                          int* out_winners, int out_capacity,
+                                          int* out_n, char* err_buf,
+                                          int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Aggregation — Social rankings and properties  (C7)
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// C7.1 — Rank by scores
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Sort alternatives by descending score, with tie-breaking.
+ *
+ * Produces a full ordering of n_alts alternatives from a flat score array.
+ * Ties within a score group are broken by tie_break.
+ *
+ * @param scores      Double score vector of length n_alts.
+ * @param n_alts      Number of alternatives (>= 1).
+ * @param out_ranking Output: alternative indices 0…n_alts-1, best first.
+ *                    out_len must be >= n_alts.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_rank_by_scores(const double* scores, int n_alts,
+                               SCS_TieBreak tie_break, SCS_StreamManager* mgr,
+                               const char* stream_name, int* out_ranking,
+                               int out_len, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// C7.2 — Pairwise ranking from matrix
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Rank alternatives by Copeland score derived from a pairwise matrix.
+ *
+ * The Copeland score of alternative i is the number of alternatives j for
+ * which @p pairwise_matrix[i * n_alts + j] == SCS_PAIRWISE_WIN.
+ *
+ * The typical input is the matrix produced by @c scs_pairwise_matrix_2d,
+ * but any conforming SCS_PairwiseResult matrix is accepted.
+ *
+ * @param pairwise_matrix  Row-major n_alts × n_alts SCS_PairwiseResult array.
+ * @param out_ranking      Alternative indices, best (highest Copeland) first.
+ *                         out_len must be >= n_alts.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_pairwise_ranking_from_matrix(
+    const SCS_PairwiseResult* pairwise_matrix, int n_alts,
+    SCS_TieBreak tie_break, SCS_StreamManager* mgr, const char* stream_name,
+    int* out_ranking, int out_len, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// C7.3 — Pareto efficiency
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Return the Pareto set: all alternatives not Pareto-dominated.
+ *
+ * Alternative a Pareto-dominates b if every voter weakly prefers a and at
+ * least one voter strictly prefers a.  The Pareto set is always non-empty.
+ *
+ * **Size-query mode:** pass out_indices = NULL or out_capacity = 0.
+ *
+ * @param[out] out_n  Number of Pareto-efficient alternatives.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_pareto_set(const SCS_Profile* p, int* out_indices,
+                           int out_capacity, int* out_n, char* err_buf,
+                           int err_buf_len);
+
+/**
+ * @brief Check whether a single alternative is Pareto-efficient.
+ *
+ * @param alt_idx    0-based index of the alternative to test.
+ * @param[out] out   Set to 1 if Pareto-efficient, 0 otherwise.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_is_pareto_efficient(const SCS_Profile* p, int alt_idx, int* out,
+                                    char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// C7.4 — Condorcet and majority-selection predicates
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Check whether the majority relation from the profile has a Condorcet
+ * winner.
+ *
+ * A Condorcet winner beats every other alternative by strict majority (more
+ * than half of voters).
+ *
+ * @param[out] out_found  Set to 1 if a Condorcet winner exists, 0 otherwise.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_has_condorcet_winner_profile(const SCS_Profile* p,
+                                             int* out_found, char* err_buf,
+                                             int err_buf_len);
+
+/**
+ * @brief Return the Condorcet winner from the profile, if one exists.
+ *
+ * When no Condorcet winner exists, @p out_winner is left untouched.
+ *
+ * @param[out] out_found   Set to 1 if a winner was found, 0 otherwise.
+ * @param[out] out_winner  0-based index of the winner; untouched if not found.
+ *                         May be NULL (caller only needs the found flag).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_condorcet_winner_profile(const SCS_Profile* p, int* out_found,
+                                         int* out_winner, char* err_buf,
+                                         int err_buf_len);
+
+/**
+ * @brief Check whether a given alternative is Condorcet-consistent.
+ *
+ * Returns 1 in two cases:
+ *   (a) No Condorcet winner exists (vacuously consistent).
+ *   (b) A Condorcet winner exists and alt_idx is that winner.
+ *
+ * A correct Condorcet-consistent voting rule must always select an alternative
+ * that passes this predicate.
+ *
+ * @param alt_idx   0-based index of the alternative to test.
+ * @param[out] out  Set to 1 if Condorcet-consistent, 0 otherwise.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_is_selected_by_condorcet_consistent_rules(const SCS_Profile* p,
+                                                          int alt_idx, int* out,
+                                                          char* err_buf,
+                                                          int err_buf_len);
+
+/**
+ * @brief Check whether a given alternative is majority-consistent.
+ *
+ * An alternative is majority-consistent iff it beats every other alternative
+ * by strict majority (i.e. it IS the Condorcet winner).  This is a stronger
+ * condition than Condorcet consistency: if no Condorcet winner exists, this
+ * returns 0 for every candidate.
+ *
+ * @param alt_idx   0-based index of the alternative to test.
+ * @param[out] out  Set to 1 if majority-consistent, 0 otherwise.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_is_selected_by_majority_consistent_rules(const SCS_Profile* p,
+                                                         int alt_idx, int* out,
+                                                         char* err_buf,
+                                                         int err_buf_len);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

@@ -41,6 +41,7 @@ High-level direction for the project. This document does not duplicate detail; i
 - **R and Python packages:** Full-featured `socialchoicelab` packages with ModelConfig-driven repro, `export_script(config, lang="R|python")`, and documentation.
 - **GUI and web:** "GUI-lite" (R Shiny / Shiny for Python) and optional web app (Shiny for Python deployment) as in the [Design Document](../architecture/design_document.md).
 - **Advanced features:** 3D/N-D geometry, simulation engines (adaptive candidates, experiment runner), empirical profiles, preference estimation — per [implementation priority](../references/implementation_priority.md) Phases 3–4.
+- **Contributor C API wrapper tooling:** When the project opens to external contributors, any new C++ functionality (preference generation, voting rules, candidate/party strategy, etc.) will require a corresponding C API wrapper. Provide either: (a) documented wrapper templates so contributors know the expected pattern, (b) a template generator script, or (c) a PR-triggered agent that drafts wrapper boilerplate for review. Without this, C API coverage will fall behind the C++ surface. See expanded note at the bottom of this file.
 
 ---
 
@@ -113,3 +114,19 @@ At each milestone boundary, before marking a milestone complete:
 - A dedicated citation verification step (analogous to E3 in the geometry plan) must appear in every future plan document.
 
 When in doubt, follow the [Design Document](../architecture/design_document.md) for architecture and the [Implementation Priority Guide](../references/implementation_priority.md) for ordering of social-choice and geometric features.
+
+---
+
+## C API wrapper tooling for external contributors
+
+**When relevant:** When the project opens for external contributions.
+
+The C API (`scs_api.h` / `scs_api.cpp`) is the sole stable boundary between C++ and language bindings (R, Python). Every new C++ function callable from R/Python must have a corresponding `extern "C"` wrapper. The current pattern — input validation, `try/catch`, error-buffer output, opaque handles for non-trivial return types — is consistent across C0–C5 and documented in `docs/architecture/c_api_design.md`.
+
+When external contributors add C++ functionality they may not know this pattern, may skip the wrapper, or may write one that doesn't conform (wrong error codes, exceptions escaping, STL types crossing the boundary). Options:
+
+- **Wrapper template / contributor guide:** A documented skeleton (`scs_my_function.h.template`, `scs_my_function.cpp.template`) showing the required pattern, referenced from `CONTRIBUTING.md`.
+- **Template generator script:** A script that takes a C++ function signature and emits a conforming C wrapper stub for the contributor to fill in.
+- **PR-triggered agent:** A CI or review-bot step that detects new public C++ API surface (new functions in `include/socialchoicelab/`) and either auto-drafts a wrapper stub or posts a checklist comment flagging that a C API wrapper is required.
+
+Start with option one when contributor onboarding begins; revisit options two and three when contributor volume warrants it.

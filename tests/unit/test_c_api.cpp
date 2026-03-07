@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <vector>
 
 #include "scs_api.h"  // NOLINT(build/include_subdir)
@@ -1722,4 +1723,923 @@ TEST(CApi_Profile, Clone_SameDimsAndRankings) {
 
   scs_profile_destroy(orig);
   scs_profile_destroy(copy);
+}
+
+// ===========================================================================
+// Phase C6 — Voting rules
+//
+// Test fixture profile: 3 voters, 3 alternatives (A=0, B=1, C=2).
+//   V0 ranking: [A, B, C]   (prefers A)
+//   V1 ranking: [B, A, C]   (prefers B)
+//   V2 ranking: [A, B, C]   (prefers A)
+//
+// Derived facts:
+//   Plurality scores:     A=2, B=1, C=0   → winner A
+//   Borda scores:         A=5, B=4, C=0   → winner A
+//   Antiplurality scores: A=0, B=0, C=3   → C placed last 3×;
+//                         both A and B are tied winners
+//   Borda ranking: [A, B, C]   (all ties broken by kSmallestIndex below)
+//   Scoring rule [2,1,0] == Borda (double output)
+//   Top-2 approval:       A=3, B=3, C=0   → tie between A and B
+// ===========================================================================
+
+namespace {
+
+// Build the shared 3-voter / 3-alt profile used by C6 tests.
+// Caller must destroy the returned handle.
+SCS_Profile* make_three_voter_profile(char* err, int err_len) {
+  // Utility matrix (row-major, 3 voters × 3 alts):
+  //   V0: [3, 2, 1]   V1: [2, 3, 1]   V2: [3, 2, 1]
+  double u[] = {3, 2, 1,   // V0
+                2, 3, 1,   // V1
+                3, 2, 1};  // V2
+  return scs_profile_from_utility_matrix(u, 3, 3, err, err_len);
+}
+
+}  // namespace
+
+// ---------------------------------------------------------------------------
+// C6.1 — Plurality
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Plurality, Scores_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int scores[3] = {};
+  ASSERT_EQ(scs_plurality_scores(p, scores, 3, err, 256), SCS_OK) << err;
+  EXPECT_EQ(scores[0], 2);  // A
+  EXPECT_EQ(scores[1], 1);  // B
+  EXPECT_EQ(scores[2], 0);  // C
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Plurality, AllWinners_SizeQuery) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int n = 0;
+  ASSERT_EQ(scs_plurality_all_winners(p, nullptr, 0, &n, err, 256), SCS_OK)
+      << err;
+  EXPECT_EQ(n, 1);
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Plurality, AllWinners_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int winners[3] = {};
+  int n = 0;
+  ASSERT_EQ(scs_plurality_all_winners(p, winners, 3, &n, err, 256), SCS_OK)
+      << err;
+  ASSERT_EQ(n, 1);
+  EXPECT_EQ(winners[0], 0);  // A
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Plurality, OneWinner_SmallestIndex) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int winner = -1;
+  ASSERT_EQ(scs_plurality_one_winner(p, SCS_TIEBREAK_SMALLEST_INDEX, nullptr,
+                                     nullptr, &winner, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(winner, 0);  // A
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Plurality, NullProfile_ReturnsError) {
+  char err[256] = {};
+  int scores[3] = {};
+  EXPECT_NE(scs_plurality_scores(nullptr, scores, 3, err, 256), SCS_OK);
+}
+
+TEST(CApi_Plurality, RandomTieBreak_NullMgr_ReturnsError) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int winner = -1;
+  EXPECT_NE(scs_plurality_one_winner(p, SCS_TIEBREAK_RANDOM, nullptr, nullptr,
+                                     &winner, err, 256),
+            SCS_OK);
+  scs_profile_destroy(p);
+}
+
+// ---------------------------------------------------------------------------
+// C6.2 — Borda Count
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Borda, Scores_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int scores[3] = {};
+  ASSERT_EQ(scs_borda_scores(p, scores, 3, err, 256), SCS_OK) << err;
+  EXPECT_EQ(scores[0], 5);  // A
+  EXPECT_EQ(scores[1], 4);  // B
+  EXPECT_EQ(scores[2], 0);  // C
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Borda, AllWinners_SizeQuery) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int n = 0;
+  ASSERT_EQ(scs_borda_all_winners(p, nullptr, 0, &n, err, 256), SCS_OK) << err;
+  EXPECT_EQ(n, 1);
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Borda, OneWinner_SmallestIndex) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int winner = -1;
+  ASSERT_EQ(scs_borda_one_winner(p, SCS_TIEBREAK_SMALLEST_INDEX, nullptr,
+                                 nullptr, &winner, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(winner, 0);  // A
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Borda, Ranking_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int ranking[3] = {};
+  ASSERT_EQ(scs_borda_ranking(p, SCS_TIEBREAK_SMALLEST_INDEX, nullptr, nullptr,
+                              ranking, 3, err, 256),
+            SCS_OK)
+      << err;
+  // Borda: A(5) > B(4) > C(0)
+  EXPECT_EQ(ranking[0], 0);  // A is best
+  EXPECT_EQ(ranking[1], 1);  // B is second
+  EXPECT_EQ(ranking[2], 2);  // C is worst
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Borda, NullProfile_ReturnsError) {
+  char err[256] = {};
+  int scores[3] = {};
+  EXPECT_NE(scs_borda_scores(nullptr, scores, 3, err, 256), SCS_OK);
+}
+
+// ---------------------------------------------------------------------------
+// C6.3 — Anti-plurality
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Antiplurality, Scores_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  // Antiplurality score = number of voters who do NOT rank the alternative
+  // last (higher is better). C is ranked last by all 3 voters so gets 0;
+  // A and B are never ranked last, so both get 3.
+  int scores[3] = {};
+  ASSERT_EQ(scs_antiplurality_scores(p, scores, 3, err, 256), SCS_OK) << err;
+  EXPECT_EQ(scores[0], 3);  // A: not last for any voter
+  EXPECT_EQ(scores[1], 3);  // B: not last for any voter
+  EXPECT_EQ(scores[2], 0);  // C: last for all 3 voters
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Antiplurality, AllWinners_TiedAAndB) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int n = 0;
+  ASSERT_EQ(scs_antiplurality_all_winners(p, nullptr, 0, &n, err, 256), SCS_OK)
+      << err;
+  EXPECT_EQ(n, 2);  // A and B are tied (both have 0 last-place votes)
+
+  int winners[3] = {};
+  ASSERT_EQ(scs_antiplurality_all_winners(p, winners, 3, &n, err, 256), SCS_OK)
+      << err;
+  EXPECT_EQ(winners[0], 0);  // A
+  EXPECT_EQ(winners[1], 1);  // B
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Antiplurality, OneWinner_SmallestIndex) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int winner = -1;
+  ASSERT_EQ(scs_antiplurality_one_winner(p, SCS_TIEBREAK_SMALLEST_INDEX,
+                                         nullptr, nullptr, &winner, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(winner, 0);  // A has lowest index among tied winners
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Antiplurality, NullProfile_ReturnsError) {
+  char err[256] = {};
+  int scores[3] = {};
+  EXPECT_NE(scs_antiplurality_scores(nullptr, scores, 3, err, 256), SCS_OK);
+}
+
+// ---------------------------------------------------------------------------
+// C6.4 — Generic positional scoring rule
+// ---------------------------------------------------------------------------
+
+TEST(CApi_ScoringRule, Scores_BordaEquivalent) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  // Weights [2, 1, 0] reproduce Borda for 3 alternatives.
+  double weights[] = {2.0, 1.0, 0.0};
+  double scores[3] = {};
+  ASSERT_EQ(scs_scoring_rule_scores(p, weights, 3, scores, 3, err, 256), SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(scores[0], 5.0);  // A
+  EXPECT_DOUBLE_EQ(scores[1], 4.0);  // B
+  EXPECT_DOUBLE_EQ(scores[2], 0.0);  // C
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_ScoringRule, AllWinners_SizeQuery) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  double weights[] = {2.0, 1.0, 0.0};
+  int n = 0;
+  ASSERT_EQ(
+      scs_scoring_rule_all_winners(p, weights, 3, nullptr, 0, &n, err, 256),
+      SCS_OK)
+      << err;
+  EXPECT_EQ(n, 1);  // only A
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_ScoringRule, OneWinner_SmallestIndex) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  double weights[] = {2.0, 1.0, 0.0};
+  int winner = -1;
+  ASSERT_EQ(
+      scs_scoring_rule_one_winner(p, weights, 3, SCS_TIEBREAK_SMALLEST_INDEX,
+                                  nullptr, nullptr, &winner, err, 256),
+      SCS_OK)
+      << err;
+  EXPECT_EQ(winner, 0);  // A
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_ScoringRule, NonIncreasingWeights_ReturnsError) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  double bad_weights[] = {1.0, 2.0, 0.0};  // not non-increasing
+  double scores[3] = {};
+  EXPECT_NE(scs_scoring_rule_scores(p, bad_weights, 3, scores, 3, err, 256),
+            SCS_OK);
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_ScoringRule, NullWeights_ReturnsError) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+  double scores[3] = {};
+  EXPECT_NE(scs_scoring_rule_scores(p, nullptr, 3, scores, 3, err, 256),
+            SCS_OK);
+  scs_profile_destroy(p);
+}
+
+// ---------------------------------------------------------------------------
+// C6.5 — Approval voting
+// ---------------------------------------------------------------------------
+
+TEST(CApi_ApprovalSpatial, Scores_Correct) {
+  // Two alternatives: A=(0,0), B=(10,0).
+  // Three voters with ideals at: (0,0), (0.5,0), (5,0).
+  // Threshold = 1.0 (Euclidean).
+  // V0 approves A (dist=0), not B (dist=10).
+  // V1 approves A (dist=0.5), not B (dist=9.5).
+  // V2 approves neither (dist(A)=5 > 1, dist(B)=5 > 1).
+  // Expected scores: A=2, B=0.
+  char err[256] = {};
+  double alts[] = {0.0, 0.0, 10.0, 0.0};
+  double voters[] = {0.0, 0.0, 0.5, 0.0, 5.0, 0.0};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+
+  int scores[2] = {};
+  ASSERT_EQ(scs_approval_scores_spatial(alts, 2, voters, 3, 1.0, &dc, scores, 2,
+                                        err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(scores[0], 2);  // A
+  EXPECT_EQ(scores[1], 0);  // B
+}
+
+TEST(CApi_ApprovalSpatial, AllWinners_SizeQuery) {
+  char err[256] = {};
+  double alts[] = {0.0, 0.0, 10.0, 0.0};
+  double voters[] = {0.0, 0.0, 0.5, 0.0, 5.0, 0.0};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+
+  int n = 0;
+  ASSERT_EQ(scs_approval_all_winners_spatial(alts, 2, voters, 3, 1.0, &dc,
+                                             nullptr, 0, &n, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(n, 1);  // only A
+}
+
+TEST(CApi_ApprovalSpatial, NegativeThreshold_ReturnsError) {
+  char err[256] = {};
+  double alts[] = {0.0, 0.0, 1.0, 0.0};
+  double voters[] = {0.0, 0.0};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+  int scores[2] = {};
+  EXPECT_NE(scs_approval_scores_spatial(alts, 2, voters, 1, -1.0, &dc, scores,
+                                        2, err, 256),
+            SCS_OK);
+}
+
+TEST(CApi_ApprovalTopK, Scores_Top1_EqualToPlurality) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  // Top-1 approval == plurality: each voter approves only their first choice.
+  int ap_scores[3] = {};
+  ASSERT_EQ(scs_approval_scores_topk(p, 1, ap_scores, 3, err, 256), SCS_OK)
+      << err;
+
+  int pl_scores[3] = {};
+  ASSERT_EQ(scs_plurality_scores(p, pl_scores, 3, err, 256), SCS_OK) << err;
+
+  EXPECT_EQ(ap_scores[0], pl_scores[0]);
+  EXPECT_EQ(ap_scores[1], pl_scores[1]);
+  EXPECT_EQ(ap_scores[2], pl_scores[2]);
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_ApprovalTopK, Scores_Top2_TieAB) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  // Top-2: every voter approves their top 2 alternatives.
+  // A is in top-2 for all 3 voters → score=3.
+  // B is in top-2 for all 3 voters → score=3.
+  // C is never in top-2 → score=0.
+  int scores[3] = {};
+  ASSERT_EQ(scs_approval_scores_topk(p, 2, scores, 3, err, 256), SCS_OK) << err;
+  EXPECT_EQ(scores[0], 3);  // A
+  EXPECT_EQ(scores[1], 3);  // B
+  EXPECT_EQ(scores[2], 0);  // C
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_ApprovalTopK, AllWinners_Top2_SizeQuery) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int n = 0;
+  ASSERT_EQ(scs_approval_all_winners_topk(p, 2, nullptr, 0, &n, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(n, 2);  // A and B tied
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_ApprovalTopK, InvalidK_ReturnsError) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int scores[3] = {};
+  EXPECT_NE(scs_approval_scores_topk(p, 0, scores, 3, err, 256), SCS_OK);
+  EXPECT_NE(scs_approval_scores_topk(p, 4, scores, 3, err, 256), SCS_OK);
+
+  scs_profile_destroy(p);
+}
+
+// ===========================================================================
+// Phase C7 — Social rankings and properties
+//
+// All tests reuse the 3-voter / 3-alt profile from C6:
+//   V0: [A, B, C]    V1: [B, A, C]    V2: [A, B, C]
+//
+// Derived facts:
+//   Pairwise majorities: A>B (2-1), A>C (3-0), B>C (3-0)
+//   Condorcet winner:    A (index 0)
+//   Pareto set:          {A, B}  (C is dominated by both A and B)
+//   Pareto-efficient:    A=yes, B=yes, C=no
+//   Condorcet-consistent: A=yes, B=no (CW exists and B≠CW), C=no
+//   Majority-consistent:  A=yes only (A is the CW)
+//   Borda scores [5,4,0] ranked → [A, B, C] = [0, 1, 2]
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// C7.1 — Rank by scores
+// ---------------------------------------------------------------------------
+
+TEST(CApi_RankByScores, CorrectOrder) {
+  char err[256] = {};
+  double scores[] = {5.0, 4.0, 0.0};  // Borda scores: A=5, B=4, C=0
+  int ranking[3] = {};
+  ASSERT_EQ(scs_rank_by_scores(scores, 3, SCS_TIEBREAK_SMALLEST_INDEX, nullptr,
+                               nullptr, ranking, 3, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(ranking[0], 0);  // A is best
+  EXPECT_EQ(ranking[1], 1);  // B is second
+  EXPECT_EQ(ranking[2], 2);  // C is worst
+}
+
+TEST(CApi_RankByScores, TiedScoresSmallestIndex) {
+  char err[256] = {};
+  double scores[] = {3.0, 3.0, 1.0};  // A and B tied
+  int ranking[3] = {};
+  ASSERT_EQ(scs_rank_by_scores(scores, 3, SCS_TIEBREAK_SMALLEST_INDEX, nullptr,
+                               nullptr, ranking, 3, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(ranking[0], 0);  // A before B (smaller index)
+  EXPECT_EQ(ranking[1], 1);
+  EXPECT_EQ(ranking[2], 2);
+}
+
+TEST(CApi_RankByScores, NullScores_ReturnsError) {
+  char err[256] = {};
+  int ranking[3] = {};
+  EXPECT_NE(scs_rank_by_scores(nullptr, 3, SCS_TIEBREAK_SMALLEST_INDEX, nullptr,
+                               nullptr, ranking, 3, err, 256),
+            SCS_OK);
+}
+
+TEST(CApi_RankByScores, RandomTieBreak_NullMgr_ReturnsError) {
+  char err[256] = {};
+  double scores[] = {1.0, 1.0, 0.0};
+  int ranking[3] = {};
+  EXPECT_NE(scs_rank_by_scores(scores, 3, SCS_TIEBREAK_RANDOM, nullptr, nullptr,
+                               ranking, 3, err, 256),
+            SCS_OK);
+}
+
+// ---------------------------------------------------------------------------
+// C7.2 — Pairwise ranking from matrix
+// ---------------------------------------------------------------------------
+
+TEST(CApi_PairwiseRanking, CorrectOrder) {
+  // Pairwise matrix for our 3-alt example:
+  //       A    B    C
+  //  A  [ 0,  +1,  +1 ]   (A beats B and C)
+  //  B  [-1,   0,  +1 ]   (B loses to A, beats C)
+  //  C  [-1,  -1,   0 ]   (C loses to everyone)
+  char err[256] = {};
+  SCS_PairwiseResult mat[9] = {
+    SCS_PAIRWISE_TIE,  SCS_PAIRWISE_WIN,  SCS_PAIRWISE_WIN,  // A
+    SCS_PAIRWISE_LOSS, SCS_PAIRWISE_TIE,  SCS_PAIRWISE_WIN,  // B
+    SCS_PAIRWISE_LOSS, SCS_PAIRWISE_LOSS, SCS_PAIRWISE_TIE   // C
+  };
+  int ranking[3] = {};
+  ASSERT_EQ(
+      scs_pairwise_ranking_from_matrix(mat, 3, SCS_TIEBREAK_SMALLEST_INDEX,
+                                       nullptr, nullptr, ranking, 3, err, 256),
+      SCS_OK)
+      << err;
+  // Copeland scores: A=2, B=1, C=0
+  EXPECT_EQ(ranking[0], 0);  // A first
+  EXPECT_EQ(ranking[1], 1);  // B second
+  EXPECT_EQ(ranking[2], 2);  // C last
+}
+
+TEST(CApi_PairwiseRanking, NullMatrix_ReturnsError) {
+  char err[256] = {};
+  int ranking[3] = {};
+  EXPECT_NE(
+      scs_pairwise_ranking_from_matrix(nullptr, 3, SCS_TIEBREAK_SMALLEST_INDEX,
+                                       nullptr, nullptr, ranking, 3, err, 256),
+      SCS_OK);
+}
+
+// ---------------------------------------------------------------------------
+// C7.3 — Pareto efficiency
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Pareto, ParetoSet_SizeQuery) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int n = 0;
+  ASSERT_EQ(scs_pareto_set(p, nullptr, 0, &n, err, 256), SCS_OK) << err;
+  EXPECT_EQ(n, 2);  // A and B (C is dominated)
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Pareto, ParetoSet_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int indices[3] = {};
+  int n = 0;
+  ASSERT_EQ(scs_pareto_set(p, indices, 3, &n, err, 256), SCS_OK) << err;
+  ASSERT_EQ(n, 2);
+  EXPECT_EQ(indices[0], 0);  // A
+  EXPECT_EQ(indices[1], 1);  // B
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Pareto, IsParetoEfficient_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int out = -1;
+  ASSERT_EQ(scs_is_pareto_efficient(p, 0, &out, err, 256), SCS_OK) << err;
+  EXPECT_EQ(out, 1);  // A is efficient
+
+  ASSERT_EQ(scs_is_pareto_efficient(p, 1, &out, err, 256), SCS_OK) << err;
+  EXPECT_EQ(out, 1);  // B is efficient
+
+  ASSERT_EQ(scs_is_pareto_efficient(p, 2, &out, err, 256), SCS_OK) << err;
+  EXPECT_EQ(out, 0);  // C is dominated
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Pareto, OutOfRange_ReturnsError) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+  int out = -1;
+  EXPECT_NE(scs_is_pareto_efficient(p, 3, &out, err, 256), SCS_OK);
+  scs_profile_destroy(p);
+}
+
+// ---------------------------------------------------------------------------
+// C7.4 — Condorcet and majority-selection predicates
+// ---------------------------------------------------------------------------
+
+TEST(CApi_CondorcetProfile, HasWinner_True) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int found = 0;
+  ASSERT_EQ(scs_has_condorcet_winner_profile(p, &found, err, 256), SCS_OK)
+      << err;
+  EXPECT_EQ(found, 1);  // A beats B (2-1) and C (3-0)
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_CondorcetProfile, Winner_Correct) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int found = 0, winner = -1;
+  ASSERT_EQ(scs_condorcet_winner_profile(p, &found, &winner, err, 256), SCS_OK)
+      << err;
+  EXPECT_EQ(found, 1);
+  EXPECT_EQ(winner, 0);  // A
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_CondorcetProfile, NoWinner_OutWinnerUntouched) {
+  // Build a Condorcet cycle: V0:A>B>C, V1:B>C>A, V2:C>A>B → no CW.
+  // A>B (V0,V2), B>C (V0,V1), C>A (V1,V2) — each 2-1, no Condorcet winner.
+  char err[256] = {};
+  double u_cycle[] = {3, 2, 1,   // V0: A>B>C  (utils 3,2,1)
+                      1, 3, 2,   // V1: B>C>A  (utils 1,3,2)
+                      2, 1, 3};  // V2: C>A>B  (utils 2,1,3)
+  SCS_Profile* p = scs_profile_from_utility_matrix(u_cycle, 3, 3, err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int found = 1;  // set to 1 to ensure it is overwritten
+  int winner = 99;
+  ASSERT_EQ(scs_condorcet_winner_profile(p, &found, &winner, err, 256), SCS_OK)
+      << err;
+  EXPECT_EQ(found, 0);
+  EXPECT_EQ(winner, 99);  // untouched when no winner found
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_CondorcetProfile, CondorcetConsistent_OnlyWinnerPasses) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int out = -1;
+  ASSERT_EQ(scs_is_selected_by_condorcet_consistent_rules(p, 0, &out, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(out, 1);  // A is the CW → consistent
+
+  ASSERT_EQ(scs_is_selected_by_condorcet_consistent_rules(p, 1, &out, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(out, 0);  // B is not the CW → inconsistent
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_CondorcetProfile, MajorityConsistent_OnlyCWPasses) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int out = -1;
+  ASSERT_EQ(scs_is_selected_by_majority_consistent_rules(p, 0, &out, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(out, 1);  // A beats all by majority
+
+  ASSERT_EQ(scs_is_selected_by_majority_consistent_rules(p, 1, &out, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(out, 0);  // B does not beat A by majority
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_CondorcetProfile, NullProfile_ReturnsError) {
+  char err[256] = {};
+  int found = 0;
+  EXPECT_NE(scs_has_condorcet_winner_profile(nullptr, &found, err, 256),
+            SCS_OK);
+}
+
+// ===========================================================================
+// Phase C8 — Additional coverage sweep
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// C0 scalar domain sentinel values (SCS_TieBreak + SCS_MAJORITY_SIMPLE)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_ScalarDomains, TieBreak_SentinelValues) {
+  // These are ABI-stable constants; a binding layer may hard-code them.
+  EXPECT_EQ(SCS_TIEBREAK_RANDOM, static_cast<SCS_TieBreak>(0));
+  EXPECT_EQ(SCS_TIEBREAK_SMALLEST_INDEX, static_cast<SCS_TieBreak>(1));
+  EXPECT_NE(SCS_TIEBREAK_RANDOM, SCS_TIEBREAK_SMALLEST_INDEX);
+}
+
+TEST(CApi_ScalarDomains, MajoritySimple_SentinelValue) {
+  // SCS_MAJORITY_SIMPLE = -1 by convention; binding layers must not treat it
+  // as a valid voter count.
+  EXPECT_EQ(SCS_MAJORITY_SIMPLE, -1);
+}
+
+// ---------------------------------------------------------------------------
+// Error path: null / short err_buf does not crash and preserves error code
+// ---------------------------------------------------------------------------
+
+TEST(CApi_ErrorPaths, NullErrBuf_StillReturnsCode) {
+  // Pass null err_buf + 0 length.  The function must still return the correct
+  // error code; it must not crash trying to write the message.
+  int major = -1;
+  int rc = scs_api_version(nullptr, nullptr, nullptr, nullptr, 0);
+  (void)major;
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+}
+
+TEST(CApi_ErrorPaths, ErrBufLen0_StillReturnsCode) {
+  char dummy[4] = {'X', 'X', 'X', '\0'};
+  int rc = scs_api_version(nullptr, nullptr, nullptr, dummy, 0);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  // With len=0, set_error skips writing entirely; dummy should be unchanged.
+  EXPECT_EQ(dummy[0], 'X');
+}
+
+TEST(CApi_ErrorPaths, ErrBufLen1_WritesEmptyString) {
+  char tiny[1] = {'X'};
+  int rc = scs_api_version(nullptr, nullptr, nullptr, tiny, 1);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  // set_error writes '\0' at tiny[0] (copies 0 chars, then null-terminates).
+  EXPECT_EQ(tiny[0], '\0');
+}
+
+// ---------------------------------------------------------------------------
+// C2 — Winset: X ∪ X = X (self-union is non-empty and same as original)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Winset, UnionSelf_NonEmpty) {
+  char err[256] = {};
+  SCS_Winset* ws = nullptr;
+  make_triangle_winset(&ws, err, 256);
+  ASSERT_NE(ws, nullptr) << err;
+
+  // Union ws with a clone so the two pointer-level inputs are distinct.
+  SCS_Winset* ws2 = scs_winset_clone(ws, err, 256);
+  ASSERT_NE(ws2, nullptr) << err;
+
+  SCS_Winset* u = scs_winset_union(ws, ws2, err, 256);
+  ASSERT_NE(u, nullptr) << err;
+
+  int is_empty = -1;
+  EXPECT_EQ(scs_winset_is_empty(u, &is_empty, err, 256), SCS_OK);
+  EXPECT_EQ(is_empty, 0);  // X ∪ X cannot be empty if X is non-empty
+
+  scs_winset_destroy(ws);
+  scs_winset_destroy(ws2);
+  scs_winset_destroy(u);
+}
+
+// ---------------------------------------------------------------------------
+// C6 — all_winners respects out_capacity → SCS_ERROR_BUFFER_TOO_SMALL
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Antiplurality, AllWinners_BufferTooSmall_ReturnsError) {
+  // Antiplurality has 2 tied winners (A and B) in the 3-voter profile.
+  // Passing capacity=1 when 2 winners exist must return BUFFER_TOO_SMALL.
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int winners[1] = {};
+  int n = 0;
+  int rc = scs_antiplurality_all_winners(p, winners, 1, &n, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_BUFFER_TOO_SMALL);
+  EXPECT_EQ(n, 2);  // out_n still reports the required count
+
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_Plurality, AllWinners_ExactCapacity_Succeeds) {
+  // Providing capacity == n_winners (= 1) must succeed, not error.
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  int winners[1] = {};
+  int n = 0;
+  EXPECT_EQ(scs_plurality_all_winners(p, winners, 1, &n, err, 256), SCS_OK)
+      << err;
+  EXPECT_EQ(n, 1);
+  EXPECT_EQ(winners[0], 0);
+
+  scs_profile_destroy(p);
+}
+
+// ---------------------------------------------------------------------------
+// C6 — scoring rule with fractional weights
+// ---------------------------------------------------------------------------
+
+TEST(CApi_ScoringRule, FractionalWeights_Correct) {
+  // Weights [1.5, 0.5, 0.0] for 3-voter profile:
+  //   A: V0 gives 1.5, V1 gives 0.5, V2 gives 1.5  →  total 3.5
+  //   B: V0 gives 0.5, V1 gives 1.5, V2 gives 0.5  →  total 2.5
+  //   C: all get 0.0                                →  total 0.0
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+
+  double weights[] = {1.5, 0.5, 0.0};
+  double scores[3] = {};
+  ASSERT_EQ(scs_scoring_rule_scores(p, weights, 3, scores, 3, err, 256), SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(scores[0], 3.5);  // A
+  EXPECT_DOUBLE_EQ(scores[1], 2.5);  // B
+  EXPECT_DOUBLE_EQ(scores[2], 0.0);  // C
+
+  // Winner must still be A.
+  int winner = -1;
+  ASSERT_EQ(
+      scs_scoring_rule_one_winner(p, weights, 3, SCS_TIEBREAK_SMALLEST_INDEX,
+                                  nullptr, nullptr, &winner, err, 256),
+      SCS_OK)
+      << err;
+  EXPECT_EQ(winner, 0);
+
+  scs_profile_destroy(p);
+}
+
+// ---------------------------------------------------------------------------
+// C8 — Non-finite input rejection (NaN/Inf)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_NonFinite, Distance_NaNInIdeal_ReturnsInvalidArgument) {
+  double ideal[2] = {std::nan(""), 0.0};
+  double alt[2] = {1.0, 0.0};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+  double d = 0.0;
+  char err[256] = {};
+  int rc = scs_calculate_distance(ideal, alt, 2, &dc, &d, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+TEST(CApi_NonFinite, Distance_InfInAlt_ReturnsInvalidArgument) {
+  double ideal[2] = {0.0, 0.0};
+  double alt[2] = {1.0, std::numeric_limits<double>::infinity()};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+  double d = 0.0;
+  char err[256] = {};
+  int rc = scs_calculate_distance(ideal, alt, 2, &dc, &d, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+TEST(CApi_NonFinite, Winset2d_NaNInVoterIdeals_ReturnsNull) {
+  double voters[] = {0.0, 0.0, std::nan(""), 0.0, 1.0, 2.0};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+  char err[256] = {};
+  SCS_Winset* ws =
+      scs_winset_2d(1.0, 0.667, voters, 3, &dc, SCS_MAJORITY_SIMPLE,
+                    SCS_DEFAULT_WINSET_SAMPLES, err, 256);
+  EXPECT_EQ(ws, nullptr);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+TEST(CApi_NonFinite, ProfileFromUtilityMatrix_NaN_ReturnsNull) {
+  double utilities[] = {1.0, 0.0, std::nan(""), 0.5, 1.0, 0.0};
+  char err[256] = {};
+  SCS_Profile* p = scs_profile_from_utility_matrix(utilities, 2, 3, err, 256);
+  EXPECT_EQ(p, nullptr);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+TEST(CApi_NonFinite, ApprovalSpatial_InfThreshold_ReturnsInvalidArgument) {
+  double alts[] = {0.0, 0.0, 1.0, 0.0};
+  double voters[] = {0.0, 0.0, 1.0, 0.0, 0.5, 0.0};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+  int scores[2] = {};
+  char err[256] = {};
+  int rc = scs_approval_scores_spatial(alts, 2, voters, 3,
+                                       std::numeric_limits<double>::infinity(),
+                                       &dc, scores, 2, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+TEST(CApi_NonFinite, ScoringRule_NaNWeights_ReturnsInvalidArgument) {
+  char err[256] = {};
+  SCS_Profile* p = make_three_voter_profile(err, 256);
+  ASSERT_NE(p, nullptr) << err;
+  double weights[] = {1.0, std::nan(""), 0.0};
+  double scores[3] = {};
+  int rc = scs_scoring_rule_scores(p, weights, 3, scores, 3, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_GT(std::strlen(err), 0u);
+  scs_profile_destroy(p);
+}
+
+TEST(CApi_NonFinite, RankByScores_InfScores_ReturnsInvalidArgument) {
+  double scores[] = {1.0, std::numeric_limits<double>::infinity(), 0.0};
+  int ranking[3] = {};
+  char err[256] = {};
+  int rc = scs_rank_by_scores(scores, 3, SCS_TIEBREAK_SMALLEST_INDEX, nullptr,
+                              nullptr, ranking, 3, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_GT(std::strlen(err), 0u);
 }
