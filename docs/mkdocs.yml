@@ -40,17 +40,17 @@ plugins:
 nav:
   - Home: index.md
   - API Reference:
-    - Configuration: api/config.md
-    - Stream Manager: api/stream_manager.md
-    - Winset: api/winset.md
-    - Profile: api/profile.md
-    - Distance & Utility: api/functions.md
-    - Geometry: api/geometry.md
-    - Voting Rules: api/voting_rules.md
-    - Social Rankings: api/social.md
-    - Exceptions: api/errors.md
+    - Configuration: config.md
+    - Stream Manager: stream_manager.md
+    - Winset: winset.md
+    - Profile: profile.md
+    - Distance & Utility: functions.md
+    - Geometry: geometry.md
+    - Voting Rules: voting_rules.md
+    - Social Rankings: social.md
+    - Exceptions: errors.md
   - Examples:
-    - Spatial Voting Notebook: notebooks/spatial_voting.ipynb
+    - Spatial Voting Notebook: ../../../python/notebooks/spatial_voting.ipynb
 
 markdown_extensions:
   - pymdownx.highlight:
