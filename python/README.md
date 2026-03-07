@@ -15,15 +15,22 @@ cmake --build build
 
 This produces `build/libscs_api.dylib` (macOS) or `build/libscs_api.so` (Linux).
 
-### 2. Install the Python package in editable mode (one-time)
+### 2. Create a virtual environment and install the package (one-time)
 
 ```bash
 cd python
-pip install -e ".[dev]"
+python -m venv .venv
+.venv/bin/pip install -e ".[dev]"
 ```
 
 The `-e` flag means editable: changes to `src/socialchoicelab/` take effect
-immediately without reinstalling.
+immediately without reinstalling. The `.venv` keeps dependencies isolated from
+your system Python.
+
+**Cursor tip:** when you open the `python/` folder, Cursor may offer to create
+a virtual environment automatically — accept it, then run `.venv/bin/pip install -e ".[dev]"`
+to finish the install. When opening the notebook, select the `.venv` kernel in
+the kernel picker.
 
 ### 3. Set the library path environment variable
 
