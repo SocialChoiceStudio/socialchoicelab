@@ -77,7 +77,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 | Gate | Criteria |
 |------|----------|
-| **Features** | At least one of: R package (cpp11 → c_api) or Python package (pybind11 → c_api) that builds, installs, and exposes core + geometry + aggregation operations. |
+| **Features** | At least one of: R package (.Call() → c_api) or Python package (cffi → c_api) that builds, installs, and exposes core + geometry + aggregation operations. Binding calls pre-built `libscs_api` via C ABI; no C++ compilation in the binding package. |
 | **Tests** | CI green for core and for the binding(s). Binding tests (R or Python) run in CI. |
 | **Docs** | User-facing docs for the binding (README, vignette or equivalent, API reference). Design doc and ROADMAP updated. |
 | **API stability** | 1.0 API stability promise: semantic versioning in effect; breaking changes require major version bump and CHANGELOG. |

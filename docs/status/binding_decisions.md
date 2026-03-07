@@ -16,8 +16,8 @@ start of the binding plan session. Do not treat any of these as locked in.
 
 | Decision | Current assumption | Revisit? |
 |----------|--------------------|----------|
-| R binding mechanism | cpp11 (not Rcpp) | ✅ Yes |
-| Python binding mechanism | pybind11 (not ctypes, cffi, or nanobind) | ✅ Yes |
+| R binding mechanism | `.Call()` via thin C registration layer (not Rcpp, not cpp11) | ✅ Yes |
+| Python binding mechanism | cffi (not pybind11, not ctypes, not nanobind) | ✅ Yes |
 | What bindings call | `scs_api.h` C API only — never C++ or CGAL directly | ✅ Yes |
 | R indexing | Translate 0-indexed C → 1-indexed R at the binding boundary only | ✅ Yes |
 | Python indexing | Keep 0-indexed (matches C and Python convention) | ✅ Yes |
@@ -49,5 +49,5 @@ binding plan      ← read this file, resolve open questions, then write the pla
 R and/or Python binding implementation
 ```
 
-Do not skip the "binding plan" step. The plan document for bindings should
-record resolutions to all items in the table above before any code is written.
+The binding plan has been written: see [binding_plan.md](binding_plan.md).
+All decisions above are resolved and recorded there. Implementation can begin.

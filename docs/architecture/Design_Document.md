@@ -18,8 +18,8 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 ### A) Code-first packages
 - **Core C++**: pure C++ (CGAL/Eigen), no binding headers.
 - **Stable façade**: thin c_api (C ABI) with POD structs/opaque handles; no STL across boundary.
-- **R package (socialchoicelab)**: cpp11 adapter that calls c_api.
-- **Python package (socialchoicelab)**: pybind11 adapter that calls c_api.
+- **R package (socialchoicelab)**: thin C registration layer (`.Call()`) that calls c_api via C ABI. No C++ compilation in the R package.
+- **Python package (socialchoicelab)**: cffi adapter that calls c_api via C ABI. No C++ compilation in the Python package.
 - **Plot helpers**: Plotly (R and Py) with identical APIs, Kaleido for static export.
 - **Repro**: ModelConfig JSON/YAML everywhere; export_script(config, lang="R|python").
 
@@ -27,7 +27,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **R Shiny modules** and **Shiny for Python apps** call their language package (which calls c_api).
 
 ### C) Web app
-- **Shiny for Python deployment**; talks to Python package (pybind11 → c_api).
+- **Shiny for Python deployment**; talks to Python package (cffi → c_api).
 
 ---
 
@@ -104,8 +104,8 @@ See [aggregation_design.md](aggregation_design.md) for full API and citations.
 
 ### 8. FFI & Interfaces *(planned, not yet built)*
 - **c_api** – Stable surface for all bindings
-- **python** – pybind11
-- **r** – cpp11
+- **python** – cffi (C ABI; no C++ compilation in the Python package)
+- **r** – `.Call()` via thin C registration layer (C ABI; no C++ compilation in the R package)
 - **web** – gRPC service
 - **ios** – C bridge (low priority)
 
@@ -122,17 +122,17 @@ See [aggregation_design.md](aggregation_design.md) for full API and citations.
   - No exceptions cross the boundary (`catch` → return code).
   - **Status:** c_api minimal milestone complete (Items 29–31 implemented).
 
-### R binding (cpp11)
-- **Files**: r/src/cpp11_bindings.cpp, r/src/init.c (if needed for registration).
-- **Marshalling**: use cpp11::sexp, cpp11::as<>, cpp11::writable::list/strings/doubles to translate R objects ↔ POD structs.
-- **Errors**: map non-zero c_api codes to cpp11::stop(msg).
-- **Build**: src/Makevars{,.win} link against libscs_core (prebuilt or built as part of the R package). Keep CGAL/Eigen out of R package sources; link the core.
-- **CRAN-friendly**: cpp11 is header-only and widely used; avoid non-portable compiler flags in Makevars.
+### R binding (.Call())
+- **Files**: `r/src/scs_bindings.c` (thin C registration), `r/src/init.c` (R_registerRoutines / useDynLib).
+- **Marshalling**: translate R `SEXP` objects ↔ C scalars/arrays/POD structs in C; translate 0-indexed C results → 1-indexed R at this boundary.
+- **Errors**: map non-zero c_api return codes to `Rf_error(msg)` with the err_buf message.
+- **Build**: `src/Makevars{,.win}` links against the pre-built `libscs_api` shared library. No C++20 compiler, no CGAL, no Eigen in the R package sources.
+- **CRAN-friendly**: pure C registration; no C++ compilation step; only a C compiler required.
 
-### Python binding (pybind11)
-- **Files**: python/src/bindings.cpp.
-- **Build**: scikit-build-core + CMake; produce wheels linking to libscs_core.
-- **Errors**: map c_api errors to Python exceptions; NumPy views for bulk arrays where helpful.
+### Python binding (cffi)
+- **Files**: `python/socialchoicelab/_bindings.py` (cffi ABI-mode loader), `python/socialchoicelab/scs_api.h` (C header declarations).
+- **Build**: standard `pyproject.toml`; cffi ABI mode loads `libscs_api` at import time — no compilation step at `pip install`.
+- **Errors**: map c_api return codes to Python exceptions with the err_buf message; expose NumPy views for bulk double arrays where helpful.
 
 ### c_api design inputs (consensus plan Items 29–31)
 
@@ -168,7 +168,7 @@ Reference these when designing the c_api surface; they are not implementation ta
 ---
 
 ## Licensing
-- **GPL v3** for full compatibility with CGAL EPEC and cpp11 (R binding layer).
+- **GPL v3** for full compatibility with CGAL EPEC.
 - **Revisit:** Once most functionality is built out, reconsider GPL v3 vs LGPL v3 for library adoption (LGPL allows proprietary code to link without relicensing; CGAL Voronoi/Delaunay and some other algorithm packages are GPL-only). See project history in `docs/status/project_log.md` for context.
 
 ---

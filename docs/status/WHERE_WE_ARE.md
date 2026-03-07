@@ -2,8 +2,8 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** c_api geometry + aggregation extensions — **ACTIVE**. Expose geometry (winset, Yolk, uncovered set, Copeland, Heart, veto, weighted voting) and aggregation (profiles, voting rules, social rankings, Pareto, Condorcet) through the stable C API. Plan: [c_api_extensions_plan.md](c_api_extensions_plan.md).
-- **Next:** After c_api extensions: first R/Python binding. See [ROADMAP.md](ROADMAP.md).
+- **Current phase:** R and Python bindings — **ACTIVE**. Build `socialchoicelab` R (`.Call()`) and Python (cffi) packages calling the pre-built `libscs_api` via the C ABI. Plan: [binding_plan.md](binding_plan.md).
+- **Next:** After bindings: visualization layer (Plotly helpers, R and Python). See [ROADMAP.md](ROADMAP.md).
 - **Last updated:** 2026-03-07
 
 **Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
@@ -42,6 +42,14 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 ---
 
 ## Recent Work
+
+### Session: 2026-03-06 — C8 non-finite input validation (C API)
+
+- **Validation at C API boundary:** All double inputs (coordinates, utilities, weights, thresholds, etc.) are validated for finiteness. NaN or Inf yields `SCS_ERROR_INVALID_ARGUMENT` (or `NULL` for handle-returning APIs) and a message in `err_buf`. Implemented in the wrappers only; core is not required to tolerate non-finite input.
+- **Helper:** `validate_finite_doubles(ptr, count, context, err_buf, len)` in anonymous namespace in `scs_api.cpp`; scalar doubles checked with `std::isfinite`.
+- **Coverage:** All C API entry points that take double arrays or scalar doubles now validate before use (distance/loss/level-set, majority/winsets, C4 geometry, profile build/from_utility/uniform/gaussian, approval spatial, scoring-rule scores/weights, rank_by_scores).
+- **Tests:** 7 new tests in `CApi_NonFinite.*` (distance NaN/Inf, winset NaN voter ideals, profile_from_utility_matrix NaN, approval_scores_spatial Inf threshold, scoring_rule NaN weights, rank_by_scores Inf scores). All expect error return and non-empty `err_buf`.
+- **Docs:** `docs/architecture/c_api_design.md` — error table extended for "non-finite double"; new paragraph "Input validation (non-finite doubles)" describing boundary validation.
 
 ### Session: 2026-03-07 — C API Phases C4 (geometry) and C5 (Profile) COMPLETE
 

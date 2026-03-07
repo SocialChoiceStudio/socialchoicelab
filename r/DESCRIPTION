@@ -1,0 +1,23 @@
+Package: socialchoicelab
+Type: Package
+Title: Spatial Social Choice Analysis
+Version: 0.1.0
+Authors@R: person("SocialChoiceLab Authors", role = c("aut", "cre"),
+                  email = "maintainer@socialchoicelab.example")
+Description: Spatial and general social choice analysis: distance and loss
+    functions, majority preference, winsets, uncovered set, Copeland scores,
+    preference profiles, and positional voting rules. Calls the pre-built
+    libscs_api shared library via the C ABI; no C++ compilation required.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.0.0
+Imports:
+    R6 (>= 2.5.0)
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+SystemRequirements: libscs_api shared library (set SCS_LIB_PATH to its
+    directory, or place it on the system library path)

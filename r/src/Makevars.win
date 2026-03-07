@@ -1,0 +1,8 @@
+# Makevars.win — Windows equivalent of Makevars.
+#
+# SCS_LIB_PATH must be set to the directory containing scs_api.lib and scs_api.dll.
+
+SCS_LIB_PATH ?= $(error SCS_LIB_PATH is not set. Set it to the directory containing scs_api.lib)
+
+PKG_CPPFLAGS = -I../../../include
+PKG_LIBS     = -L$(SCS_LIB_PATH) -lscs_api

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "socialchoicelab"
+version = "0.1.0"
+description = "Spatial social choice analysis: winsets, majority preference, voting rules, and more."
+readme = "README.md"
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.10"
+dependencies = [
+    "cffi>=1.15",
+    "numpy>=1.23",
+]
+
+[project.optional-dependencies]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocstrings[python]>=0.24",
+    "mkdocs-material>=9.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/socialchoicelab"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,5 +1,9 @@
-# SocialChoiceLab CI: build, test, format check, and lint
-# Item 28 — runs on push and pull_request to main (and default branch).
+# SocialChoiceLab CI: build, test, format check, lint, and binding checks.
+#
+# Jobs:
+#   core          — builds libscs_api and runs all C++ tests (Ubuntu + macOS)
+#   r-binding     — installs R package against pre-built libscs_api (Ubuntu + macOS)
+#   python-binding — installs Python package against pre-built libscs_api (Ubuntu + macOS)
 
 name: CI
 
@@ -15,6 +19,8 @@ on:
       - '.clang-tidy'
       - '.github/workflows/**'
       - 'lint.sh'
+      - 'r/**'
+      - 'python/**'
   pull_request:
     branches: [main]
     paths:
@@ -26,10 +32,15 @@ on:
       - '.clang-tidy'
       - '.github/workflows/**'
       - 'lint.sh'
+      - 'r/**'
+      - 'python/**'
 
 jobs:
-  build-and-test:
-    name: Build & Test (${{ matrix.os }})
+  # ---------------------------------------------------------------------------
+  # core — build libscs_api and run C++ tests
+  # ---------------------------------------------------------------------------
+  core:
+    name: Core (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -47,14 +58,11 @@ jobs:
           key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt') }}
           restore-keys: ${{ runner.os }}-cmake-
 
-      # Pre-built LLVM/clang-format for both Ubuntu and macOS (version 21; 22 not in action assets)
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v2
         with:
           version: "21"
 
-      # KyleMayes sets DYLD_LIBRARY_PATH which breaks Homebrew git on macOS; clear it.
-      # clang-format finds its own dylibs via RPATH so does not need this variable.
       - name: Fix DYLD_LIBRARY_PATH (macOS)
         if: runner.os == 'macOS'
         run: echo "DYLD_LIBRARY_PATH=" >> $GITHUB_ENV
@@ -84,8 +92,98 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build
 
-      - name: Run tests
+      - name: Run C++ tests
         run: cd build && ctest --output-on-failure -LE benchmark
 
       - name: Lint (strict)
         run: ./lint.sh --strict lint
+
+      - name: Upload libscs_api artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libscs_api-${{ matrix.os }}
+          path: |
+            build/libscs_api.so
+            build/libscs_api.dylib
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # r-binding — install and check the R package
+  # ---------------------------------------------------------------------------
+  r-binding:
+    name: R binding (${{ matrix.os }})
+    needs: core
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download libscs_api artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libscs_api-${{ matrix.os }}
+          path: scs_lib
+
+      - name: Set SCS_LIB_PATH
+        run: echo "SCS_LIB_PATH=${{ github.workspace }}/scs_lib" >> $GITHUB_ENV
+
+      - name: Install R (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y r-base r-base-dev
+          sudo Rscript -e "install.packages(c('R6', 'testthat', 'devtools', 'roxygen2', 'pkgdown'), repos='https://cloud.r-project.org')"
+
+      - name: Install R (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install --cask r
+          Rscript -e "install.packages(c('R6', 'testthat', 'devtools', 'roxygen2', 'pkgdown'), repos='https://cloud.r-project.org')"
+
+      - name: R CMD check
+        run: |
+          cd r
+          Rscript -e "devtools::check(error_on='error')"
+
+  # ---------------------------------------------------------------------------
+  # python-binding — install and test the Python package
+  # ---------------------------------------------------------------------------
+  python-binding:
+    name: Python binding (${{ matrix.os }})
+    needs: core
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download libscs_api artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libscs_api-${{ matrix.os }}
+          path: scs_lib
+
+      - name: Set SCS_LIB_PATH
+        run: echo "SCS_LIB_PATH=${{ github.workspace }}/scs_lib" >> $GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python package and dependencies
+        run: |
+          pip install "python/[dev,docs]"
+
+      - name: Run pytest
+        run: pytest python/tests/ --tb=short

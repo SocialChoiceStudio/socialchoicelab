@@ -31,7 +31,7 @@ High-level direction for the project. This document does not duplicate detail; i
 
 ## Mid-term (3–6 months)
 
-- **First R or Python binding:** Start `socialchoicelab` R (cpp11) or Python (pybind11) package calling the c_api. Geometry and preference services available from R/Python.
+- **First R or Python binding:** Start `socialchoicelab` R package (`.Call()` via a thin C registration layer) or Python package (cffi) calling the pre-built `libscs_api` shared library via the C ABI. No C++ compilation required in the binding packages.
 - **Visualization layer:** Plot helpers in R and Python for spatial voting output: voter ideal points, status quo, winsets (with individual voter preferred regions drawn as overlapping circles), Yolk circle, uncovered set boundary, convex hull. Identical API across R and Python; Plotly output.
 
 ---
