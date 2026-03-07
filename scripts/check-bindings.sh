@@ -141,7 +141,8 @@ if [[ $RUN_PY -eq 1 ]]; then
     echo "=== pytest ==="
     PYTEST="pytest"
     command -v pytest &>/dev/null || PYTEST="python3 -m pytest"
-    if ! $PYTEST python/tests/ --tb=short; then
+    # Add python/src to PYTHONPATH so the package is importable without pip install.
+    if ! PYTHONPATH="$ROOT/python/src${PYTHONPATH:+:$PYTHONPATH}" $PYTEST python/tests/ --tb=short; then
       PY_RC=1
     fi
   fi

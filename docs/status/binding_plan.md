@@ -313,9 +313,9 @@ All voting rule functions take a `Profile` R6 object as first argument.
 
 ---
 
-## Phase B4 — Python binding: infrastructure
+## Phase B4 — Python binding: infrastructure ✅ Done
 
-### B4.1 — cffi loader
+### B4.1 — cffi loader ✅ Done
 
 `src/socialchoicelab/_loader.py`:
 - Opens `libscs_api` via `cffi.FFI().dlopen(path)`.
@@ -323,7 +323,7 @@ All voting rule functions take a `Profile` R6 object as first argument.
 - C declarations parsed from a trimmed copy of `scs_api.h` (preprocessed, with `SCS_API` stripped).
 - A module-level `_lib` and `_ffi` singleton is created on first import.
 
-### B4.2 — Exception hierarchy
+### B4.2 — Exception hierarchy ✅ Done
 
 ```python
 class SCSError(RuntimeError): ...
@@ -338,7 +338,7 @@ def _check(rc: int, err_buf) -> None:
     # map rc → exception type and raise
 ```
 
-### B4.3 — StreamManager class
+### B4.3 — StreamManager class ✅ Done
 
 ```python
 class StreamManager:
@@ -351,7 +351,7 @@ class StreamManager:
     # ... all stream methods
 ```
 
-### B4.4 — Winset class
+### B4.4 — Winset class ✅ Done
 
 ```python
 class Winset:
@@ -371,7 +371,7 @@ class Winset:
 
 Factory functions: `winset_2d(...)`, `weighted_winset_2d(...)`, `winset_with_veto_2d(...)`.
 
-### B4.5 — Profile class
+### B4.5 — Profile class ✅ Done
 
 ```python
 class Profile:
