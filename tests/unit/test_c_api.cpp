@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <vector>
 
 #include "scs_api.h"  // NOLINT(build/include_subdir)
 
