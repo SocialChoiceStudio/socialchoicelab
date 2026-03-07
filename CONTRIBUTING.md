@@ -26,14 +26,29 @@ Thanks for your interest in contributing. This project is part of **SocialChoice
 
 For a full clone-to-workflow checklist (tools, build, pre-commit, Cursor), see [docs/development/development.md](docs/development/development.md) § After cloning.
 
-**Pre-commit hook (optional):** Install the formatting hook once after cloning. It runs `./lint.sh format` automatically before every commit and blocks if anything is reformatted (so you can stage the changes and recommit):
+**Pre-commit hook (optional):** Runs `./lint.sh format` before every commit and blocks if any C++ file was reformatted:
 
 ```bash
 cp scripts/pre-commit.sh .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
-> **Note:** `.git/hooks/` is not tracked by Git, so this step is needed on each new clone or machine.
+**Pre-push hook (recommended for binding work):** Runs `R CMD check` and `pytest` automatically when `r/` or `python/` files are in the push. Requires `SCS_LIB_PATH` and `SCS_INCLUDE_PATH` to be set (see [Binding development](#binding-development-r-and-python) below):
+
+```bash
+cp scripts/pre-push.sh .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```
+
+You can also run the binding checks manually at any time:
+
+```bash
+./scripts/check-bindings.sh          # both R and Python
+./scripts/check-bindings.sh --r-only
+./scripts/check-bindings.sh --py-only
+```
+
+> **Note:** `.git/hooks/` is not tracked by Git, so these steps are needed on each new clone or machine.
 
 ## Git workflow
 
