@@ -513,10 +513,10 @@ jobs:
 | B1 | B1.1 Library distribution strategy | ✅ Done |
 | B1 | B1.2 Error handling conventions | ✅ Done |
 | B1 | B1.3 Type mapping document | ✅ Done |
-| B2 | B2.1 StreamManager R6 class | ⬜ |
-| B2 | B2.2 Winset R6 class | ⬜ |
-| B2 | B2.3 Profile R6 class | ⬜ |
-| B2 | B2.4 R helper utilities | ⬜ |
+| B2 | B2.1 StreamManager R6 class | ✅ Done |
+| B2 | B2.2 Winset R6 class | ✅ Done |
+| B2 | B2.3 Profile R6 class | ✅ Done |
+| B2 | B2.4 R helper utilities | ✅ Done |
 | B3 | B3.1 Version and utility | ⬜ |
 | B3 | B3.2 Distance / loss / level-set | ⬜ |
 | B3 | B3.3 Convex hull and majority | ⬜ |
