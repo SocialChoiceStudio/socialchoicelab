@@ -389,14 +389,48 @@ Factory functions: `profile_build_spatial(...)`, `profile_from_utility_matrix(..
 
 ---
 
-## Phase B5 — Python binding: function groups
+## Phase B5 — Python binding: function groups ✅ Done
 
 Mirrors B3 exactly, with Python conventions:
 - 0-indexed throughout (no translation).
 - Arrays are `numpy.ndarray`; flat `double*` inputs accept any array-like and are converted.
-- `DistanceConfig` and `LossConfig` are Python dataclasses (or simple named structs via cffi).
+- `DistanceConfig` and `LossConfig` are Python dataclasses.
 - Function names identical to R equivalents (snake_case in both).
 - All functions in `socialchoicelab` top-level namespace.
+
+### B5.1 — version, distance, loss, level-set, geometry ✅ Done
+
+`python/src/socialchoicelab/_functions.py`:
+- `scs_version()` → `dict`
+- `calculate_distance`, `distance_to_utility`, `normalize_utility`
+- `level_set_1d`, `level_set_2d`, `level_set_to_polygon`
+- `convex_hull_2d`, `majority_prefers_2d`, `weighted_majority_prefers_2d`, `pairwise_matrix_2d`
+
+### B5.2 — Copeland, Condorcet, core, uncovered set ✅ Done
+
+`python/src/socialchoicelab/_geometry.py`:
+- `copeland_scores_2d`, `copeland_winner_2d`
+- `has_condorcet_winner_2d`, `condorcet_winner_2d`
+- `core_2d`
+- `uncovered_set_2d`, `uncovered_set_boundary_2d`
+
+### B5.3 — Voting rules ✅ Done
+
+`python/src/socialchoicelab/_voting_rules.py`:
+- `plurality_scores`, `plurality_all_winners`, `plurality_one_winner`
+- `borda_scores`, `borda_all_winners`, `borda_one_winner`, `borda_ranking`
+- `antiplurality_scores`, `antiplurality_all_winners`, `antiplurality_one_winner`
+- `scoring_rule_scores`, `scoring_rule_all_winners`, `scoring_rule_one_winner`
+- `approval_scores_spatial`, `approval_all_winners_spatial`
+- `approval_scores_topk`, `approval_all_winners_topk`
+
+### B5.4 — Social rankings and properties ✅ Done
+
+`python/src/socialchoicelab/_social.py`:
+- `rank_by_scores`, `pairwise_ranking_from_matrix`
+- `pareto_set`, `is_pareto_efficient`
+- `has_condorcet_winner_profile`, `condorcet_winner_profile`
+- `is_condorcet_consistent`, `is_majority_consistent`
 
 ---
 
