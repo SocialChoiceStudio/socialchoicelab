@@ -517,15 +517,15 @@ jobs:
 | B2 | B2.2 Winset R6 class | ✅ Done |
 | B2 | B2.3 Profile R6 class | ✅ Done |
 | B2 | B2.4 R helper utilities | ✅ Done |
-| B3 | B3.1 Version and utility | ⬜ |
-| B3 | B3.2 Distance / loss / level-set | ⬜ |
-| B3 | B3.3 Convex hull and majority | ⬜ |
-| B3 | B3.4 Winset functions | ⬜ |
-| B3 | B3.5 Copeland, Condorcet, core, uncovered set | ⬜ |
-| B3 | B3.6 Profile construction and inspection | ⬜ |
-| B3 | B3.7 Voting rules | ⬜ |
-| B3 | B3.8 Social rankings and properties | ⬜ |
-| B3 | B3.9 StreamManager R methods | ⬜ |
+| B3 | B3.1 Version and utility | ✅ Done |
+| B3 | B3.2 Distance / loss / level-set | ✅ Done |
+| B3 | B3.3 Convex hull and majority | ✅ Done |
+| B3 | B3.4 Winset functions | ✅ Done (in B2) |
+| B3 | B3.5 Copeland, Condorcet, core, uncovered set | ✅ Done |
+| B3 | B3.6 Profile construction and inspection | ✅ Done (in B2) |
+| B3 | B3.7 Voting rules | ✅ Done |
+| B3 | B3.8 Social rankings and properties | ✅ Done |
+| B3 | B3.9 StreamManager R methods | ✅ Done (in B2 + stream_manager() factory) |
 | B4 | B4.1 cffi loader | ⬜ |
 | B4 | B4.2 Exception hierarchy | ⬜ |
 | B4 | B4.3 StreamManager Python class | ⬜ |

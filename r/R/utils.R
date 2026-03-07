@@ -86,6 +86,19 @@ make_loss_config <- function(loss_type   = "linear",
 # Internal helpers (not exported)
 # ---------------------------------------------------------------------------
 
+# Validate that tie_break = "random" is accompanied by a stream_manager and
+# stream_name. Call this at the top of every one_winner / rank_by_scores wrapper.
+.check_tie_break_args <- function(tie_break, stream_manager, stream_name) {
+  if (identical(tie_break, "random") &&
+      (is.null(stream_manager) || is.null(stream_name))) {
+    stop(
+      "tie_break = \"random\" requires both stream_manager and stream_name. ",
+      "Provide a StreamManager object and a registered stream name, or use ",
+      "tie_break = \"smallest_index\"."
+    )
+  }
+}
+
 # Resolve the majority threshold argument: "simple" → -1L, integer k → k.
 .resolve_k <- function(k) {
   if (identical(k, "simple")) return(-1L)

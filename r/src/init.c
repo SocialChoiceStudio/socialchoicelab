@@ -1,11 +1,8 @@
 /* init.c — DLL initialisation for the socialchoicelab R package.
  *
- * Registers all .Call() entry points and disables dynamic symbol lookup so
- * that R requires every symbol to be explicitly listed here.
- *
- * scs_check() and SCS_ERR_BUF_SIZE are defined in scs_r_helpers.h.
- * This file includes that header to validate the definition compiles; the
- * static inline copy here is unused (each translation unit gets its own).
+ * Registers all .Call() entry points and disables dynamic symbol lookup.
+ * Entry points are grouped by source file and listed alphabetically within
+ * each group.
  */
 
 #include <R.h>
@@ -14,11 +11,9 @@
 #include "scs_r_helpers.h"
 
 /* ---------------------------------------------------------------------------
- * Forward declarations for all .Call() entry points.
- * One line per function; keep in alphabetical order within each group.
+ * Forward declarations — B2: StreamManager, Winset, Profile lifecycle
  * --------------------------------------------------------------------------- */
 
-/* StreamManager */
 extern SEXP r_scs_bernoulli(SEXP, SEXP, SEXP);
 extern SEXP r_scs_normal(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_register_streams(SEXP, SEXP);
@@ -31,7 +26,7 @@ extern SEXP r_scs_uniform_choice(SEXP, SEXP, SEXP);
 extern SEXP r_scs_uniform_int(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_uniform_real(SEXP, SEXP, SEXP, SEXP);
 
-/* Winset */
+extern SEXP r_scs_weighted_winset_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_winset_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_winset_bbox_2d(SEXP);
 extern SEXP r_scs_winset_boundary_2d(SEXP);
@@ -44,9 +39,7 @@ extern SEXP r_scs_winset_is_empty(SEXP);
 extern SEXP r_scs_winset_symmetric_difference(SEXP, SEXP);
 extern SEXP r_scs_winset_union(SEXP, SEXP);
 extern SEXP r_scs_winset_with_veto_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP r_scs_weighted_winset_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
-/* Profile */
 extern SEXP r_scs_profile_build_spatial(SEXP, SEXP, SEXP);
 extern SEXP r_scs_profile_clone(SEXP);
 extern SEXP r_scs_profile_destroy(SEXP);
@@ -59,11 +52,65 @@ extern SEXP r_scs_profile_impartial_culture(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_profile_uniform_spatial(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 /* ---------------------------------------------------------------------------
- * .Call() entry point table — one entry per function.
- * The third field is the number of SEXP arguments.
+ * Forward declarations — B3: function groups
+ * --------------------------------------------------------------------------- */
+
+/* B3.1–B3.3 (functions.c) */
+extern SEXP r_scs_api_version(SEXP);
+extern SEXP r_scs_calculate_distance(SEXP, SEXP, SEXP);
+extern SEXP r_scs_convex_hull_2d(SEXP);
+extern SEXP r_scs_distance_to_utility(SEXP, SEXP);
+extern SEXP r_scs_level_set_1d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_level_set_2d(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_level_set_to_polygon(SEXP, SEXP);
+extern SEXP r_scs_majority_prefers_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_normalize_utility(SEXP, SEXP, SEXP);
+extern SEXP r_scs_pairwise_matrix_2d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_weighted_majority_prefers_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+
+/* B3.5 (geometry.c) */
+extern SEXP r_scs_condorcet_winner_2d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_copeland_scores_2d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_copeland_winner_2d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_core_2d(SEXP, SEXP, SEXP);
+extern SEXP r_scs_has_condorcet_winner_2d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_uncovered_set_2d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_uncovered_set_boundary_2d(SEXP, SEXP, SEXP, SEXP);
+
+/* B3.7 (voting_rules.c) */
+extern SEXP r_scs_antiplurality_all_winners(SEXP);
+extern SEXP r_scs_antiplurality_one_winner(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_antiplurality_scores(SEXP);
+extern SEXP r_scs_approval_all_winners_spatial(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_approval_all_winners_topk(SEXP, SEXP);
+extern SEXP r_scs_approval_scores_spatial(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_approval_scores_topk(SEXP, SEXP);
+extern SEXP r_scs_borda_all_winners(SEXP);
+extern SEXP r_scs_borda_one_winner(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_borda_ranking(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_borda_scores(SEXP);
+extern SEXP r_scs_plurality_all_winners(SEXP);
+extern SEXP r_scs_plurality_one_winner(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_plurality_scores(SEXP);
+extern SEXP r_scs_scoring_rule_all_winners(SEXP, SEXP);
+extern SEXP r_scs_scoring_rule_one_winner(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_scoring_rule_scores(SEXP, SEXP);
+
+/* B3.8 (social.c) */
+extern SEXP r_scs_condorcet_winner_profile(SEXP);
+extern SEXP r_scs_has_condorcet_winner_profile(SEXP);
+extern SEXP r_scs_is_condorcet_consistent(SEXP, SEXP);
+extern SEXP r_scs_is_majority_consistent(SEXP, SEXP);
+extern SEXP r_scs_is_pareto_efficient(SEXP, SEXP);
+extern SEXP r_scs_pareto_set(SEXP);
+extern SEXP r_scs_pairwise_ranking_from_matrix(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_rank_by_scores(SEXP, SEXP, SEXP, SEXP);
+
+/* ---------------------------------------------------------------------------
+ * .Call() entry point table
  * --------------------------------------------------------------------------- */
 static const R_CallMethodDef call_methods[] = {
-    /* StreamManager */
+    /* --- B2: StreamManager --- */
     {"r_scs_bernoulli",              (DL_FUNC)&r_scs_bernoulli,              3},
     {"r_scs_normal",                 (DL_FUNC)&r_scs_normal,                 4},
     {"r_scs_register_streams",       (DL_FUNC)&r_scs_register_streams,       2},
@@ -75,7 +122,7 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_uniform_choice",         (DL_FUNC)&r_scs_uniform_choice,         3},
     {"r_scs_uniform_int",            (DL_FUNC)&r_scs_uniform_int,            4},
     {"r_scs_uniform_real",           (DL_FUNC)&r_scs_uniform_real,           4},
-    /* Winset */
+    /* --- B2: Winset --- */
     {"r_scs_weighted_winset_2d",          (DL_FUNC)&r_scs_weighted_winset_2d,          7},
     {"r_scs_winset_2d",                   (DL_FUNC)&r_scs_winset_2d,                   6},
     {"r_scs_winset_bbox_2d",              (DL_FUNC)&r_scs_winset_bbox_2d,              1},
@@ -89,7 +136,7 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_winset_symmetric_difference", (DL_FUNC)&r_scs_winset_symmetric_difference, 2},
     {"r_scs_winset_union",                (DL_FUNC)&r_scs_winset_union,                2},
     {"r_scs_winset_with_veto_2d",         (DL_FUNC)&r_scs_winset_with_veto_2d,         7},
-    /* Profile */
+    /* --- B2: Profile --- */
     {"r_scs_profile_build_spatial",       (DL_FUNC)&r_scs_profile_build_spatial,       3},
     {"r_scs_profile_clone",               (DL_FUNC)&r_scs_profile_clone,               1},
     {"r_scs_profile_destroy",             (DL_FUNC)&r_scs_profile_destroy,             1},
@@ -100,6 +147,53 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_profile_get_ranking",         (DL_FUNC)&r_scs_profile_get_ranking,         2},
     {"r_scs_profile_impartial_culture",   (DL_FUNC)&r_scs_profile_impartial_culture,   4},
     {"r_scs_profile_uniform_spatial",     (DL_FUNC)&r_scs_profile_uniform_spatial,     7},
+    /* --- B3: version, distance, level-set, convex hull, majority --- */
+    {"r_scs_api_version",                    (DL_FUNC)&r_scs_api_version,                    1},
+    {"r_scs_calculate_distance",             (DL_FUNC)&r_scs_calculate_distance,             3},
+    {"r_scs_convex_hull_2d",                 (DL_FUNC)&r_scs_convex_hull_2d,                 1},
+    {"r_scs_distance_to_utility",            (DL_FUNC)&r_scs_distance_to_utility,            2},
+    {"r_scs_level_set_1d",                   (DL_FUNC)&r_scs_level_set_1d,                   4},
+    {"r_scs_level_set_2d",                   (DL_FUNC)&r_scs_level_set_2d,                   5},
+    {"r_scs_level_set_to_polygon",           (DL_FUNC)&r_scs_level_set_to_polygon,           2},
+    {"r_scs_majority_prefers_2d",            (DL_FUNC)&r_scs_majority_prefers_2d,            7},
+    {"r_scs_normalize_utility",              (DL_FUNC)&r_scs_normalize_utility,              3},
+    {"r_scs_pairwise_matrix_2d",             (DL_FUNC)&r_scs_pairwise_matrix_2d,             4},
+    {"r_scs_weighted_majority_prefers_2d",   (DL_FUNC)&r_scs_weighted_majority_prefers_2d,   8},
+    /* --- B3: Copeland, Condorcet, core, uncovered set --- */
+    {"r_scs_condorcet_winner_2d",            (DL_FUNC)&r_scs_condorcet_winner_2d,            4},
+    {"r_scs_copeland_scores_2d",             (DL_FUNC)&r_scs_copeland_scores_2d,             4},
+    {"r_scs_copeland_winner_2d",             (DL_FUNC)&r_scs_copeland_winner_2d,             4},
+    {"r_scs_core_2d",                        (DL_FUNC)&r_scs_core_2d,                        3},
+    {"r_scs_has_condorcet_winner_2d",        (DL_FUNC)&r_scs_has_condorcet_winner_2d,        4},
+    {"r_scs_uncovered_set_2d",               (DL_FUNC)&r_scs_uncovered_set_2d,               4},
+    {"r_scs_uncovered_set_boundary_2d",      (DL_FUNC)&r_scs_uncovered_set_boundary_2d,      4},
+    /* --- B3: Voting rules --- */
+    {"r_scs_antiplurality_all_winners",      (DL_FUNC)&r_scs_antiplurality_all_winners,      1},
+    {"r_scs_antiplurality_one_winner",       (DL_FUNC)&r_scs_antiplurality_one_winner,       4},
+    {"r_scs_antiplurality_scores",           (DL_FUNC)&r_scs_antiplurality_scores,           1},
+    {"r_scs_approval_all_winners_spatial",   (DL_FUNC)&r_scs_approval_all_winners_spatial,   4},
+    {"r_scs_approval_all_winners_topk",      (DL_FUNC)&r_scs_approval_all_winners_topk,      2},
+    {"r_scs_approval_scores_spatial",        (DL_FUNC)&r_scs_approval_scores_spatial,        4},
+    {"r_scs_approval_scores_topk",           (DL_FUNC)&r_scs_approval_scores_topk,           2},
+    {"r_scs_borda_all_winners",              (DL_FUNC)&r_scs_borda_all_winners,              1},
+    {"r_scs_borda_one_winner",               (DL_FUNC)&r_scs_borda_one_winner,               4},
+    {"r_scs_borda_ranking",                  (DL_FUNC)&r_scs_borda_ranking,                  4},
+    {"r_scs_borda_scores",                   (DL_FUNC)&r_scs_borda_scores,                   1},
+    {"r_scs_plurality_all_winners",          (DL_FUNC)&r_scs_plurality_all_winners,          1},
+    {"r_scs_plurality_one_winner",           (DL_FUNC)&r_scs_plurality_one_winner,           4},
+    {"r_scs_plurality_scores",               (DL_FUNC)&r_scs_plurality_scores,               1},
+    {"r_scs_scoring_rule_all_winners",       (DL_FUNC)&r_scs_scoring_rule_all_winners,       2},
+    {"r_scs_scoring_rule_one_winner",        (DL_FUNC)&r_scs_scoring_rule_one_winner,        5},
+    {"r_scs_scoring_rule_scores",            (DL_FUNC)&r_scs_scoring_rule_scores,            2},
+    /* --- B3: Social rankings and properties --- */
+    {"r_scs_condorcet_winner_profile",       (DL_FUNC)&r_scs_condorcet_winner_profile,       1},
+    {"r_scs_has_condorcet_winner_profile",   (DL_FUNC)&r_scs_has_condorcet_winner_profile,   1},
+    {"r_scs_is_condorcet_consistent",        (DL_FUNC)&r_scs_is_condorcet_consistent,        2},
+    {"r_scs_is_majority_consistent",         (DL_FUNC)&r_scs_is_majority_consistent,         2},
+    {"r_scs_is_pareto_efficient",            (DL_FUNC)&r_scs_is_pareto_efficient,            2},
+    {"r_scs_pareto_set",                     (DL_FUNC)&r_scs_pareto_set,                     1},
+    {"r_scs_pairwise_ranking_from_matrix",   (DL_FUNC)&r_scs_pairwise_ranking_from_matrix,   5},
+    {"r_scs_rank_by_scores",                 (DL_FUNC)&r_scs_rank_by_scores,                 4},
     {NULL, NULL, 0} /* sentinel */
 };
 
