@@ -17,20 +17,27 @@ This produces `build/libscs_api.dylib` (macOS) or `build/libscs_api.so` (Linux).
 
 ### 2. Create a virtual environment and install the package (one-time)
 
+Run from the **repository root**:
+
+```bash
+python -m venv .venv
+```
+
+Then install from the `python/` directory:
+
 ```bash
 cd python
-python -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+../.venv/bin/pip install -e ".[dev]"
 ```
 
 The `-e` flag means editable: changes to `src/socialchoicelab/` take effect
-immediately without reinstalling. The `.venv` keeps dependencies isolated from
-your system Python.
+immediately without reinstalling. The `.venv` at the repo root keeps
+dependencies isolated from your system Python.
 
-**Cursor tip:** when you open the `python/` folder, Cursor may offer to create
-a virtual environment automatically — accept it, then run `.venv/bin/pip install -e ".[dev]"`
-to finish the install. When opening the notebook, select the `.venv` kernel in
-the kernel picker.
+**Cursor tip:** Cursor may offer to create the virtual environment automatically
+when you open the workspace — accept it (the venv lands at the repo root).
+Then run `../.venv/bin/pip install -e ".[dev]"` from `python/` to finish the
+install. When opening the notebook, select the `.venv` kernel in the kernel picker.
 
 ### 3. Set the library path environment variable
 
