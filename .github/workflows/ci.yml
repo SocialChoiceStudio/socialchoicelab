@@ -138,9 +138,15 @@ jobs:
         with:
           r-version: release
 
-      - name: Install R packages
-        run: |
-          Rscript -e "install.packages(c('R6', 'testthat', 'devtools', 'roxygen2', 'pkgdown'), repos='https://cloud.r-project.org')"
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: r
+          extra-packages: |
+            devtools
+            roxygen2
+            pkgdown
+            testthat
 
       - name: R CMD check
         run: |
