@@ -3,6 +3,8 @@
 # This script demonstrates user-facing functions across all major categories.
 # Run in RStudio with devtools::load_all() or library(socialchoicelab).
 
+# Note after any change to the R Package run the following at the 
+# console before running script commands: devtools::install()
 library(socialchoicelab)
 
 # ===========================================================================
@@ -277,3 +279,4 @@ cat("C API version:", version$major, ".", version$minor, ".", version$patch, "\n
 cat("\n=== END ===\n")
 cat("All examples completed successfully!\n")
 cat("For more detail, see: ?function_name or vignette('spatial_voting')\n")
+
