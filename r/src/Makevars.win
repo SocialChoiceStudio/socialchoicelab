@@ -4,5 +4,10 @@
 
 SCS_LIB_PATH ?= $(error SCS_LIB_PATH is not set. Set it to the directory containing scs_api.lib)
 
+ifdef SCS_INCLUDE_PATH
+PKG_CPPFLAGS = -I$(SCS_INCLUDE_PATH)
+else
 PKG_CPPFLAGS = -I../../../include
-PKG_LIBS     = -L$(SCS_LIB_PATH) -lscs_api
+endif
+
+PKG_LIBS = -L$(SCS_LIB_PATH) -lscs_api

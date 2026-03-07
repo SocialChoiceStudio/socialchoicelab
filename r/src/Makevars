@@ -1,13 +1,27 @@
 # Makevars — links socialchoicelab against the pre-built libscs_api.
 #
-# SCS_LIB_PATH must be set to the directory containing libscs_api.so/.dylib.
-# Example (add to ~/.Renviron or set before calling install.packages):
-#   SCS_LIB_PATH=/path/to/socialchoicelab/build
+# Required environment variables:
+#   SCS_LIB_PATH      Directory containing libscs_api.so or libscs_api.dylib.
 #
-# For CI, the libscs_api artifact is downloaded and SCS_LIB_PATH is set by
-# the workflow before running R CMD check.
+# Optional environment variables:
+#   SCS_INCLUDE_PATH  Directory containing scs_api.h.
+#                     Defaults to ../../../include (correct when building
+#                     directly from the source tree with R CMD INSTALL r/).
+#                     Must be set when R CMD check copies the package to a
+#                     temp directory (e.g. in CI, or with devtools::check()).
+#
+# Local development example (add to ~/.Renviron):
+#   SCS_LIB_PATH=/path/to/socialchoicelab/build
+#   SCS_INCLUDE_PATH=/path/to/socialchoicelab/include
+#
+# CI: both variables are set by the workflow before running R CMD check.
 
 SCS_LIB_PATH ?= $(error SCS_LIB_PATH is not set. Set it to the directory containing libscs_api.so or libscs_api.dylib)
 
+ifdef SCS_INCLUDE_PATH
+PKG_CPPFLAGS = -I$(SCS_INCLUDE_PATH)
+else
 PKG_CPPFLAGS = -I../../../include
-PKG_LIBS     = -L$(SCS_LIB_PATH) -lscs_api -Wl,-rpath,$(SCS_LIB_PATH)
+endif
+
+PKG_LIBS = -L$(SCS_LIB_PATH) -lscs_api -Wl,-rpath,$(SCS_LIB_PATH)

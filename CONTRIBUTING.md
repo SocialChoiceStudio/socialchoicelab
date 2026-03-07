@@ -59,6 +59,7 @@ The library lands at `build/libscs_api.dylib` (macOS) or `build/libscs_api.so`
 
 ```bash
 export SCS_LIB_PATH=/absolute/path/to/socialchoicelab/build
+export SCS_INCLUDE_PATH=/absolute/path/to/socialchoicelab/include
 
 # Install the package from source (links against libscs_api):
 R CMD INSTALL r/
@@ -70,8 +71,18 @@ cd r && Rscript -e "devtools::test()"
 R CMD check r/
 ```
 
-Alternatively, add `SCS_LIB_PATH=...` to `~/.Renviron` so it is set in every
-R session without having to export it each time.
+Alternatively, add both variables to `~/.Renviron` so they are set in every
+R session without having to export each time:
+
+```
+SCS_LIB_PATH=/absolute/path/to/socialchoicelab/build
+SCS_INCLUDE_PATH=/absolute/path/to/socialchoicelab/include
+```
+
+`SCS_INCLUDE_PATH` is required whenever R compiles the package outside the
+source tree (e.g. `devtools::check()`, `R CMD check`), because the relative
+path `../../../include` in `Makevars` only resolves correctly when building
+directly from the repo with `R CMD INSTALL r/`.
 
 ### 3 — Python package (local development)
 

@@ -130,8 +130,10 @@ jobs:
           name: libscs_api-${{ matrix.os }}
           path: scs_lib
 
-      - name: Set SCS_LIB_PATH
-        run: echo "SCS_LIB_PATH=${{ github.workspace }}/scs_lib" >> $GITHUB_ENV
+      - name: Set SCS_LIB_PATH and SCS_INCLUDE_PATH
+        run: |
+          echo "SCS_LIB_PATH=${{ github.workspace }}/scs_lib" >> $GITHUB_ENV
+          echo "SCS_INCLUDE_PATH=${{ github.workspace }}/include" >> $GITHUB_ENV
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
