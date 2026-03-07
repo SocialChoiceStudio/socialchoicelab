@@ -200,5 +200,4 @@ static const R_CallMethodDef call_methods[] = {
 void R_init_socialchoicelab(DllInfo *dll) {
     R_registerRoutines(dll, NULL, call_methods, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
-    R_forceSymbols(dll, TRUE);
 }

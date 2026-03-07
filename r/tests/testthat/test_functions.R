@@ -162,7 +162,7 @@ test_that("pairwise_matrix_2d returns a square integer matrix", {
 test_that("pairwise_matrix_2d has zero diagonal", {
   skip_without_lib()
   mat <- pairwise_matrix_2d(.alts, .voters)
-  expect_equal(diag(mat), rep(0L, 3L))
+  expect_equal(unname(diag(mat)), rep(0L, 3L))
 })
 
 test_that("pairwise_matrix_2d is antisymmetric", {

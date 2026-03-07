@@ -93,7 +93,7 @@ test_that("scoring_rule_scores with Borda weights matches borda_scores", {
   sw    <- c(2.0, 1.0, 0.0)
   sr    <- scoring_rule_scores(.prof(), sw)
   borda <- borda_scores(.prof())
-  expect_equal(sr, as.double(borda), tolerance = 1e-10)
+  expect_equal(unname(sr), unname(as.double(borda)), tolerance = 1e-10)
 })
 
 test_that("scoring_rule_one_winner is in scoring_rule_all_winners", {
