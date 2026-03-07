@@ -4,7 +4,7 @@
 
 - **Current phase:** c_api geometry + aggregation extensions — **ACTIVE**. Expose geometry (winset, Yolk, uncovered set, Copeland, Heart, veto, weighted voting) and aggregation (profiles, voting rules, social rankings, Pareto, Condorcet) through the stable C API. Plan: [c_api_extensions_plan.md](c_api_extensions_plan.md).
 - **Next:** After c_api extensions: first R/Python binding. See [ROADMAP.md](ROADMAP.md).
-- **Last updated:** 2026-03-05
+- **Last updated:** 2026-03-07
 
 **Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
 
@@ -43,6 +43,32 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 
 ## Recent Work
 
+### Session: 2026-03-07 — C API Phases C4 (geometry) and C5 (Profile) COMPLETE
+
+- **C4 — Geometry: Copeland, Condorcet, core, uncovered set, Heart (C4.1–C4.8)**
+  - `scs_copeland_scores_2d`: wraps `geometry::copeland_scores`; writes one int score per alternative.
+  - `scs_copeland_winner_2d`: returns 0-based index of the Copeland winner (ties by smallest index).
+  - `scs_has_condorcet_winner_2d` / `scs_condorcet_winner_2d`: check existence and index of Condorcet winner over finite alternative set.
+  - `scs_core_2d`: wraps `geometry::core_2d`; sets `out_found` and `(out_x, out_y)`.
+  - `scs_uncovered_set_2d`: discrete uncovered set; returns indices into the input alternative array. Supports size-query (null/zero-capacity buffer) and SCS_ERROR_BUFFER_TOO_SMALL.
+  - `scs_uncovered_set_boundary_size_2d` / `scs_uncovered_set_boundary_2d`: continuous boundary via `uncovered_set_boundary_2d` (Polygon2E); exported as flat [x,y,...] pairs.
+  - `scs_heart_2d`: discrete Heart; returns indices into the input alternative array.
+  - `scs_heart_boundary_size_2d` / `scs_heart_boundary_2d`: continuous heart boundary via `heart_boundary_2d` (Polygon2E); same export pattern as uncovered set.
+  - New internal helpers: `find_alt_index` (exact-equality index lookup), `export_polygon2e` (Polygon2E → flat doubles); live in a second anonymous namespace in `scs_api.cpp`.
+  - 30 new tests (CApi_Copeland, CApi_Condorcet, CApi_Core, CApi_UncoveredSet, CApi_UncoveredSetBoundary, CApi_Heart, CApi_HeartBoundary).
+
+- **C5 — Aggregation: Profile opaque handle (C5.1–C5.7)**
+  - `SCS_Profile` opaque type (`typedef struct SCS_ProfileImpl SCS_Profile`) wrapping `aggregation::Profile`.
+  - `SCS_TieBreak` ABI-stable typedef (`int32_t`) with `SCS_TIEBREAK_RANDOM` / `SCS_TIEBREAK_SMALLEST_INDEX` constants (used by C6).
+  - `scs_profile_build_spatial`: builds from 2D alternatives + voter ideals using `build_spatial_profile`.
+  - `scs_profile_from_utility_matrix`: flat row-major double array → Eigen::MatrixXd → `profile_from_utility_matrix`.
+  - `scs_profile_impartial_culture` / `scs_profile_uniform_spatial` / `scs_profile_gaussian_spatial`: generators using named stream from `SCS_StreamManager`. Spatial generators first draw n_alts alternatives from the same distribution (U or N), then voters.
+  - `scs_profile_destroy`, `scs_profile_dims`, `scs_profile_get_ranking`, `scs_profile_export_rankings` (row-major bulk export), `scs_profile_clone`.
+  - `struct SCS_ProfileImpl` defined in `scs_api.cpp` (not in header).
+  - 13 new tests (CApi_Profile group).
+
+- **Total test count:** 137 tests across `test_c_api` (113) and `test_centrality` (24), all passing.
+
 ### Session: 2026-03-06 — Profiles & Aggregation (Layers 4–5) COMPLETE
 
 - **P1 (`profile.h`):** `struct Profile { int n_voters; int n_alts; vector<vector<int>> rankings; }`. `build_spatial_profile` (Lp-distance ranking, ties by index), `profile_from_utility_matrix` (descending utility sort, ties by index), `is_well_formed`. All 0-indexed; R bindings must shift at boundary.
@@ -56,6 +82,28 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 - **I2 (Docs):** `aggregation_design.md` with full API, limitations, and citations. `design_document.md` Layers 4–5 updated to "implemented". Plan P1–I2 all ✅ Done. Citations to verify before formal I2 sign-off: Borda year, Fishburn (1977) Thm 1, Guilbaud (1952) accessibility.
 - **CMakeLists.txt:** `socialchoicelab_aggregation` INTERFACE library; 4 new test targets.
 - **Total non-benchmark tests:** 22 ctest suites, all passing (< 1s).
+
+### Session: 2026-03-05 — C API Phases C2 (winset) and C3 (Yolk) COMPLETE
+
+- **C2 — Winset opaque handle:** `SCS_WinsetImpl` wraps `WinsetRegion` (CGAL `General_polygon_set_2`). All 8 sub-items implemented:
+  - Factories: `scs_winset_2d`, `scs_weighted_winset_2d`, `scs_winset_with_veto_2d` (all return owned `SCS_Winset*`; NULL on error).
+  - Lifecycle + queries: `scs_winset_destroy` (NULL-safe), `scs_winset_is_empty`, `scs_winset_contains_point_2d`, `scs_winset_bbox_2d`.
+  - Boundary export (C2.6): `scs_winset_boundary_size_2d` (size query) + `scs_winset_sample_boundary_2d` (fill, with null-buffer size-query mode, `out_path_is_hole` flags, `SCS_ERROR_BUFFER_TOO_SMALL` on overflow). Paths are the pre-sampled polygon vertices from the CGAL region — no additional resampling.
+  - Boolean ops (C2.7): `scs_winset_union/intersection/difference/symmetric_difference` — each returns a new owned handle.
+  - Clone (C2.8): `scs_winset_clone`.
+  - Internal helper `build_voters` (anonymous namespace) factored out for all geometry wrappers.
+- **C3 — Yolk:** `SCS_Yolk2d` POD struct + `scs_yolk_2d`. Approximation warning documented in header and `SCS_Yolk2d` comment (LP yolk, not true yolk). `dist_cfg` is validated for null but the metric is not applied (yolk is Euclidean by definition).
+- **Tests:** 21 new tests (17 `CApi_Winset`, 4 `CApi_Yolk`). 83 total, all pass.
+- **`c_api_extensions_plan.md`:** C2.1–C2.8 and C3.1–C3.2 all marked ✅ Done.
+
+### Session: 2026-03-05 — C API Phase C1 (majority preference) COMPLETE
+
+- **C1.1 `scs_majority_prefers_2d`:** Wraps `geometry::majority_prefers`. Accepts `SCS_MAJORITY_SIMPLE` or a literal k in [1, n_voters]. Returns 1 in `*out` if at least k voters strictly prefer A, else 0.
+- **C1.2 `scs_pairwise_matrix_2d`:** Wraps `geometry::pairwise_matrix` (raw preference margins). Converts margins to `SCS_PairwiseResult` (WIN/TIE/LOSS). Output is row-major, size `n_alts × n_alts`; returns `SCS_ERROR_BUFFER_TOO_SMALL` if `out_len < n_alts²`.
+- **C1.3 `scs_weighted_majority_prefers_2d`:** Wraps `geometry::weighted_majority_prefers`. All weights must be strictly positive; threshold must be in (0, 1].
+- **Shared helper:** `to_dist_config` (internal, anonymous namespace) converts `SCS_DistanceConfig*` → `geometry::DistConfig` with null/weight-count validation; reused by all geometry wrappers.
+- **Tests:** 14 new tests across `CApi_Majority`, `CApi_PairwiseMatrix`, `CApi_WeightedMajority`. All 62 pass.
+- **`c_api_extensions_plan.md`:** C1.1–C1.3 all marked ✅ Done.
 
 ### Session: 2026-03-05 — C API Phase C0 (hygiene and contracts) COMPLETE
 

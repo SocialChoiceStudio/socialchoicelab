@@ -1131,34 +1131,34 @@ Update `docs/architecture/c_api_design.md`:
 | C0.3 | ABI-stable `SCS_PairwiseResult` scalar domain | ✅ Done |
 | C0.4 | Add `out_capacity` to `scs_level_set_to_polygon`; null-buffer = size query | ✅ Done |
 | C0.5 | Document thread-safety / reentrancy contract | ✅ Done |
-| C1.1 | `scs_majority_prefers_2d` | 🔲 |
-| C1.2 | `scs_pairwise_matrix_2d` | 🔲 |
-| C1.3 | `scs_weighted_majority_prefers_2d` | 🔲 |
-| C2.1 | `SCS_Winset` opaque type declaration | 🔲 |
-| C2.2 | `scs_winset_2d` | 🔲 |
-| C2.3 | `scs_weighted_winset_2d` | 🔲 |
-| C2.4 | `scs_winset_with_veto_2d` | 🔲 |
-| C2.5 | Winset lifecycle + queries (`destroy`, `is_empty`, `contains_point_2d`, `bbox_2d`) | 🔲 |
-| C2.6 | Winset boundary export (`boundary_size_2d`, `sample_boundary_2d`, hole flags) | 🔲 |
-| C2.7 | Winset boolean ops (`union`, `intersection`, `difference`, `symmetric_difference`) | 🔲 |
-| C2.8 | Optional `scs_winset_clone` | 🔲 |
-| C3.1 | `SCS_Yolk2d` POD struct | 🔲 |
-| C3.2 | `scs_yolk_2d` | 🔲 |
-| C4.1 | `scs_copeland_scores_2d` | 🔲 |
-| C4.2 | `scs_copeland_winner_2d` (index-returning) | 🔲 |
-| C4.3 | `scs_has_condorcet_winner_2d` + `scs_condorcet_winner_2d` | 🔲 |
-| C4.4 | `scs_core_2d` | 🔲 |
-| C4.5 | `scs_uncovered_set_2d` (discrete) | 🔲 |
-| C4.6 | `scs_uncovered_set_boundary_size_2d` + `scs_uncovered_set_boundary_2d` | 🔲 |
-| C4.7 | `scs_heart_2d` (discrete) | 🔲 |
-| C4.8 | `scs_heart_boundary_size_2d` + `scs_heart_boundary_2d` | 🔲 |
-| C5.1 | `SCS_Profile` opaque type + ABI-stable `SCS_TieBreak` | 🔲 |
-| C5.2 | `scs_profile_build_spatial` | 🔲 |
-| C5.3 | `scs_profile_from_utility_matrix` | 🔲 |
-| C5.4 | Synthetic generators (impartial culture, uniform spatial, Gaussian spatial) | 🔲 |
-| C5.5 | Profile lifecycle + inspection (`destroy`, `dims`, `get_ranking`) | 🔲 |
-| C5.6 | Optional `scs_profile_export_rankings` | 🔲 |
-| C5.7 | Optional `scs_profile_clone` | 🔲 |
+| C1.1 | `scs_majority_prefers_2d` | ✅ Done |
+| C1.2 | `scs_pairwise_matrix_2d` | ✅ Done |
+| C1.3 | `scs_weighted_majority_prefers_2d` | ✅ Done |
+| C2.1 | `SCS_Winset` opaque type declaration | ✅ Done |
+| C2.2 | `scs_winset_2d` | ✅ Done |
+| C2.3 | `scs_weighted_winset_2d` | ✅ Done |
+| C2.4 | `scs_winset_with_veto_2d` | ✅ Done |
+| C2.5 | Winset lifecycle + queries (`destroy`, `is_empty`, `contains_point_2d`, `bbox_2d`) | ✅ Done |
+| C2.6 | Winset boundary export (`boundary_size_2d`, `sample_boundary_2d`, hole flags) | ✅ Done |
+| C2.7 | Winset boolean ops (`union`, `intersection`, `difference`, `symmetric_difference`) | ✅ Done |
+| C2.8 | Optional `scs_winset_clone` | ✅ Done |
+| C3.1 | `SCS_Yolk2d` POD struct | ✅ Done |
+| C3.2 | `scs_yolk_2d` | ✅ Done |
+| C4.1 | `scs_copeland_scores_2d` | ✅ Done |
+| C4.2 | `scs_copeland_winner_2d` (index-returning) | ✅ Done |
+| C4.3 | `scs_has_condorcet_winner_2d` + `scs_condorcet_winner_2d` | ✅ Done |
+| C4.4 | `scs_core_2d` | ✅ Done |
+| C4.5 | `scs_uncovered_set_2d` (discrete) | ✅ Done |
+| C4.6 | `scs_uncovered_set_boundary_size_2d` + `scs_uncovered_set_boundary_2d` | ✅ Done |
+| C4.7 | `scs_heart_2d` (discrete) | ✅ Done |
+| C4.8 | `scs_heart_boundary_size_2d` + `scs_heart_boundary_2d` | ✅ Done |
+| C5.1 | `SCS_Profile` opaque type + ABI-stable `SCS_TieBreak` | ✅ Done |
+| C5.2 | `scs_profile_build_spatial` | ✅ Done |
+| C5.3 | `scs_profile_from_utility_matrix` | ✅ Done |
+| C5.4 | Synthetic generators (impartial culture, uniform spatial, Gaussian spatial) | ✅ Done |
+| C5.5 | Profile lifecycle + inspection (`destroy`, `dims`, `get_ranking`) | ✅ Done |
+| C5.6 | Optional `scs_profile_export_rankings` | ✅ Done |
+| C5.7 | Optional `scs_profile_clone` | ✅ Done |
 | C6.1 | Plurality (`scores`, `all_winners`, `one_winner`) | 🔲 |
 | C6.2 | Borda (`scores`, `all_winners`, `one_winner`, `ranking`) | 🔲 |
 | C6.3 | Anti-plurality (`scores`, `all_winners`, `one_winner`) | 🔲 |

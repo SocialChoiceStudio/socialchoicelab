@@ -473,6 +473,710 @@ SCS_API int scs_uniform_choice(SCS_StreamManager* mgr, const char* stream_name,
                                int64_t n, int64_t* out, char* err_buf,
                                int err_buf_len);
 
+// ---------------------------------------------------------------------------
+// Geometry — winset opaque handle  (C2)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Opaque handle for a 2D winset region.
+ *
+ * Internally wraps a CGAL General_polygon_set_2. All factory functions return
+ * a heap-allocated handle; the caller owns it and must call
+ * scs_winset_destroy when done. NULL handles are not valid inputs to any
+ * function except scs_winset_destroy (which is a no-op on NULL).
+ *
+ * Boolean operations (union, intersection, etc.) always return a NEW owned
+ * handle; the inputs are not modified.
+ */
+typedef struct SCS_WinsetImpl SCS_Winset;
+
+// ---------------------------------------------------------------------------
+// Geometry — Yolk POD struct  (C3)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief 2D Yolk result: center and radius.
+ *
+ * ⚠ APPROXIMATION WARNING: scs_yolk_2d computes the LP yolk (smallest circle
+ * intersecting the limiting median lines), NOT the true yolk (smallest circle
+ * intersecting ALL median lines). These can differ — see the project notes in
+ * where_we_are.md and milestone_gates.md for references and the planned
+ * replacement algorithms (Gudmundsson & Wong 2019, Liu & Tovey 2023).
+ * Do not treat results as exact.
+ */
+typedef struct {
+  double center_x;
+  double center_y;
+  double radius;
+} SCS_Yolk2d;
+
+// ---------------------------------------------------------------------------
+// Geometry — majority preference  (C1)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Test whether a k-majority of voters prefer point A to point B.
+ *
+ * Voter i strictly prefers A iff d(pᵢ, A) < d(pᵢ, B). Ties contribute 0.
+ * Returns 1 in *out if at least k voters prefer A, else 0.
+ *
+ * @param point_a_x, point_a_y   First alternative.
+ * @param point_b_x, point_b_y   Second alternative.
+ * @param voter_ideals_xy         Flat array [x0,y0,x1,y1,...] length
+ * 2*n_voters.
+ * @param n_voters                Number of voters (>= 1).
+ * @param dist_cfg                Distance configuration (n_weights must be 2).
+ * @param k                       Majority threshold: SCS_MAJORITY_SIMPLE or
+ *                                1..n_voters.
+ * @param[out] out                1 if A defeats B under k-majority, else 0.
+ * @param err_buf                 Optional error message buffer.
+ * @param err_buf_len             Length of err_buf.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_majority_prefers_2d(double point_a_x, double point_a_y,
+                                    double point_b_x, double point_b_y,
+                                    const double* voter_ideals_xy, int n_voters,
+                                    const SCS_DistanceConfig* dist_cfg, int k,
+                                    int* out, char* err_buf, int err_buf_len);
+
+/**
+ * @brief Compute the n_alts × n_alts pairwise preference matrix.
+ *
+ * Entry [i*n_alts + j] is:
+ *   SCS_PAIRWISE_WIN  if alternatives[i] is preferred by more voters than [j]
+ *   SCS_PAIRWISE_TIE  if equal numbers prefer each
+ *   SCS_PAIRWISE_LOSS if alternatives[j] is preferred by more voters than [i]
+ *
+ * The matrix is anti-symmetric: M[i,j] = -M[j,i], M[i,i] = SCS_PAIRWISE_TIE.
+ *
+ * @param alt_xy            Flat array [x0,y0,x1,y1,...] length 2*n_alts.
+ * @param n_alts            Number of alternatives (>= 1).
+ * @param voter_ideals_xy   Flat array [x0,y0,...] length 2*n_voters.
+ * @param n_voters          Number of voters (>= 1).
+ * @param dist_cfg          Distance configuration (n_weights must be 2).
+ * @param k                 Majority threshold (passed through for validation;
+ *                          matrix entries reflect raw vote margins, not k).
+ * @param[out] out_matrix   Row-major SCS_PairwiseResult buffer, length
+ *                          n_alts*n_alts. Must be non-null.
+ * @param out_len           Capacity of out_matrix (must be >= n_alts*n_alts).
+ * @param err_buf           Optional error message buffer.
+ * @param err_buf_len       Length of err_buf.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_pairwise_matrix_2d(const double* alt_xy, int n_alts,
+                                   const double* voter_ideals_xy, int n_voters,
+                                   const SCS_DistanceConfig* dist_cfg, int k,
+                                   SCS_PairwiseResult* out_matrix, int out_len,
+                                   char* err_buf, int err_buf_len);
+
+/**
+ * @brief Test whether the weighted majority of voters prefer point A to point
+ * B.
+ *
+ * Returns 1 in *out if the total weight of voters preferring A meets or
+ * exceeds threshold * (sum of all weights).
+ *
+ * @param point_a_x, point_a_y   First alternative.
+ * @param point_b_x, point_b_y   Second alternative.
+ * @param voter_ideals_xy         Flat array [x0,y0,...] length 2*n_voters.
+ * @param n_voters                Number of voters (>= 1).
+ * @param weights                 Voter weights, length n_voters. All must be
+ *                                finite and strictly positive.
+ * @param dist_cfg                Distance configuration (n_weights must be 2).
+ * @param threshold               Weight fraction in (0, 1]. Use 0.5 for simple
+ *                                weighted majority.
+ * @param[out] out                1 if weighted majority prefers A, else 0.
+ * @param err_buf                 Optional error message buffer.
+ * @param err_buf_len             Length of err_buf.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_weighted_majority_prefers_2d(
+    double point_a_x, double point_a_y, double point_b_x, double point_b_y,
+    const double* voter_ideals_xy, int n_voters, const double* weights,
+    const SCS_DistanceConfig* dist_cfg, double threshold, int* out,
+    char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — winset factory functions  (C2.2–C2.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute the 2D k-majority winset of a status quo.
+ *
+ * @param status_quo_x, status_quo_y  Status quo point.
+ * @param voter_ideals_xy             Flat [x0,y0,...] array, length 2*n_voters.
+ * @param n_voters                    Number of voters (>= 1).
+ * @param dist_cfg                    Distance configuration (n_weights == 2).
+ * @param k                           SCS_MAJORITY_SIMPLE or 1..n_voters.
+ * @param num_samples                 Boundary approximation quality (>= 4);
+ *                                    use SCS_DEFAULT_WINSET_SAMPLES if unsure.
+ * @param err_buf                     Optional error message buffer.
+ * @param err_buf_len                 Length of err_buf.
+ * @return New SCS_Winset* (caller owns; call scs_winset_destroy), or NULL on
+ *         error.
+ */
+SCS_API SCS_Winset* scs_winset_2d(double status_quo_x, double status_quo_y,
+                                  const double* voter_ideals_xy, int n_voters,
+                                  const SCS_DistanceConfig* dist_cfg, int k,
+                                  int num_samples, char* err_buf,
+                                  int err_buf_len);
+
+/**
+ * @brief Compute the weighted-majority 2D winset of a status quo.
+ *
+ * @param weights      Voter weights (length n_voters; all must be > 0).
+ * @param threshold    Weight fraction in (0, 1] required for majority.
+ * @return New SCS_Winset* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Winset* scs_weighted_winset_2d(
+    double status_quo_x, double status_quo_y, const double* voter_ideals_xy,
+    int n_voters, const double* weights, const SCS_DistanceConfig* dist_cfg,
+    double threshold, int num_samples, char* err_buf, int err_buf_len);
+
+/**
+ * @brief Compute the k-majority winset constrained by veto players.
+ *
+ * A veto player at ideal point v blocks any policy change to a point x unless
+ * x is strictly inside v's preferred-to set at the status quo.
+ *
+ * @param veto_ideals_xy  Flat [x0,y0,...] array of veto player ideals (length
+ *                        2*n_veto). May be NULL when n_veto == 0.
+ * @param n_veto          Number of veto players (0 = no veto constraint).
+ * @return New SCS_Winset* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Winset* scs_winset_with_veto_2d(
+    double status_quo_x, double status_quo_y, const double* voter_ideals_xy,
+    int n_voters, const SCS_DistanceConfig* dist_cfg,
+    const double* veto_ideals_xy, int n_veto, int k, int num_samples,
+    char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — winset lifecycle and query helpers  (C2.5)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Destroy a winset handle and release all resources.
+ * @param ws Handle from a scs_winset_* factory. NULL is a no-op.
+ */
+SCS_API void scs_winset_destroy(SCS_Winset* ws);
+
+/**
+ * @brief Test whether the winset is empty (i.e. no policy beats the SQ).
+ * @param[out] out_is_empty  1 if empty, 0 if non-empty.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_winset_is_empty(const SCS_Winset* ws, int* out_is_empty,
+                                char* err_buf, int err_buf_len);
+
+/**
+ * @brief Test whether a 2D point lies strictly inside the winset.
+ * @param[out] out_contains  1 if inside, 0 otherwise.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_winset_contains_point_2d(const SCS_Winset* ws, double x,
+                                         double y, int* out_contains,
+                                         char* err_buf, int err_buf_len);
+
+/**
+ * @brief Compute the axis-aligned bounding box of the winset.
+ *
+ * @param[out] out_found  1 if the winset is non-empty and bbox was written,
+ *                        0 if the winset is empty (no bbox).
+ * @param[out] out_min_x, out_min_y, out_max_x, out_max_y  Bbox corners.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_winset_bbox_2d(const SCS_Winset* ws, int* out_found,
+                               double* out_min_x, double* out_min_y,
+                               double* out_max_x, double* out_max_y,
+                               char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — winset approximate boundary export  (C2.6)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Query the buffer sizes required for scs_winset_sample_boundary_2d.
+ *
+ * @param[out] out_xy_pairs  Total number of (x,y) vertex pairs across all
+ *                           boundary paths.
+ * @param[out] out_n_paths   Number of boundary paths (outer rings + holes).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_winset_boundary_size_2d(const SCS_Winset* ws, int* out_xy_pairs,
+                                        int* out_n_paths, char* err_buf,
+                                        int err_buf_len);
+
+/**
+ * @brief Export the winset boundary as sampled closed paths.
+ *
+ * Boundary paths are the pre-sampled polygon vertices stored inside the
+ * winset; no additional resampling is applied. Each path is a closed ring
+ * (do not repeat the first vertex at the end).
+ *
+ * **Size-query mode:** pass out_xy = NULL or out_xy_capacity = 0 to retrieve
+ * *out_xy_n (total pairs needed) without writing coordinates. Similarly pass
+ * out_path_starts = NULL or out_path_capacity = 0 to retrieve *out_n_paths.
+ *
+ * **Fill mode:** supply buffers with capacities >= the queried sizes.
+ * SCS_ERROR_BUFFER_TOO_SMALL is returned if either buffer is too small; both
+ * *out_xy_n and *out_n_paths are set to the required sizes.
+ *
+ * @param out_xy              Interleaved [x0,y0,x1,y1,...] vertex buffer,
+ *                            or NULL for size query.
+ * @param out_xy_capacity     Capacity of out_xy in (x,y) pairs.
+ * @param[out] out_xy_n       Pairs required / written.
+ * @param out_path_starts     Buffer of pair-index offsets, length out_n_paths,
+ *                            or NULL for size query.
+ * @param out_path_capacity   Capacity of out_path_starts (in paths).
+ * @param out_path_is_hole    Optional: 0 = outer ring, 1 = hole.
+ *                            Must be length out_path_capacity if non-null.
+ * @param[out] out_n_paths    Paths required / written.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_winset_sample_boundary_2d(
+    const SCS_Winset* ws, double* out_xy, int out_xy_capacity, int* out_xy_n,
+    int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
+    int* out_n_paths, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — winset boolean set operations  (C2.7)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Return the union of two winset regions (a ∪ b).
+ * @return New SCS_Winset* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Winset* scs_winset_union(const SCS_Winset* a, const SCS_Winset* b,
+                                     char* err_buf, int err_buf_len);
+
+/**
+ * @brief Return the intersection of two winset regions (a ∩ b).
+ * @return New SCS_Winset* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Winset* scs_winset_intersection(const SCS_Winset* a,
+                                            const SCS_Winset* b, char* err_buf,
+                                            int err_buf_len);
+
+/**
+ * @brief Return the set difference of two winset regions (a \ b).
+ * @return New SCS_Winset* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Winset* scs_winset_difference(const SCS_Winset* a,
+                                          const SCS_Winset* b, char* err_buf,
+                                          int err_buf_len);
+
+/**
+ * @brief Return the symmetric difference of two winset regions (a △ b).
+ * @return New SCS_Winset* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Winset* scs_winset_symmetric_difference(const SCS_Winset* a,
+                                                    const SCS_Winset* b,
+                                                    char* err_buf,
+                                                    int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — winset clone  (C2.8)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Deep-copy a winset handle.
+ * @return New SCS_Winset* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Winset* scs_winset_clone(const SCS_Winset* ws, char* err_buf,
+                                     int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — Copeland scores and winner  (C4.1, C4.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute Copeland scores for each alternative.
+ *
+ * The Copeland score of alternative i is the number of alternatives it beats
+ * in pairwise majority comparisons minus the number it loses to.
+ *
+ * @param alt_xy            Flat [x0,y0,...] array, length 2*n_alts.
+ * @param n_alts            Number of alternatives (>= 1).
+ * @param voter_ideals_xy   Flat [x0,y0,...] array, length 2*n_voters.
+ * @param n_voters          Number of voters (>= 1).
+ * @param dist_cfg          Distance configuration.
+ * @param k                 SCS_MAJORITY_SIMPLE or 1..n_voters.
+ * @param out_scores        Output buffer of length >= n_alts.
+ * @param out_len           Length of out_scores (must be >= n_alts).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_copeland_scores_2d(const double* alt_xy, int n_alts,
+                                   const double* voter_ideals_xy, int n_voters,
+                                   const SCS_DistanceConfig* dist_cfg, int k,
+                                   int* out_scores, int out_len, char* err_buf,
+                                   int err_buf_len);
+
+/**
+ * @brief Find the 0-based index of the Copeland winner.
+ *
+ * Ties are broken by smallest alternative index.
+ *
+ * @param[out] out_winner_idx  0-based index of the winning alternative.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_copeland_winner_2d(const double* alt_xy, int n_alts,
+                                   const double* voter_ideals_xy, int n_voters,
+                                   const SCS_DistanceConfig* dist_cfg, int k,
+                                   int* out_winner_idx, char* err_buf,
+                                   int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — Condorcet winner and core  (C4.3, C4.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Check whether a Condorcet winner exists in a finite alternative set.
+ *
+ * @param[out] out_found   Set to 1 if a Condorcet winner exists, 0 otherwise.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_has_condorcet_winner_2d(const double* alt_xy, int n_alts,
+                                        const double* voter_ideals_xy,
+                                        int n_voters,
+                                        const SCS_DistanceConfig* dist_cfg,
+                                        int k, int* out_found, char* err_buf,
+                                        int err_buf_len);
+
+/**
+ * @brief Find the 0-based index of the Condorcet winner, if one exists.
+ *
+ * @param[out] out_found       Set to 1 if a Condorcet winner exists.
+ * @param[out] out_winner_idx  0-based index; valid only when out_found == 1.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_condorcet_winner_2d(const double* alt_xy, int n_alts,
+                                    const double* voter_ideals_xy, int n_voters,
+                                    const SCS_DistanceConfig* dist_cfg, int k,
+                                    int* out_found, int* out_winner_idx,
+                                    char* err_buf, int err_buf_len);
+
+/**
+ * @brief Compute the core in continuous 2D space.
+ *
+ * The core is non-empty only when a Condorcet point exists. For most voter
+ * configurations the core is empty.
+ *
+ * @param[out] out_found  Set to 1 if the core is non-empty, 0 otherwise.
+ * @param[out] out_x      x-coordinate of the core point (valid when found).
+ * @param[out] out_y      y-coordinate of the core point (valid when found).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_core_2d(const double* voter_ideals_xy, int n_voters,
+                        const SCS_DistanceConfig* dist_cfg, int k,
+                        int* out_found, double* out_x, double* out_y,
+                        char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — Uncovered set (discrete and continuous)  (C4.5, C4.6)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute the uncovered set over a finite alternative set.
+ *
+ * An alternative is uncovered if no other alternative beats it both directly
+ * and transitively (Miller 1980 covering relation).
+ *
+ * **Size-query mode:** pass out_indices = NULL or out_capacity = 0 to retrieve
+ * *out_n (number of uncovered alternatives) without writing indices.
+ *
+ * @param[out] out_indices  0-based indices of uncovered alternatives.
+ * @param out_capacity      Length of out_indices.
+ * @param[out] out_n        Number of uncovered alternatives (required/written).
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_uncovered_set_2d(const double* alt_xy, int n_alts,
+                                 const double* voter_ideals_xy, int n_voters,
+                                 const SCS_DistanceConfig* dist_cfg, int k,
+                                 int* out_indices, int out_capacity, int* out_n,
+                                 char* err_buf, int err_buf_len);
+
+/**
+ * @brief Count the approximate boundary vertices of the continuous uncovered
+ * set polygon.
+ *
+ * Returns the number of (x,y) pairs that scs_uncovered_set_boundary_2d would
+ * write.
+ *
+ * @param[out] out_xy_pairs  Number of (x,y) pairs in the boundary.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_uncovered_set_boundary_size_2d(
+    const double* voter_ideals_xy, int n_voters,
+    const SCS_DistanceConfig* dist_cfg, int grid_resolution, int k,
+    int* out_xy_pairs, char* err_buf, int err_buf_len);
+
+/**
+ * @brief Export the approximate boundary of the continuous uncovered set.
+ *
+ * Uses a grid-based approximation. Pass grid_resolution =
+ * SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION for a reasonable default.
+ *
+ * @param out_xy          Flat [x0,y0,...] buffer, or NULL for size query.
+ * @param out_capacity    Capacity of out_xy in (x,y) pairs.
+ * @param[out] out_n      Pairs required / written.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_uncovered_set_boundary_2d(const double* voter_ideals_xy,
+                                          int n_voters,
+                                          const SCS_DistanceConfig* dist_cfg,
+                                          int grid_resolution, int k,
+                                          double* out_xy, int out_capacity,
+                                          int* out_n, char* err_buf,
+                                          int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — Heart (discrete and continuous)  (C4.7, C4.8)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute the Heart over a finite alternative set (discrete variant).
+ *
+ * ⚠ APPROXIMATION: the continuous Heart boundary is an open research problem.
+ * This discrete variant returns the Heart alternatives from a finite set.
+ * See where_we_are.md for caveats.
+ *
+ * **Size-query mode:** pass out_indices = NULL or out_capacity = 0.
+ *
+ * @param[out] out_indices  0-based indices of Heart alternatives.
+ * @param out_capacity      Length of out_indices.
+ * @param[out] out_n        Number of Heart alternatives (required/written).
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_heart_2d(const double* alt_xy, int n_alts,
+                         const double* voter_ideals_xy, int n_voters,
+                         const SCS_DistanceConfig* dist_cfg, int k,
+                         int* out_indices, int out_capacity, int* out_n,
+                         char* err_buf, int err_buf_len);
+
+/**
+ * @brief Count the approximate boundary vertices of the continuous Heart
+ * polygon.
+ *
+ * @param[out] out_xy_pairs  Number of (x,y) pairs in the boundary.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_heart_boundary_size_2d(const double* voter_ideals_xy,
+                                       int n_voters,
+                                       const SCS_DistanceConfig* dist_cfg,
+                                       int grid_resolution, int k,
+                                       int* out_xy_pairs, char* err_buf,
+                                       int err_buf_len);
+
+/**
+ * @brief Export the approximate boundary of the continuous Heart polygon.
+ *
+ * ⚠ APPROXIMATION: see scs_heart_2d for caveats.
+ *
+ * @param out_xy          Flat [x0,y0,...] buffer, or NULL for size query.
+ * @param out_capacity    Capacity of out_xy in (x,y) pairs.
+ * @param[out] out_n      Pairs required / written.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_heart_boundary_2d(const double* voter_ideals_xy, int n_voters,
+                                  const SCS_DistanceConfig* dist_cfg,
+                                  int grid_resolution, int k, double* out_xy,
+                                  int out_capacity, int* out_n, char* err_buf,
+                                  int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — Yolk  (C3)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Compute an approximation of the 2D k-majority Yolk.
+ *
+ * ⚠ APPROXIMATION: this function computes the LP yolk (smallest circle
+ * intersecting the limiting median lines), not the true Yolk. The two can
+ * differ. See the SCS_Yolk2d struct comment and where_we_are.md for details.
+ *
+ * @param voter_ideals_xy   Flat [x0,y0,...] array, length 2*n_voters.
+ * @param n_voters          Number of voters (>= 3 for a non-trivial Yolk).
+ * @param dist_cfg          Distance configuration (n_weights == 2; Euclidean
+ *                          recommended — the theoretical Yolk is Euclidean).
+ * @param k                 SCS_MAJORITY_SIMPLE or 1..n_voters.
+ * @param num_samples       Directional samples for the solver. Higher values
+ *                          improve accuracy at the cost of runtime. A value
+ *                          of 720 (SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION * 48)
+ *                          is reasonable for exploratory use.
+ * @param[out] out          SCS_Yolk2d result (center and radius).
+ * @param err_buf           Optional error message buffer.
+ * @param err_buf_len       Length of err_buf.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_yolk_2d(const double* voter_ideals_xy, int n_voters,
+                        const SCS_DistanceConfig* dist_cfg, int k,
+                        int num_samples, SCS_Yolk2d* out, char* err_buf,
+                        int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Aggregation — Profile opaque handle and tie-break  (C5.1)
+// ---------------------------------------------------------------------------
+
+/** @brief Opaque handle to an ordinal preference profile. */
+typedef struct SCS_ProfileImpl SCS_Profile;
+
+/**
+ * @brief ABI-stable tie-break selector.
+ *
+ * SCS_TIEBREAK_RANDOM  requires a non-null SCS_StreamManager* and valid
+ *                       stream name at call sites that perform tie-breaking.
+ * SCS_TIEBREAK_SMALLEST_INDEX  is deterministic; accepts a null manager.
+ */
+typedef int32_t SCS_TieBreak;
+
+#define SCS_TIEBREAK_RANDOM ((int32_t)0)
+#define SCS_TIEBREAK_SMALLEST_INDEX ((int32_t)1)
+
+// ---------------------------------------------------------------------------
+// Aggregation — Profile constructors  (C5.2, C5.3, C5.4)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Build an ordinal preference profile from a 2D spatial model.
+ *
+ * Each voter ranks alternatives by distance (closest = most preferred).
+ * Ties in distance are broken by smallest alternative index.
+ *
+ * @param alt_xy            Flat [x0,y0,...] array, length 2*n_alts.
+ * @param n_alts            Number of alternatives (>= 1).
+ * @param voter_ideals_xy   Flat [x0,y0,...] array, length 2*n_voters.
+ * @param n_voters          Number of voters (>= 1).
+ * @param dist_cfg          Distance configuration (Euclidean recommended).
+ * @return New SCS_Profile* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Profile* scs_profile_build_spatial(
+    const double* alt_xy, int n_alts, const double* voter_ideals_xy,
+    int n_voters, const SCS_DistanceConfig* dist_cfg, char* err_buf,
+    int err_buf_len);
+
+/**
+ * @brief Build a profile from a row-major utility matrix.
+ *
+ * Layout: utilities[voter * n_alts + alt] = utility of voter for alternative.
+ * Higher utility means the alternative is preferred. Ties broken by smallest
+ * alternative index.
+ *
+ * @param utilities  Flat row-major array of size n_voters * n_alts.
+ * @return New SCS_Profile* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Profile* scs_profile_from_utility_matrix(const double* utilities,
+                                                     int n_voters, int n_alts,
+                                                     char* err_buf,
+                                                     int err_buf_len);
+
+/**
+ * @brief Generate a profile under the impartial culture model.
+ *
+ * Each voter's ranking is drawn independently and uniformly from all m!
+ * orderings (Fisher-Yates shuffle). Purely ordinal; no spatial model.
+ *
+ * @param mgr          Stream manager (must be non-null).
+ * @param stream_name  Named stream to use for randomness.
+ * @return New SCS_Profile* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Profile* scs_profile_impartial_culture(int n_voters, int n_alts,
+                                                   SCS_StreamManager* mgr,
+                                                   const char* stream_name,
+                                                   char* err_buf,
+                                                   int err_buf_len);
+
+/**
+ * @brief Generate a spatial profile with voters drawn from U([lo,hi]²).
+ *
+ * Both alternatives and voter ideals are drawn from the uniform distribution
+ * on [lo, hi]² using the named stream. Only n_dims == 2 is supported.
+ *
+ * @param mgr          Stream manager (must be non-null).
+ * @param stream_name  Named stream to use for randomness.
+ * @return New SCS_Profile* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Profile* scs_profile_uniform_spatial(
+    int n_voters, int n_alts, int n_dims, double lo, double hi,
+    const SCS_DistanceConfig* dist_cfg, SCS_StreamManager* mgr,
+    const char* stream_name, char* err_buf, int err_buf_len);
+
+/**
+ * @brief Generate a spatial profile with voter ideals drawn from
+ * N(mean, stddev²) per dimension.
+ *
+ * Both alternatives and voter ideals are drawn from the same normal
+ * distribution. Only n_dims == 2 is supported.
+ *
+ * @param mgr          Stream manager (must be non-null).
+ * @param stream_name  Named stream to use for randomness.
+ * @return New SCS_Profile* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Profile* scs_profile_gaussian_spatial(
+    int n_voters, int n_alts, int n_dims, double mean, double stddev,
+    const SCS_DistanceConfig* dist_cfg, SCS_StreamManager* mgr,
+    const char* stream_name, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Aggregation — Profile lifecycle and inspection  (C5.5)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Destroy a profile handle. NULL is a no-op.
+ */
+SCS_API void scs_profile_destroy(SCS_Profile* p);
+
+/**
+ * @brief Query the dimensions of a profile.
+ *
+ * @param[out] out_n_voters  Number of voters.
+ * @param[out] out_n_alts    Number of alternatives.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_profile_dims(const SCS_Profile* p, int* out_n_voters,
+                             int* out_n_alts, char* err_buf, int err_buf_len);
+
+/**
+ * @brief Copy one voter's ranking into a caller-supplied buffer.
+ *
+ * out_ranking[r] is the index of the alternative at rank r (0 = most
+ * preferred). The buffer must have length >= n_alts.
+ *
+ * @param voter    0-based voter index.
+ * @param out_len  Length of out_ranking (must be >= n_alts).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_profile_get_ranking(const SCS_Profile* p, int voter,
+                                    int* out_ranking, int out_len,
+                                    char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Aggregation — Profile bulk export  (C5.6)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Export all rankings into a flat row-major buffer.
+ *
+ * Layout: out_rankings[voter * n_alts + rank] = alternative index.
+ * The buffer must have length >= n_voters * n_alts.
+ *
+ * @param out_len  Length of out_rankings (must be >= n_voters * n_alts).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_profile_export_rankings(const SCS_Profile* p, int* out_rankings,
+                                        int out_len, char* err_buf,
+                                        int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Aggregation — Profile clone  (C5.7)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Deep-copy a profile handle.
+ * @return New SCS_Profile* (caller owns), or NULL on error.
+ */
+SCS_API SCS_Profile* scs_profile_clone(const SCS_Profile* p, char* err_buf,
+                                       int err_buf_len);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
