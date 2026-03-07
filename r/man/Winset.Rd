@@ -17,6 +17,17 @@ Boolean operations (\code{$union()}, \code{$intersection()},
 \code{$difference()}, \code{$symmetric_difference()}) return new
 \code{Winset} objects; the inputs are never modified.
 }
+\examples{
+\dontrun{
+# 3 voters; status quo at origin.
+voters <- c(-1, -1, 1, -1, 1, 1)
+ws <- winset_2d(c(0, 0), voters)
+ws$is_empty()
+ws$bbox()
+bnd <- ws$boundary()
+plot(bnd$xy, type = "l", asp = 1)
+}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{

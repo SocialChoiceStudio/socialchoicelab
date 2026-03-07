@@ -15,3 +15,11 @@ Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
 \description{
 Compute plurality scores (first-place vote counts)
 }
+\examples{
+\dontrun{
+alts   <- c(0, 0, 2, 0, -2, 0)
+voters <- c(-1, -1, 1, -1, 1, 1)
+prof   <- profile_build_spatial(alts, voters)
+plurality_scores(prof)
+}
+}

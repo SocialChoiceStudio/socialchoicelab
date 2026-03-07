@@ -36,3 +36,12 @@ A \code{\link{Profile}} object.
 Both voter ideal points and alternative positions are drawn from the uniform
 distribution on \code{[lo, hi]^2}. Only 2D is supported.
 }
+\examples{
+\dontrun{
+sm   <- stream_manager(42, "spatial")
+prof <- profile_uniform_spatial(n_voters = 20L, n_alts = 3L,
+                                lo = -1, hi = 1,
+                                stream_manager = sm, stream_name = "spatial")
+prof$dims()
+}
+}

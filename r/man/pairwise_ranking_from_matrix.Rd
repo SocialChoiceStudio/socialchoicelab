@@ -32,3 +32,11 @@ Copeland score) first.
 \description{
 Rank alternatives by Copeland score derived from a pairwise matrix
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+mat    <- pairwise_matrix_2d(alts, voters)
+pairwise_ranking_from_matrix(mat)
+}
+}

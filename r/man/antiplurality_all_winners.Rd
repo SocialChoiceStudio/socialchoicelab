@@ -15,3 +15,9 @@ Integer vector of 1-based alternative indices.
 \description{
 Return all anti-plurality winners
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+antiplurality_all_winners(prof)
+}
+}

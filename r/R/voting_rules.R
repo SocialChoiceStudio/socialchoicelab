@@ -28,6 +28,13 @@
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
+#' @examples
+#' \dontrun{
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' prof   <- profile_build_spatial(alts, voters)
+#' plurality_scores(prof)
+#' }
 #' @export
 plurality_scores <- function(profile) {
   scores <- .Call("r_scs_plurality_scores", .prof_ptr(profile),
@@ -40,6 +47,13 @@ plurality_scores <- function(profile) {
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer vector of 1-based alternative indices.
+#' @examples
+#' \dontrun{
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' prof   <- profile_build_spatial(alts, voters)
+#' plurality_all_winners(prof)
+#' }
 #' @export
 plurality_all_winners <- function(profile) {
   .Call("r_scs_plurality_all_winners", .prof_ptr(profile),
@@ -55,6 +69,18 @@ plurality_all_winners <- function(profile) {
 #' @param stream_name Character. Named stream for randomness; required when
 #'   \code{tie_break = "random"}.
 #' @return Integer scalar (1-based alternative index).
+#' @examples
+#' \dontrun{
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' prof   <- profile_build_spatial(alts, voters)
+#' plurality_one_winner(prof)
+#'
+#' # With random tie-breaking:
+#' sm <- stream_manager(42, "ties")
+#' plurality_one_winner(prof, tie_break = "random",
+#'                      stream_manager = sm, stream_name = "ties")
+#' }
 #' @export
 plurality_one_winner <- function(profile,
                                   tie_break      = "smallest_index",
@@ -77,6 +103,13 @@ plurality_one_winner <- function(profile,
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
+#' @examples
+#' \dontrun{
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' prof   <- profile_build_spatial(alts, voters)
+#' borda_scores(prof)
+#' }
 #' @export
 borda_scores <- function(profile) {
   scores <- .Call("r_scs_borda_scores", .prof_ptr(profile),
@@ -89,6 +122,11 @@ borda_scores <- function(profile) {
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer vector of 1-based alternative indices.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' borda_all_winners(prof)
+#' }
 #' @export
 borda_all_winners <- function(profile) {
   .Call("r_scs_borda_all_winners", .prof_ptr(profile),
@@ -99,6 +137,11 @@ borda_all_winners <- function(profile) {
 #'
 #' @inheritParams plurality_one_winner
 #' @return Integer scalar (1-based).
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' borda_one_winner(prof)
+#' }
 #' @export
 borda_one_winner <- function(profile,
                               tie_break      = "smallest_index",
@@ -115,6 +158,11 @@ borda_one_winner <- function(profile,
 #' @inheritParams plurality_one_winner
 #' @return Integer vector of length n_alts. \code{result[1]} is the most
 #'   preferred alternative (1-based).
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' borda_ranking(prof)  # full ordering, best first
+#' }
 #' @export
 borda_ranking <- function(profile,
                            tie_break      = "smallest_index",
@@ -137,6 +185,11 @@ borda_ranking <- function(profile,
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer vector of length n_alts.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' antiplurality_scores(prof)
+#' }
 #' @export
 antiplurality_scores <- function(profile) {
   scores <- .Call("r_scs_antiplurality_scores", .prof_ptr(profile),
@@ -149,6 +202,11 @@ antiplurality_scores <- function(profile) {
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer vector of 1-based alternative indices.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' antiplurality_all_winners(prof)
+#' }
 #' @export
 antiplurality_all_winners <- function(profile) {
   .Call("r_scs_antiplurality_all_winners", .prof_ptr(profile),
@@ -159,6 +217,11 @@ antiplurality_all_winners <- function(profile) {
 #'
 #' @inheritParams plurality_one_winner
 #' @return Integer scalar (1-based).
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' antiplurality_one_winner(prof)
+#' }
 #' @export
 antiplurality_one_winner <- function(profile,
                                       tie_break      = "smallest_index",
@@ -181,6 +244,12 @@ antiplurality_one_winner <- function(profile,
 #'   \code{score_weights[r]} is awarded to the alternative at rank \code{r}
 #'   (rank 1 = most preferred, 1-indexed).
 #' @return Double vector of length n_alts.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' # Borda weights for 3 alternatives: c(2, 1, 0)
+#' scoring_rule_scores(prof, c(2, 1, 0))
+#' }
 #' @export
 scoring_rule_scores <- function(profile, score_weights) {
   scores <- .Call("r_scs_scoring_rule_scores",
@@ -194,6 +263,11 @@ scoring_rule_scores <- function(profile, score_weights) {
 #'
 #' @inheritParams scoring_rule_scores
 #' @return Integer vector of 1-based alternative indices.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' scoring_rule_all_winners(prof, c(2, 1, 0))
+#' }
 #' @export
 scoring_rule_all_winners <- function(profile, score_weights) {
   .Call("r_scs_scoring_rule_all_winners",
@@ -206,6 +280,11 @@ scoring_rule_all_winners <- function(profile, score_weights) {
 #' @inheritParams scoring_rule_scores
 #' @inheritParams plurality_one_winner
 #' @return Integer scalar (1-based).
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' scoring_rule_one_winner(prof, c(2, 1, 0))
+#' }
 #' @export
 scoring_rule_one_winner <- function(profile, score_weights,
                                      tie_break      = "smallest_index",
@@ -233,6 +312,12 @@ scoring_rule_one_winner <- function(profile, score_weights,
 #' @param threshold Non-negative approval radius.
 #' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
 #' @return Integer vector of length n_alts (approval counts).
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' approval_scores_spatial(alts, voters, threshold = 1.5)
+#' }
 #' @export
 approval_scores_spatial <- function(alts, voter_ideals, threshold,
                                      dist_config = make_dist_config()) {
@@ -249,6 +334,12 @@ approval_scores_spatial <- function(alts, voter_ideals, threshold,
 #' @inheritParams approval_scores_spatial
 #' @return Integer vector of 1-based alternative indices (those with the
 #'   highest approval count, and at least one approver).
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' approval_all_winners_spatial(alts, voters, threshold = 1.5)
+#' }
 #' @export
 approval_all_winners_spatial <- function(alts, voter_ideals, threshold,
                                           dist_config = make_dist_config()) {
@@ -269,6 +360,11 @@ approval_all_winners_spatial <- function(alts, voter_ideals, threshold,
 #' @param profile A \code{\link{Profile}} object.
 #' @param k Integer in \code{[1, n_alts]}.
 #' @return Integer vector of length n_alts (approval counts).
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' approval_scores_topk(prof, k = 1L)  # same as plurality scores
+#' }
 #' @export
 approval_scores_topk <- function(profile, k) {
   scores <- .Call("r_scs_approval_scores_topk",
@@ -283,6 +379,11 @@ approval_scores_topk <- function(profile, k) {
 #' @param profile A \code{\link{Profile}} object.
 #' @param k Integer in \code{[1, n_alts]}.
 #' @return Integer vector of 1-based alternative indices.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' approval_all_winners_topk(prof, k = 2L)
+#' }
 #' @export
 approval_all_winners_topk <- function(profile, k) {
   .Call("r_scs_approval_all_winners_topk",

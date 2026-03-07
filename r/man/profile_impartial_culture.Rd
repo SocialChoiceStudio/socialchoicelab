@@ -23,3 +23,11 @@ Each voter's ranking is drawn independently and uniformly from all
 \code{n_alts!} orderings (Fisher-Yates shuffle). Purely ordinal; no spatial
 component.
 }
+\examples{
+\dontrun{
+sm   <- stream_manager(42, "draws")
+prof <- profile_impartial_culture(n_voters = 50L, n_alts = 4L,
+                                  stream_manager = sm, stream_name = "draws")
+prof$dims()
+}
+}

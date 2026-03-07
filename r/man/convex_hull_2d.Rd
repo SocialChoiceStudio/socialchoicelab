@@ -17,3 +17,11 @@ Numeric matrix (n_hull × 2) with columns \code{x} and \code{y}.
 Vertices are returned in counter-clockwise order. Under Euclidean
 preferences the convex hull of voter ideal points is the Pareto set.
 }
+\examples{
+\dontrun{
+# 5 points; the interior point (0.5, 0.5) is not on the hull.
+pts  <- c(0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0.5)
+hull <- convex_hull_2d(pts)
+nrow(hull)  # 4
+}
+}

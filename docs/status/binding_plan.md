@@ -560,18 +560,18 @@ jobs:
 | B3 | B3.7 Voting rules | ✅ Done |
 | B3 | B3.8 Social rankings and properties | ✅ Done |
 | B3 | B3.9 StreamManager R methods | ✅ Done (in B2 + stream_manager() factory) |
-| B4 | B4.1 cffi loader | ⬜ |
-| B4 | B4.2 Exception hierarchy | ⬜ |
-| B4 | B4.3 StreamManager Python class | ⬜ |
-| B4 | B4.4 Winset Python class | ⬜ |
-| B4 | B4.5 Profile Python class | ⬜ |
-| B5 | B5 Python function groups (mirrors B3) | ⬜ |
-| B6 | B6.1 R roxygen2 docs | ⬜ |
-| B6 | B6.2 R pkgdown site | ⬜ |
-| B6 | B6.3 Python docstrings | ⬜ |
-| B6 | B6.4 mkdocs + mkdocstrings site | ⬜ |
-| B7 | B7.1 R vignette | ⬜ |
-| B7 | B7.2 Python Jupyter notebook | ⬜ |
-| B8 | B8.1 R testthat tests | ⬜ |
-| B8 | B8.2 Python pytest tests | ⬜ |
-| B9 | B9 CI jobs for R and Python | ⬜ |
+| B4 | B4.1 cffi loader | ✅ Done |
+| B4 | B4.2 Exception hierarchy | ✅ Done |
+| B4 | B4.3 StreamManager Python class | ✅ Done |
+| B4 | B4.4 Winset Python class | ✅ Done |
+| B4 | B4.5 Profile Python class | ✅ Done |
+| B5 | B5 Python function groups (mirrors B3) | ✅ Done |
+| B6 | B6.1 R roxygen2 docs | ✅ Done |
+| B6 | B6.2 R pkgdown site | ✅ Done |
+| B6 | B6.3 Python docstrings | ✅ Done |
+| B6 | B6.4 mkdocs + mkdocstrings site | ✅ Done |
+| B7 | B7.1 R vignette | ✅ Done |
+| B7 | B7.2 Python Jupyter notebook | ✅ Done |
+| B8 | B8.1 R testthat tests | ✅ Done |
+| B8 | B8.2 Python pytest tests | ✅ Done |
+| B9 | B9 CI jobs for R and Python | ✅ Done |

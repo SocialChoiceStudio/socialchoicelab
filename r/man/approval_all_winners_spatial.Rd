@@ -28,3 +28,10 @@ highest approval count, and at least one approver).
 \description{
 Return all winners under spatial approval voting
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+approval_all_winners_spatial(alts, voters, threshold = 1.5)
+}
+}

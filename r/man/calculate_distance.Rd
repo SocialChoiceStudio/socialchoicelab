@@ -20,3 +20,12 @@ Scalar double.
 \description{
 Compute the distance between two n-dimensional points
 }
+\examples{
+\dontrun{
+# Euclidean distance between origin and (3, 4) — result should be 5.
+calculate_distance(c(0, 0), c(3, 4))
+
+# Manhattan distance:
+calculate_distance(c(0, 0), c(3, 4), make_dist_config("manhattan"))
+}
+}

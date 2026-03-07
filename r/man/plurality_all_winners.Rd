@@ -15,3 +15,11 @@ Integer vector of 1-based alternative indices.
 \description{
 Return all plurality winners (alternatives tied for most first-place votes)
 }
+\examples{
+\dontrun{
+alts   <- c(0, 0, 2, 0, -2, 0)
+voters <- c(-1, -1, 1, -1, 1, 1)
+prof   <- profile_build_spatial(alts, voters)
+plurality_all_winners(prof)
+}
+}

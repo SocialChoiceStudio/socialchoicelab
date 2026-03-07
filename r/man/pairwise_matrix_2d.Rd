@@ -30,3 +30,11 @@ Entry \code{[i, j]} is \code{1} (WIN), \code{0} (TIE), or \code{-1}
 (LOSS) from alternative \code{i}'s perspective. The matrix is
 anti-symmetric: \code{M[i,j] = -M[j,i]}.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+mat <- pairwise_matrix_2d(alts, voters)
+mat["alt1", "alt2"]  # 1 (alt1 beats alt2) or -1 or 0
+}
+}

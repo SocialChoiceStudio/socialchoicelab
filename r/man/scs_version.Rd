@@ -12,3 +12,9 @@ Named list \code{list(major, minor, patch)}.
 \description{
 Query the compiled C API version
 }
+\examples{
+\dontrun{
+# Requires libscs_api to be built. See the package README.
+scs_version()
+}
+}

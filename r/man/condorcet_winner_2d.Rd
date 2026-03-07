@@ -28,3 +28,10 @@ Condorcet winner exists.
 \description{
 Find the Condorcet winner in a finite alternative set
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+condorcet_winner_2d(alts, voters)  # NA if none, otherwise 1-based index
+}
+}

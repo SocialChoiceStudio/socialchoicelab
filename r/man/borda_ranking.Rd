@@ -29,3 +29,9 @@ preferred alternative (1-based).
 \description{
 Full social ordering by descending Borda score
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+borda_ranking(prof)  # full ordering, best first
+}
+}

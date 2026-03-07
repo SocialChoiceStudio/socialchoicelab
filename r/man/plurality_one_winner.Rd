@@ -28,3 +28,16 @@ Integer scalar (1-based alternative index).
 \description{
 Return a single plurality winner with tie-breaking
 }
+\examples{
+\dontrun{
+alts   <- c(0, 0, 2, 0, -2, 0)
+voters <- c(-1, -1, 1, -1, 1, 1)
+prof   <- profile_build_spatial(alts, voters)
+plurality_one_winner(prof)
+
+# With random tie-breaking:
+sm <- stream_manager(42, "ties")
+plurality_one_winner(prof, tie_break = "random",
+                     stream_manager = sm, stream_name = "ties")
+}
+}

@@ -16,3 +16,9 @@ Integer vector of length n_alts.
 \code{scores[j]} = number of voters for whom alternative \code{j} is NOT
 ranked last. Higher is better.
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+antiplurality_scores(prof)
+}
+}

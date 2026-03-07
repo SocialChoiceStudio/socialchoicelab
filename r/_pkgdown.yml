@@ -1,0 +1,117 @@
+url: https://socialchoicestudio.github.io/socialchoicelab/r/
+
+template:
+  bootstrap: 5
+
+home:
+  title: "socialchoicelab — Spatial Social Choice Analysis"
+  description: >
+    R bindings for libscs_api: compute winsets, Copeland/Condorcet winners,
+    and voting rule outcomes in two-dimensional policy spaces.
+
+navbar:
+  left:
+    - text: "Reference"
+      href: reference/index.html
+    - text: "Articles"
+      href: articles/index.html
+
+reference:
+  - title: "Configuration"
+    desc: "Create distance and loss-function configurations."
+    contents:
+      - make_dist_config
+      - make_loss_config
+
+  - title: "Distance and Utility"
+    desc: "Compute distances, convert to utility, and compute level sets."
+    contents:
+      - calculate_distance
+      - distance_to_utility
+      - normalize_utility
+      - level_set_1d
+      - level_set_2d
+      - level_set_to_polygon
+
+  - title: "Convex Hull and Majority Preference"
+    desc: "Geometry utilities and pairwise majority tests."
+    contents:
+      - convex_hull_2d
+      - majority_prefers_2d
+      - weighted_majority_prefers_2d
+      - pairwise_matrix_2d
+
+  - title: "Winset"
+    desc: "Construct and query 2D majority winset regions."
+    contents:
+      - Winset
+      - winset_2d
+      - weighted_winset_2d
+      - winset_with_veto_2d
+
+  - title: "Geometry: Copeland, Condorcet, Core, Uncovered Set"
+    desc: >
+      Compute Copeland scores, find Condorcet winners, and approximate
+      the continuous uncovered set.
+    contents:
+      - copeland_scores_2d
+      - copeland_winner_2d
+      - has_condorcet_winner_2d
+      - condorcet_winner_2d
+      - core_2d
+      - uncovered_set_2d
+      - uncovered_set_boundary_2d
+
+  - title: "Preference Profiles"
+    desc: "Create and inspect ordinal preference profiles."
+    contents:
+      - Profile
+      - profile_build_spatial
+      - profile_from_utility_matrix
+      - profile_impartial_culture
+      - profile_uniform_spatial
+      - profile_gaussian_spatial
+
+  - title: "Voting Rules"
+    desc: "Plurality, Borda, anti-plurality, scoring rules, and approval voting."
+    contents:
+      - plurality_scores
+      - plurality_all_winners
+      - plurality_one_winner
+      - borda_scores
+      - borda_all_winners
+      - borda_one_winner
+      - borda_ranking
+      - antiplurality_scores
+      - antiplurality_all_winners
+      - antiplurality_one_winner
+      - scoring_rule_scores
+      - scoring_rule_all_winners
+      - scoring_rule_one_winner
+      - approval_scores_spatial
+      - approval_all_winners_spatial
+      - approval_scores_topk
+      - approval_all_winners_topk
+
+  - title: "Social Rankings and Properties"
+    desc: "Aggregate scores into rankings; test Pareto efficiency and Condorcet consistency."
+    contents:
+      - rank_by_scores
+      - pairwise_ranking_from_matrix
+      - pareto_set
+      - is_pareto_efficient
+      - has_condorcet_winner_profile
+      - condorcet_winner_profile
+      - is_condorcet_consistent
+      - is_majority_consistent
+
+  - title: "Stream Manager"
+    desc: "Reproducible pseudo-random number streams."
+    contents:
+      - StreamManager
+      - stream_manager
+
+  - title: "Package"
+    desc: "Version information."
+    contents:
+      - scs_version

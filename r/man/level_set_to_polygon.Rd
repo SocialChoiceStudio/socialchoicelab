@@ -22,3 +22,10 @@ vertex coordinates. For circle / ellipse / superellipse shapes,
 polygon shapes the 4 exact vertices are returned regardless of
 \code{n_samples}.
 }
+\examples{
+\dontrun{
+ls   <- level_set_2d(ideal_x = 0, ideal_y = 0, utility_level = -1)
+poly <- level_set_to_polygon(ls, n_samples = 32L)
+plot(poly, type = "l", asp = 1)
+}
+}

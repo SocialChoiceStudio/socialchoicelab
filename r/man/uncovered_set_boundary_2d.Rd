@@ -28,3 +28,10 @@ Numeric matrix (n_pts × 2) with columns \code{x} and \code{y}.
 Uses a grid-based approximation. Increase \code{grid_resolution} for
 finer boundaries at higher computation cost.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+bnd <- uncovered_set_boundary_2d(voters, grid_resolution = 10L)
+plot(bnd, type = "l", asp = 1)
+}
+}

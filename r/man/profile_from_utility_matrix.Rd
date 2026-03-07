@@ -21,3 +21,13 @@ A \code{\link{Profile}} object.
 \description{
 Build a profile from a utility matrix
 }
+\examples{
+\dontrun{
+# 2 voters, 3 alternatives.
+# Voter 1 prefers: alt1 > alt2 > alt3 (utilities 3, 2, 1).
+# Voter 2 prefers: alt3 > alt1 > alt2 (utilities 2, 1, 3).
+u    <- matrix(c(3, 2, 1, 2, 1, 3), nrow = 2, byrow = TRUE)
+prof <- profile_from_utility_matrix(u, n_voters = 2L, n_alts = 3L)
+prof$export()
+}
+}

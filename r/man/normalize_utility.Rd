@@ -19,3 +19,9 @@ Scalar double in \code{[0, 1]}.
 \description{
 Normalize a utility value to \code{[0, 1]}
 }
+\examples{
+\dontrun{
+u <- distance_to_utility(1.5)
+normalize_utility(u, max_distance = 3.0)
+}
+}

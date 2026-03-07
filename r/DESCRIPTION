@@ -18,6 +18,7 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+BuildVignettes: false
 SystemRequirements: libscs_api shared library (set SCS_LIB_PATH to its
     directory, or place it on the system library path)
 RoxygenNote: 7.3.3

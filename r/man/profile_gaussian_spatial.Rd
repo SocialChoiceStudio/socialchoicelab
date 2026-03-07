@@ -34,3 +34,12 @@ A \code{\link{Profile}} object.
 Both voter ideal points and alternative positions are drawn from the same
 normal distribution per dimension. Only 2D is supported.
 }
+\examples{
+\dontrun{
+sm   <- stream_manager(99, "gaussian")
+prof <- profile_gaussian_spatial(n_voters = 30L, n_alts = 3L,
+                                 mean = 0, stddev = 1,
+                                 stream_manager = sm, stream_name = "gaussian")
+prof$dims()
+}
+}

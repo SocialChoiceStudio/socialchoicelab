@@ -18,3 +18,9 @@ A \code{\link{StreamManager}} object.
 \description{
 Equivalent to \code{StreamManager$new(master_seed, stream_names)}.
 }
+\examples{
+\dontrun{
+sm <- stream_manager(42, c("voters", "ties"))
+sm$uniform_real("voters", 0, 1)
+}
+}

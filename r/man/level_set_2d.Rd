@@ -42,3 +42,11 @@ configuration:
 Pass the returned list to \code{\link{level_set_to_polygon}} to get sampled
 vertices.
 }
+\examples{
+\dontrun{
+# Circle centred at (1, 2) with linear loss at utility -0.5.
+ls <- level_set_2d(ideal_x = 1, ideal_y = 2, utility_level = -0.5)
+ls$type  # "circle"
+ls$param0  # radius ≈ 0.5
+}
+}

@@ -22,3 +22,12 @@ Named list \code{list(found, x, y)}.
 The core is non-empty only when a Condorcet point exists in the policy
 space. For most voter configurations the core is empty.
 }
+\examples{
+\dontrun{
+# 3 symmetric voters: core will typically be empty.
+voters <- c(-1, -1, 1, -1, 1, 1)
+res <- core_2d(voters)
+res$found  # TRUE or FALSE
+if (res$found) cat("Core at:", res$x, res$y, "\n")
+}
+}

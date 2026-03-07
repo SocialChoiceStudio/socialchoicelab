@@ -18,6 +18,11 @@
 #' @param stream_name Character. Named stream for randomness.
 #' @return Integer vector of 1-based alternative indices, best (highest score)
 #'   first.
+#' @examples
+#' \dontrun{
+#' # Rank 3 alternatives by score: alt3 wins, alt1 second, alt2 last.
+#' rank_by_scores(c(1.5, 0.5, 2.0))  # c(3, 1, 2)
+#' }
 #' @export
 rank_by_scores <- function(scores,
                             tie_break      = "smallest_index",
@@ -46,6 +51,13 @@ rank_by_scores <- function(scores,
 #' @param stream_name Character.
 #' @return Integer vector of 1-based alternative indices, best (highest
 #'   Copeland score) first.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' mat    <- pairwise_matrix_2d(alts, voters)
+#' pairwise_ranking_from_matrix(mat)
+#' }
 #' @export
 pairwise_ranking_from_matrix <- function(matrix,
                                           n_alts         = nrow(matrix),
@@ -72,6 +84,11 @@ pairwise_ranking_from_matrix <- function(matrix,
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer vector of 1-based alternative indices.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' pareto_set(prof)
+#' }
 #' @export
 pareto_set <- function(profile) {
   .Call("r_scs_pareto_set", .prof_ptr(profile),
@@ -83,6 +100,11 @@ pareto_set <- function(profile) {
 #' @param profile A \code{\link{Profile}} object.
 #' @param alt Integer (1-based). The alternative to test.
 #' @return Logical scalar.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' is_pareto_efficient(prof, 1L)
+#' }
 #' @export
 is_pareto_efficient <- function(profile, alt) {
   alt <- as.integer(alt)
@@ -106,6 +128,11 @@ is_pareto_efficient <- function(profile, alt) {
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Logical scalar.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' has_condorcet_winner_profile(prof)
+#' }
 #' @export
 has_condorcet_winner_profile <- function(profile) {
   .Call("r_scs_has_condorcet_winner_profile", .prof_ptr(profile),
@@ -116,6 +143,12 @@ has_condorcet_winner_profile <- function(profile) {
 #'
 #' @param profile A \code{\link{Profile}} object.
 #' @return Integer (1-based), or \code{NA_integer_} if no Condorcet winner.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' w <- condorcet_winner_profile(prof)
+#' if (!is.na(w)) cat("Condorcet winner: alt", w, "\n")
+#' }
 #' @export
 condorcet_winner_profile <- function(profile) {
   .Call("r_scs_condorcet_winner_profile", .prof_ptr(profile),
@@ -130,6 +163,11 @@ condorcet_winner_profile <- function(profile) {
 #' @param profile A \code{\link{Profile}} object.
 #' @param alt Integer (1-based). The alternative to test.
 #' @return Logical scalar.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' is_condorcet_consistent(prof, 1L)
+#' }
 #' @export
 is_condorcet_consistent <- function(profile, alt) {
   alt <- as.integer(alt)
@@ -151,6 +189,11 @@ is_condorcet_consistent <- function(profile, alt) {
 #' @param profile A \code{\link{Profile}} object.
 #' @param alt Integer (1-based). The alternative to test.
 #' @return Logical scalar.
+#' @examples
+#' \dontrun{
+#' prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+#' is_majority_consistent(prof, 1L)
+#' }
 #' @export
 is_majority_consistent <- function(profile, alt) {
   alt <- as.integer(alt)
@@ -175,6 +218,11 @@ is_majority_consistent <- function(profile, alt) {
 #' @param stream_names Optional character vector of stream names to register
 #'   immediately.
 #' @return A \code{\link{StreamManager}} object.
+#' @examples
+#' \dontrun{
+#' sm <- stream_manager(42, c("voters", "ties"))
+#' sm$uniform_real("voters", 0, 1)
+#' }
 #' @export
 stream_manager <- function(master_seed, stream_names = NULL) {
   StreamManager$new(master_seed = master_seed, stream_names = stream_names)

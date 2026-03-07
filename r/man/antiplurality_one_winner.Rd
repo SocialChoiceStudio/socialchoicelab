@@ -28,3 +28,9 @@ Integer scalar (1-based).
 \description{
 Return a single anti-plurality winner with tie-breaking
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+antiplurality_one_winner(prof)
+}
+}

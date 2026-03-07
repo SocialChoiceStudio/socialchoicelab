@@ -16,3 +16,9 @@ Integer vector of 1-based alternative indices.
 The Pareto set contains all alternatives not Pareto-dominated by any other
 alternative. It is always non-empty.
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+pareto_set(prof)
+}
+}

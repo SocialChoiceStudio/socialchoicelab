@@ -1,0 +1,3 @@
+# Stream Manager
+
+::: socialchoicelab.StreamManager

@@ -35,3 +35,11 @@ Like \code{\link{winset_2d}} but with voter weights: a policy beats the
 status quo if the total weight of its supporters meets or exceeds
 \code{threshold * sum(weights)}.
 }
+\examples{
+\dontrun{
+voters  <- c(-1, -1, 1, -1, 1, 1)
+weights <- c(10, 1, 1)
+ws <- weighted_winset_2d(c(0, 0), voters, weights)
+ws$is_empty()
+}
+}

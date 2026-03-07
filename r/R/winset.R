@@ -8,6 +8,16 @@
 #' \code{$difference()}, \code{$symmetric_difference()}) return new
 #' \code{Winset} objects; the inputs are never modified.
 #'
+#' @examples
+#' \dontrun{
+#' # 3 voters; status quo at origin.
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' ws <- winset_2d(c(0, 0), voters)
+#' ws$is_empty()
+#' ws$bbox()
+#' bnd <- ws$boundary()
+#' plot(bnd$xy, type = "l", asp = 1)
+#' }
 #' @export
 Winset <- R6::R6Class(
   "Winset",
@@ -125,6 +135,13 @@ Winset <- R6::R6Class(
 #' @param n_samples Boundary approximation quality (>= 4). Higher values give
 #'   smoother boundaries at the cost of computation. Default: 64.
 #' @return A \code{\link{Winset}} object.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' ws <- winset_2d(c(0, 0), voters)
+#' ws$is_empty()
+#' ws$bbox()
+#' }
 #' @export
 winset_2d <- function(status_quo,
                       voter_ideals,
@@ -155,6 +172,13 @@ winset_2d <- function(status_quo,
 #' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
 #' @param n_samples Boundary quality (>= 4). Default: 64.
 #' @return A \code{\link{Winset}} object.
+#' @examples
+#' \dontrun{
+#' voters  <- c(-1, -1, 1, -1, 1, 1)
+#' weights <- c(10, 1, 1)
+#' ws <- weighted_winset_2d(c(0, 0), voters, weights)
+#' ws$is_empty()
+#' }
 #' @export
 weighted_winset_2d <- function(status_quo,
                                voter_ideals,
@@ -186,6 +210,13 @@ weighted_winset_2d <- function(status_quo,
 #' @param k Majority threshold: \code{"simple"} or a positive integer.
 #' @param n_samples Boundary quality (>= 4). Default: 64.
 #' @return A \code{\link{Winset}} object.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' veto   <- c(0.5, 0.5)  # one veto player at (0.5, 0.5)
+#' ws     <- winset_with_veto_2d(c(0, 0), voters, veto)
+#' ws$is_empty()
+#' }
 #' @export
 winset_with_veto_2d <- function(status_quo,
                                 voter_ideals,

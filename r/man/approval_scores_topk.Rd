@@ -17,3 +17,9 @@ Integer vector of length n_alts (approval counts).
 \description{
 Each voter approves their top \code{k} ranked alternatives.
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+approval_scores_topk(prof, k = 1L)  # same as plurality scores
+}
+}

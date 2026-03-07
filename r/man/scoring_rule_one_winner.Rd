@@ -33,3 +33,9 @@ Integer scalar (1-based).
 \description{
 Return a single winner under a positional scoring rule with tie-breaking
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+scoring_rule_one_winner(prof, c(2, 1, 0))
+}
+}

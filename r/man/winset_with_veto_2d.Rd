@@ -34,3 +34,11 @@ A \code{\link{Winset}} object.
 A veto player at point \code{v} blocks any move to point \code{x} unless
 \code{x} is strictly inside \code{v}'s preferred-to set at the status quo.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+veto   <- c(0.5, 0.5)  # one veto player at (0.5, 0.5)
+ws     <- winset_with_veto_2d(c(0, 0), voters, veto)
+ws$is_empty()
+}
+}

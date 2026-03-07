@@ -19,3 +19,9 @@ Integer vector of 1-based alternative indices.
 \description{
 Return all winners under a positional scoring rule
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+scoring_rule_all_winners(prof, c(2, 1, 0))
+}
+}

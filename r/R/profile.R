@@ -5,6 +5,15 @@
 #' \code{\link{profile_from_utility_matrix}}, etc.) rather than
 #' \code{Profile$new()} directly.
 #'
+#' @examples
+#' \dontrun{
+#' alts   <- c(0, 0, 2, 0, -2, 0)   # 3 alternatives in 2D
+#' voters <- c(-1, -1, 1, -1, 1, 1) # 3 voters
+#' prof   <- profile_build_spatial(alts, voters)
+#' prof$dims()        # list(n_voters = 3, n_alts = 3)
+#' prof$get_ranking(1L)  # ranking of voter 1 (1-based)
+#' prof$export()      # full 3×3 ranking matrix
+#' }
 #' @export
 Profile <- R6::R6Class(
   "Profile",
@@ -81,6 +90,13 @@ Profile <- R6::R6Class(
 #'   point coordinates (length = 2 * n_voters).
 #' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
 #' @return A \code{\link{Profile}} object.
+#' @examples
+#' \dontrun{
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' prof   <- profile_build_spatial(alts, voters)
+#' prof$dims()
+#' }
 #' @export
 profile_build_spatial <- function(alt_xy,
                                   voter_ideals,
@@ -98,6 +114,15 @@ profile_build_spatial <- function(alt_xy,
 #' @param n_voters Integer. Number of voters.
 #' @param n_alts Integer. Number of alternatives.
 #' @return A \code{\link{Profile}} object.
+#' @examples
+#' \dontrun{
+#' # 2 voters, 3 alternatives.
+#' # Voter 1 prefers: alt1 > alt2 > alt3 (utilities 3, 2, 1).
+#' # Voter 2 prefers: alt3 > alt1 > alt2 (utilities 2, 1, 3).
+#' u    <- matrix(c(3, 2, 1, 2, 1, 3), nrow = 2, byrow = TRUE)
+#' prof <- profile_from_utility_matrix(u, n_voters = 2L, n_alts = 3L)
+#' prof$export()
+#' }
 #' @export
 profile_from_utility_matrix <- function(utilities, n_voters, n_alts) {
   Profile$new(.Call("r_scs_profile_from_utility_matrix",
@@ -117,6 +142,13 @@ profile_from_utility_matrix <- function(utilities, n_voters, n_alts) {
 #' @param stream_manager A \code{\link{StreamManager}} object.
 #' @param stream_name Character. Named stream to use for randomness.
 #' @return A \code{\link{Profile}} object.
+#' @examples
+#' \dontrun{
+#' sm   <- stream_manager(42, "draws")
+#' prof <- profile_impartial_culture(n_voters = 50L, n_alts = 4L,
+#'                                   stream_manager = sm, stream_name = "draws")
+#' prof$dims()
+#' }
 #' @export
 profile_impartial_culture <- function(n_voters, n_alts,
                                       stream_manager, stream_name) {
@@ -140,6 +172,14 @@ profile_impartial_culture <- function(n_voters, n_alts,
 #' @param stream_manager A \code{\link{StreamManager}} object.
 #' @param stream_name Character. Named stream to use for randomness.
 #' @return A \code{\link{Profile}} object.
+#' @examples
+#' \dontrun{
+#' sm   <- stream_manager(42, "spatial")
+#' prof <- profile_uniform_spatial(n_voters = 20L, n_alts = 3L,
+#'                                 lo = -1, hi = 1,
+#'                                 stream_manager = sm, stream_name = "spatial")
+#' prof$dims()
+#' }
 #' @export
 profile_uniform_spatial <- function(n_voters, n_alts,
                                     lo = -1.0, hi = 1.0,
@@ -167,6 +207,14 @@ profile_uniform_spatial <- function(n_voters, n_alts,
 #' @param stream_manager A \code{\link{StreamManager}} object.
 #' @param stream_name Character. Named stream to use for randomness.
 #' @return A \code{\link{Profile}} object.
+#' @examples
+#' \dontrun{
+#' sm   <- stream_manager(99, "gaussian")
+#' prof <- profile_gaussian_spatial(n_voters = 30L, n_alts = 3L,
+#'                                  mean = 0, stddev = 1,
+#'                                  stream_manager = sm, stream_name = "gaussian")
+#' prof$dims()
+#' }
 #' @export
 profile_gaussian_spatial <- function(n_voters, n_alts,
                                      mean = 0.0, stddev = 1.0,

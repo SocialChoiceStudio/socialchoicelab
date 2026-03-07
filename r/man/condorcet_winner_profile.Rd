@@ -15,3 +15,10 @@ Integer (1-based), or \code{NA_integer_} if no Condorcet winner.
 \description{
 Return the Condorcet winner from a profile
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+w <- condorcet_winner_profile(prof)
+if (!is.na(w)) cat("Condorcet winner: alt", w, "\n")
+}
+}

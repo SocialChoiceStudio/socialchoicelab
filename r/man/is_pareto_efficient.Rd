@@ -17,3 +17,9 @@ Logical scalar.
 \description{
 Test whether a single alternative is Pareto-efficient
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+is_pareto_efficient(prof, 1L)
+}
+}

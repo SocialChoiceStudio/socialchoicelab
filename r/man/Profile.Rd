@@ -14,6 +14,16 @@ functions (\code{\link{profile_build_spatial}},
 \code{\link{profile_from_utility_matrix}}, etc.) rather than
 \code{Profile$new()} directly.
 }
+\examples{
+\dontrun{
+alts   <- c(0, 0, 2, 0, -2, 0)   # 3 alternatives in 2D
+voters <- c(-1, -1, 1, -1, 1, 1) # 3 voters
+prof   <- profile_build_spatial(alts, voters)
+prof$dims()        # list(n_voters = 3, n_alts = 3)
+prof$get_ranking(1L)  # ranking of voter 1 (1-based)
+prof$export()      # full 3×3 ranking matrix
+}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{

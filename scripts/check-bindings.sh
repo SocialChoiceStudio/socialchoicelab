@@ -112,7 +112,7 @@ if [[ $RUN_R -eq 1 ]]; then
       PKG=$(ls socialchoicelab_*.tar.gz 2>/dev/null | head -1)
       if [[ -n "$PKG" ]]; then
         if ! _R_CHECK_FORCE_SUGGESTS_=false \
-             R CMD check "$PKG" --no-manual --no-build-vignettes 2>&1; then
+             R CMD check "$PKG" --no-manual --no-build-vignettes --no-vignettes 2>&1; then
           R_RC=1
         fi
         rm -f "$PKG"

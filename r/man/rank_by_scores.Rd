@@ -28,3 +28,9 @@ first.
 \description{
 Produces a full ordering of all alternatives from a numeric score vector.
 }
+\examples{
+\dontrun{
+# Rank 3 alternatives by score: alt3 wins, alt1 second, alt2 last.
+rank_by_scores(c(1.5, 0.5, 2.0))  # c(3, 1, 2)
+}
+}

@@ -34,3 +34,13 @@ Returns a named list understood by all C API wrappers that accept a distance
 configuration. The list element order is fixed by contract with the C helper
 \code{build_dist_config()} in \file{src/scs_r_helpers.h}; do not reorder.
 }
+\examples{
+# Euclidean (default):
+cfg <- make_dist_config()
+
+# Manhattan with equal weights:
+cfg_l1 <- make_dist_config(distance_type = "manhattan")
+
+# Euclidean with asymmetric salience weights:
+cfg_w <- make_dist_config(weights = c(2.0, 1.0))
+}

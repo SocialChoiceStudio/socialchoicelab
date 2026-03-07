@@ -28,3 +28,10 @@ Integer vector of length n_alts (approval counts).
 A voter approves an alternative if its distance from the voter's ideal point
 is at most \code{threshold}.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+approval_scores_spatial(alts, voters, threshold = 1.5)
+}
+}

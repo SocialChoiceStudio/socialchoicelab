@@ -19,3 +19,9 @@ An alternative is majority-consistent iff it IS the Condorcet winner (i.e.
 it beats every other alternative by strict majority). Returns \code{FALSE}
 for every candidate when no Condorcet winner exists.
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+is_majority_consistent(prof, 1L)
+}
+}

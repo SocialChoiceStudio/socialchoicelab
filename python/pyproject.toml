@@ -19,6 +19,7 @@ docs = [
     "mkdocs>=1.5",
     "mkdocstrings[python]>=0.24",
     "mkdocs-material>=9.0",
+    "mkdocs-jupyter>=0.24",
 ]
 dev = [
     "pytest>=7.0",

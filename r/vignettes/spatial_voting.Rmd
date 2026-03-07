@@ -1,0 +1,156 @@
+---
+title: "Spatial Voting Analysis with socialchoicelab"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Spatial Voting Analysis with socialchoicelab}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  eval      = FALSE   # requires libscs_api; set eval=TRUE with SCS_LIB_PATH set
+)
+```
+
+> **Note:** All code chunks require `libscs_api` to be compiled and
+> `SCS_LIB_PATH` to point to the build directory. See the package
+> [README](https://github.com/SocialChoiceStudio/socialchoicelab) for build
+> instructions.
+
+```{r load}
+library(socialchoicelab)
+```
+
+## 1 — Voter ideal points in 2D
+
+We model a legislature with **5 voters** whose ideal policies live in a
+two-dimensional issue space (e.g., economic left–right × social liberal–conservative).
+
+```{r voters}
+# Flat [x0, y0, x1, y1, ...] representation — 5 voters.
+voters <- c(
+  -1.0, -0.5,   #  voter 1: left-economic, moderate-social
+   0.0,  0.0,   #  voter 2: centrist
+   0.8,  0.6,   #  voter 3: right-economic, conservative
+  -0.4,  0.8,   #  voter 4: centre-left, liberal
+   0.5, -0.7    #  voter 5: right-economic, libertarian
+)
+
+# Three policy alternatives: status quo SQ, reform A, reform B.
+sq <- c( 0.0,  0.0)   # status quo at centroid
+a  <- c( 0.6,  0.4)   # right-of-centre reform
+b  <- c(-0.5,  0.3)   # left-of-centre reform
+```
+
+## 2 — Reproducible randomness with StreamManager
+
+`StreamManager` encapsulates a master seed and named sub-streams so that all
+stochastic draws are fully reproducible.
+
+```{r stream-manager}
+sm <- stream_manager(master_seed = 2024, stream_names = c("gen", "ties"))
+# Draw a test value — for illustration only.
+sm$uniform_real("gen", 0, 1)
+```
+
+## 3 — Majority preference between two alternatives
+
+Does a simple majority of voters prefer reform A to the status quo?
+
+```{r majority}
+majority_prefers_2d(a, sq, voters)   # TRUE/FALSE
+majority_prefers_2d(b, sq, voters)
+```
+
+## 4 — Winset: which policies beat the status quo?
+
+The **winset** of the status quo is the set of all policy points that a strict
+majority of voters prefer to `sq`. An empty winset means the status quo is a
+majority-rule equilibrium.
+
+```{r winset}
+ws <- winset_2d(status_quo = sq, voter_ideals = voters)
+ws$is_empty()        # TRUE if SQ is a majority equilibrium
+ws$bbox()            # bounding box of the winset
+```
+
+Plot the winset boundary (requires **graphics**):
+
+```{r winset-plot, fig.width = 5, fig.height = 5}
+bnd <- ws$boundary()
+plot(bnd$xy, type = "n", asp = 1, xlab = "x", ylab = "y",
+     main = "Winset of the status quo")
+polygon(bnd$xy[, 1], bnd$xy[, 2], col = "#CCE5FF88", border = "#336699")
+points(rbind(sq, a, b), pch = 19, col = c("black", "firebrick", "steelblue"))
+text(rbind(sq, a, b), labels = c("SQ", "A", "B"), pos = 4)
+points(matrix(voters, ncol = 2, byrow = TRUE), pch = 4, col = "grey40")
+legend("topright", legend = c("Winset", "Alternatives", "Voters"),
+       fill = c("#CCE5FF88", NA, NA), pch = c(NA, 19, 4),
+       col = c(NA, "firebrick", "grey40"), border = c("black", NA, NA))
+```
+
+## 5 — Copeland winner
+
+The **Copeland winner** beats (or ties) the most alternatives in pairwise
+majority comparisons. With a finite alternative set:
+
+```{r copeland}
+alts <- c(sq, a, b)   # flat representation
+copeland_scores_2d(alts, voters)   # named score vector
+copeland_winner_2d(alts, voters)   # 1-based index of winner
+```
+
+## 6 — Condorcet winner
+
+A **Condorcet winner** beats *every* other alternative by strict majority.
+
+```{r condorcet}
+has_condorcet_winner_2d(alts, voters)       # logical
+condorcet_winner_2d(alts, voters)           # 1-based index or NA
+```
+
+## 7 — Ordinal preference profiles and voting rules
+
+Build an ordinal profile from the spatial layout, then apply plurality and
+Borda count:
+
+```{r profile}
+prof <- profile_build_spatial(alt_xy = alts, voter_ideals = voters)
+prof$dims()           # list(n_voters = 5, n_alts = 3)
+prof$export()         # 5×3 ranking matrix
+```
+
+**Plurality:**
+
+```{r plurality}
+plurality_scores(prof)
+plurality_one_winner(prof)
+```
+
+**Borda count:**
+
+```{r borda}
+borda_scores(prof)
+borda_ranking(prof)    # full social ordering
+```
+
+**Approval voting** (each voter approves their top 2):
+
+```{r approval}
+approval_scores_topk(prof, k = 2L)
+approval_all_winners_topk(prof, k = 2L)
+```
+
+## 8 — Pareto efficiency and Condorcet consistency
+
+```{r properties}
+pareto_set(prof)                  # Pareto-efficient alternatives (1-based)
+has_condorcet_winner_profile(prof)
+condorcet_winner_profile(prof)    # 1-based index or NA
+
+# Check whether alt 1 is Condorcet-consistent:
+is_condorcet_consistent(prof, 1L)
+```

@@ -27,3 +27,10 @@ Logical scalar.
 \description{
 A Condorcet winner beats every other alternative under a \code{k}-majority.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+has_condorcet_winner_2d(alts, voters)
+}
+}

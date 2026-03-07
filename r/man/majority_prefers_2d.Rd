@@ -32,3 +32,10 @@ Logical scalar: \code{TRUE} if at least \code{k} voters prefer A.
 Voter \code{i} strictly prefers \code{A} iff
 \code{d(ideal_i, A) < d(ideal_i, B)}. Ties in distance contribute 0 votes.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)  # 3 voters
+# A = (0,0) is closer to all 3 voters than B = (5,0).
+majority_prefers_2d(c(0, 0), c(5, 0), voters)  # TRUE
+}
+}

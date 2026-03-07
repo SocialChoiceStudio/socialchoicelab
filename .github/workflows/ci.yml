@@ -153,7 +153,12 @@ jobs:
       - name: R CMD check
         run: |
           cd r
-          Rscript -e "devtools::check(error_on='error')"
+          Rscript -e "devtools::check(error_on='error', vignettes=FALSE)"
+
+      - name: Build pkgdown site (verify only, no deploy)
+        run: |
+          cd r
+          Rscript -e "pkgdown::build_site(preview = FALSE)"
 
   # ---------------------------------------------------------------------------
   # python-binding — install and test the Python package
@@ -191,3 +196,8 @@ jobs:
 
       - name: Run pytest
         run: pytest python/tests/ --tb=short
+
+      - name: Build mkdocs site (verify only, no deploy)
+        run: |
+          pip install mkdocs mkdocstrings[python] mkdocs-material mkdocs-jupyter
+          mkdocs build --config-file docs/mkdocs.yml --strict

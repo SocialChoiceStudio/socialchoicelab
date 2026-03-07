@@ -32,3 +32,11 @@ Logical scalar.
 Returns \code{TRUE} if the total weight of voters preferring A meets or
 exceeds \code{threshold * sum(weights)}.
 }
+\examples{
+\dontrun{
+voters  <- c(-1, -1, 1, -1, 1, 1)
+weights <- c(10, 1, 1)  # first voter has most weight
+# A = (-0.5,-0.5) is close to voter 1; B = (2, 0) is not.
+weighted_majority_prefers_2d(c(-0.5, -0.5), c(2, 0), voters, weights)
+}
+}

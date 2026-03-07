@@ -22,3 +22,11 @@ A \code{\link{Profile}} object.
 Each voter ranks alternatives by distance: closest first, ties broken by
 smallest alternative index.
 }
+\examples{
+\dontrun{
+alts   <- c(0, 0, 2, 0, -2, 0)
+voters <- c(-1, -1, 1, -1, 1, 1)
+prof   <- profile_build_spatial(alts, voters)
+prof$dims()
+}
+}

@@ -33,3 +33,11 @@ A \code{\link{Winset}} object.
 Returns the set of all policy points that at least \code{k} voters prefer to
 the status quo, under the given distance metric.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+ws <- winset_2d(c(0, 0), voters)
+ws$is_empty()
+ws$bbox()
+}
+}

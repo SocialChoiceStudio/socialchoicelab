@@ -28,3 +28,9 @@ Returns the set of 1D points \code{x} where the utility at distance
 \code{|x - ideal|} equals \code{utility_level}. There are 0, 1, or 2 such
 points.
 }
+\examples{
+\dontrun{
+# Under linear loss, ideal at 0, utility -1: points at ±1.
+level_set_1d(ideal = 0, weight = 1, utility_level = -1)
+}
+}

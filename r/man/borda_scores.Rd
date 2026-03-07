@@ -16,3 +16,11 @@ Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
 Each voter awards \code{n_alts - 1} points to their top alternative,
 \code{n_alts - 2} to the second, and so on.
 }
+\examples{
+\dontrun{
+alts   <- c(0, 0, 2, 0, -2, 0)
+voters <- c(-1, -1, 1, -1, 1, 1)
+prof   <- profile_build_spatial(alts, voters)
+borda_scores(prof)
+}
+}

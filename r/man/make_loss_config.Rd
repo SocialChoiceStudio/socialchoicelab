@@ -34,3 +34,14 @@ Returns a named list understood by all C API wrappers that accept a loss
 configuration. The element order is fixed by contract with
 \code{build_loss_config()} in \file{src/scs_r_helpers.h}; do not reorder.
 }
+\examples{
+# Linear loss (default):
+cfg <- make_loss_config()
+
+# Quadratic (proximity-squared) loss:
+cfg_q <- make_loss_config(loss_type = "quadratic")
+
+# Gaussian loss with custom parameters:
+cfg_g <- make_loss_config(loss_type = "gaussian", max_loss = 2.0,
+                          steepness = 0.5)
+}

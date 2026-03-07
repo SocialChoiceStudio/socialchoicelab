@@ -11,6 +11,11 @@
 #' Query the compiled C API version
 #'
 #' @return Named list \code{list(major, minor, patch)}.
+#' @examples
+#' \dontrun{
+#' # Requires libscs_api to be built. See the package README.
+#' scs_version()
+#' }
 #' @export
 scs_version <- function() {
   .Call("r_scs_api_version", NULL,
@@ -28,6 +33,14 @@ scs_version <- function() {
 #' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
 #'   \code{n_weights} in \code{dist_config} must equal \code{length(ideal)}.
 #' @return Scalar double.
+#' @examples
+#' \dontrun{
+#' # Euclidean distance between origin and (3, 4) — result should be 5.
+#' calculate_distance(c(0, 0), c(3, 4))
+#'
+#' # Manhattan distance:
+#' calculate_distance(c(0, 0), c(3, 4), make_dist_config("manhattan"))
+#' }
 #' @export
 calculate_distance <- function(ideal, alt, dist_config = make_dist_config()) {
   .Call("r_scs_calculate_distance",
@@ -40,6 +53,15 @@ calculate_distance <- function(ideal, alt, dist_config = make_dist_config()) {
 #' @param distance Non-negative scalar distance.
 #' @param loss_config Loss configuration from \code{\link{make_loss_config}}.
 #' @return Scalar double (≤ 0 for the supported loss functions).
+#' @examples
+#' \dontrun{
+#' # Linear loss: utility at distance 0 is 0; at distance 2 is -2.
+#' distance_to_utility(0)
+#' distance_to_utility(2)
+#'
+#' # Quadratic loss:
+#' distance_to_utility(2, make_loss_config("quadratic"))
+#' }
 #' @export
 distance_to_utility <- function(distance, loss_config = make_loss_config()) {
   .Call("r_scs_distance_to_utility", as.double(distance), loss_config,
@@ -52,6 +74,11 @@ distance_to_utility <- function(distance, loss_config = make_loss_config()) {
 #' @param max_distance Maximum possible distance (defines worst utility).
 #' @param loss_config Loss configuration (must match how utility was computed).
 #' @return Scalar double in \code{[0, 1]}.
+#' @examples
+#' \dontrun{
+#' u <- distance_to_utility(1.5)
+#' normalize_utility(u, max_distance = 3.0)
+#' }
 #' @export
 normalize_utility <- function(utility, max_distance,
                                loss_config = make_loss_config()) {
@@ -75,6 +102,11 @@ normalize_utility <- function(utility, max_distance,
 #' @param utility_level Target utility level.
 #' @param loss_config Loss configuration from \code{\link{make_loss_config}}.
 #' @return Numeric vector of length 0, 1, or 2.
+#' @examples
+#' \dontrun{
+#' # Under linear loss, ideal at 0, utility -1: points at ±1.
+#' level_set_1d(ideal = 0, weight = 1, utility_level = -1)
+#' }
 #' @export
 level_set_1d <- function(ideal, weight = 1.0, utility_level,
                           loss_config = make_loss_config()) {
@@ -107,6 +139,13 @@ level_set_1d <- function(ideal, weight = 1.0, utility_level,
 #'   \code{center_y}, \code{param0}, \code{param1}, \code{exponent_p}
 #'   (numerics), \code{vertices} (4 × 2 matrix for polygons, \code{NULL}
 #'   otherwise).
+#' @examples
+#' \dontrun{
+#' # Circle centred at (1, 2) with linear loss at utility -0.5.
+#' ls <- level_set_2d(ideal_x = 1, ideal_y = 2, utility_level = -0.5)
+#' ls$type  # "circle"
+#' ls$param0  # radius ≈ 0.5
+#' }
 #' @export
 level_set_2d <- function(ideal_x, ideal_y, utility_level,
                           loss_config = make_loss_config(),
@@ -129,6 +168,12 @@ level_set_2d <- function(ideal_x, ideal_y, utility_level,
 #' @param n_samples Integer >= 3. Number of sample points for smooth shapes.
 #'   Default: 64.
 #' @return Numeric matrix (n_vertices × 2) with columns \code{x} and \code{y}.
+#' @examples
+#' \dontrun{
+#' ls   <- level_set_2d(ideal_x = 0, ideal_y = 0, utility_level = -1)
+#' poly <- level_set_to_polygon(ls, n_samples = 32L)
+#' plot(poly, type = "l", asp = 1)
+#' }
 #' @export
 level_set_to_polygon <- function(level_set, n_samples = 64L) {
   .Call("r_scs_level_set_to_polygon", level_set, as.integer(n_samples),
@@ -147,6 +192,13 @@ level_set_to_polygon <- function(level_set, n_samples = 64L) {
 #' @param points Flat numeric vector \code{[x0, y0, x1, y1, ...]} of length
 #'   2 * n_points.
 #' @return Numeric matrix (n_hull × 2) with columns \code{x} and \code{y}.
+#' @examples
+#' \dontrun{
+#' # 5 points; the interior point (0.5, 0.5) is not on the hull.
+#' pts  <- c(0, 0, 1, 0, 1, 1, 0, 1, 0.5, 0.5)
+#' hull <- convex_hull_2d(pts)
+#' nrow(hull)  # 4
+#' }
 #' @export
 convex_hull_2d <- function(points) {
   .Call("r_scs_convex_hull_2d", as.double(points),
@@ -170,6 +222,12 @@ convex_hull_2d <- function(points) {
 #' @param k Majority threshold: \code{"simple"} for ⌊n/2⌋ + 1, or a positive
 #'   integer.
 #' @return Logical scalar: \code{TRUE} if at least \code{k} voters prefer A.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)  # 3 voters
+#' # A = (0,0) is closer to all 3 voters than B = (5,0).
+#' majority_prefers_2d(c(0, 0), c(5, 0), voters)  # TRUE
+#' }
 #' @export
 majority_prefers_2d <- function(a, b, voter_ideals,
                                  dist_config = make_dist_config(),
@@ -194,6 +252,13 @@ majority_prefers_2d <- function(a, b, voter_ideals,
 #' @param k Majority threshold.
 #' @return Integer matrix (n_alts × n_alts) with row and column names
 #'   \code{"alt1", "alt2", ...}.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' mat <- pairwise_matrix_2d(alts, voters)
+#' mat["alt1", "alt2"]  # 1 (alt1 beats alt2) or -1 or 0
+#' }
 #' @export
 pairwise_matrix_2d <- function(alts, voter_ideals,
                                 dist_config = make_dist_config(),
@@ -220,6 +285,13 @@ pairwise_matrix_2d <- function(alts, voter_ideals,
 #' @param threshold Weight fraction in \code{(0, 1]}. Use 0.5 for simple
 #'   weighted majority.
 #' @return Logical scalar.
+#' @examples
+#' \dontrun{
+#' voters  <- c(-1, -1, 1, -1, 1, 1)
+#' weights <- c(10, 1, 1)  # first voter has most weight
+#' # A = (-0.5,-0.5) is close to voter 1; B = (2, 0) is not.
+#' weighted_majority_prefers_2d(c(-0.5, -0.5), c(2, 0), voters, weights)
+#' }
 #' @export
 weighted_majority_prefers_2d <- function(a, b, voter_ideals, weights,
                                           dist_config = make_dist_config(),

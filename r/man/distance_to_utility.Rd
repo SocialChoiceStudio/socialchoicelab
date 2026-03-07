@@ -17,3 +17,13 @@ Scalar double (≤ 0 for the supported loss functions).
 \description{
 Convert a distance to a utility value
 }
+\examples{
+\dontrun{
+# Linear loss: utility at distance 0 is 0; at distance 2 is -2.
+distance_to_utility(0)
+distance_to_utility(2)
+
+# Quadratic loss:
+distance_to_utility(2, make_loss_config("quadratic"))
+}
+}

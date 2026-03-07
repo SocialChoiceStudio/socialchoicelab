@@ -3,6 +3,10 @@
 #
 # All alternative index inputs and outputs are 1-based (R convention).
 
+# Shared example fixtures (used in \dontrun{} blocks):
+#   voters <- c(-1, -1, 1, -1, 1, 1)  # 3 voters at (-1,-1), (1,-1), (1,1)
+#   alts   <- c(0, 0, 2, 0, -2, 0)    # alts A=(0,0), B=(2,0), C=(-2,0)
+
 # ---------------------------------------------------------------------------
 # Copeland
 # ---------------------------------------------------------------------------
@@ -18,6 +22,12 @@
 #' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
 #' @param k Majority threshold: \code{"simple"} or a positive integer.
 #' @return Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' copeland_scores_2d(alts, voters)
+#' }
 #' @export
 copeland_scores_2d <- function(alts, voter_ideals,
                                 dist_config = make_dist_config(),
@@ -37,6 +47,12 @@ copeland_scores_2d <- function(alts, voter_ideals,
 #'
 #' @inheritParams copeland_scores_2d
 #' @return Integer scalar (1-based alternative index).
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' copeland_winner_2d(alts, voters)  # 1-based index of winner
+#' }
 #' @export
 copeland_winner_2d <- function(alts, voter_ideals,
                                 dist_config = make_dist_config(),
@@ -56,6 +72,12 @@ copeland_winner_2d <- function(alts, voter_ideals,
 #'
 #' @inheritParams copeland_scores_2d
 #' @return Logical scalar.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' has_condorcet_winner_2d(alts, voters)
+#' }
 #' @export
 has_condorcet_winner_2d <- function(alts, voter_ideals,
                                      dist_config = make_dist_config(),
@@ -70,6 +92,12 @@ has_condorcet_winner_2d <- function(alts, voter_ideals,
 #' @inheritParams copeland_scores_2d
 #' @return Integer (1-based alternative index), or \code{NA_integer_} if no
 #'   Condorcet winner exists.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' condorcet_winner_2d(alts, voters)  # NA if none, otherwise 1-based index
+#' }
 #' @export
 condorcet_winner_2d <- function(alts, voter_ideals,
                                  dist_config = make_dist_config(),
@@ -94,6 +122,14 @@ condorcet_winner_2d <- function(alts, voter_ideals,
 #' @return Named list \code{list(found, x, y)}.
 #'   \code{found} is \code{TRUE} if the core is non-empty; \code{x} and
 #'   \code{y} are \code{NA} when \code{found == FALSE}.
+#' @examples
+#' \dontrun{
+#' # 3 symmetric voters: core will typically be empty.
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' res <- core_2d(voters)
+#' res$found  # TRUE or FALSE
+#' if (res$found) cat("Core at:", res$x, res$y, "\n")
+#' }
 #' @export
 core_2d <- function(voter_ideals,
                     dist_config = make_dist_config(),
@@ -114,6 +150,12 @@ core_2d <- function(voter_ideals,
 #'
 #' @inheritParams copeland_scores_2d
 #' @return Integer vector of 1-based alternative indices in the uncovered set.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' alts   <- c(0, 0, 2, 0, -2, 0)
+#' uncovered_set_2d(alts, voters)  # 1-based indices
+#' }
 #' @export
 uncovered_set_2d <- function(alts, voter_ideals,
                               dist_config = make_dist_config(),
@@ -134,6 +176,12 @@ uncovered_set_2d <- function(alts, voter_ideals,
 #'   Default: 15 (the library's \code{SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION}).
 #' @param k Majority threshold.
 #' @return Numeric matrix (n_pts × 2) with columns \code{x} and \code{y}.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 1, 1)
+#' bnd <- uncovered_set_boundary_2d(voters, grid_resolution = 10L)
+#' plot(bnd, type = "l", asp = 1)
+#' }
 #' @export
 uncovered_set_boundary_2d <- function(voter_ideals,
                                        dist_config = make_dist_config(),

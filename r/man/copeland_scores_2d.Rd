@@ -28,3 +28,10 @@ Integer vector of length n_alts. Names are \code{"alt1", "alt2", ...}.
 The Copeland score of alternative \code{i} equals the number of alternatives
 it beats in pairwise majority comparisons minus the number it loses to.
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+copeland_scores_2d(alts, voters)
+}
+}

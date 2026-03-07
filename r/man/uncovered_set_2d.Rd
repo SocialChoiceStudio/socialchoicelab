@@ -28,3 +28,10 @@ Integer vector of 1-based alternative indices in the uncovered set.
 An alternative is uncovered if no other alternative beats it both directly
 (by majority) and transitively (Miller 1980 covering relation).
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+uncovered_set_2d(alts, voters)  # 1-based indices
+}
+}

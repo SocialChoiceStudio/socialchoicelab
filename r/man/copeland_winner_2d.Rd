@@ -27,3 +27,10 @@ Integer scalar (1-based alternative index).
 \description{
 Ties are broken by smallest alternative index (1-based).
 }
+\examples{
+\dontrun{
+voters <- c(-1, -1, 1, -1, 1, 1)
+alts   <- c(0, 0, 2, 0, -2, 0)
+copeland_winner_2d(alts, voters)  # 1-based index of winner
+}
+}

@@ -15,6 +15,15 @@
 #'   distance types.
 #' @return A named list accepted by all functions that take a distance
 #'   configuration argument.
+#' @examples
+#' # Euclidean (default):
+#' cfg <- make_dist_config()
+#'
+#' # Manhattan with equal weights:
+#' cfg_l1 <- make_dist_config(distance_type = "manhattan")
+#'
+#' # Euclidean with asymmetric salience weights:
+#' cfg_w <- make_dist_config(weights = c(2.0, 1.0))
 #' @export
 make_dist_config <- function(distance_type = "euclidean",
                              weights       = NULL,
@@ -56,6 +65,16 @@ make_dist_config <- function(distance_type = "euclidean",
 #' @param threshold Numeric. Indifference radius τ used by threshold loss.
 #' @return A named list accepted by all functions that take a loss
 #'   configuration argument.
+#' @examples
+#' # Linear loss (default):
+#' cfg <- make_loss_config()
+#'
+#' # Quadratic (proximity-squared) loss:
+#' cfg_q <- make_loss_config(loss_type = "quadratic")
+#'
+#' # Gaussian loss with custom parameters:
+#' cfg_g <- make_loss_config(loss_type = "gaussian", max_loss = 2.0,
+#'                           steepness = 0.5)
 #' @export
 make_loss_config <- function(loss_type   = "linear",
                              sensitivity = 1.0,

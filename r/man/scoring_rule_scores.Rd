@@ -19,3 +19,10 @@ Double vector of length n_alts.
 \description{
 Compute scores under a positional scoring rule
 }
+\examples{
+\dontrun{
+prof <- profile_build_spatial(c(0, 0, 2, 0, -2, 0), c(-1, -1, 1, -1, 1, 1))
+# Borda weights for 3 alternatives: c(2, 1, 0)
+scoring_rule_scores(prof, c(2, 1, 0))
+}
+}
