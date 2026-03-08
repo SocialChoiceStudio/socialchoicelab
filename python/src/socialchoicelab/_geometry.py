@@ -19,6 +19,9 @@ __all__ = [
     "core_2d",
     "uncovered_set_2d",
     "uncovered_set_boundary_2d",
+    "marginal_median_2d",
+    "centroid_2d",
+    "geometric_mean_2d",
 ]
 
 _ERR = 512
@@ -350,3 +353,78 @@ def uncovered_set_boundary_2d(
         err,
     )
     return xy.reshape(int(out_n[0]), 2).copy()
+
+
+# ---------------------------------------------------------------------------
+# Centrality measures
+# ---------------------------------------------------------------------------
+
+
+def _centrality_call(fn_name, voter_ideals_xy):
+    """Call a scalar-output centrality C function; return (x, y) tuple."""
+    vtr_buf, vtr_arr = _c_double_array(voter_ideals_xy)
+    n_voters = len(vtr_arr) // 2
+    out_x = _ffi.new("double *")
+    out_y = _ffi.new("double *")
+    err = new_err_buf()
+    _check(getattr(_lib, fn_name)(vtr_buf, n_voters, out_x, out_y, err, _ERR), err)
+    return (float(out_x[0]), float(out_y[0]))
+
+
+def marginal_median_2d(voter_ideals_xy) -> tuple:
+    """Coordinate-wise median of voter ideal points (marginal median).
+
+    Each output coordinate is the median of the corresponding input coordinates
+    computed independently — the issue-by-issue median voter (Black 1948).
+    For an even number of voters the median is the average of the two middle
+    values.  Not generally a majority-rule equilibrium in 2D.
+
+    Parameters
+    ----------
+    voter_ideals_xy:
+        Flat ``[x0, y0, …]`` voter ideal points.
+
+    Returns
+    -------
+    tuple ``(x, y)`` of floats.
+    """
+    return _centrality_call("scs_marginal_median_2d", voter_ideals_xy)
+
+
+def centroid_2d(voter_ideals_xy) -> tuple:
+    """Coordinate-wise arithmetic mean (centroid) of voter ideal points.
+
+    Each output coordinate is the arithmetic mean of the corresponding input
+    coordinates (centre of mass / mean voter position).  Not generally a
+    majority-rule equilibrium in 2D.
+
+    Parameters
+    ----------
+    voter_ideals_xy:
+        Flat ``[x0, y0, …]`` voter ideal points.
+
+    Returns
+    -------
+    tuple ``(x, y)`` of floats.
+    """
+    return _centrality_call("scs_centroid_2d", voter_ideals_xy)
+
+
+def geometric_mean_2d(voter_ideals_xy) -> tuple:
+    """Coordinate-wise geometric mean of voter ideal points.
+
+    Each output coordinate is ``exp(mean(log(xᵢ)))``.  Requires all
+    coordinates to be strictly positive; raises ``ValueError`` for zero or
+    negative values (e.g. NOMINATE-scale [-1, 1] data) — use
+    :func:`centroid_2d` or :func:`marginal_median_2d` instead.
+
+    Parameters
+    ----------
+    voter_ideals_xy:
+        Flat ``[x0, y0, …]`` voter ideal points.  All values must be > 0.
+
+    Returns
+    -------
+    tuple ``(x, y)`` of floats.
+    """
+    return _centrality_call("scs_geometric_mean_2d", voter_ideals_xy)

@@ -25,6 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
+from socialchoicelab._geometry import centroid_2d, marginal_median_2d
 from socialchoicelab.palette import (
     scl_palette,
     scl_theme_colors,
@@ -51,6 +52,8 @@ __all__ = [
     "layer_yolk",
     "layer_uncovered_set",
     "layer_convex_hull",
+    "layer_centroid",
+    "layer_marginal_median",
     "save_plot",
     "finalize_plot",
     # Re-exported for convenience so users can do `sclp.scl_palette(...)`
@@ -791,4 +794,107 @@ def finalize_plot(fig):
     >>> fig = sclp.plot_spatial_voting(voters, sq=np.array([0.0, 0.0]))
     >>> fig = sclp.finalize_plot(fig)
     """
+    return fig
+
+
+def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
+    """Add a centroid (mean voter position) marker layer.
+
+    Displays the coordinate-wise arithmetic mean of voter ideal points as a
+    labelled diamond marker.
+
+    Parameters
+    ----------
+    fig:
+        Plotly figure from :func:`plot_spatial_voting`.
+    voters:
+        Flat ``[x0, y0, …]`` voter ideal points.
+    color:
+        Marker colour string (CSS rgba).  ``None`` uses the theme default.
+    name:
+        Legend entry label.
+    theme:
+        Colour theme — see :func:`plot_spatial_voting`.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import socialchoicelab.plots as sclp
+    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
+    >>> fig = sclp.plot_spatial_voting(voters)
+    >>> fig = sclp.layer_centroid(fig, voters)
+    """
+    if not _PLOTLY_AVAILABLE:
+        raise ImportError("plotly is required: pip install plotly")
+    color = color or _alt_point_color(theme)
+    x, y = centroid_2d(voters)
+    fig.add_trace(
+        go.Scatter(
+            x=[x], y=[y],
+            mode="markers+text",
+            marker=dict(symbol="diamond", size=12, color=color,
+                        line=dict(color=color, width=2)),
+            text=[name],
+            textposition="top center",
+            name=name,
+            hovertemplate=f"{name} ({x:.4f}, {y:.4f})<extra></extra>",
+            zorder=8,
+        )
+    )
+    return fig
+
+
+def layer_marginal_median(fig, voters, color=None, name="Marginal Median",
+                          theme="dark2"):
+    """Add a marginal median marker layer.
+
+    Displays the coordinate-wise median of voter ideal points as a labelled
+    cross marker (issue-by-issue median voter; Black 1948).
+
+    Parameters
+    ----------
+    fig:
+        Plotly figure from :func:`plot_spatial_voting`.
+    voters:
+        Flat ``[x0, y0, …]`` voter ideal points.
+    color:
+        Marker colour string (CSS rgba).  ``None`` uses the theme default.
+    name:
+        Legend entry label.
+    theme:
+        Colour theme — see :func:`plot_spatial_voting`.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import socialchoicelab.plots as sclp
+    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
+    >>> fig = sclp.plot_spatial_voting(voters)
+    >>> fig = sclp.layer_marginal_median(fig, voters)
+    """
+    if not _PLOTLY_AVAILABLE:
+        raise ImportError("plotly is required: pip install plotly")
+    color = color or _alt_point_color(theme)
+    x, y = marginal_median_2d(voters)
+    fig.add_trace(
+        go.Scatter(
+            x=[x], y=[y],
+            mode="markers+text",
+            marker=dict(symbol="cross", size=14, color=color,
+                        line=dict(color=color, width=2)),
+            text=[name],
+            textposition="top center",
+            name=name,
+            hovertemplate=f"{name} ({x:.4f}, {y:.4f})<extra></extra>",
+            zorder=8,
+        )
+    )
     return fig

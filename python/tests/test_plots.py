@@ -294,3 +294,70 @@ def test_full_composition():
 
     assert isinstance(fig, go.Figure)
     assert len(fig.data) >= 7
+
+
+# ---------------------------------------------------------------------------
+# layer_centroid
+# ---------------------------------------------------------------------------
+
+
+def test_layer_centroid_returns_figure():
+    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig2 = sclp.layer_centroid(fig, VOTERS)
+    assert isinstance(fig2, go.Figure)
+
+
+def test_layer_centroid_adds_one_trace():
+    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    n_before = len(fig.data)
+    fig2 = sclp.layer_centroid(fig, VOTERS)
+    assert len(fig2.data) == n_before + 1
+
+
+def test_layer_centroid_marker_is_diamond():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.layer_centroid(fig, VOTERS)
+    assert fig.data[-1].marker.symbol == "diamond"
+
+
+def test_layer_centroid_position_matches_mean():
+    voters = np.array([-1.0, 0.0,  1.0, 0.0,  0.0, 2.0])
+    fig = sclp.plot_spatial_voting(voters)
+    fig = sclp.layer_centroid(fig, voters)
+    trace = fig.data[-1]
+    assert abs(trace.x[0] - 0.0) < 1e-10
+    assert abs(trace.y[0] - (2.0 / 3.0)) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# layer_marginal_median
+# ---------------------------------------------------------------------------
+
+
+def test_layer_marginal_median_returns_figure():
+    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig2 = sclp.layer_marginal_median(fig, VOTERS)
+    assert isinstance(fig2, go.Figure)
+
+
+def test_layer_marginal_median_adds_one_trace():
+    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    n_before = len(fig.data)
+    fig2 = sclp.layer_marginal_median(fig, VOTERS)
+    assert len(fig2.data) == n_before + 1
+
+
+def test_layer_marginal_median_marker_is_cross():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.layer_marginal_median(fig, VOTERS)
+    assert fig.data[-1].marker.symbol == "cross"
+
+
+def test_layer_marginal_median_position_matches_median():
+    # Three voters at x=-1,0,1 and y=0 → median (0,0)
+    voters = np.array([-1.0, 0.0,  0.0, 0.0,  1.0, 0.0])
+    fig = sclp.plot_spatial_voting(voters)
+    fig = sclp.layer_marginal_median(fig, voters)
+    trace = fig.data[-1]
+    assert abs(trace.x[0] - 0.0) < 1e-10
+    assert abs(trace.y[0] - 0.0) < 1e-10

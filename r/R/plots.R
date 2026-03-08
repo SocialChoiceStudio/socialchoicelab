@@ -644,3 +644,88 @@ save_plot <- function(fig, path, width = NULL, height = NULL) {
 finalize_plot <- function(fig) {
   fig
 }
+
+# ---------------------------------------------------------------------------
+# Layer: centroid
+# ---------------------------------------------------------------------------
+
+#' Add a centroid (mean voter position) marker layer
+#'
+#' Displays the coordinate-wise arithmetic mean of voter ideal points as a
+#' labelled marker. Computed via \code{\link{centroid_2d}}.
+#'
+#' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
+#' @param voters Flat numeric vector \code{[x0, y0, ...]} of voter ideal
+#'   coordinates.
+#' @param color Marker and text colour. \code{NULL} uses the theme slot for
+#'   alternative points.
+#' @param name Legend entry label.
+#' @param theme Colour theme — see \code{\link{plot_spatial_voting}}.
+#' @return The updated plotly figure.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
+#' fig <- plot_spatial_voting(voters)
+#' fig <- layer_centroid(fig, voters)
+#' fig
+#' }
+#' @export
+layer_centroid <- function(fig, voters, color = NULL, name = "Centroid",
+                            theme = "dark2") {
+  color <- color %||% .alt_point_color(theme)
+  pt <- centroid_2d(as.double(voters))
+  plotly::add_trace(
+    fig, x = pt$x, y = pt$y, type = "scatter", mode = "markers+text",
+    marker        = list(symbol = "diamond", size = 12, color = color,
+                         line = list(color = color, width = 2)),
+    text          = name,
+    textposition  = "top center",
+    name          = name,
+    hovertemplate = paste0(name, " (", round(pt$x, 4L), ", ",
+                           round(pt$y, 4L), ")<extra></extra>"),
+    zorder        = 8L
+  )
+}
+
+# ---------------------------------------------------------------------------
+# Layer: marginal median
+# ---------------------------------------------------------------------------
+
+#' Add a marginal median marker layer
+#'
+#' Displays the coordinate-wise median of voter ideal points as a labelled
+#' marker (issue-by-issue median voter; Black 1948). Computed via
+#' \code{\link{marginal_median_2d}}.
+#'
+#' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
+#' @param voters Flat numeric vector \code{[x0, y0, ...]} of voter ideal
+#'   coordinates.
+#' @param color Marker and text colour. \code{NULL} uses the theme slot for
+#'   alternative points.
+#' @param name Legend entry label.
+#' @param theme Colour theme — see \code{\link{plot_spatial_voting}}.
+#' @return The updated plotly figure.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
+#' fig <- plot_spatial_voting(voters)
+#' fig <- layer_marginal_median(fig, voters)
+#' fig
+#' }
+#' @export
+layer_marginal_median <- function(fig, voters, color = NULL,
+                                   name = "Marginal Median", theme = "dark2") {
+  color <- color %||% .alt_point_color(theme)
+  pt <- marginal_median_2d(as.double(voters))
+  plotly::add_trace(
+    fig, x = pt$x, y = pt$y, type = "scatter", mode = "markers+text",
+    marker        = list(symbol = "cross", size = 14, color = color,
+                         line = list(color = color, width = 2)),
+    text          = name,
+    textposition  = "top center",
+    name          = name,
+    hovertemplate = paste0(name, " (", round(pt$x, 4L), ", ",
+                           round(pt$y, 4L), ")<extra></extra>"),
+    zorder        = 8L
+  )
+}

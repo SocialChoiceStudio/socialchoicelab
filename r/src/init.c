@@ -77,6 +77,11 @@ extern SEXP r_scs_has_condorcet_winner_2d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_uncovered_set_2d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_uncovered_set_boundary_2d(SEXP, SEXP, SEXP, SEXP);
 
+/* B3.6 centrality (geometry.c) */
+extern SEXP r_scs_centroid_2d(SEXP);
+extern SEXP r_scs_geometric_mean_2d(SEXP);
+extern SEXP r_scs_marginal_median_2d(SEXP);
+
 /* B3.7 (voting_rules.c) */
 extern SEXP r_scs_antiplurality_all_winners(SEXP);
 extern SEXP r_scs_antiplurality_one_winner(SEXP, SEXP, SEXP, SEXP);
@@ -167,6 +172,10 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_has_condorcet_winner_2d",        (DL_FUNC)&r_scs_has_condorcet_winner_2d,        4},
     {"r_scs_uncovered_set_2d",               (DL_FUNC)&r_scs_uncovered_set_2d,               4},
     {"r_scs_uncovered_set_boundary_2d",      (DL_FUNC)&r_scs_uncovered_set_boundary_2d,      4},
+    /* --- B3: Centrality --- */
+    {"r_scs_centroid_2d",                    (DL_FUNC)&r_scs_centroid_2d,                    1},
+    {"r_scs_geometric_mean_2d",              (DL_FUNC)&r_scs_geometric_mean_2d,              1},
+    {"r_scs_marginal_median_2d",             (DL_FUNC)&r_scs_marginal_median_2d,             1},
     /* --- B3: Voting rules --- */
     {"r_scs_antiplurality_all_winners",      (DL_FUNC)&r_scs_antiplurality_all_winners,      1},
     {"r_scs_antiplurality_one_winner",       (DL_FUNC)&r_scs_antiplurality_one_winner,       4},

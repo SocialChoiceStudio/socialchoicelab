@@ -273,3 +273,41 @@ test_that("all layers can be composed without error", {
   fig <- finalize_plot(fig)
   expect_s3_class(fig, "plotly")
 })
+
+# ---------------------------------------------------------------------------
+# layer_centroid
+# ---------------------------------------------------------------------------
+
+test_that("layer_centroid returns a plotly object", {
+  skip_without_lib()
+  fig  <- plot_spatial_voting(VOTERS, sq = SQ)
+  fig2 <- layer_centroid(fig, VOTERS)
+  expect_s3_class(fig2, "plotly")
+})
+
+test_that("layer_centroid adds exactly one trace", {
+  skip_without_lib()
+  fig  <- plot_spatial_voting(VOTERS, sq = SQ)
+  n_before <- length(fig$x$attrs)
+  fig2 <- layer_centroid(fig, VOTERS)
+  expect_equal(length(fig2$x$attrs), n_before + 1L)
+})
+
+# ---------------------------------------------------------------------------
+# layer_marginal_median
+# ---------------------------------------------------------------------------
+
+test_that("layer_marginal_median returns a plotly object", {
+  skip_without_lib()
+  fig  <- plot_spatial_voting(VOTERS, sq = SQ)
+  fig2 <- layer_marginal_median(fig, VOTERS)
+  expect_s3_class(fig2, "plotly")
+})
+
+test_that("layer_marginal_median adds exactly one trace", {
+  skip_without_lib()
+  fig  <- plot_spatial_voting(VOTERS, sq = SQ)
+  n_before <- length(fig$x$attrs)
+  fig2 <- layer_marginal_median(fig, VOTERS)
+  expect_equal(length(fig2$x$attrs), n_before + 1L)
+})

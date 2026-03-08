@@ -1,5 +1,6 @@
 # geometry.R — B3.5: Copeland scores/winner, Condorcet winner (discrete),
 #              core (continuous), uncovered set (discrete and continuous)
+#              B3.6: Centrality measures (marginal median, centroid, geometric mean)
 #
 # All alternative index inputs and outputs are 1-based (R convention).
 
@@ -191,4 +192,70 @@ uncovered_set_boundary_2d <- function(voter_ideals,
         as.double(voter_ideals), dist_config,
         as.integer(grid_resolution), .resolve_k(k),
       PACKAGE = "socialchoicelab")
+}
+
+# ---------------------------------------------------------------------------
+# Centrality measures
+# ---------------------------------------------------------------------------
+
+#' Coordinate-wise median of voter ideal points (marginal median)
+#'
+#' Each output coordinate is the median of the corresponding input coordinates
+#' computed independently — the issue-by-issue median voter (Black 1948).
+#' For an even number of voters the median is the average of the two middle
+#' values. Not generally a majority-rule equilibrium in 2D.
+#'
+#' @param voter_ideals Flat numeric vector \code{[x0, y0, ...]} of voter ideal
+#'   coordinates (length 2 * n_voters).
+#' @return Named list \code{list(x, y)} with the marginal median coordinates.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, -1, 1, -1, 0, 1)
+#' marginal_median_2d(voters)  # list(x = 0, y = -1)
+#' }
+#' @export
+marginal_median_2d <- function(voter_ideals) {
+  .Call("r_scs_marginal_median_2d", as.double(voter_ideals),
+        PACKAGE = "socialchoicelab")
+}
+
+#' Coordinate-wise arithmetic mean (centroid) of voter ideal points
+#'
+#' Each output coordinate is the arithmetic mean of the corresponding input
+#' coordinates (centre of mass / mean voter position). Not generally a
+#' majority-rule equilibrium in 2D.
+#'
+#' @param voter_ideals Flat numeric vector \code{[x0, y0, ...]} of voter ideal
+#'   coordinates (length 2 * n_voters).
+#' @return Named list \code{list(x, y)} with the centroid coordinates.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1, 0, 1, 0, 0, 1)
+#' centroid_2d(voters)  # list(x = 0, y = 1/3)
+#' }
+#' @export
+centroid_2d <- function(voter_ideals) {
+  .Call("r_scs_centroid_2d", as.double(voter_ideals),
+        PACKAGE = "socialchoicelab")
+}
+
+#' Coordinate-wise geometric mean of voter ideal points
+#'
+#' Each output coordinate is \code{exp(mean(log(xᵢ)))}. Requires all
+#' coordinates to be strictly positive; throws an error for zero or negative
+#' values (e.g. NOMINATE-scale \code{[-1, 1]} data) — use
+#' \code{\link{centroid_2d}} or \code{\link{marginal_median_2d}} instead.
+#'
+#' @param voter_ideals Flat numeric vector \code{[x0, y0, ...]} of voter ideal
+#'   coordinates (length 2 * n_voters). All values must be > 0.
+#' @return Named list \code{list(x, y)} with the geometric mean coordinates.
+#' @examples
+#' \dontrun{
+#' voters <- c(1, 2, 4, 8)  # two voters: (1,2) and (4,8)
+#' geometric_mean_2d(voters)  # list(x = 2, y = 4)
+#' }
+#' @export
+geometric_mean_2d <- function(voter_ideals) {
+  .Call("r_scs_geometric_mean_2d", as.double(voter_ideals),
+        PACKAGE = "socialchoicelab")
 }

@@ -55,7 +55,7 @@ from socialchoicelab._functions import (  # noqa: F401
     pairwise_matrix_2d,
 )
 
-# B5.2 — Copeland, Condorcet, core, uncovered set
+# B5.2 — Copeland, Condorcet, core, uncovered set, centrality
 from socialchoicelab._geometry import (  # noqa: F401
     copeland_scores_2d,
     copeland_winner_2d,
@@ -64,6 +64,9 @@ from socialchoicelab._geometry import (  # noqa: F401
     core_2d,
     uncovered_set_2d,
     uncovered_set_boundary_2d,
+    marginal_median_2d,
+    centroid_2d,
+    geometric_mean_2d,
 )
 
 # B5.3 — Voting rules

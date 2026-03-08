@@ -25,14 +25,16 @@ High-level direction for the project. This document does not duplicate detail; i
 - **Core and c_api:** Complete ✅. C++ core (distance, loss, PRNG, indifference) and stable C API (`scs_api`) are done and CI green.
 - **Geometry Layer 3:** Complete ✅ *(Yolk and Heart need revisiting — see below)*. CGAL EPEC integration, exact 2D types, convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, veto players, weighted voting. See [archive/geometry_plan.md](archive/geometry_plan.md). **⚠️ Note:** `yolk_2d` is currently an LP-yolk approximation (subgradient over sampled directions), not the exact yolk — Stone & Tovey (1992) showed limiting median lines alone do not determine the yolk. `heart_boundary_2d` is a coarse grid approximation. Both must be addressed before the `geometry-complete` milestone is considered fully valid. See [where_we_are.md § Known Issues](where_we_are.md) and [milestone_gates.md § Revisit before release](milestone_gates.md).
 - **Profiles & Aggregation Layers 4–5:** Complete ✅. Profile struct, spatial/utility/synthetic profile construction, plurality/Borda/approval/anti-plurality/scoring rules, social rankings, Pareto, Condorcet/majority consistency. See [archive/profiles_and_aggregation_plan.md](archive/profiles_and_aggregation_plan.md).
-- **c_api geometry + aggregation extensions (active):** Expose geometry and aggregation services through the stable C API so R/Python can call them.
+- **c_api geometry + aggregation extensions:** Complete ✅. All geometry and aggregation services exposed through the stable C API. See [archive/c_api_extensions_plan.md](archive/c_api_extensions_plan.md).
+- **Preparing for v1.0.0 (active):** Work through "Revisit before release" items (yolk correctness, Heart approximation labelling, C++20/17 decision, citation checks) before tagging `v1.0.0`.
 
 ---
 
 ## Mid-term (3–6 months)
 
-- **First R or Python binding:** Start `socialchoicelab` R package (`.Call()` via a thin C registration layer) or Python package (cffi) calling the pre-built `libscs_api` shared library via the C ABI. No C++ compilation required in the binding packages.
-- **Visualization layer:** Plot helpers in R and Python for spatial voting output: voter ideal points, status quo, winsets (with individual voter preferred regions drawn as overlapping circles), Yolk circle, uncovered set boundary, convex hull. Identical API across R and Python; Plotly output.
+- **First R and Python bindings:** Complete ✅. `socialchoicelab` R (`.Call()`) and Python (cffi) packages calling the pre-built `libscs_api` via the C ABI. See [archive/binding_plan_completed.md](archive/binding_plan_completed.md).
+- **Visualization layer:** Complete ✅. Plotly-based spatial voting plot helpers in R and Python. Composable layers, colorblind-safe theme system, built-in scenario datasets, indifference curves, preferred-region overlays, `save_plot()`. See [visualization_plan.md](visualization_plan.md).
+- **v1.0.0 tag:** Pending resolution of "Revisit before release" items; see [milestone_gates.md](milestone_gates.md).
 
 ---
 
@@ -66,9 +68,9 @@ These are not on the active roadmap but are worth keeping in view as the project
 
 | Horizon  | Focus |
 |----------|-------|
-| **Near** | c_api geometry + aggregation extensions (active). |
-| **Mid**  | First R/Python binding, visualization layer. |
-| **Long** | Full packages, GUI-lite, web app, advanced spatial and empirical features. |
+| **Near** | Resolve "revisit before release" items → tag `v1.0.0`. |
+| **Mid**  | Full-featured packages, comprehensive user docs, CI-published release. |
+| **Long** | GUI-lite (Shiny), web app, advanced spatial features, empirical profiles. |
 
 ---
 

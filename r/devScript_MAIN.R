@@ -294,12 +294,6 @@ fig <- plot_spatial_voting(
 # Add layers
 fig <- layer_winset(fig, ws)
 fig <- layer_convex_hull(fig, hull)
-fig
-# Yolk center approximated as centroid of voters; radius is a rough estimate
-voter_xy <- matrix(voters, ncol = 2L, byrow = TRUE)
-yolk_cx  <- mean(voter_xy[, 1L])
-yolk_cy  <- mean(voter_xy[, 2L])
-fig <- layer_yolk(fig, center_x = yolk_cx, center_y = yolk_cy, radius = 20.0)
 fig <- finalize_plot(fig)
 
 # Display (opens in RStudio Viewer / browser)

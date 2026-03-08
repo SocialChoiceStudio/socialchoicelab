@@ -1515,6 +1515,61 @@ SCS_API int scs_is_selected_by_majority_consistent_rules(const SCS_Profile* p,
                                                          char* err_buf,
                                                          int err_buf_len);
 
+// ---------------------------------------------------------------------------
+// Centrality measures
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Coordinate-wise median of voter ideal points (marginal median).
+ *
+ * Each output coordinate is the median of the corresponding input coordinates
+ * computed independently (issue-by-issue median voter; Black 1948).  Not
+ * generally a majority-rule equilibrium in 2D.
+ *
+ * @param voter_ideals_xy  Flat [x0,y0,...] array, length 2*n_voters.
+ * @param n_voters         Number of voters (>= 1).
+ * @param[out] out_x       x-coordinate of the marginal median.
+ * @param[out] out_y       y-coordinate of the marginal median.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_marginal_median_2d(const double* voter_ideals_xy, int n_voters,
+                                   double* out_x, double* out_y, char* err_buf,
+                                   int err_buf_len);
+
+/**
+ * @brief Coordinate-wise arithmetic mean (centroid) of voter ideal points.
+ *
+ * Each output coordinate is the arithmetic mean of the corresponding input
+ * coordinates (centre of mass / mean voter position).  Not generally a
+ * majority-rule equilibrium in 2D.
+ *
+ * @param voter_ideals_xy  Flat [x0,y0,...] array, length 2*n_voters.
+ * @param n_voters         Number of voters (>= 1).
+ * @param[out] out_x       x-coordinate of the centroid.
+ * @param[out] out_y       y-coordinate of the centroid.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_centroid_2d(const double* voter_ideals_xy, int n_voters,
+                            double* out_x, double* out_y, char* err_buf,
+                            int err_buf_len);
+
+/**
+ * @brief Coordinate-wise geometric mean of voter ideal points.
+ *
+ * Each output coordinate is exp(mean(log(xᵢ))).  Requires all coordinates to
+ * be strictly positive; returns SCS_ERROR_INVALID_ARGUMENT with a descriptive
+ * message if any coordinate is <= 0 (e.g. NOMINATE-scale [-1,1] data).
+ *
+ * @param voter_ideals_xy  Flat [x0,y0,...] array, length 2*n_voters.
+ * @param n_voters         Number of voters (>= 1).
+ * @param[out] out_x       x-coordinate of the geometric mean.
+ * @param[out] out_y       y-coordinate of the geometric mean.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_geometric_mean_2d(const double* voter_ideals_xy, int n_voters,
+                                  double* out_x, double* out_y, char* err_buf,
+                                  int err_buf_len);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

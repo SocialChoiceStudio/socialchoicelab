@@ -2,9 +2,9 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** R and Python bindings — **ACTIVE**. Build `socialchoicelab` R (`.Call()`) and Python (cffi) packages calling the pre-built `libscs_api` via the C ABI. Plan: [binding_plan.md](binding_plan.md).
-- **Next:** After bindings: visualization layer (Plotly helpers, R and Python). See [ROADMAP.md](ROADMAP.md).
-- **Last updated:** 2026-03-07
+- **Current phase:** All core milestones complete — c_api, R/Python bindings, and visualization layer (C10–C13) are done. All "Revisit before release" items resolved (C++20 confirmed, citations corrected). Assessing **v1.0.0** gate.
+- **Next:** Verify all v1.0.0 gate criteria are met (see [milestone_gates.md](milestone_gates.md) § First binding / 1.0), then prepare the `v1.0.0` tag and release docs.
+- **Last updated:** 2026-03-08
 
 **Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
 
@@ -26,7 +26,7 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 - **Liu, Y. & Tovey, C.A. (2023).** "Polynomial-time algorithm for computing the yolk in fixed dimension." (Poster/preprint.) — Exact polynomial-time algorithm for fixed dimension, improving Tovey (1992)'s O(n⁴) bound; possible counter-example in 3D being investigated.
 - **Tovey, C.A. (1992).** "A polynomial-time algorithm for computing the yolk in fixed dimension." *Mathematical Programming*, 57(1), 259–277. — Original polynomial exact algorithm (O(n⁴) in 2D); proven correct but slow.
 
-**Action:** Before c_api exposes `SCS_Yolk2d`, replace or validate `yolk_2d`. Also see: `ROADMAP.md` § Test correctness review and `milestone_gates.md` § Revisit before release.
+**Action (deferred post-v1.0.0):** `SCS_Yolk2d` is already labelled as an LP-yolk approximation in `scs_api.h`. `layer_yolk` has been removed from example scripts. Replacing with an exact algorithm (Gudmundsson & Wong 2019 is the top candidate) is tracked in ROADMAP.md and `milestone_gates.md § Deferred known issues`.
 
 ### Heart boundary is an approximation; theoretical status is open
 
@@ -36,12 +36,27 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 1. Grid resolution limits precision (default 15×15 = 225 points).
 2. The continuous analogue of the Heart in policy space is a **research-level open problem** — there is no exact algorithm or proven formula for it. The convex hull of grid survivors is a useful visualisation but not a rigorous solution concept.
 
-**Action:** Document this approximation status clearly in `geometry_design.md` and `c_api_design.md`. Do not expose `heart_boundary_2d` via c_api without noting it is approximate. Revisit when/if theoretical progress is made on the continuous Heart.
+**Action (deferred post-v1.0.0):** Approximation status is documented in `geometry_design.md` and `c_api_design.md`. Not shown in example scripts. Tracked in `milestone_gates.md § Deferred known issues`. Revisit only when theoretical progress is made on the continuous Heart.
 
 **Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/ROADMAP.md`.
 ---
 
 ## Recent Work
+
+### Sessions: 2026-03-07/08 — Visualization layer (C10–C13) COMPLETE
+
+- **C10–C12 (core):** `plot_spatial_voting()`, `layer_winset()`, `layer_yolk()`, `layer_uncovered_set()`, `layer_convex_hull()` implemented in R (`r/R/plots.R`) and Python (`python/src/socialchoicelab/plots.py`). Identical API across both languages (Plotly output, composable layers, `zorder` for correct stacking). CI green on both R and Python jobs.
+- **C13.A (built-in scenarios):** 33 scenarios in JSON format bundled in R `inst/extdata/scenarios/` and Python `src/socialchoicelab/data/scenarios/`. `load_scenario(name)` and `list_scenarios()` in both languages. Full unit test coverage.
+- **C13.2 (`layer_ic`):** Individual voter indifference curves (circles centred at ideal points, radius = distance to SQ). `color_by_voter` flag; dotted dash style.
+- **C13.3 (auto-compute):** `layer_winset()` and `layer_uncovered_set()` accept `voters` + `sq` and compute geometry internally.
+- **C13.4 (theme system):** `scl_palette(name, n, alpha)` and `scl_theme_colors(layer_type, theme)` in R (`r/R/palette.R`) and Python (`python/src/socialchoicelab/palette.py`). Five themes: `dark2`, `set2`, `okabe_ito`, `paired`, `bw`. All `layer_*()` functions accept `theme=` (default `"dark2"`).
+- **C13.5 (axis auto-range):** `plot_spatial_voting()` auto-computes 12%-padded axis range; `xlim`/`ylim` override.
+- **C13.6 (`layer_preferred_regions`):** Filled voter-preferred-to-SQ circles; `color_by_voter` flag.
+- **C13.8 (`save_plot`):** HTML export via `htmlwidgets::saveWidget()` / `fig.write_html()`; image export via `plotly::save_image()` / `fig.write_image()`.
+- **Deferred:** C13.1 (external file format → ROADMAP), C13.7 (Shapley-Owen → blocked on C API), C13.9 (gallery notebook → docs milestone).
+- **Tests:** Full unit test coverage added for all new functions in R (`test_palette.R`, `test_plots.R`) and Python (`test_palette.py`, `test_plots.py`).
+
+---
 
 ### Session: 2026-03-06 — C8 non-finite input validation (C API)
 

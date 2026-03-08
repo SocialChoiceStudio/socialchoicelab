@@ -1,4 +1,5 @@
-# test_geometry.R — Tests for Copeland, Condorcet, core, uncovered set.
+# test_geometry.R — Tests for Copeland, Condorcet, core, uncovered set,
+#                   and centrality measures.
 
 .voters <- c(-1, -1,  1, -1,  1,  1)
 .alts   <- c( 0,  0,  2,  0, -2,  0)
@@ -106,4 +107,73 @@ test_that("uncovered_set_boundary_2d returns an n×2 numeric matrix", {
   bnd <- uncovered_set_boundary_2d(.voters, grid_resolution = 5L)
   expect_true(is.matrix(bnd))
   expect_identical(ncol(bnd), 2L)
+})
+
+# ---------------------------------------------------------------------------
+# Centrality measures
+# ---------------------------------------------------------------------------
+
+# Three collinear voters at (-1,0), (0,0), (1,0): median = (0,0), centroid = (0,0).
+.cv3 <- c(-1, 0,  0, 0,  1, 0)
+
+# Two voters at (1,2) and (4,8): geometric mean x = sqrt(4)=2, y = sqrt(16)=4.
+.gm2 <- c(1, 2,  4, 8)
+
+test_that("marginal_median_2d returns a list with x and y", {
+  skip_without_lib()
+  res <- marginal_median_2d(.cv3)
+  expect_type(res, "list")
+  expect_identical(names(res), c("x", "y"))
+  expect_equal(res$x, 0.0, tolerance = 1e-10)
+  expect_equal(res$y, 0.0, tolerance = 1e-10)
+})
+
+test_that("marginal_median_2d even-n uses average of two middle values", {
+  skip_without_lib()
+  # Four voters on x-axis: -2, -1, 1, 2 → median x = (-1+1)/2 = 0
+  res <- marginal_median_2d(c(-2, 0,  -1, 0,  1, 0,  2, 0))
+  expect_equal(res$x, 0.0, tolerance = 1e-10)
+})
+
+test_that("marginal_median_2d errors on empty input", {
+  skip_without_lib()
+  expect_error(marginal_median_2d(numeric(0)))
+})
+
+test_that("centroid_2d returns the arithmetic mean", {
+  skip_without_lib()
+  res <- centroid_2d(.cv3)
+  expect_type(res, "list")
+  expect_identical(names(res), c("x", "y"))
+  expect_equal(res$x, 0.0, tolerance = 1e-10)
+  expect_equal(res$y, 0.0, tolerance = 1e-10)
+})
+
+test_that("centroid_2d single voter returns that voter's position", {
+  skip_without_lib()
+  res <- centroid_2d(c(3.5, -7.2))
+  expect_equal(res$x, 3.5, tolerance = 1e-10)
+  expect_equal(res$y, -7.2, tolerance = 1e-10)
+})
+
+test_that("centroid_2d errors on empty input", {
+  skip_without_lib()
+  expect_error(centroid_2d(numeric(0)))
+})
+
+test_that("geometric_mean_2d returns the geometric mean for positive coords", {
+  skip_without_lib()
+  res <- geometric_mean_2d(.gm2)
+  expect_equal(res$x, 2.0, tolerance = 1e-10)
+  expect_equal(res$y, 4.0, tolerance = 1e-10)
+})
+
+test_that("geometric_mean_2d errors on non-positive coordinates", {
+  skip_without_lib()
+  expect_error(geometric_mean_2d(.voters))  # .voters has negative coords
+})
+
+test_that("geometric_mean_2d errors on empty input", {
+  skip_without_lib()
+  expect_error(geometric_mean_2d(numeric(0)))
 })

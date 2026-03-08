@@ -68,7 +68,7 @@ When a step is done, mark it ✅ Done and update [where_we_are.md](where_we_are.
 
 - ✅ **C13.3** Auto-compute in `layer_winset()` and `layer_uncovered_set()` — pass `voters` + `sq` (or `voters` alone) and the layer function computes the geometry internally. Both R and Python.
 
-- ⏭ **C13.4** Colorblind-safe default palette — Okabe-Ito palette defined as internal helper `_okabe_ito_cycle()` in both R and Python; used for `color_by_voter` mode. Full audit of all layer defaults deferred to a future design pass (see `visualization_design.md`).
+- ✅ **C13.4** Colorblind-safe palette and theme system — `scl_palette(name, n, alpha)` and `scl_theme_colors(layer_type, theme)` implemented in R (`palette.R`) and Python (`palette.py`). Five named themes (`dark2`, `set2`, `okabe_ito`, `paired`, `bw`), each with auto-selection logic and semantic slot assignments per layer type. All `plot_spatial_voting()` and `layer_*()` functions accept a `theme=` argument (default `"dark2"`). `color_by_voter=TRUE` mode uses `scl_palette()`. Fixed-layer colors (winset, yolk, uncovered set, etc.) are coordinated with the active theme via slot assignment. Documented in `visualization_design.md` § Color system.
 
 - ✅ **C13.5** `xlim`/`ylim` in `plot_spatial_voting()` — auto-computes a 12%-padded range from all plotted points; explicit `xlim`/`ylim` args override.
 
@@ -84,16 +84,17 @@ When a step is done, mark it ✅ Done and update [where_we_are.md](where_we_are.
 
 ---
 
-## Key Design Decisions (TBD)
+## Key Design Decisions (Resolved)
 
-| Decision | R | Python | Rationale |
-|----------|---|--------|-----------|
-| Base plot object | S3 (ggplot-like) or R6? | plotly Figure | S3 is simpler for piping; R6 offers state management. Recommend S3. |
-| Winset polygon representation | sf/sp or manual? | shapely or manual? | Manual (iterate boundary, plot line). Avoids heavyweight geo libs. |
-| Yolk circle | `geom_circle()` or annotate? | `go.Circle` or manual? | Manual for consistency across R/Python. |
-| Uncovered set boundary | Convex hull of points or exact boundary? | Convex hull or exact? | Start with convex hull for speed; exact boundary is nice-to-have. |
-| Color palette | viridis + manual override? | plotly defaults + manual? | Colorblind-friendly by default. |
-| Export formats | PNG, SVG, PDF via `plotly::export()`? | PNG, SVG via `fig.write_*()` | Defer to Plotly's export. Users can download from Plotly widget. |
+| Decision | Resolution |
+|----------|-----------|
+| Base plot object | Direct `plotly::plot_ly()` / `go.Figure()`. Functional layer API — no R6/S3 class. Layers are plain functions that accept and return a figure. |
+| Winset polygon representation | Manual (flat `x`/`y` vectors from `scs_winset_sample_boundary_2d`). Avoids `sf`/`shapely`. |
+| Yolk circle | Manual circle points via internal `_circle_pts` helper. Consistent across R and Python. |
+| Uncovered set boundary | Continuous boundary via `scs_uncovered_set_boundary_2d` (grid + convex hull internally). |
+| Color palette | Full theme system: `scl_palette()` + `scl_theme_colors()`. Default theme `"dark2"` (ColorBrewer). Five named themes including `"okabe_ito"` (colorblind-safe). All `layer_*()` functions accept `theme=`. |
+| Export formats | `save_plot(fig, path)` — HTML via `htmlwidgets::saveWidget()` / `fig.write_html()`; images via `plotly::save_image()` / `fig.write_image()` (kaleido required). |
+| Axis range | Auto-computed 12%-padded range from all plotted points. Override via `xlim`/`ylim` in `plot_spatial_voting()`. |
 
 ---
 
@@ -139,10 +140,10 @@ When a step is done, mark it ✅ Done and update [where_we_are.md](where_we_are.
 
 ## Unresolved Questions
 
-1. **Should we include 3D plotting?** (e.g., 3D scatter for N-D voter spaces) — Defer to Phase C13+.
-2. **Should we auto-detect yolk & uncovered set?** (i.e., compute them if not provided) — Yes, as an optional convenience.
-3. **Color scheme / colorblind palette:** — Use Viridis (R) and Plotly's default (Python) to start.
-4. **Export / save plots:** — Defer to Plotly's built-in export widget for now.
+1. **Should we include 3D plotting?** (e.g., 3D scatter for N-D voter spaces) — Deferred to ROADMAP (long-term, blocked on N-D geometry).
+2. **Should we auto-detect yolk & uncovered set?** ✅ Resolved — `layer_winset()` and `layer_uncovered_set()` accept `voters` + `sq` and compute geometry internally (C13.3).
+3. **Color scheme / colorblind palette:** ✅ Resolved — full theme system with five named themes including `"okabe_ito"` (C13.4).
+4. **Export / save plots:** ✅ Resolved — `save_plot(fig, path)` in both R and Python (C13.8).
 
 ---
 

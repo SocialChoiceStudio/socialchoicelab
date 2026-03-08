@@ -20,8 +20,8 @@ devtools::document()   # regenerate NAMESPACE + man pages
 devtools::install()    # reinstall the package
 
 library(socialchoicelab)
-library(plotly)
-library(listviewer)
+# library(plotly)
+# library(listviewer)
 # ---------------------------------------------------------------------------
 # Scenario data
 # ---------------------------------------------------------------------------
@@ -64,6 +64,4 @@ fig <- finalize_plot(fig)
 
 print(fig)
 
-print(fig)
-
-cat(plotly_json(fig, pretty = TRUE, jsonedit = FALSE))
+fig

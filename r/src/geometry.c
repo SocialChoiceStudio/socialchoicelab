@@ -1,5 +1,6 @@
 /* geometry.c — .Call() wrappers for:
  *   B3.5  Copeland scores/winner, Condorcet winner, core, uncovered set
+ *   B3.6  Centrality: marginal median, centroid, geometric mean
  *
  * All alternative indices are translated 0-based (C) ↔ 1-based (R) here.
  * The size-query pattern for uncovered_set_2d is hidden from R callers.
@@ -162,4 +163,49 @@ SEXP r_scs_uncovered_set_boundary_2d(SEXP voter_xy, SEXP dist_cfg,
     setAttrib(mat, R_DimNamesSymbol, dn);
     UNPROTECT(3);
     return mat;
+}
+
+/* ---------------------------------------------------------------------------
+ * Centrality measures — marginal median, centroid, geometric mean
+ *
+ * All three return list(x = numeric, y = numeric).
+ * --------------------------------------------------------------------------- */
+
+static SEXP make_xy_list(double x, double y) {
+    SEXP result = PROTECT(allocVector(VECSXP, 2));
+    SEXP names  = PROTECT(allocVector(STRSXP, 2));
+    SET_VECTOR_ELT(result, 0, ScalarReal(x));
+    SET_STRING_ELT(names,  0, mkChar("x"));
+    SET_VECTOR_ELT(result, 1, ScalarReal(y));
+    SET_STRING_ELT(names,  1, mkChar("y"));
+    setAttrib(result, R_NamesSymbol, names);
+    UNPROTECT(2);
+    return result;
+}
+
+SEXP r_scs_marginal_median_2d(SEXP voter_xy) {
+    int n_voters = (int)(XLENGTH(voter_xy) / 2);
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    double cx, cy;
+    scs_check(scs_marginal_median_2d(REAL(voter_xy), n_voters, &cx, &cy,
+                                     err, SCS_ERR_BUF_SIZE), err);
+    return make_xy_list(cx, cy);
+}
+
+SEXP r_scs_centroid_2d(SEXP voter_xy) {
+    int n_voters = (int)(XLENGTH(voter_xy) / 2);
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    double cx, cy;
+    scs_check(scs_centroid_2d(REAL(voter_xy), n_voters, &cx, &cy,
+                              err, SCS_ERR_BUF_SIZE), err);
+    return make_xy_list(cx, cy);
+}
+
+SEXP r_scs_geometric_mean_2d(SEXP voter_xy) {
+    int n_voters = (int)(XLENGTH(voter_xy) / 2);
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    double cx, cy;
+    scs_check(scs_geometric_mean_2d(REAL(voter_xy), n_voters, &cx, &cy,
+                                    err, SCS_ERR_BUF_SIZE), err);
+    return make_xy_list(cx, cy);
 }

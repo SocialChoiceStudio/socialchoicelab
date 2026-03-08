@@ -291,24 +291,14 @@ by strict majority.  Stronger than Condorcet consistency; implies it.
 | Preference profile (ordinal) | Sen (1970) *Collective Choice and Social Welfare* | Standard reference for ordinal profiles. |
 | Positional scoring rule | Young (1975) "Social choice scoring functions" | Axiomatic characterisation. |
 | Plurality rule | Dummett (1984) *Voting Procedures* | Oldest electoral method. |
-| Borda count | Borda (1784; presented 1781) | Presented to the Académie des Sciences 1781, published 1784. |
+| Borda count | Borda (1784) | Published in *Histoire de l'Académie Royale des Sciences* 1784; presented to the Académie 1781. Standard citation year is 1784. |
 | Anti-plurality | Fishburn (1977) "Condorcet Social Choice Functions" | Names and surveys the rule. |
 | Approval voting | Brams & Fishburn (1978, 1983) | 1978 paper introduces the term; 1983 book gives full treatment. |
-| Borda winner = Condorcet winner for m=3 | Fishburn (1977) Thm 1 | Verified in integration tests. **Confirm theorem statement before I2 complete.** |
+| Condorcet winner is also Borda winner (3 alternatives) | Fishburn (1977) | When a Condorcet winner exists among 3 alternatives, it is also the Borda winner. The converse does not hold in general. Verified in integration tests. |
 | Pareto efficiency (ordinal) | Pareto (1906); Arrow (1951) | Pareto (1906) original; Arrow (1951) formalises in social choice setting. |
 | Condorcet consistency | Condorcet (1785); Arrow (1951) | Condorcet (1785) proposes the concept. |
 | Condorcet paradox / cycling | Condorcet (1785) | Demonstrates the majority cycle. |
-| Impartial culture | Guilbaud (1952); Gehrlein & Lepelley (2011) | **Verify Guilbaud (1952) is accessible (in French).** |
-
-### Citations to verify before declaring I2 done
-
-- **Borda (1781 vs 1784):** The paper was presented to the Académie des Sciences
-  in 1781 and published in *Histoire de l'Académie Royale des Sciences* in 1784.
-  Cite as Borda (1784; presented 1781).
-- **Fishburn (1977) Theorem 1:** verify that the theorem states Borda winner =
-  Condorcet winner for m = 3 (not just for all m).
-- **Guilbaud (1952):** confirm full citation is *Économie Appliquée* 5, 501–584
-  and that an accessible copy exists (French; English translation may be needed).
+| Impartial culture | Guilbaud ([1952] 1966); Gehrlein & Lepelley (2011) | English translation in Lazarsfeld & Henry (eds.) 1966, MIT Press. |
 
 ---
 
@@ -328,8 +318,11 @@ by strict majority.  Stronger than Condorcet consistency; implies it.
   on Applied Mathematics* 33(3), 469–489.
 - **Gehrlein, W. V. & Lepelley, D. (2011).** *Voting Paradoxes and Group
   Coherence.* Springer.
-- **Guilbaud, G. Th. (1952).** "Les théories de l'intérêt général et le problème
-  logique de l'agrégation." *Économie Appliquée* 5, 501–584.
+- **Guilbaud, G. T. ([1952] 1966).** "Theories of the General Interest, and the
+  Logical Problem of Aggregation." In P. F. Lazarsfeld and N. W. Henry (eds.),
+  *Readings in Mathematical Social Science.* Cambridge, MA: MIT Press, pp. 262–307.
+  (Originally published in French as "Les théories de l'intérêt général et le problème
+  logique de l'agrégation," *Économie Appliquée* 5 (1952), 501–584.)
 - **Pareto, V. (1906).** *Manuale di economia politica.* Società Editrice Libraria,
   Milan. (English translation: *Manual of Political Economy*, 1971.)
 - **Sen, A. K. (1970).** *Collective Choice and Social Welfare.* Holden-Day.

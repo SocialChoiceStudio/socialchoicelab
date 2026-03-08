@@ -12,6 +12,7 @@ Covers:
   has_condorcet_winner_2d, condorcet_winner_2d,
   core_2d, uncovered_set_2d,
   uncovered_set_boundary_2d                        (B5)
+- marginal_median_2d, centroid_2d, geometric_mean_2d (B5 centrality)
 - plurality_*, borda_*, antiplurality_*,
   scoring_rule_*, approval_*                       (B5)
 - rank_by_scores, pairwise_ranking_from_matrix,
@@ -25,6 +26,7 @@ import numpy as np
 import pytest
 
 import socialchoicelab as scl
+from socialchoicelab._error import SCSInvalidArgumentError
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -412,3 +414,80 @@ def test_bad_tie_break_raises():
 def test_random_tie_break_without_stream_raises(spatial_profile):
     with pytest.raises(ValueError, match="StreamManager"):
         scl.borda_one_winner(spatial_profile, tie_break="random")
+
+
+# ---------------------------------------------------------------------------
+# Centrality measures
+# ---------------------------------------------------------------------------
+
+_CV3 = np.array([-1.0, 0.0,  0.0, 0.0,  1.0, 0.0])   # three voters on x-axis
+_GM2 = np.array([1.0, 2.0,  4.0, 8.0])                # two voters; geo-mean (2,4)
+
+
+def test_marginal_median_2d_returns_tuple():
+    result = scl.marginal_median_2d(_CV3)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+
+
+def test_marginal_median_2d_collinear():
+    x, y = scl.marginal_median_2d(_CV3)
+    assert abs(x - 0.0) < 1e-10
+    assert abs(y - 0.0) < 1e-10
+
+
+def test_marginal_median_2d_even_n_averages_middles():
+    # Four x-coords: -2,-1,1,2 → median = 0
+    voters = np.array([-2.0, 0.0,  -1.0, 0.0,  1.0, 0.0,  2.0, 0.0])
+    x, y = scl.marginal_median_2d(voters)
+    assert abs(x - 0.0) < 1e-10
+
+
+def test_marginal_median_2d_empty_raises():
+    with pytest.raises(SCSInvalidArgumentError):
+        scl.marginal_median_2d(np.array([]))
+
+
+def test_centroid_2d_returns_tuple():
+    result = scl.centroid_2d(_CV3)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+
+
+def test_centroid_2d_collinear():
+    x, y = scl.centroid_2d(_CV3)
+    assert abs(x - 0.0) < 1e-10
+    assert abs(y - 0.0) < 1e-10
+
+
+def test_centroid_2d_single_voter():
+    x, y = scl.centroid_2d(np.array([3.5, -7.2]))
+    assert abs(x - 3.5) < 1e-10
+    assert abs(y - (-7.2)) < 1e-10
+
+
+def test_centroid_2d_empty_raises():
+    with pytest.raises(SCSInvalidArgumentError):
+        scl.centroid_2d(np.array([]))
+
+
+def test_geometric_mean_2d_returns_tuple():
+    result = scl.geometric_mean_2d(_GM2)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+
+
+def test_geometric_mean_2d_correct_value():
+    x, y = scl.geometric_mean_2d(_GM2)
+    assert abs(x - 2.0) < 1e-10
+    assert abs(y - 4.0) < 1e-10
+
+
+def test_geometric_mean_2d_negative_coords_raises():
+    with pytest.raises(SCSInvalidArgumentError, match="strictly positive"):
+        scl.geometric_mean_2d(_CV3)  # _CV3 has x=-1 (non-positive)
+
+
+def test_geometric_mean_2d_empty_raises():
+    with pytest.raises(SCSInvalidArgumentError):
+        scl.geometric_mean_2d(np.array([]))

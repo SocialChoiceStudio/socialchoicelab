@@ -273,12 +273,6 @@ fig = sclp.plot_spatial_voting(
 fig = sclp.layer_winset(fig, ws)
 fig = sclp.layer_convex_hull(fig, hull)
 fig = sclp.layer_uncovered_set(fig, bnd)
-
-# Yolk: center approximated as centroid of voters; radius is a rough estimate
-voter_xy = voters.reshape(-1, 2)
-yolk_cx  = float(voter_xy[:, 0].mean())
-yolk_cy  = float(voter_xy[:, 1].mean())
-fig = sclp.layer_yolk(fig, center_x=yolk_cx, center_y=yolk_cy, radius=20.0)
 fig = sclp.finalize_plot(fig)
 
 fig.show()

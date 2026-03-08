@@ -560,6 +560,21 @@ _DECLARATIONS = """
                                                      int alt_idx, int* out,
                                                      char* err_buf,
                                                      int err_buf_len);
+
+    /* ---------------------------------------------------------------------------
+     * Centrality measures
+     * ------------------------------------------------------------------------- */
+    int scs_marginal_median_2d(const double* voter_ideals_xy, int n_voters,
+                               double* out_x, double* out_y,
+                               char* err_buf, int err_buf_len);
+
+    int scs_centroid_2d(const double* voter_ideals_xy, int n_voters,
+                        double* out_x, double* out_y,
+                        char* err_buf, int err_buf_len);
+
+    int scs_geometric_mean_2d(const double* voter_ideals_xy, int n_voters,
+                               double* out_x, double* out_y,
+                               char* err_buf, int err_buf_len);
 """
 
 

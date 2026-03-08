@@ -25,6 +25,7 @@
 #include <socialchoicelab/aggregation/scoring_rule.h>
 #include <socialchoicelab/aggregation/social_ranking.h>
 #include <socialchoicelab/aggregation/tie_break.h>
+#include <socialchoicelab/geometry/centrality.h>
 #include <socialchoicelab/geometry/convex_hull.h>
 #include <socialchoicelab/geometry/copeland.h>
 #include <socialchoicelab/geometry/core.h>
@@ -3128,6 +3129,112 @@ extern "C" int scs_is_selected_by_majority_consistent_rules(
                                                                 alt_idx)
                ? 1
                : 0;
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Centrality measures (C++ centrality.h)
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_marginal_median_2d(const double* voter_ideals_xy,
+                                      int n_voters, double* out_x,
+                                      double* out_y, char* err_buf,
+                                      int err_buf_len) {
+  if (!voter_ideals_xy || !out_x || !out_y) {
+    set_error(err_buf, err_buf_len,
+              "scs_marginal_median_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_voters < 1) {
+    set_error(err_buf, err_buf_len,
+              ("scs_marginal_median_2d: n_voters must be >= 1 (got " +
+               std::to_string(n_voters) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto voters = build_voters(voter_ideals_xy, n_voters);
+    auto pt = socialchoicelab::geometry::marginal_median_2d(voters);
+    *out_x = pt.x();
+    *out_y = pt.y();
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_centroid_2d(const double* voter_ideals_xy, int n_voters,
+                               double* out_x, double* out_y, char* err_buf,
+                               int err_buf_len) {
+  if (!voter_ideals_xy || !out_x || !out_y) {
+    set_error(err_buf, err_buf_len, "scs_centroid_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_voters < 1) {
+    set_error(err_buf, err_buf_len,
+              ("scs_centroid_2d: n_voters must be >= 1 (got " +
+               std::to_string(n_voters) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto voters = build_voters(voter_ideals_xy, n_voters);
+    auto pt = socialchoicelab::geometry::centroid_2d(voters);
+    *out_x = pt.x();
+    *out_y = pt.y();
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_geometric_mean_2d(const double* voter_ideals_xy,
+                                     int n_voters, double* out_x, double* out_y,
+                                     char* err_buf, int err_buf_len) {
+  if (!voter_ideals_xy || !out_x || !out_y) {
+    set_error(err_buf, err_buf_len,
+              "scs_geometric_mean_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_voters < 1) {
+    set_error(err_buf, err_buf_len,
+              ("scs_geometric_mean_2d: n_voters must be >= 1 (got " +
+               std::to_string(n_voters) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto voters = build_voters(voter_ideals_xy, n_voters);
+    auto pt = socialchoicelab::geometry::geometric_mean_2d(voters);
+    *out_x = pt.x();
+    *out_y = pt.y();
     return SCS_OK;
   } catch (const std::invalid_argument& e) {
     set_error(err_buf, err_buf_len, e.what());

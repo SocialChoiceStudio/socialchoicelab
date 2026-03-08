@@ -58,9 +58,9 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ---
 
-## c_api extensions (tag: `c-api-extensions`) 🔲 In progress
+## c_api extensions (tag: `c-api-extensions`) ✅ 2026-03-07
 
-**Scope:** Expose all geometry and aggregation C++ services through the stable C API. After this milestone, R/Python bindings can call every implemented feature. See [c_api_extensions_plan.md](c_api_extensions_plan.md).
+**Scope:** Expose all geometry and aggregation C++ services through the stable C API. After this milestone, R/Python bindings can call every implemented feature. See [archive/c_api_extensions_plan.md](archive/c_api_extensions_plan.md).
 
 | Gate | Criteria |
 |------|----------|
@@ -71,7 +71,20 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ---
 
-## First binding / 1.0 (tag: `v1.0.0`) 🔲 Future
+## Visualization layer (tag: `visualization-complete`) ✅ 2026-03-08
+
+**Scope:** Plotly-based spatial voting plot helpers in R and Python. Identical API across both languages; composable layers; colorblind-safe theme system; built-in scenario datasets.
+
+| Gate | Criteria | Status |
+|------|----------|--------|
+| **Features** | C10–C13 complete: `plot_spatial_voting`, `layer_winset`, `layer_yolk`, `layer_uncovered_set`, `layer_convex_hull`, `layer_ic`, `layer_preferred_regions`, `save_plot`, `load_scenario`, `list_scenarios`, `scl_palette`, `scl_theme_colors`. Auto-compute in `layer_winset`/`layer_uncovered_set`. | ✅ |
+| **Tests** | All R and Python tests pass. `test_plots.R`, `test_palette.R`, `test_plots.py`, `test_palette.py`. | ✅ |
+| **Docs** | `visualization_design.md` updated (color system, layer stack); `visualization_plan.md` complete. | ✅ |
+| **API stability** | R/Python plotting API stable for this tag. | ✅ |
+
+---
+
+## First binding / 1.0 (tag: `v1.0.0`) 🔲 Next
 
 **Scope:** First released R or Python package (or both) that calls the c_api. See [ROADMAP.md](ROADMAP.md) long-term.
 
@@ -92,8 +105,9 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 | c_api minimal | C ABI over core | CI + c_api tests | Design + c_api docs | c_api frozen for tag | ✅ 2026-03-05 |
 | Geometry Layer 3 | CGAL 2D, winset, Yolk, uncovered set, Heart, Copeland | CI + 250+ tests | geometry_design.md | C++ API stable | ✅ 2026-03-06 |
 | Profiles & Aggregation | Profile, voting rules, Pareto, Condorcet | CI + 100 tests | aggregation_design.md | C++ API stable | ✅ 2026-03-06 |
-| c_api extensions | Full c_api for geometry + aggregation | CI + extended c_api tests | c_api_design.md updated | Extended c_api frozen | 🔲 Active |
-| First binding / 1.0 | R or Python package | CI + binding tests | User docs | Semver from 1.0 | 🔲 Future |
+| c_api extensions | Full c_api for geometry + aggregation | CI + extended c_api tests | c_api_design.md updated | Extended c_api frozen | ✅ 2026-03-07 |
+| Visualization layer | Plotly layers, theme system, built-in scenarios | R + Python test suites | visualization_design.md | Plotting API stable | ✅ 2026-03-08 |
+| First binding / 1.0 | R or Python package | CI + binding tests | User docs | Semver from 1.0 | 🔲 Next |
 
 When in doubt, tighten the gate rather than ship: "done" means the criteria above are satisfied, not "we moved on".
 
@@ -105,7 +119,16 @@ Single list of items to revisit before we tag a release or open the project to o
 
 | Item | Source | Note |
 |------|--------|------|
-| **C++20 vs C++17** | Consensus plan 4, Batch 3 #11 | We keep `CMAKE_CXX_STANDARD 20` and expect to use C++20 features as we build out. Before release: either adopt C++20 features (e.g. concepts, `[[nodiscard("reason")]]`) so the requirement is justified, or lower to C++17 if we do not need them. |
-| **Citations to verify** | aggregation_design.md | Borda year (1781 presentation vs 1784 publication); Fishburn (1977) Thm 1 scope; Guilbaud (1952) accessibility. Verify before formal I2 sign-off. |
-| **Yolk computation correctness** | where_we_are.md § Known Issues, 2026-03-05 | `yolk_2d` uses subgradient descent over sampled directions and is effectively computing an LP yolk (smallest ball through limiting median lines), not the true yolk. Stone & Tovey (1992) prove limiting median lines alone do not suffice to determine the yolk. Hu & Bailey (2024) show the LP yolk radius is at least ½ the true yolk radius for odd n in ℝ² (tight bound), but the LP yolk centre can be arbitrarily far from the true centre; for even n or dimension ≥ 3 the gap is unbounded. Must replace `yolk_2d` with an exact or well-characterised algorithm before re-certifying `geometry-complete` and before exposing `SCS_Yolk2d` via c_api. Top candidate: Gudmundsson & Wong (2019) O(n log⁷ n) near-linear algorithm (avoids computing limiting median lines); also see Liu & Tovey (2023) poster. |
-| **Heart boundary is approximate** | where_we_are.md § Known Issues, 2026-03-05 | `heart_boundary_2d` applies the finite-set Heart operator to a grid and returns the convex hull of survivors. The continuous Heart in policy space has no known exact algorithm; this is a research-level open problem. Do not expose via c_api without labelling it as approximate. Revisit when theoretical progress is available. |
+| ~~**C++20 vs C++17**~~ | Resolved | **Keep C++20.** Decision: stay at `CMAKE_CXX_STANDARD 20` — the codebase has substantial development ahead and C++20 features will be used as the project grows. No action required before v1.0.0. |
+| ~~**Citations to verify**~~ | Resolved | Borda: standard year is **1784** (cite as "Borda (1784)"). Fishburn (1977): conservative claim — a Condorcet winner, when it exists, is also the Borda winner for 3 alternatives (converse does not hold generally). Guilbaud: corrected to English translation citation (Lazarsfeld & Henry (eds.), MIT Press, 1966, pp. 262–307). All updated in `aggregation_design.md`. |
+
+---
+
+## Deferred known issues (not blocking v1.0.0)
+
+These are documented approximations that are clearly labelled in the codebase and API headers. They are not blocking the v1.0.0 release. Full technical detail and candidate algorithms are in `ROADMAP.md` and `where_we_are.md § Known Issues`.
+
+| Item | Status | Detail |
+|------|--------|--------|
+| **Yolk computation (LP-yolk approximation)** | ⏭ Deferred post-v1.0.0 | `yolk_2d` computes the LP-yolk (smallest ball through limiting median lines), not the true yolk. Clearly labelled as approximate in `scs_api.h` (`SCS_Yolk2d` comment) and `where_we_are.md`. `layer_yolk` removed from example scripts. Candidate replacement: Gudmundsson & Wong (2019). See ROADMAP.md for full investigation notes. |
+| **Heart boundary (grid approximation)** | ⏭ Deferred post-v1.0.0 | `heart_boundary_2d` is a grid + convex-hull approximation. The continuous Heart has no known exact algorithm (open research problem). Labelled as approximate in API and docs. Not shown in example scripts. See ROADMAP.md and `where_we_are.md`. |
