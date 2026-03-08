@@ -115,6 +115,20 @@ reference:
       - layer_yolk
       - layer_uncovered_set
       - layer_convex_hull
+      - layer_centroid
+      - layer_marginal_median
+      - layer_ic
+      - layer_preferred_regions
+      - centroid_2d
+      - marginal_median_2d
+      - geometric_mean_2d
+      - scl_theme_colors
+      - scl_palette
+      - .PALETTE_HEX
+      - finalize_plot
+      - save_plot
+      - list_scenarios
+      - load_scenario
 
   - title: "Stream Manager"
     desc: "Reproducible pseudo-random number streams."
