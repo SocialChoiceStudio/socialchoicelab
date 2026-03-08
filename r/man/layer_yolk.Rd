@@ -9,9 +9,10 @@ layer_yolk(
   center_x,
   center_y,
   radius,
-  fill_color = "rgba(210,50,50,0.22)",
-  line_color = "rgba(210,50,50,0.70)",
-  name = "Yolk"
+  fill_color = NULL,
+  line_color = NULL,
+  name = "Yolk",
+  theme = "dark2"
 )
 }
 \arguments{
@@ -21,18 +22,19 @@ layer_yolk(
 
 \item{radius}{Yolk radius (same units as the plot axes).}
 
-\item{fill_color}{Fill colour (CSS rgba string). Default: light red.}
+\item{fill_color}{Fill colour (CSS rgba). \code{NULL} uses the theme default.}
 
-\item{line_color}{Outline colour (CSS rgba string). Default: medium red.}
+\item{line_color}{Outline colour (CSS rgba). \code{NULL} uses the theme default.}
 
 \item{name}{Legend entry label.}
+
+\item{theme}{Colour theme — see \code{\link{plot_spatial_voting}}.}
 }
 \value{
 The updated plotly figure.
 }
 \description{
-Draws the yolk as a filled circle. Provide the center and radius
-obtained from \code{yolk_2d()} (when exposed) or computed separately.
+Draws the yolk as a filled circle.
 }
 \examples{
 \dontrun{

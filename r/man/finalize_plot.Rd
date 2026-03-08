@@ -7,31 +7,20 @@
 finalize_plot(fig)
 }
 \arguments{
-\item{fig}{A plotly figure built with \code{\link{plot_spatial_voting}} and
-one or more \code{layer_*} functions.}
+\item{fig}{A plotly figure.}
 }
 \value{
-The same plotly figure with traces reordered.
+The same plotly figure unchanged.
 }
 \description{
-Reorders all traces in a figure so that area fills (winset, yolk, etc.)
-appear below voter ideal points and the status quo, regardless of the
-sequence in which \code{layer_*} functions were called.
-}
-\details{
-The canonical order is defined in \code{docs/development/visualization_design.md}.
-Traces whose \code{name} / \code{legendgroup} is not in the table are placed
-between cut lines (z=7) and voter points (z=8).
+Layer ordering is handled natively via the \code{zorder} attribute on each
+trace. This function is kept for API compatibility.
 }
 \examples{
 \dontrun{
 voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6)
 sq     <- c(0.0, 0.0)
-ws     <- winset_2d(sq, voters)
-hull   <- convex_hull_2d(voters)
 fig <- plot_spatial_voting(voters, sq = sq)
-fig <- layer_winset(fig, ws)
-fig <- layer_convex_hull(fig, hull)
 fig <- finalize_plot(fig)
 print(fig)
 }

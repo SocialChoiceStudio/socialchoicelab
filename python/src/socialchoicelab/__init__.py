@@ -105,4 +105,10 @@ from socialchoicelab.scenarios import (  # noqa: F401
     load_scenario,
 )
 
+# C13.4 — Palette and theme utilities (also accessible via socialchoicelab.plots)
+from socialchoicelab.palette import (  # noqa: F401
+    scl_palette,
+    scl_theme_colors,
+)
+
 __version__ = "0.1.0"

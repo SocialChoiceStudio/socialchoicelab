@@ -7,37 +7,39 @@
 layer_convex_hull(
   fig,
   hull_xy,
-  fill_color = "rgba(130,80,190,0.12)",
-  line_color = "rgba(130,80,190,0.55)",
-  name = "Convex Hull"
+  fill_color = NULL,
+  line_color = NULL,
+  name = "Convex Hull",
+  theme = "dark2"
 )
 }
 \arguments{
 \item{fig}{A plotly figure from \code{\link{plot_spatial_voting}}.}
 
-\item{hull_xy}{Numeric matrix (n_hull \eqn{\times} 2) with columns
-\code{x} and \code{y}, as returned by \code{\link{convex_hull_2d}}.}
+\item{hull_xy}{Numeric matrix (n_hull × 2) with columns \code{x} and
+\code{y}, as returned by \code{\link{convex_hull_2d}}.}
 
-\item{fill_color}{Fill colour (CSS rgba string). Default: light purple.}
+\item{fill_color}{Fill colour (CSS rgba). \code{NULL} uses the theme default.}
 
-\item{line_color}{Outline colour (CSS rgba string). Default: medium purple.}
+\item{line_color}{Outline colour (CSS rgba). \code{NULL} uses the theme default.}
 
 \item{name}{Legend entry label.}
+
+\item{theme}{Colour theme — see \code{\link{plot_spatial_voting}}.}
 }
 \value{
 The updated plotly figure.
 }
 \description{
-Overlays the convex hull boundary, as returned by
-\code{\link{convex_hull_2d}}. If the hull is empty the figure is returned
-unchanged.
+Overlays the convex hull boundary. If the hull is empty the figure is
+returned unchanged.
 }
 \examples{
 \dontrun{
 voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6,  -0.4, 0.8,  0.5, -0.7)
 hull <- convex_hull_2d(voters)
-fig <- plot_spatial_voting(voters, c(0.0, 0.0))
-fig <- layer_convex_hull(fig, hull)
+fig  <- plot_spatial_voting(voters)
+fig  <- layer_convex_hull(fig, hull)
 fig
 }
 }

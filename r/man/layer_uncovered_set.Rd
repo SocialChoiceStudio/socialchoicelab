@@ -6,38 +6,46 @@
 \usage{
 layer_uncovered_set(
   fig,
-  boundary_xy,
-  fill_color = "rgba(50,180,80,0.18)",
-  line_color = "rgba(30,150,60,0.65)",
-  name = "Uncovered Set"
+  boundary_xy = NULL,
+  fill_color = NULL,
+  line_color = NULL,
+  name = "Uncovered Set",
+  voters = NULL,
+  grid_resolution = 20L,
+  theme = "dark2"
 )
 }
 \arguments{
 \item{fig}{A plotly figure from \code{\link{plot_spatial_voting}}.}
 
-\item{boundary_xy}{Numeric matrix (n_pts \eqn{\times} 2) with columns
-\code{x} and \code{y}, as returned by
-\code{\link{uncovered_set_boundary_2d}}.}
+\item{boundary_xy}{Numeric matrix (n_pts × 2) with columns \code{x} and
+\code{y}, or \code{NULL} for auto-compute.}
 
-\item{fill_color}{Fill colour (CSS rgba string). Default: semi-transparent green.}
+\item{fill_color}{Fill colour (CSS rgba). \code{NULL} uses the theme default.}
 
-\item{line_color}{Outline colour (CSS rgba string). Default: medium green.}
+\item{line_color}{Outline colour (CSS rgba). \code{NULL} uses the theme default.}
 
 \item{name}{Legend entry label.}
+
+\item{voters}{Flat voter vector (required when \code{boundary_xy = NULL}).}
+
+\item{grid_resolution}{Integer grid resolution for auto-compute (default 20).}
+
+\item{theme}{Colour theme — see \code{\link{plot_spatial_voting}}.}
 }
 \value{
 The updated plotly figure.
 }
 \description{
-Overlays the approximate boundary of the continuous uncovered set, as
-returned by \code{\link{uncovered_set_boundary_2d}}. If the boundary is
-empty the figure is returned unchanged.
+Overlays the approximate uncovered set boundary. Pass either a pre-computed
+matrix or raw \code{voters} for auto-compute. Returns the figure unchanged
+if the boundary is empty.
 }
 \examples{
 \dontrun{
 voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6,  -0.4, 0.8,  0.5, -0.7)
 bnd <- uncovered_set_boundary_2d(voters, grid_resolution = 10L)
-fig <- plot_spatial_voting(voters, c(0.0, 0.0))
+fig <- plot_spatial_voting(voters)
 fig <- layer_uncovered_set(fig, bnd)
 fig
 }

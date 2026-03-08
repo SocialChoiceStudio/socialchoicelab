@@ -6,38 +6,46 @@
 \usage{
 layer_winset(
   fig,
-  winset,
-  fill_color = "rgba(100,150,255,0.28)",
-  line_color = "rgba(50,100,220,0.80)",
-  name = "Winset"
+  winset = NULL,
+  fill_color = NULL,
+  line_color = NULL,
+  name = "Winset",
+  voters = NULL,
+  sq = NULL,
+  theme = "dark2"
 )
 }
 \arguments{
 \item{fig}{A plotly figure from \code{\link{plot_spatial_voting}}.}
 
-\item{winset}{A \code{\link{Winset}} object.}
+\item{winset}{A \code{\link{Winset}} object, or \code{NULL} for auto-compute.}
 
-\item{fill_color}{Fill colour (CSS rgba string). Default: light blue.}
+\item{fill_color}{Fill colour (CSS rgba). \code{NULL} uses the theme default.}
 
-\item{line_color}{Outline colour (CSS rgba string). Default: medium blue.}
+\item{line_color}{Outline colour (CSS rgba). \code{NULL} uses the theme default.}
 
 \item{name}{Legend entry label.}
+
+\item{voters}{Flat voter vector (required when \code{winset = NULL}).}
+
+\item{sq}{Status quo \code{c(x, y)} (required when \code{winset = NULL}).}
+
+\item{theme}{Colour theme — see \code{\link{plot_spatial_voting}}.}
 }
 \value{
 The updated plotly figure.
 }
 \description{
-Overlays the boundary of a \code{\link{Winset}} object onto a base plot
-from \code{\link{plot_spatial_voting}}. If the winset is empty the figure
-is returned unchanged.
+Overlays the majority-rule winset boundary. Pass either a pre-computed
+\code{\link{Winset}} object or raw \code{voters} and \code{sq} for
+auto-compute. If the winset is empty the figure is returned unchanged.
 }
 \examples{
 \dontrun{
 voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6,  -0.4, 0.8,  0.5, -0.7)
-alts   <- c(0.0,  0.0)
 sq     <- c(0.0,  0.0)
 ws  <- winset_2d(sq, voters)
-fig <- plot_spatial_voting(voters, alts, sq = sq)
+fig <- plot_spatial_voting(voters, sq = sq)
 fig <- layer_winset(fig, ws)
 fig
 }

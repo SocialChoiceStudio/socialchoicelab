@@ -1,8 +1,7 @@
-# test_plots.py — C11.3: Unit tests for spatial voting visualization helpers.
-#
-# All tests that call the C library use fixtures that load libscs_api.
-# Tests of pure Python plotting logic (layer_yolk, composition with synthetic
-# data) can run without the library.
+# test_plots.py — C10/C13: Unit tests for spatial voting visualization helpers.
+
+import os
+import tempfile
 
 import numpy as np
 import pytest
@@ -10,17 +9,16 @@ import pytest
 plotly = pytest.importorskip("plotly")
 import plotly.graph_objects as go  # noqa: E402
 
-import socialchoicelab as scl  # noqa: E402  (requires libscs_api)
+import socialchoicelab as scl  # noqa: E402
 import socialchoicelab.plots as sclp  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Fixtures
+# Shared data
 # ---------------------------------------------------------------------------
 
 VOTERS = np.array([-1.0, -0.5,  0.0,  0.0,  0.8,  0.6, -0.4,  0.8,  0.5, -0.7])
 ALTS   = np.array([ 0.0,  0.0,  0.6,  0.4, -0.5,  0.3])
 SQ     = np.array([ 0.0,  0.0])
-
 
 # ---------------------------------------------------------------------------
 # plot_spatial_voting
@@ -54,6 +52,29 @@ def test_plot_spatial_voting_custom_dimensions():
     assert isinstance(fig, go.Figure)
 
 
+def test_plot_spatial_voting_explicit_xlim_ylim():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, xlim=[-2, 2], ylim=[-2, 2])
+    assert isinstance(fig, go.Figure)
+    assert tuple(fig.layout.xaxis.range) == (-2, 2)
+    assert tuple(fig.layout.yaxis.range) == (-2, 2)
+
+
+def test_plot_spatial_voting_auto_range_set():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    assert isinstance(fig, go.Figure)
+    assert fig.layout.xaxis.range is not None
+
+
+def test_plot_spatial_voting_no_alternatives():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    assert isinstance(fig, go.Figure)
+
+
+def test_plot_spatial_voting_show_labels():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, show_labels=True)
+    assert isinstance(fig, go.Figure)
+
+
 # ---------------------------------------------------------------------------
 # layer_yolk  (no C library needed)
 # ---------------------------------------------------------------------------
@@ -65,10 +86,12 @@ def test_layer_yolk_returns_figure():
     assert isinstance(fig, go.Figure)
 
 
-def test_layer_yolk_custom_color():
+def test_layer_yolk_custom_colors():
     fig = sclp.plot_spatial_voting(VOTERS[:4], ALTS[:2])
     fig = sclp.layer_yolk(fig, 0.0, 0.0, 0.5,
-                          color="rgba(0,0,255,0.4)", name="Yolk approx.")
+                          fill_color="rgba(0,0,255,0.2)",
+                          line_color="rgba(0,0,255,0.8)",
+                          name="Yolk approx.")
     assert isinstance(fig, go.Figure)
 
 
@@ -114,6 +137,18 @@ def test_layer_uncovered_set_empty():
     assert len(fig.data) == n_before
 
 
+def test_layer_uncovered_set_auto_compute():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS)
+    fig = sclp.layer_uncovered_set(fig, voters=VOTERS, grid_resolution=8)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_uncovered_set_error_no_args():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS)
+    with pytest.raises(ValueError, match="boundary_xy"):
+        sclp.layer_uncovered_set(fig)
+
+
 # ---------------------------------------------------------------------------
 # layer_winset
 # ---------------------------------------------------------------------------
@@ -136,6 +171,108 @@ def test_layer_winset_empty():
     assert len(fig.data) == n_before
 
 
+def test_layer_winset_auto_compute():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_winset_error_no_args():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    with pytest.raises(ValueError, match="voters"):
+        sclp.layer_winset(fig)
+
+
+# ---------------------------------------------------------------------------
+# layer_ic
+# ---------------------------------------------------------------------------
+
+
+def test_layer_ic_returns_figure():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.layer_ic(fig, VOTERS, SQ)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_ic_adds_traces_per_voter():
+    voters = VOTERS[:6]  # 3 voters
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    n_before = len(fig.data)
+    fig = sclp.layer_ic(fig, voters, SQ)
+    assert isinstance(fig, go.Figure)
+    assert len(fig.data) == n_before + 3  # one circle per voter
+
+
+def test_layer_ic_color_by_voter():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.layer_ic(fig, VOTERS, SQ, color_by_voter=True)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_ic_with_fill():
+    voters = VOTERS[:6]
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    fig = sclp.layer_ic(fig, voters, SQ, fill_color="rgba(150,150,200,0.08)")
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_ic_custom_voter_names():
+    voters = VOTERS[:6]
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    fig = sclp.layer_ic(fig, voters, SQ, voter_names=["Alice", "Bob", "Carol"])
+    assert isinstance(fig, go.Figure)
+
+
+# ---------------------------------------------------------------------------
+# layer_preferred_regions
+# ---------------------------------------------------------------------------
+
+
+def test_layer_preferred_regions_returns_figure():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.layer_preferred_regions(fig, VOTERS, SQ)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_preferred_regions_adds_traces():
+    voters = VOTERS[:6]  # 3 voters
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    n_before = len(fig.data)
+    fig = sclp.layer_preferred_regions(fig, voters, SQ)
+    assert isinstance(fig, go.Figure)
+    assert len(fig.data) == n_before + 3
+
+
+def test_layer_preferred_regions_color_by_voter():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.layer_preferred_regions(fig, VOTERS, SQ, color_by_voter=True)
+    assert isinstance(fig, go.Figure)
+
+
+# ---------------------------------------------------------------------------
+# save_plot
+# ---------------------------------------------------------------------------
+
+
+def test_save_plot_html():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:
+        path = f.name
+    try:
+        result = sclp.save_plot(fig, path)
+        assert result == path
+        assert os.path.exists(path)
+        assert os.path.getsize(path) > 0
+    finally:
+        os.unlink(path)
+
+
+def test_save_plot_unsupported_extension():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    with pytest.raises(ValueError, match="unsupported file extension"):
+        sclp.save_plot(fig, "output.xyz")
+
+
 # ---------------------------------------------------------------------------
 # Full composition
 # ---------------------------------------------------------------------------
@@ -147,10 +284,13 @@ def test_full_composition():
     bnd  = scl.uncovered_set_boundary_2d(VOTERS, grid_resolution=8)
 
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, title="Composition Test")
-    fig = sclp.layer_winset(fig, ws)
-    fig = sclp.layer_uncovered_set(fig, bnd)
+    fig = sclp.layer_ic(fig, VOTERS, SQ)
+    fig = sclp.layer_preferred_regions(fig, VOTERS, SQ)
     fig = sclp.layer_convex_hull(fig, hull)
+    fig = sclp.layer_uncovered_set(fig, bnd)
     fig = sclp.layer_yolk(fig, 0.1, 0.05, 0.3)
+    fig = sclp.layer_winset(fig, ws)
+    fig = sclp.finalize_plot(fig)
 
     assert isinstance(fig, go.Figure)
-    assert len(fig.data) >= 5
+    assert len(fig.data) >= 7

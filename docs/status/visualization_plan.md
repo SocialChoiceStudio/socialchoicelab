@@ -51,29 +51,34 @@ When a step is done, mark it ✅ Done and update [where_we_are.md](where_we_are.
 
 ---
 
-### C13: Visualization Refinements (planned, not started)
+### C13: Visualization Refinements ✅ Done (C13.A–C13.8)
 
 **Goal:** Polish the plotting layer based on real-scenario feedback and add missing capabilities.
 
-Known items (add more as they arise):
+- ✅ **C13.A** Standard built-in scenario datasets with convenience functions.
+  - JSON format designed (metadata + voters + SQ + decision rule + axis labels).
+  - 33 built-in scenarios stored in R `inst/extdata/scenarios/` and Python `src/socialchoicelab/data/scenarios/`.
+  - `load_scenario(name)` and `list_scenarios()` in both R and Python; users never see JSON.
+  - Full unit test coverage (R + Python).
+  - Dev/test scripts updated to use `load_scenario()`.
 
-- [ ] **C13.A** (New, C13.B moved up) Standard built-in scenario datasets with convenience functions.
-  - ✅ JSON format designed (metadata + voters + SQ + decision rule + axis labels).
-  - ✅ Built-in scenarios: `laing_olmsted_bear` and `tovey_regular_polygon` stored in R `inst/extdata/scenarios/` and Python `src/socialchoicelab/data/scenarios/`.
-  - ✅ `load_scenario(name)` convenience function in both R and Python; users never see JSON.
-  - ✅ `list_scenarios()` helper to discover available scenarios.
-  - ✅ Full unit test coverage (R + Python).
-  - ✅ Dev/test scripts (`devScript_MAIN.R/.py`, `TestScript_11_Tovey.R/.py`) updated to use `load_scenario()`.
-  
-- [ ] **C13.1** Load scenario from external `.txt` file format — helper function `read_scenario(path)` returning `list(voters, sq, dim_names)` in R and Python. **[MOVED TO ROADMAP — implement after C13.A complete]**
-- [ ] **C13.2** Individual voter indifference curves (circles centred at each ideal point with radius = distance to SQ) as a `layer_indifference_curves()` function.
-- [ ] **C13.3** Auto-compute optional layers when not pre-computed (e.g. compute winset/uncovered set inside the layer function if a `Winset` object is not passed).
-- [ ] **C13.4** Colorblind-safe default palette; consistent colour system across all layers.
-- [ ] **C13.5** Axis range auto-set to the data extent (with padding) rather than Plotly default; expose `xlim`/`ylim` args.
-- [ ] **C13.6** Voter preferred-to regions — filled circles showing which policies each voter prefers to the SQ (`layer_preferred_regions()`).
-- [ ] **C13.7** Shapley-Owen power index annotation (bar chart or bubble size) once `scs_shapley_owen` is exposed in the C API.
-- [ ] **C13.8** Export helpers: `save_plot(fig, path)` wrapping `plotly::save_image()` / `fig.write_html()` consistently in both R and Python.
-- [ ] **C13.9** Gallery notebook: realistic scenarios (Laing-Olmsted-Bear and others) with all layers shown side-by-side.
+- ⏭ **C13.1** Load scenario from external file — moved to ROADMAP (external CSV/JSON format TBD).
+
+- ✅ **C13.2** `layer_ic(fig, voters, sq, color_by_voter=FALSE)` — individual voter indifference curves (circles centred at each ideal point, radius = distance to SQ). Dash: `"dot"`. Uniform or per-voter Okabe-Ito colour. R + Python.
+
+- ✅ **C13.3** Auto-compute in `layer_winset()` and `layer_uncovered_set()` — pass `voters` + `sq` (or `voters` alone) and the layer function computes the geometry internally. Both R and Python.
+
+- ⏭ **C13.4** Colorblind-safe default palette — Okabe-Ito palette defined as internal helper `_okabe_ito_cycle()` in both R and Python; used for `color_by_voter` mode. Full audit of all layer defaults deferred to a future design pass (see `visualization_design.md`).
+
+- ✅ **C13.5** `xlim`/`ylim` in `plot_spatial_voting()` — auto-computes a 12%-padded range from all plotted points; explicit `xlim`/`ylim` args override.
+
+- ✅ **C13.6** `layer_preferred_regions(fig, voters, sq, color_by_voter=FALSE)` — filled circles showing the preferred-to-SQ region for each voter. R + Python.
+
+- ⏭ **C13.7** Shapley-Owen annotation — blocked on C API exposure. Deferred to ROADMAP.
+
+- ✅ **C13.8** `save_plot(fig, path)` — HTML export via `htmlwidgets::saveWidget()` / `fig.write_html()`; image export via `plotly::save_image()` / `fig.write_image()` (requires kaleido). Clear error messages when kaleido is missing. R + Python.
+
+- ⏭ **C13.9** Gallery notebook — deferred; `devScript_MAIN.R/.py` and `TestScript_11_Tovey.R/.py` serve as the current scenario gallery. A dedicated gallery page is a documentation task for a future milestone.
 
 **When to start C13:** After at least one full scenario has been plotted end-to-end in both R and Python and user feedback on the current API has been collected.
 
@@ -122,7 +127,7 @@ Known items (add more as they arise):
 | C11 | Python mirror | 1–2 days | ✅ Done |
 | C11 | Python notebook & tests | 1 day | ✅ Done |
 | C12 | CI integration & polish | 1 day | ✅ Done |
-| C13 | Visualization refinements | TBD | ⏳ Planned |
+| C13 | Visualization refinements | ~3 days | ✅ Done (C13.A–C13.8) |
 
 ---
 
