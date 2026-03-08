@@ -2,35 +2,32 @@
 # ============================================================================
 # This script demonstrates user-facing functions across all major categories.
 # Run in RStudio with devtools::load_all() or library(socialchoicelab).
-
-# Note after any change to the R Package run the following at the 
-# console before running script commands: devtools::install()
+#
+# Scenario: Laing-Olmsted-Bear (A_Group_05)
+#   Space:  0–200 × 0–200
+#   Rule:   Simple majority (0.5)
+#
+# After any change to the R package source, run at the console:
+   devtools::document()   # regenerate NAMESPACE + man pages
+   devtools::install()    # reinstall the package
 library(socialchoicelab)
 
 # ===========================================================================
 # 1. SETUP: Voter and alternative data in 2D policy space
 # ===========================================================================
 
-cat("\n=== 1. SETUP: Voter and Alternative Data ===\n")
+cat("\n=== 1. SETUP: Voter and Alternative Data (Laing-Olmsted-Bear) ===\n")
 
-# 5 voters in 2D (economic left-right × social liberal-conservative)
-voters <- c(
-  -1.0, -0.5,   # voter 1: left-economic, moderate-social
-   0.0,  0.0,   # voter 2: centrist
-   0.8,  0.6,   # voter 3: right-economic, conservative
-  -0.4,  0.8,   # voter 4: centre-left, liberal
-   0.5, -0.7    # voter 5: right-economic, libertarian
-)
+# Load the built-in scenario
+scenario <- load_scenario("laing_olmsted_bear")
 
-# 3 policy alternatives in 2D
-alts <- c(
-  0.0,  0.0,    # SQ: status quo (centroid)
-  0.6,  0.4,    # A: right-of-centre reform
- -0.5,  0.3     # B: left-of-centre reform
-)
+voters <- scenario$voters
+sq     <- scenario$status_quo
+alts   <- sq  # No other alternatives in this scenario
 
-cat("Voters (flat [x0, y0, x1, y1, ...]):\n", voters, "\n")
-cat("Alternatives (flat [x0, y0, x1, y1, ...]):\n", alts, "\n")
+cat("Scenario:", scenario$name, "\n")
+cat("Players (flat [x0, y0, x1, y1, ...]):\n", voters, "\n")
+cat("Status quo:", sq, "\n")
 
 # ===========================================================================
 # 2. DISTANCE & UTILITY FUNCTIONS
@@ -64,13 +61,15 @@ cat("Normalized utility (max_distance=5):", utility_norm, "\n")
 
 cat("\n=== 3. MAJORITY PREFERENCE ===\n")
 
-# Does a simple majority prefer alternative A over status quo?
-a_beats_sq <- majority_prefers_2d(c(0.6, 0.4), c(0.0, 0.0), voters)
-b_beats_sq <- majority_prefers_2d(c(-0.5, 0.3), c(0.0, 0.0), voters)
+# Does a simple majority prefer each test point over the status quo?
+# Test point A: slight shift toward Player 3 (upper-right quadrant)
+# Test point B: slight shift toward Player 5 (lower-left quadrant)
+a_beats_sq <- majority_prefers_2d(c(110.0, 110.0), sq, voters)
+b_beats_sq <- majority_prefers_2d(c( 60.0,  60.0), sq, voters)
 
 cat("Majority preference (5 voters):\n")
-cat("  A beats SQ:", a_beats_sq, "\n")
-cat("  B beats SQ:", b_beats_sq, "\n")
+cat("  (110, 110) beats SQ:", a_beats_sq, "\n")
+cat("  ( 60,  60) beats SQ:", b_beats_sq, "\n")
 
 # Pairwise comparison matrix
 pairwise_mat <- pairwise_matrix_2d(alts, voters)
@@ -109,7 +108,7 @@ cat("Uncovered set (1-based indices):", uncovered, "\n")
 cat("\n=== 5. WINSET ===\n")
 
 # Create a winset: all policies that beat SQ under majority rule
-winset <- winset_2d(c(0, 0), voters)
+winset <- winset_2d(sq, voters)
 
 cat("Winset of SQ at (0, 0):\n")
 cat("  Empty:", winset$is_empty(), "\n")
@@ -118,9 +117,9 @@ if (!winset$is_empty()) {
   bbox <- winset$bbox()
   cat("  Bounding box: [", bbox$min_x, ",", bbox$max_x, "] × [",
       bbox$min_y, ",", bbox$max_y, "]\n", sep="")
-  
-  cat("  Contains (0.5, 0.5):", winset$contains(0.5, 0.5), "\n")
-  cat("  Contains (2.0, 2.0):", winset$contains(2.0, 2.0), "\n")
+
+  cat("  Contains (110, 80):", winset$contains(110, 80), "\n")
+  cat("  Contains (150, 150):", winset$contains(150, 150), "\n")
 }
 
 # ===========================================================================
@@ -162,12 +161,13 @@ cat("\nAnti-plurality scores:\n")
 print(antiplurality)
 cat("Anti-plurality winner (1-based):", antiplurality_winner, "\n")
 
-# Approval voting (top-k)
-approval_top2 <- approval_scores_topk(profile, k = 2L)
-approval_top2_winners <- approval_all_winners_topk(profile, k = 2L)
-cat("\nApproval voting (top-2):\n")
-cat("  Scores:", approval_top2, "\n")
-cat("  Winners (1-based):", approval_top2_winners, "\n")
+# Approval voting (top-k): k capped at n_alts so this works for any scenario
+k_approval <- min(2L, profile$dims()$n_alts)
+approval_topk <- approval_scores_topk(profile, k = k_approval)
+approval_topk_winners <- approval_all_winners_topk(profile, k = k_approval)
+cat(sprintf("\nApproval voting (top-%d):\n", k_approval))
+cat("  Scores:", approval_topk, "\n")
+cat("  Winners (1-based):", approval_topk_winners, "\n")
 
 # ===========================================================================
 # 7. SOCIAL RANKINGS & PROPERTIES
@@ -278,25 +278,29 @@ cat("C API version:", version$major, ".", version$minor, ".", version$patch, "\n
 
 cat("\n=== 10. VISUALIZATION ===\n")
 
-sq   <- c(0.0, 0.0)
 hull <- convex_hull_2d(voters)
 ws   <- winset_2d(sq, voters)
 bnd  <- uncovered_set_boundary_2d(voters, grid_resolution = 10L)
 
-# Base plot: voters + alternatives + status quo
+# Base plot: players + status quo only (no additional alternatives in this scenario)
 fig <- plot_spatial_voting(
-  voters, alts,
+  voters,
   sq          = sq,
-  voter_names = paste0("V", 1:5),
-  alt_names   = c("SQ", "A", "B"),
-  title       = "5-voter legislature (devScript)"
+  voter_names = scenario$voter_names,
+  dim_names   = scenario$dim_names,
+  title       = scenario$name
 )
 
 # Add layers
 fig <- layer_winset(fig, ws)
-fig <- layer_uncovered_set(fig, bnd)
 fig <- layer_convex_hull(fig, hull)
-fig <- layer_yolk(fig, center_x = 0.05, center_y = 0.1, radius = 0.2)
+fig
+# Yolk center approximated as centroid of voters; radius is a rough estimate
+voter_xy <- matrix(voters, ncol = 2L, byrow = TRUE)
+yolk_cx  <- mean(voter_xy[, 1L])
+yolk_cy  <- mean(voter_xy[, 2L])
+fig <- layer_yolk(fig, center_x = yolk_cx, center_y = yolk_cy, radius = 20.0)
+fig <- finalize_plot(fig)
 
 # Display (opens in RStudio Viewer / browser)
 print(fig)

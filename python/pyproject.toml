@@ -29,6 +29,9 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/socialchoicelab"]
+include = [
+    { path = "src/socialchoicelab/data/**/*.json" },
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

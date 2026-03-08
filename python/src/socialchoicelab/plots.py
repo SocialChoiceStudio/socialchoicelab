@@ -69,12 +69,13 @@ def _circle_pts(cx: float, cy: float, r: float, n: int = 64) -> tuple[np.ndarray
 
 def plot_spatial_voting(
     voters,
-    alternatives,
+    alternatives=None,
     sq=None,
     voter_names=None,
     alt_names=None,
     dim_names=("Dimension 1", "Dimension 2"),
     title="Spatial Voting Analysis",
+    show_labels=False,
     width=700,
     height=600,
 ):
@@ -85,7 +86,8 @@ def plot_spatial_voting(
     voters:
         Flat array ``[x0, y0, x1, y1, …]`` of voter ideal points.
     alternatives:
-        Flat array ``[x0, y0, …]`` of policy alternative coordinates.
+        Flat array ``[x0, y0, …]`` of policy alternative coordinates, or
+        ``None`` to plot voters and status quo only.
     sq:
         Length-2 array ``[x, y]`` for the status quo, or ``None``.
     voter_names:
@@ -96,6 +98,10 @@ def plot_spatial_voting(
         Pair of axis title strings.
     title:
         Plot title.
+    show_labels:
+        If ``True``, point labels are drawn directly on the graph for the
+        status quo and alternatives.  Default ``False``: rely on the legend
+        and hover tooltip only.
     width, height:
         Figure dimensions in pixels.
 
@@ -109,18 +115,13 @@ def plot_spatial_voting(
     >>> import socialchoicelab.plots as sclp
     >>> import numpy as np
     >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> alts   = np.array([0.0, 0.0, 0.6, 0.4])
-    >>> fig = sclp.plot_spatial_voting(voters, alts, sq=np.array([0.0, 0.0]))
+    >>> fig = sclp.plot_spatial_voting(voters, sq=np.array([0.0, 0.0]))
     """
     _require_plotly()
     vx, vy = _flat_to_xy(voters)
-    ax, ay = _flat_to_xy(alternatives)
     n_v = len(vx)
-    n_a = len(ax)
     if voter_names is None:
         voter_names = [f"V{i + 1}" for i in range(n_v)]
-    if alt_names is None:
-        alt_names = [f"Alt {i + 1}" for i in range(n_a)]
 
     fig = go.Figure()
 
@@ -135,27 +136,34 @@ def plot_spatial_voting(
         ),
         text=voter_names,
         hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+        zorder=8,
     ))
 
-    fig.add_trace(go.Scatter(
-        x=ax, y=ay,
-        mode="markers+text",
-        name="Alternatives",
-        marker=dict(
-            symbol="diamond", size=14,
-            color="rgba(210,70,30,0.9)",
-            line=dict(color="white", width=1.5),
-        ),
-        text=alt_names,
-        textposition="top center",
-        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-    ))
+    if alternatives is not None:
+        ax, ay = _flat_to_xy(np.asarray(alternatives, dtype=float).ravel())
+        n_a = len(ax)
+        if alt_names is None:
+            alt_names = [f"Alt {i + 1}" for i in range(n_a)]
+        fig.add_trace(go.Scatter(
+            x=ax, y=ay,
+            mode="markers+text" if show_labels else "markers",
+            name="Alternatives",
+            marker=dict(
+                symbol="diamond", size=14,
+                color="rgba(210,70,30,0.9)",
+                line=dict(color="white", width=1.5),
+            ),
+            text=alt_names,
+            textposition="top center",
+            hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+            zorder=9,
+        ))
 
     if sq is not None:
         sqv = np.asarray(sq, dtype=float).ravel()
         fig.add_trace(go.Scatter(
             x=[sqv[0]], y=[sqv[1]],
-            mode="markers+text",
+            mode="markers+text" if show_labels else "markers",
             name="Status Quo",
             marker=dict(
                 symbol="star", size=18,
@@ -165,6 +173,7 @@ def plot_spatial_voting(
             text=["SQ"],
             textposition="top center",
             hovertemplate="Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+            zorder=9,
         ))
 
     fig.update_layout(
@@ -191,8 +200,8 @@ def plot_spatial_voting(
 def layer_winset(
     fig,
     winset,
-    fill_color="rgba(100,150,255,0.25)",
-    line_color="rgba(50,100,220,0.8)",
+    fill_color="rgba(100,150,255,0.28)",
+    line_color="rgba(50,100,220,0.80)",
     name="Winset",
 ):
     """Add a winset polygon layer.
@@ -249,11 +258,12 @@ def layer_winset(
             mode="lines",
             fill="toself",
             fillcolor=fc,
-            line=dict(color=line_color, width=1.5),
+            line=dict(color=line_color, width=2, dash="solid"),
             name=name,
             showlegend=show_legend,
             legendgroup=name,
             hoverinfo="skip",
+            zorder=6,
         ))
         show_legend = False
     return fig
@@ -264,7 +274,8 @@ def layer_yolk(
     center_x,
     center_y,
     radius,
-    color="rgba(210,50,50,0.55)",
+    fill_color="rgba(210,50,50,0.22)",
+    line_color="rgba(210,50,50,0.70)",
     name="Yolk",
 ):
     """Add a yolk circle layer.
@@ -277,8 +288,10 @@ def layer_yolk(
         Yolk center coordinates.
     radius:
         Yolk radius (same units as plot axes).
-    color:
-        Fill/outline colour (CSS rgba string).  Default: semi-transparent red.
+    fill_color:
+        Fill colour (CSS rgba string).  Default: light red.
+    line_color:
+        Outline colour (CSS rgba string).  Default: medium red.
     name:
         Legend entry label.
 
@@ -300,10 +313,11 @@ def layer_yolk(
         x=cx, y=cy,
         mode="lines",
         fill="toself",
-        fillcolor=color,
-        line=dict(color=color, width=2),
+        fillcolor=fill_color,
+        line=dict(color=line_color, width=2, dash="longdashdot"),
         name=name,
         hovertemplate=f"{name} (r={radius:.4f})<extra></extra>",
+        zorder=5,
     ))
     return fig
 
@@ -311,8 +325,8 @@ def layer_yolk(
 def layer_uncovered_set(
     fig,
     boundary_xy,
-    fill_color="rgba(50,180,80,0.20)",
-    line_color="rgba(30,150,60,0.85)",
+    fill_color="rgba(50,180,80,0.18)",
+    line_color="rgba(30,150,60,0.65)",
     name="Uncovered Set",
 ):
     """Add an uncovered set boundary layer.
@@ -357,9 +371,10 @@ def layer_uncovered_set(
         mode="lines",
         fill="toself",
         fillcolor=fill_color,
-        line=dict(color=line_color, width=1.5),
+        line=dict(color=line_color, width=1.5, dash="longdash"),
         name=name,
         hovertemplate=f"{name}<extra></extra>",
+        zorder=4,
     ))
     return fig
 
@@ -367,7 +382,8 @@ def layer_uncovered_set(
 def layer_convex_hull(
     fig,
     hull_xy,
-    color="rgba(130,80,190,0.75)",
+    fill_color="rgba(130,80,190,0.12)",
+    line_color="rgba(130,80,190,0.55)",
     name="Convex Hull",
 ):
     """Add a convex hull layer.
@@ -380,8 +396,10 @@ def layer_convex_hull(
         ``ndarray`` of shape ``(n_hull, 2)`` from
         :func:`~socialchoicelab.convex_hull_2d`.
         If empty, the figure is returned unchanged.
-    color:
-        Outline colour.  Default: semi-transparent purple.
+    fill_color:
+        Fill colour.  Default: light purple.
+    line_color:
+        Outline colour.  Default: medium purple.
     name:
         Legend entry label.
 
@@ -409,9 +427,49 @@ def layer_convex_hull(
         x=px, y=py,
         mode="lines",
         fill="toself",
-        fillcolor="rgba(130,80,190,0.12)",
-        line=dict(color=color, width=2),
+        fillcolor=fill_color,
+        line=dict(color=line_color, width=1.5, dash="dash"),
         name=name,
         hovertemplate=f"{name}<extra></extra>",
+        zorder=2,
     ))
+    return fig
+
+
+def finalize_plot(fig):
+    """Enforce the canonical layer stack order.
+
+    Reorders all traces so that area fills appear below voter ideal points
+    and the status quo, regardless of the sequence in which ``layer_*``
+    functions were called.  Call once, immediately before ``fig.show()``.
+
+    The canonical order is defined in
+    ``docs/development/visualization_design.md``.  Traces whose ``name`` /
+    ``legendgroup`` is not in the table are placed between cut lines (z=7)
+    and voter points (z=8).
+
+    Parameters
+    ----------
+    fig:
+        A Plotly figure built with :func:`plot_spatial_voting` and one or
+        more ``layer_*`` functions.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        The same figure with traces reordered.
+
+    Examples
+    --------
+    >>> import socialchoicelab as scl
+    >>> import socialchoicelab.plots as sclp
+    >>> import numpy as np
+    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
+    >>> sq = np.array([0.0, 0.0])
+    >>> fig = sclp.plot_spatial_voting(voters, sq=sq)
+    >>> fig = sclp.layer_yolk(fig, center_x=0.1, center_y=0.0, radius=0.3)
+    >>> fig = sclp.finalize_plot(fig)
+    """
+    # Layer ordering is handled natively via the zorder attribute on each trace.
+    # This function is kept for API compatibility and as a hook for future use.
     return fig

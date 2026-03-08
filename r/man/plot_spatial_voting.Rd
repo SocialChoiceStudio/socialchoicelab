@@ -6,12 +6,13 @@
 \usage{
 plot_spatial_voting(
   voters,
-  alternatives,
+  alternatives = numeric(0),
   sq = NULL,
   voter_names = NULL,
   alt_names = NULL,
   dim_names = c("Dimension 1", "Dimension 2"),
   title = "Spatial Voting Analysis",
+  show_labels = FALSE,
   width = 700L,
   height = 600L
 )
@@ -34,6 +35,10 @@ alternative coordinates (length 2 * n_alts).}
 \item{dim_names}{Length-2 character vector for axis titles.}
 
 \item{title}{Plot title string.}
+
+\item{show_labels}{Logical. If \code{TRUE}, point labels are drawn directly
+on the graph for the status quo and alternatives. Default \code{FALSE}:
+rely on the legend and hover tooltip only.}
 
 \item{width, height}{Plot dimensions in pixels.}
 }

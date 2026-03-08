@@ -9,7 +9,8 @@ layer_yolk(
   center_x,
   center_y,
   radius,
-  color = "rgba(210,50,50,0.55)",
+  fill_color = "rgba(210,50,50,0.22)",
+  line_color = "rgba(210,50,50,0.70)",
   name = "Yolk"
 )
 }
@@ -20,7 +21,9 @@ layer_yolk(
 
 \item{radius}{Yolk radius (same units as the plot axes).}
 
-\item{color}{Fill/outline colour (CSS rgba string). Default: semi-transparent red.}
+\item{fill_color}{Fill colour (CSS rgba string). Default: light red.}
+
+\item{line_color}{Outline colour (CSS rgba string). Default: medium red.}
 
 \item{name}{Legend entry label.}
 }

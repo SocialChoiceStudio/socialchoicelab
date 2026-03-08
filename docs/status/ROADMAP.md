@@ -117,6 +117,34 @@ When in doubt, follow the [Design Document](../architecture/design_document.md) 
 
 ---
 
+## Symbolic computation via SymPy (post-open-source)
+
+**When relevant:** Well after the project opens for external contributions.
+
+Many social-choice results — median voter positions, yolk centers, Plott symmetry conditions, winset boundaries under rational ideal points — have exact closed-form expressions. Floating-point arithmetic means these are currently approximated, which can obscure structural properties and introduce numerical error in derived quantities.
+
+Investigate threading SymPy (Python) and a compatible R symbolic library through as much of the computation stack as possible, so that results involving rationally-specified voter ideal points can be preserved symbolically rather than collapsed to floats at the first arithmetic step. The gain would be exact proofs-by-construction, cleaner test assertions (equality instead of tolerance checks), and academic output quality that matches the literature.
+
+This is a significant architectural undertaking and only worthwhile once the API surface is stable and contributor capacity exists to maintain a parallel symbolic path. Record here so it is not forgotten.
+
+---
+
+## Data and I/O — Future features
+
+### C13.1: Load scenario from external file format
+
+Support for user-provided external scenario files (complement to the bundled scenarios in C13.A). Design decisions:
+
+- **Format:** CSV for voters (lightweight, spreadsheet-friendly). Metadata (SQ, decision rule, axis labels, etc.) can be specified via a companion JSON sidecar or simple conventions (e.g., comments in the CSV).
+- **Convenience functions:** `read_scenario(path)` in R and Python.
+- **When:** After C13.A is complete and bundled scenarios are stable. Lower priority than other visualization refinements.
+
+---
+
+## Symbolic computation via SymPy (post-open-source)
+
+---
+
 ## C API wrapper tooling for external contributors
 
 **When relevant:** When the project opens for external contributions.

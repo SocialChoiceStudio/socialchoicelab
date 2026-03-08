@@ -99,4 +99,10 @@ from socialchoicelab._social import (  # noqa: F401
     is_majority_consistent,
 )
 
+# C13.B — Built-in scenarios
+from socialchoicelab.scenarios import (  # noqa: F401
+    list_scenarios,
+    load_scenario,
+)
+
 __version__ = "0.1.0"

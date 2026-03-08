@@ -13,7 +13,7 @@ Until this project is open to external developers, **do not protect or preserve 
 - Do not add parallel APIs (e.g. a "legacy" and a "new" version of the same thing) unless the two serve genuinely distinct purposes.
 
 **Two narrow exceptions where the original must be preserved:**
-1. **Historical algorithm fidelity**: When replicating a specific published algorithm (e.g. Cybersenate methods, 1980s yolk/heart algorithms from Miller, Feld, Grofman et al.), the original logic must be preserved and its source cited. Improvements go in separate, clearly-named functions.
-2. **Externally-sourced code brought in verbatim** (e.g. from Cybersenate): treat as read-only unless you have explicit permission to modify.
+1. **Historical algorithm fidelity**: When replicating a specific published algorithm (e.g. 1980s yolk/heart algorithms from Miller, Feld, Grofman et al.), the original logic must be preserved and its source cited. Improvements go in separate, clearly-named functions.
+2. **Externally-sourced code brought in verbatim**: treat as read-only unless you have explicit permission to modify.
 
 **When the project opens to other developers**, this rule is superseded by standard semantic versioning and deprecation policy (see `milestone_gates.md` § First binding / 1.0 and ROADMAP.md § Documentation and citation standards).

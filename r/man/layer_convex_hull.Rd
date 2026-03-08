@@ -7,7 +7,8 @@
 layer_convex_hull(
   fig,
   hull_xy,
-  color = "rgba(130,80,190,0.75)",
+  fill_color = "rgba(130,80,190,0.12)",
+  line_color = "rgba(130,80,190,0.55)",
   name = "Convex Hull"
 )
 }
@@ -17,7 +18,9 @@ layer_convex_hull(
 \item{hull_xy}{Numeric matrix (n_hull \eqn{\times} 2) with columns
 \code{x} and \code{y}, as returned by \code{\link{convex_hull_2d}}.}
 
-\item{color}{Outline colour (CSS rgba string). Default: semi-transparent purple.}
+\item{fill_color}{Fill colour (CSS rgba string). Default: light purple.}
+
+\item{line_color}{Outline colour (CSS rgba string). Default: medium purple.}
 
 \item{name}{Legend entry label.}
 }

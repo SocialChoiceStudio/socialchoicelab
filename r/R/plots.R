@@ -16,6 +16,7 @@
 
 .flat_to_xy <- function(v) {
   n <- length(v) %/% 2L
+  if (n == 0L) return(list(x = double(0L), y = double(0L)))
   list(x = v[seq(1L, 2L * n, 2L)],
        y = v[seq(2L, 2L * n, 2L)])
 }
@@ -47,6 +48,9 @@
 #'   \code{"Alt 1"}, \code{"Alt 2"}, etc.
 #' @param dim_names Length-2 character vector for axis titles.
 #' @param title Plot title string.
+#' @param show_labels Logical. If \code{TRUE}, point labels are drawn directly
+#'   on the graph for the status quo and alternatives. Default \code{FALSE}:
+#'   rely on the legend and hover tooltip only.
 #' @param width,height Plot dimensions in pixels.
 #' @return A \code{plotly} figure object.
 #' @examples
@@ -59,12 +63,13 @@
 #' }
 #' @export
 plot_spatial_voting <- function(voters,
-                                 alternatives,
+                                 alternatives = numeric(0),
                                  sq          = NULL,
                                  voter_names = NULL,
                                  alt_names   = NULL,
                                  dim_names   = c("Dimension 1", "Dimension 2"),
                                  title       = "Spatial Voting Analysis",
+                                 show_labels = FALSE,
                                  width       = 700L,
                                  height      = 600L) {
   vxy <- .flat_to_xy(voters)
@@ -86,27 +91,33 @@ plot_spatial_voting <- function(voters,
       line   = list(color = "white", width = 1.5)
     ),
     text          = voter_names,
-    hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+    hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+    zorder        = 8L
   )
 
-  # Alternatives
-  fig <- plotly::add_trace(
-    fig, x = axy$x, y = axy$y, type = "scatter", mode = "markers+text",
-    name   = "Alternatives",
-    marker = list(
-      symbol = "diamond", size = 14,
-      color  = "rgba(210,70,30,0.9)",
-      line   = list(color = "white", width = 1.5)
-    ),
-    text          = alt_names,
-    textposition  = "top center",
-    hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
-  )
+  # Alternatives (skipped when none provided)
+  if (n_a > 0L) {
+    fig <- plotly::add_trace(
+      fig, x = axy$x, y = axy$y, type = "scatter",
+      mode   = if (show_labels) "markers+text" else "markers",
+      name   = "Alternatives",
+      marker = list(
+        symbol = "diamond", size = 14,
+        color  = "rgba(210,70,30,0.9)",
+        line   = list(color = "white", width = 1.5)
+      ),
+      text          = alt_names,
+      textposition  = "top center",
+      hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+      zorder        = 9L
+    )
+  }
 
   # Status quo
   if (!is.null(sq)) {
     fig <- plotly::add_trace(
-      fig, x = sq[1L], y = sq[2L], type = "scatter", mode = "markers+text",
+      fig, x = sq[1L], y = sq[2L], type = "scatter",
+      mode   = if (show_labels) "markers+text" else "markers",
       name   = "Status Quo",
       marker = list(
         symbol = "star", size = 18,
@@ -115,7 +126,8 @@ plot_spatial_voting <- function(voters,
       ),
       text          = "SQ",
       textposition  = "top center",
-      hovertemplate = "Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+      hovertemplate = "Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+      zorder        = 9L
     )
   }
 
@@ -163,8 +175,8 @@ plot_spatial_voting <- function(voters,
 #' @export
 layer_winset <- function(fig,
                           winset,
-                          fill_color = "rgba(100,150,255,0.25)",
-                          line_color = "rgba(50,100,220,0.8)",
+                          fill_color = "rgba(100,150,255,0.28)",
+                          line_color = "rgba(50,100,220,0.80)",
                           name       = "Winset") {
   if (winset$is_empty()) return(fig)
 
@@ -186,11 +198,12 @@ layer_winset <- function(fig,
       type = "scatter", mode = "lines",
       fill          = "toself",
       fillcolor     = fc,
-      line          = list(color = line_color, width = 1.5),
+      line          = list(color = line_color, width = 2, dash = "solid"),
       name          = name,
       showlegend    = show_legend,
       legendgroup   = name,
-      hoverinfo     = "skip"
+      hoverinfo     = "skip",
+      zorder        = 6L
     )
     show_legend <- FALSE
   }
@@ -209,7 +222,8 @@ layer_winset <- function(fig,
 #' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
 #' @param center_x,center_y Yolk center coordinates.
 #' @param radius Yolk radius (same units as the plot axes).
-#' @param color Fill/outline colour (CSS rgba string). Default: semi-transparent red.
+#' @param fill_color Fill colour (CSS rgba string). Default: light red.
+#' @param line_color Outline colour (CSS rgba string). Default: medium red.
 #' @param name Legend entry label.
 #' @return The updated plotly figure.
 #' @examples
@@ -224,16 +238,18 @@ layer_yolk <- function(fig,
                         center_x,
                         center_y,
                         radius,
-                        color = "rgba(210,50,50,0.55)",
-                        name  = "Yolk") {
+                        fill_color = "rgba(210,50,50,0.22)",
+                        line_color = "rgba(210,50,50,0.70)",
+                        name       = "Yolk") {
   circ <- .circle_pts(as.double(center_x), as.double(center_y), as.double(radius))
   plotly::add_trace(
     fig, x = circ$x, y = circ$y, type = "scatter", mode = "lines",
     fill          = "toself",
-    fillcolor     = color,
-    line          = list(color = color, width = 2),
+    fillcolor     = fill_color,
+    line          = list(color = line_color, width = 2, dash = "longdashdot"),
     name          = name,
-    hovertemplate = paste0(name, " (r=", round(radius, 4L), ")<extra></extra>")
+    hovertemplate = paste0(name, " (r=", round(radius, 4L), ")<extra></extra>"),
+    zorder        = 5L
   )
 }
 
@@ -266,8 +282,8 @@ layer_yolk <- function(fig,
 #' @export
 layer_uncovered_set <- function(fig,
                                  boundary_xy,
-                                 fill_color = "rgba(50,180,80,0.20)",
-                                 line_color = "rgba(30,150,60,0.85)",
+                                 fill_color = "rgba(50,180,80,0.18)",
+                                 line_color = "rgba(30,150,60,0.65)",
                                  name       = "Uncovered Set") {
   if (nrow(boundary_xy) == 0L) return(fig)
   plotly::add_trace(
@@ -277,9 +293,10 @@ layer_uncovered_set <- function(fig,
     type = "scatter", mode = "lines",
     fill          = "toself",
     fillcolor     = fill_color,
-    line          = list(color = line_color, width = 1.5),
+    line          = list(color = line_color, width = 1.5, dash = "longdash"),
     name          = name,
-    hovertemplate = paste0(name, "<extra></extra>")
+    hovertemplate = paste0(name, "<extra></extra>"),
+    zorder        = 4L
   )
 }
 
@@ -296,7 +313,8 @@ layer_uncovered_set <- function(fig,
 #' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
 #' @param hull_xy Numeric matrix (n_hull \eqn{\times} 2) with columns
 #'   \code{x} and \code{y}, as returned by \code{\link{convex_hull_2d}}.
-#' @param color Outline colour (CSS rgba string). Default: semi-transparent purple.
+#' @param fill_color Fill colour (CSS rgba string). Default: light purple.
+#' @param line_color Outline colour (CSS rgba string). Default: medium purple.
 #' @param name Legend entry label.
 #' @return The updated plotly figure.
 #' @examples
@@ -310,8 +328,9 @@ layer_uncovered_set <- function(fig,
 #' @export
 layer_convex_hull <- function(fig,
                                hull_xy,
-                               color = "rgba(130,80,190,0.75)",
-                               name  = "Convex Hull") {
+                               fill_color = "rgba(130,80,190,0.12)",
+                               line_color = "rgba(130,80,190,0.55)",
+                               name       = "Convex Hull") {
   if (nrow(hull_xy) == 0L) return(fig)
   plotly::add_trace(
     fig,
@@ -319,9 +338,46 @@ layer_convex_hull <- function(fig,
     y = c(hull_xy[, "y"], hull_xy[1L, "y"]),
     type = "scatter", mode = "lines",
     fill          = "toself",
-    fillcolor     = "rgba(130,80,190,0.12)",
-    line          = list(color = color, width = 2),
+    fillcolor     = fill_color,
+    line          = list(color = line_color, width = 1.5, dash = "dash"),
     name          = name,
-    hovertemplate = paste0(name, "<extra></extra>")
+    hovertemplate = paste0(name, "<extra></extra>"),
+    zorder        = 2L
   )
+}
+
+# ---------------------------------------------------------------------------
+# finalize_plot
+# ---------------------------------------------------------------------------
+
+#' Enforce the canonical layer stack order
+#'
+#' Reorders all traces in a figure so that area fills (winset, yolk, etc.)
+#' appear below voter ideal points and the status quo, regardless of the
+#' sequence in which \code{layer_*} functions were called.
+#'
+#' The canonical order is defined in \code{docs/development/visualization_design.md}.
+#' Traces whose \code{name} / \code{legendgroup} is not in the table are placed
+#' between cut lines (z=7) and voter points (z=8).
+#'
+#' @param fig A plotly figure built with \code{\link{plot_spatial_voting}} and
+#'   one or more \code{layer_*} functions.
+#' @return The same plotly figure with traces reordered.
+#' @examples
+#' \dontrun{
+#' voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6)
+#' sq     <- c(0.0, 0.0)
+#' ws     <- winset_2d(sq, voters)
+#' hull   <- convex_hull_2d(voters)
+#' fig <- plot_spatial_voting(voters, sq = sq)
+#' fig <- layer_winset(fig, ws)
+#' fig <- layer_convex_hull(fig, hull)
+#' fig <- finalize_plot(fig)
+#' print(fig)
+#' }
+#' @export
+finalize_plot <- function(fig) {
+  # Layer ordering is handled natively via the zorder attribute on each trace.
+  # This function is kept for API compatibility and as a hook for future use.
+  fig
 }

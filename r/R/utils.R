@@ -109,6 +109,9 @@ make_loss_config <- function(loss_type   = "linear",
 # Internal helpers (not exported)
 # ---------------------------------------------------------------------------
 
+# Null-coalescing operator: return lhs unless it is NULL, then return rhs.
+`%||%` <- function(lhs, rhs) if (!is.null(lhs)) lhs else rhs
+
 # Validate that tie_break = "random" is accompanied by a stream_manager and
 # stream_name. Call this at the top of every one_winner / rank_by_scores wrapper.
 .check_tie_break_args <- function(tie_break, stream_manager, stream_name) {

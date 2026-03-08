@@ -7,8 +7,8 @@
 layer_winset(
   fig,
   winset,
-  fill_color = "rgba(100,150,255,0.25)",
-  line_color = "rgba(50,100,220,0.8)",
+  fill_color = "rgba(100,150,255,0.28)",
+  line_color = "rgba(50,100,220,0.80)",
   name = "Winset"
 )
 }

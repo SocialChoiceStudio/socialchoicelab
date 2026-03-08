@@ -26,77 +26,56 @@ When a step is done, mark it ✅ Done and update [where_we_are.md](where_we_are.
 
 ## Phases
 
-### C10: Design & Prototype (R)
+### C10: Design & Prototype (R) ✅ Done
 
-**Goal:** Prototype the core plotting API in R; establish the design that Python will mirror.
-
-**Tasks:**
-
-- [ ] **C10.1** Design the base plot object and layering system.
-  - Decide: S3 class vs. R6? (Recommend S3 for simplicity; return a `ggplot` object that users can add `+` to.)
-  - Decide: `plotly` via `ggplotly()` or direct `plotly::plot_ly()`? (Recommend direct `plot_ly()` for more control over interactivity.)
-  - Sketch function signatures: `plot_spatial_voting(voters, alternatives, sq = NULL, title = NULL, ...)`
-
-- [ ] **C10.2** Implement core plotting functions (R).
-  - `plot_spatial_voting(voters, alternatives, sq, title, width, height)` — base 2D scatter with voters and alternatives.
-  - `layer_winset(plot, winset, fill_alpha = 0.3)` — overlay a winset polygon.
-  - `layer_yolk(plot, center, radius, color = "red")` — overlay yolk as a circle.
-  - `layer_uncovered_set(plot, uncovered_set, color = "green")` — overlay uncovered set boundary.
-  - `layer_convex_hull(plot, points, color = "blue")` — overlay convex hull boundary.
-
-- [ ] **C10.3** Test and document (R vignette).
-  - Add a vignette section to `r/vignettes/spatial_voting.Rmd` demonstrating all plotting layers.
-  - Add `@examples` to each function (wrapped in `\dontrun{}` if they require user data; or inline with synthetic data).
-
-- [ ] **C10.4** Unit tests for plotting output.
-  - Test that plotting functions return valid `plotly` objects.
-  - Test that layers can be composed without error.
-  - Test edge cases: empty winset, null parameters, single voter.
+- ✅ **C10.1** Design decisions — direct `plotly::plot_ly()`, functional layer API (no R6/S3 class needed).
+- ✅ **C10.2** `plot_spatial_voting()`, `layer_winset()`, `layer_yolk()`, `layer_uncovered_set()`, `layer_convex_hull()` implemented in `r/R/plots.R`. `alternatives` defaults to `numeric(0)` (optional).
+- ✅ **C10.3** Vignette section 9 added to `r/vignettes/spatial_voting.Rmd`; all functions have `@examples`.
+- ✅ **C10.4** 17 unit tests in `r/tests/testthat/test_plots.R`; all pass.
 
 ---
 
-### C11: Mirror in Python
+### C11: Mirror in Python ✅ Done
 
-**Goal:** Implement the same plotting API in Python, with identical function names and parameter order.
-
-**Tasks:**
-
-- [ ] **C11.1** Implement core plotting functions (Python).
-  - `plot_spatial_voting(voters, alternatives, sq=None, title=None, width=900, height=700)` — base plot.
-  - `layer_winset(fig, winset, fill_alpha=0.3)` — overlay winset.
-  - `layer_yolk(fig, center, radius, color="red")` — overlay yolk.
-  - `layer_uncovered_set(fig, uncovered_set, color="green")` — overlay uncovered set.
-  - `layer_convex_hull(fig, points, color="blue")` — overlay convex hull.
-
-- [ ] **C11.2** Test and document (Python notebook).
-  - Add a section to `python/notebooks/spatial_voting.ipynb` demonstrating all plotting layers.
-  - Add docstring examples to each function.
-
-- [ ] **C11.3** Unit tests for plotting output.
-  - Test that plotting functions return valid `plotly.graph_objects.Figure` objects.
-  - Test layer composition.
-  - Test edge cases.
+- ✅ **C11.1** `socialchoicelab.plots` submodule implemented in `python/src/socialchoicelab/plots.py`; identical API to R.
+- ✅ **C11.2** Notebook section 9 added to `python/notebooks/spatial_voting.ipynb`; all functions have NumPy-style docstrings.
+- ✅ **C11.3** 13 unit tests in `python/tests/test_plots.py`; all pass.
 
 ---
 
-### C12: CI & Polish
+### C12: CI & Polish ✅ Done
 
-**Goal:** Integrate plotting tests into CI, document best practices, commit and deploy.
+- ✅ **C12.1** `plotly >= 4.10.0` added to R `DESCRIPTION` Imports; `plotly >= 5.0` added to Python `pyproject.toml` dependencies. Both CI jobs (R and Python) install and test plotly.
+- ✅ **C12.2** `docs/python/api/plots.md` API reference page added; `_pkgdown.yml` Visualization section added for R.
+- ✅ **C12.3** CI green on both Ubuntu and macOS for all three jobs (core, r-binding, python-binding).
 
-**Tasks:**
+---
 
-- [ ] **C12.1** Add plotting tests to CI.
-  - R: `devtools::test()` picks up plotting unit tests.
-  - Python: `pytest` picks up plotting unit tests.
+### C13: Visualization Refinements (planned, not started)
 
-- [ ] **C12.2** Documentation pass.
-  - Add plotting section to main README (with a static screenshot or embedded interactive plot).
-  - Add best-practices guide to [design_document.md](../architecture/design_document.md) § Visualization.
+**Goal:** Polish the plotting layer based on real-scenario feedback and add missing capabilities.
 
-- [ ] **C12.3** Optional: Gallery of example plots.
-  - Create `docs/python/examples/plotting_gallery.ipynb` or similar showcasing realistic voting scenarios.
+Known items (add more as they arise):
 
-- [ ] **C12.4** Commit, test, push, and mark complete.
+- [ ] **C13.A** (New, C13.B moved up) Standard built-in scenario datasets with convenience functions.
+  - ✅ JSON format designed (metadata + voters + SQ + decision rule + axis labels).
+  - ✅ Built-in scenarios: `laing_olmsted_bear` and `tovey_regular_polygon` stored in R `inst/extdata/scenarios/` and Python `src/socialchoicelab/data/scenarios/`.
+  - ✅ `load_scenario(name)` convenience function in both R and Python; users never see JSON.
+  - ✅ `list_scenarios()` helper to discover available scenarios.
+  - ✅ Full unit test coverage (R + Python).
+  - ✅ Dev/test scripts (`devScript_MAIN.R/.py`, `TestScript_11_Tovey.R/.py`) updated to use `load_scenario()`.
+  
+- [ ] **C13.1** Load scenario from external `.txt` file format — helper function `read_scenario(path)` returning `list(voters, sq, dim_names)` in R and Python. **[MOVED TO ROADMAP — implement after C13.A complete]**
+- [ ] **C13.2** Individual voter indifference curves (circles centred at each ideal point with radius = distance to SQ) as a `layer_indifference_curves()` function.
+- [ ] **C13.3** Auto-compute optional layers when not pre-computed (e.g. compute winset/uncovered set inside the layer function if a `Winset` object is not passed).
+- [ ] **C13.4** Colorblind-safe default palette; consistent colour system across all layers.
+- [ ] **C13.5** Axis range auto-set to the data extent (with padding) rather than Plotly default; expose `xlim`/`ylim` args.
+- [ ] **C13.6** Voter preferred-to regions — filled circles showing which policies each voter prefers to the SQ (`layer_preferred_regions()`).
+- [ ] **C13.7** Shapley-Owen power index annotation (bar chart or bubble size) once `scs_shapley_owen` is exposed in the C API.
+- [ ] **C13.8** Export helpers: `save_plot(fig, path)` wrapping `plotly::save_image()` / `fig.write_html()` consistently in both R and Python.
+- [ ] **C13.9** Gallery notebook: realistic scenarios (Laing-Olmsted-Bear and others) with all layers shown side-by-side.
+
+**When to start C13:** After at least one full scenario has been plotted end-to-end in both R and Python and user feedback on the current API has been collected.
 
 ---
 
@@ -135,15 +114,15 @@ When a step is done, mark it ✅ Done and update [where_we_are.md](where_we_are.
 
 ## Timeline & Effort Estimate
 
-| Phase | Subtask | Effort | Owner | Status |
-|-------|---------|--------|-------|--------|
-| C10 | Design & R proto | 2–3 days | — | ⏳ Pending |
-| C10 | R core + tests | 2–3 days | — | ⏳ Pending |
-| C10 | R vignette & docs | 1 day | — | ⏳ Pending |
-| C11 | Python mirror | 1–2 days | — | ⏳ Pending |
-| C11 | Python notebook & tests | 1 day | — | ⏳ Pending |
-| C12 | CI integration & polish | 1 day | — | ⏳ Pending |
-| **Total** | — | **~1 week** | — | ⏳ Pending |
+| Phase | Subtask | Effort | Status |
+|-------|---------|--------|--------|
+| C10 | Design & R proto | 2–3 days | ✅ Done |
+| C10 | R core + tests | 2–3 days | ✅ Done |
+| C10 | R vignette & docs | 1 day | ✅ Done |
+| C11 | Python mirror | 1–2 days | ✅ Done |
+| C11 | Python notebook & tests | 1 day | ✅ Done |
+| C12 | CI integration & polish | 1 day | ✅ Done |
+| C13 | Visualization refinements | TBD | ⏳ Planned |
 
 ---
 

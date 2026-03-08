@@ -7,8 +7,8 @@
 layer_uncovered_set(
   fig,
   boundary_xy,
-  fill_color = "rgba(50,180,80,0.20)",
-  line_color = "rgba(30,150,60,0.85)",
+  fill_color = "rgba(50,180,80,0.18)",
+  line_color = "rgba(30,150,60,0.65)",
   name = "Uncovered Set"
 )
 }
