@@ -7,16 +7,20 @@ High-level direction for the project. This document does not duplicate detail; i
 | Architecture, layers, and integration pattern | [Design Document](../architecture/design_document.md) |
 | Feature and algorithm prioritization (Yolk, voting rules, etc.) | [Implementation Priority Guide](../references/implementation_priority.md) |
 | Current position and recent work | [where_we_are.md](where_we_are.md) |
+| Layer 7 candidate-competition implementation plan | [competition_roadmap.md](competition_roadmap.md) |
 | Archived plans (consensus reviews, core completion) | [archive/](archive/README.md) |
 | Definition of done per milestone (features, tests, docs, API stability) | [milestone_gates.md](milestone_gates.md) |
 
 **Dependency order** (from design): core C++ and foundation first → stable **c_api** → geometry primitives (e.g. CGAL 2D) → voting rules and outcome concepts → **then** R/Python bindings and GUI. Language bindings and advanced electoral methods depend on the C API and core geometry.
+
+**Release numbering plan:** the next public release is `0.2.0`, reflecting that the core library, C API, bindings, and visualization layer exist but the major planned feature tracks are not complete. `0.3.0` is reserved for the candidate-competition / Layer 7 milestone. `1.0.0` is reserved for the point at which the remaining major feature track after candidate competition — currently described as *Characteristics of Voting Rules* (working title; rename later) — is also complete.
 
 ### Dependency sequencing (what must come first)
 
 - **c_api before language bindings:** R and Python packages call the C API only; do not bind C++ directly. Implement and stabilize the c_api surface before building R/Python packages.
 - **Geometry primitives before advanced electoral methods:** Implement exact 2D geometry (CGAL), voting rules, and core outcome concepts (Yolk, Heart, etc.) before simulation engines, electoral competition models, or advanced applications that depend on them.
 - **Foundation before new layers:** Keep the existing core (distance, loss, PRNG, StreamManager) stable; add new layers (geometry, aggregation, c_api) on top without breaking existing behaviour.
+- **For Layer 7, stabilize the one-run competition engine before the sweep/experiment runner:** adaptive candidate competition is the foundation; parameter sweeps, replications, and animated trajectories should consume the engine's stable trace format rather than define it indirectly. See [competition_roadmap.md](competition_roadmap.md).
 
 ---
 
@@ -26,7 +30,7 @@ High-level direction for the project. This document does not duplicate detail; i
 - **Geometry Layer 3:** Complete ✅ *(Yolk and Heart need revisiting — see below)*. CGAL EPEC integration, exact 2D types, convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, veto players, weighted voting. See [archive/geometry_plan.md](archive/geometry_plan.md). **⚠️ Note:** `yolk_2d` is currently an LP-yolk approximation (subgradient over sampled directions), not the exact yolk — Stone & Tovey (1992) showed limiting median lines alone do not determine the yolk. `heart_boundary_2d` is a coarse grid approximation. Both must be addressed before the `geometry-complete` milestone is considered fully valid. See [where_we_are.md § Known Issues](where_we_are.md) and [milestone_gates.md § Revisit before release](milestone_gates.md).
 - **Profiles & Aggregation Layers 4–5:** Complete ✅. Profile struct, spatial/utility/synthetic profile construction, plurality/Borda/approval/anti-plurality/scoring rules, social rankings, Pareto, Condorcet/majority consistency. See [archive/profiles_and_aggregation_plan.md](archive/profiles_and_aggregation_plan.md).
 - **c_api geometry + aggregation extensions:** Complete ✅. All geometry and aggregation services exposed through the stable C API. See [archive/c_api_extensions_plan.md](archive/c_api_extensions_plan.md).
-- **Preparing for v1.0.0 (active):** Work through "Revisit before release" items (yolk correctness, Heart approximation labelling, C++20/17 decision, citation checks) before tagging `v1.0.0`.
+- **Preparing for `0.2.0` (active):** Work through "Revisit before release" items and final release-doc checks before tagging `0.2.0`.
 
 ---
 
@@ -34,7 +38,7 @@ High-level direction for the project. This document does not duplicate detail; i
 
 - **First R and Python bindings:** Complete ✅. `socialchoicelab` R (`.Call()`) and Python (cffi) packages calling the pre-built `libscs_api` via the C ABI. See [archive/binding_plan_completed.md](archive/binding_plan_completed.md).
 - **Visualization layer:** Complete ✅. Plotly-based spatial voting plot helpers in R and Python. Composable layers, colorblind-safe theme system, built-in scenario datasets, indifference curves, preferred-region overlays, `save_plot()`. See [visualization_plan.md](visualization_plan.md).
-- **v1.0.0 tag:** Pending resolution of "Revisit before release" items; see [milestone_gates.md](milestone_gates.md).
+- **`0.2.0` tag:** Pending final release-gate confirmation; see [milestone_gates.md](milestone_gates.md).
 
 ---
 
@@ -42,8 +46,33 @@ High-level direction for the project. This document does not duplicate detail; i
 
 - **R and Python packages:** Full-featured `socialchoicelab` packages with ModelConfig-driven repro, `export_script(config, lang="R|python")`, and documentation.
 - **GUI and web:** "GUI-lite" (R Shiny / Shiny for Python) and optional web app (Shiny for Python deployment) as in the [Design Document](../architecture/design_document.md).
-- **Advanced features:** 3D/N-D geometry, simulation engines (adaptive candidates, experiment runner), empirical profiles, preference estimation — per [implementation priority](../references/implementation_priority.md) Phases 3–4.
+- **Layer 7 simulation engines (next major implementation track after `0.2.0`):**
+  - **Adaptive candidate / party competition:** multi-candidate spatial competition with Sticker, Hunter, Aggregator, and Predator heuristics; plurality and PR seat conversion; deterministic trace recording; convergence/cycle diagnostics; C API wrappers; R/Python bindings; Plotly trajectory animation. Authoritative plan: [competition_roadmap.md](competition_roadmap.md).
+  - **Experiment runner:** reproducible parameter sweeps and parallel replications built on top of the stable competition engine, using named streams and per-run seeds.
+- **Next major feature track after candidate competition:** working title **Characteristics of Voting Rules**. This will be renamed when its scope is formalized, but it is currently the feature family intended to take the project from `0.3.0` to `1.0.0`.
+- **Advanced features beyond Layer 7:** 3D/N-D geometry, empirical profiles, preference estimation — per [implementation priority](../references/implementation_priority.md) Phases 3–4.
 - **Contributor C API wrapper tooling:** When the project opens to external contributors, any new C++ functionality (preference generation, voting rules, candidate/party strategy, etc.) will require a corresponding C API wrapper. Provide either: (a) documented wrapper templates so contributors know the expected pattern, (b) a template generator script, or (c) a PR-triggered agent that drafts wrapper boilerplate for review. Without this, C API coverage will fall behind the C++ surface. See expanded note at the bottom of this file.
+
+### Long-term sequencing for candidate competition
+
+The broad order for Layer 7 work is:
+
+1. Single-run competition engine in C++.
+2. Stable competition trace/result model.
+3. C API exposure of runs and trace export.
+4. R/Python wrappers over that stable C API.
+5. Experiment runner and parameter sweeps.
+6. Visualization and trajectory animation.
+
+This sequencing mirrors how the geometry and aggregation layers were delivered: core first, then stable C API, then bindings and user-facing helpers.
+
+### Release ladder
+
+| Version | Meaning |
+|---------|---------|
+| `0.2.0` | First cohesive public package release: core + c_api + geometry + aggregation + bindings + visualization. |
+| `0.3.0` | Candidate competition / Layer 7 release: adaptive candidate engine + trace/C API/bindings + experiment runner baseline. |
+| `1.0.0` | Major components complete: `0.3.0` scope plus the next major feature track (currently "Characteristics of Voting Rules", working title). |
 
 ---
 
@@ -68,9 +97,9 @@ These are not on the active roadmap but are worth keeping in view as the project
 
 | Horizon  | Focus |
 |----------|-------|
-| **Near** | Resolve "revisit before release" items → tag `v1.0.0`. |
-| **Mid**  | Full-featured packages, comprehensive user docs, CI-published release. |
-| **Long** | GUI-lite (Shiny), web app, advanced spatial features, empirical profiles. |
+| **Near** | Close the current release gate → tag `0.2.0`. |
+| **Mid**  | Deliver Layer 7 candidate competition and iterate to `0.3.0`. |
+| **Long** | Complete the next major feature track, then tag `1.0.0`; after that, GUI-lite/web and other advanced spatial features. |
 
 ---
 

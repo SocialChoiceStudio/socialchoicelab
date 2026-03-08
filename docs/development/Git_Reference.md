@@ -55,7 +55,7 @@ When you finish a phase, run:
 ./scripts/end-of-milestone.sh phase-3
 ```
 
-Replace `phase-3` with any tag name (e.g. `v0.1.0`). It will:
+Replace `phase-3` with any tag name (e.g. `v0.2.0`). It will:
 1. Run `clang-tidy` on all source files (advisory — you can continue past warnings)
 2. Remind you to update `CHANGELOG.md`
 3. Call `end-of-session.sh` to commit and push

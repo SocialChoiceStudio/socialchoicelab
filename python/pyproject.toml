@@ -35,3 +35,4 @@ packages = ["src/socialchoicelab"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["old_codebases"]

@@ -27,7 +27,7 @@ extern "C" {
 // ---------------------------------------------------------------------------
 
 #define SCS_API_VERSION_MAJOR 0
-#define SCS_API_VERSION_MINOR 1
+#define SCS_API_VERSION_MINOR 2
 #define SCS_API_VERSION_PATCH 0
 
 // ---------------------------------------------------------------------------

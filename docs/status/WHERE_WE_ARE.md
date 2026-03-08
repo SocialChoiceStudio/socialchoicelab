@@ -2,8 +2,10 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** All core milestones complete — c_api, R/Python bindings, and visualization layer (C10–C13) are done. All "Revisit before release" items resolved (C++20 confirmed, citations corrected). Assessing **v1.0.0** gate.
-- **Next:** Verify all v1.0.0 gate criteria are met (see [milestone_gates.md](milestone_gates.md) § First binding / 1.0), then prepare the `v1.0.0` tag and release docs.
+- **Current phase:** All core milestones complete — c_api, R/Python bindings, and visualization layer (C10–C13) are done. All "Revisit before release" items resolved (C++20 confirmed, citations corrected). Assessing the **`0.2.0`** release gate.
+- **Next:** Verify all `0.2.0` gate criteria are met (see [milestone_gates.md](milestone_gates.md) § First public release / `0.2.0`), then prepare the `0.2.0` tag and release docs.
+- **After `0.2.0`:** Begin Layer 7 candidate competition work — first the one-run adaptive candidate engine, then C API exposure, then bindings, then the experiment runner. That is the planned `0.3.0` track. Authoritative plan: [competition_roadmap.md](competition_roadmap.md).
+- **After `0.3.0`:** Begin the next major feature track, currently described as **Characteristics of Voting Rules** (working title), then iterate to `1.0.0` once all major components are in place.
 - **Last updated:** 2026-03-08
 
 **Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
@@ -26,7 +28,7 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 - **Liu, Y. & Tovey, C.A. (2023).** "Polynomial-time algorithm for computing the yolk in fixed dimension." (Poster/preprint.) — Exact polynomial-time algorithm for fixed dimension, improving Tovey (1992)'s O(n⁴) bound; possible counter-example in 3D being investigated.
 - **Tovey, C.A. (1992).** "A polynomial-time algorithm for computing the yolk in fixed dimension." *Mathematical Programming*, 57(1), 259–277. — Original polynomial exact algorithm (O(n⁴) in 2D); proven correct but slow.
 
-**Action (deferred post-v1.0.0):** `SCS_Yolk2d` is already labelled as an LP-yolk approximation in `scs_api.h`. `layer_yolk` has been removed from example scripts. Replacing with an exact algorithm (Gudmundsson & Wong 2019 is the top candidate) is tracked in ROADMAP.md and `milestone_gates.md § Deferred known issues`.
+**Action (deferred post-`0.2.0`):** `SCS_Yolk2d` is already labelled as an LP-yolk approximation in `scs_api.h`. `layer_yolk` has been removed from example scripts. Replacing with an exact algorithm (Gudmundsson & Wong 2019 is the top candidate) is tracked in ROADMAP.md and `milestone_gates.md § Deferred known issues`.
 
 ### Heart boundary is an approximation; theoretical status is open
 
@@ -36,7 +38,7 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 1. Grid resolution limits precision (default 15×15 = 225 points).
 2. The continuous analogue of the Heart in policy space is a **research-level open problem** — there is no exact algorithm or proven formula for it. The convex hull of grid survivors is a useful visualisation but not a rigorous solution concept.
 
-**Action (deferred post-v1.0.0):** Approximation status is documented in `geometry_design.md` and `c_api_design.md`. Not shown in example scripts. Tracked in `milestone_gates.md § Deferred known issues`. Revisit only when theoretical progress is made on the continuous Heart.
+**Action (deferred post-`0.2.0`):** Approximation status is documented in `geometry_design.md` and `c_api_design.md`. Not shown in example scripts. Tracked in `milestone_gates.md § Deferred known issues`. Revisit only when theoretical progress is made on the continuous Heart.
 
 **Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/ROADMAP.md`.
 ---
@@ -130,7 +132,7 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 
 ### Session: 2026-03-05 — C API Phase C0 (hygiene and contracts) COMPLETE
 
-- **C0.1 — Version / visibility:** Added `SCS_API_VERSION_MAJOR/MINOR/PATCH` (0.1.0), `SCS_MAJORITY_SIMPLE`, `SCS_DEFAULT_WINSET_SAMPLES`, `SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION`, and `SCS_API` visibility macro to `scs_api.h`. Added `scs_api_version(out_major, out_minor, out_patch, ...)` returning the compile-time version.
+- **C0.1 — Version / visibility:** Added `SCS_API_VERSION_MAJOR/MINOR/PATCH` (now `0.2.0` in the current header), `SCS_MAJORITY_SIMPLE`, `SCS_DEFAULT_WINSET_SAMPLES`, `SCS_DEFAULT_BOUNDARY_GRID_RESOLUTION`, and `SCS_API` visibility macro to `scs_api.h`. Added `scs_api_version(out_major, out_minor, out_patch, ...)` returning the compile-time version.
 - **C0.2 — Error codes:** Added `SCS_ERROR_BUFFER_TOO_SMALL (3)` and `SCS_ERROR_OUT_OF_MEMORY (4)`.
 - **C0.3 — Pairwise domain:** Added `typedef int32_t SCS_PairwiseResult` with named constants `SCS_PAIRWISE_LOSS (-1)`, `SCS_PAIRWISE_TIE (0)`, `SCS_PAIRWISE_WIN (1)`. Fixed-width integers avoid C enum size ambiguity for `ctypes`/`cffi`/`.Call` bindings.
 - **C0.4 — `scs_level_set_to_polygon` update:** Added `out_capacity` parameter (counted in `(x,y)` pairs). Null `out_xy` is now a size-query (writes required count to `*out_n`, returns `SCS_OK`). Non-null `out_xy` with insufficient `out_capacity` returns `SCS_ERROR_BUFFER_TOO_SMALL` and sets `*out_n` to the required size.
@@ -282,7 +284,7 @@ See `docs/status/consensus_plan_4.md` for details.
 
 ### Session: 2026-03-04 — Milestone gates (Item 30)
 
-- Created `docs/status/milestone_gates.md`: definition-of-done for Phase 3 complete, c_api minimal, Geometry + voting (mid-term), First binding / 1.0. Each milestone has gates for features, tests, docs, API stability.
+- Created `docs/status/milestone_gates.md`: definition-of-done for Phase 3 complete, c_api minimal, Geometry + voting, the first public release line, and later feature milestones. Each milestone has gates for features, tests, docs, API stability.
 - Linked from ROADMAP and docs index. Marked Item 30 ✅ Done in CONSENSUS_PLAN; next item 31 (CONTRIBUTING/SECURITY/CHANGELOG).
 
 ### Session: 2026-03-04 — CONTRIBUTING, SECURITY, CHANGELOG + docs consolidation (Item 31)
