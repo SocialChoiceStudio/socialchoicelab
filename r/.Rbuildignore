@@ -1,2 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^devScript_MAIN\.R$
+^TestScript_11_Tovey\.R$
+^_pkgdown\.yml$
+^doc$
