@@ -1,0 +1,60 @@
+# Run All Local Checks Before Push
+
+Before pushing to the remote repository, run ALL local checks until they PASS. Do not push if any check fails.
+
+## Mandatory Local Checks (in order)
+
+1. **Binding Checks** (required if `r/` or `python/` files changed):
+   ```bash
+   export SCS_LIB_PATH=$(pwd)/build
+   export SCS_INCLUDE_PATH=$(pwd)/include
+   ./scripts/check-bindings.sh
+   ```
+   This runs:
+   - `R CMD check` for the R package
+   - `pytest` for Python unit tests
+
+2. **Documentation Build — Python** (required if `docs/` or `python/` files changed):
+   ```bash
+   pip install mkdocs mkdocstrings[python] mkdocs-material mkdocs-jupyter
+   mkdocs build --config-file docs/mkdocs.yml --strict
+   ```
+
+3. **Documentation Build — R** (required if `r/` or `docs/` files changed):
+   ```bash
+   cd r
+   export SCS_LIB_PATH=$(pwd)/../build
+   export SCS_INCLUDE_PATH=$(pwd)/../include
+   Rscript -e "pkgdown::build_site(preview = FALSE)"
+   ```
+
+4. **Format Check** (always):
+   ```bash
+   ./lint.sh format
+   git diff --exit-code -- include/ src/ tests/unit/
+   ```
+
+5. **C++ Tests** (if `include/`, `src/`, or `tests/` changed):
+   ```bash
+   cmake -B build -DCMAKE_BUILD_TYPE=Release
+   cmake --build build
+   cd build && ctest --output-on-failure -LE benchmark
+   ```
+
+## Why This Matters
+
+- **Prevents CI failures:** All checks in CI will pass locally if run first.
+- **Saves time:** Catch errors before waiting for CI (which takes ~10 minutes).
+- **Maintains code quality:** Format, tests, and documentation build consistently.
+
+## Pragmatic Notes
+
+- Run only checks relevant to files you changed (use the filters above).
+- If a check takes too long (e.g., pkgdown), monitor progress and be prepared to stop and investigate if it appears stuck.
+- The pre-push hook runs binding checks automatically; use `git push --no-verify` sparingly only if you are absolutely certain checks pass.
+
+## Reference
+
+- See `.github/workflows/ci.yml` for the exact CI checks that must pass.
+- Pre-commit hook: `.git/hooks/pre-commit` (runs formatting).
+- Pre-push hook: `.git/hooks/pre-push` (runs binding checks for Python/R).
