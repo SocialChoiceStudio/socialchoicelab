@@ -59,9 +59,11 @@ agent_conversations/
 # PDF files (reference materials)
 *.pdf
 
-# Large data files
+# Large data files (except bundled scenario data)
 *.csv
 *.json
+!r/inst/extdata/scenarios/*.json
+!python/src/socialchoicelab/data/scenarios/*.json
 *.dat
 *.bin
 

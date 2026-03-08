@@ -1,0 +1,24 @@
+{
+  "name": "DPMR (PUCH 2014, 7 voters)",
+  "description": "Voter configuration from voteR package: DPMR (PUCH 2014, 7 voters)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 7,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.49, 0.044],
+    [0.157, 0.966],
+    [0.388, 0.785],
+    [0.514, 0.907],
+    [0.239, 0.026],
+    [0.517, 0.431],
+    [0.332, 0.414]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5", "V6", "V7"],
+  "status_quo": {}
+}

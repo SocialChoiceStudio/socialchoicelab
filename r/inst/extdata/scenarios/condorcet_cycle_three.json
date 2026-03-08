@@ -1,0 +1,20 @@
+{
+  "name": "Condorcet Cycle (3 voters)",
+  "description": "Voter configuration from voteR package: Condorcet Cycle (3 voters)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 3,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.5, 1],
+    [0, 0.5],
+    [0.5, 0.3]
+  ],
+  "voter_names": ["V1", "V2", "V3"],
+  "status_quo": {}
+}

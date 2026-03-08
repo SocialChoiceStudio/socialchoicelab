@@ -1,0 +1,24 @@
+{
+  "name": "Unanimity Test (7 voters)",
+  "description": "Voter configuration from voteR package: Unanimity Test (7 voters)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 7,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.8, 0.1429],
+    [0.8, 0.2857],
+    [0.6, 0.4286],
+    [0.6, 0.5714],
+    [0.8, 0.7143],
+    [0.8, 0.8571],
+    [0.8, 1]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5", "V6", "V7"],
+  "status_quo": {}
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Symmetrical Rotated (5 voters)",
+  "description": "Voter configuration from voteR package: Symmetrical Rotated (5 voters)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 5,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.7819, 0.6026],
+    [0.4895, 0.7998],
+    [0.2116, 0.5827],
+    [0.3322, 0.2513],
+    [0.6847, 0.2636]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5"],
+  "status_quo": {}
+}

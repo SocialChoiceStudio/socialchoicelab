@@ -1,0 +1,26 @@
+{
+  "name": "Symmetrical (9 voters, variant 2)",
+  "description": "Voter configuration from voteR package: Symmetrical (9 voters, variant 2)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 9,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.8, 0.5],
+    [0.7298, 0.6928],
+    [0.5521, 0.7954],
+    [0.35, 0.7598],
+    [0.2181, 0.6026],
+    [0.2181, 0.3974],
+    [0.35, 0.2402],
+    [0.5521, 0.2046],
+    [0.7298, 0.3072]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9"],
+  "status_quo": {}
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Fiorina & Plott Modified",
+  "description": "Voter configuration from voteR package: Fiorina & Plott Modified",
+  "source": "voteR-Deprecated package",
+  "n_voters": 5,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.684, 0.345],
+    [0.406, 0.299],
+    [0.77, 0.735],
+    [0.818, 0.604],
+    [0.684, 0.345]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5"],
+  "status_quo": {}
+}

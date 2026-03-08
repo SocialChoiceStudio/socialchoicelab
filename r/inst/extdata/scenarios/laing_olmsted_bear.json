@@ -1,0 +1,19 @@
+{
+  "name": "Laing-Olmsted-Bear",
+  "description": "5-player spatial voting scenario. A canonical example of cycling under majority rule in two-dimensional policy space.",
+  "source": "Laing, J.D., Olmsted, R.J., & Bear, M.W.",
+  "n_voters": 5,
+  "n_dimensions": 2,
+  "space": { "x_range": [0, 200], "y_range": [0, 200] },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [ 20.8,  79.6],
+    [100.4,  69.2],
+    [121.2, 115.2],
+    [100.4,   6.4],
+    [  7.2,  20.0]
+  ],
+  "voter_names": ["P1", "P2", "P3", "P4", "P5"],
+  "status_quo": [100.0, 100.0]
+}

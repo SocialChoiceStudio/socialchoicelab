@@ -1,0 +1,21 @@
+{
+  "name": "Square (4 voters)",
+  "description": "Voter configuration from voteR package: Square (4 voters)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 4,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.8, 0.5],
+    [0.5, 0.8],
+    [0.2, 0.5],
+    [0.5, 0.2]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4"],
+  "status_quo": {}
+}

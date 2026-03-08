@@ -1,0 +1,22 @@
+{
+  "name": "Triangle (5 voters)",
+  "description": "Voter configuration from voteR package: Triangle (5 voters)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 5,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.4, 0.1],
+    [0.95, 0.95],
+    [0.01, 0.3],
+    [0.3, 0.01],
+    [1, 1]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5"],
+  "status_quo": {}
+}

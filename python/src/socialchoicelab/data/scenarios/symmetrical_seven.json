@@ -1,0 +1,24 @@
+{
+  "name": "Symmetrical (7 voters)",
+  "description": "Voter configuration from voteR package: Symmetrical (7 voters)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 7,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.8, 0.5],
+    [0.687, 0.7345],
+    [0.4332, 0.7925],
+    [0.2297, 0.6302],
+    [0.2297, 0.3698],
+    [0.4332, 0.2075],
+    [0.687, 0.2655]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5", "V6", "V7"],
+  "status_quo": {}
+}

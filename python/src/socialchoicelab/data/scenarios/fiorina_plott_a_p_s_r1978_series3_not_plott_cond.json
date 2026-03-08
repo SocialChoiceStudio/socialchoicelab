@@ -1,0 +1,22 @@
+{
+  "name": "Fiorina & Plott (APSR 1978, Series 3)",
+  "description": "Voter configuration from voteR package: Fiorina & Plott (APSR 1978, Series 3)",
+  "source": "voteR-Deprecated package",
+  "n_voters": 5,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 1],
+    "y_range": [0, 1]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [0.2833, 0.3278],
+    [0.1667, 0.2889],
+    [0.1389, 0.4],
+    [0.3444, 0.6056],
+    [0.9167, 0.1778]
+  ],
+  "voter_names": ["V1", "V2", "V3", "V4", "V5"],
+  "status_quo": {}
+}

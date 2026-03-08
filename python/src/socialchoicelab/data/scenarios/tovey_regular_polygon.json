@@ -1,0 +1,25 @@
+{
+  "name": "Tovey Regular Polygon",
+  "description": "11-player spatial voting scenario arranged roughly as a regular polygon with a centrist voter. Used by Tovey to demonstrate properties of the uncovered set and yolk.",
+  "source": "Tovey, C.A.",
+  "n_voters": 11,
+  "n_dimensions": 2,
+  "space": { "x_range": [0, 100], "y_range": [0, 100] },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [80.000, 50.000],
+    [85.500, 73.250],
+    [24.500, 71.250],
+    [20.000, 50.000],
+    [19.750, 33.750],
+    [80.250, 27.250],
+    [10.000, 65.500],
+    [11.000, 32.000],
+    [81.750, 65.500],
+    [84.250, 32.000],
+    [56.000, 50.000]
+  ],
+  "voter_names": ["XX0", "XX1", "XX2", "XX3", "XX4", "XX5", "XX6", "XX7", "XX8", "XX9", "XX10"],
+  "status_quo": [55.0, 49.75]
+}
