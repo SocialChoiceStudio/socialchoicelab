@@ -97,8 +97,9 @@ def load_scenario(name: str) -> Dict[str, Any]:
 
     # status_quo can be None or an array
     status_quo = None
-    if raw.get("status_quo") is not None:
-        status_quo = np.array(raw["status_quo"], dtype=float)
+    sq = raw.get("status_quo")
+    if sq is not None and (isinstance(sq, list) and len(sq) > 0):
+        status_quo = np.array(sq, dtype=float)
 
     return {
         "name": raw["name"],
