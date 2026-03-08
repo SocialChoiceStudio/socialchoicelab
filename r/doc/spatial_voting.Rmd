@@ -52,7 +52,6 @@ stochastic draws are fully reproducible.
 
 ```{r stream-manager}
 sm <- stream_manager(master_seed = 2024, stream_names = c("gen", "ties"))
-# Draw a test value — for illustration only.
 sm$uniform_real("gen", 0, 1)
 ```
 
@@ -73,75 +72,51 @@ majority-rule equilibrium.
 
 ```{r winset}
 ws <- winset_2d(status_quo = sq, voter_ideals = voters)
-ws$is_empty()        # TRUE if SQ is a majority equilibrium
-ws$bbox()            # bounding box of the winset
+ws$is_empty()   # TRUE if SQ is a majority equilibrium
+ws$bbox()       # bounding box of the winset
 ```
 
-Plot the winset boundary (requires **graphics**):
-
-```{r winset-plot, fig.width = 5, fig.height = 5}
-bnd <- ws$boundary()
-plot(bnd$xy, type = "n", asp = 1, xlab = "x", ylab = "y",
-     main = "Winset of the status quo")
-polygon(bnd$xy[, 1], bnd$xy[, 2], col = "#CCE5FF88", border = "#336699")
-points(rbind(sq, a, b), pch = 19, col = c("black", "firebrick", "steelblue"))
-text(rbind(sq, a, b), labels = c("SQ", "A", "B"), pos = 4)
-points(matrix(voters, ncol = 2, byrow = TRUE), pch = 4, col = "grey40")
-legend("topright", legend = c("Winset", "Alternatives", "Voters"),
-       fill = c("#CCE5FF88", NA, NA), pch = c(NA, 19, 4),
-       col = c(NA, "firebrick", "grey40"), border = c("black", NA, NA))
-```
-
-## 5 — Copeland winner
+## 5 — Copeland and Condorcet winners
 
 The **Copeland winner** beats (or ties) the most alternatives in pairwise
-majority comparisons. With a finite alternative set:
+majority comparisons. A **Condorcet winner** beats *every* alternative by
+strict majority.
 
-```{r copeland}
+```{r copeland-condorcet}
 alts <- c(sq, a, b)   # flat representation
-copeland_scores_2d(alts, voters)   # named score vector
-copeland_winner_2d(alts, voters)   # 1-based index of winner
+copeland_scores_2d(alts, voters)           # named score vector
+copeland_winner_2d(alts, voters)           # 1-based index
+has_condorcet_winner_2d(alts, voters)      # logical
+condorcet_winner_2d(alts, voters)          # 1-based index or NA
 ```
 
-## 6 — Condorcet winner
+## 6 — Centrality measures
 
-A **Condorcet winner** beats *every* other alternative by strict majority.
+Three summary statistics for the voter ideal-point distribution:
 
-```{r condorcet}
-has_condorcet_winner_2d(alts, voters)       # logical
-condorcet_winner_2d(alts, voters)           # 1-based index or NA
+```{r centrality}
+marginal_median_2d(voters)    # coordinate-wise median (issue-by-issue median voter)
+centroid_2d(voters)           # coordinate-wise arithmetic mean (centre of mass)
+# geometric_mean_2d() requires strictly positive coordinates
 ```
 
 ## 7 — Ordinal preference profiles and voting rules
 
-Build an ordinal profile from the spatial layout, then apply plurality and
-Borda count:
+Build an ordinal profile from the spatial layout, then apply voting rules:
 
 ```{r profile}
 prof <- profile_build_spatial(alt_xy = alts, voter_ideals = voters)
-prof$dims()           # list(n_voters = 5, n_alts = 3)
-prof$export()         # 5×3 ranking matrix
+prof$dims()     # list(n_voters = 5, n_alts = 3)
+prof$export()   # 5×3 ranking matrix (1 = most preferred)
 ```
 
-**Plurality:**
+**Plurality, Borda count, and approval voting:**
 
-```{r plurality}
+```{r voting-rules}
 plurality_scores(prof)
-plurality_one_winner(prof)
-```
-
-**Borda count:**
-
-```{r borda}
 borda_scores(prof)
-borda_ranking(prof)    # full social ordering
-```
-
-**Approval voting** (each voter approves their top 2):
-
-```{r approval}
-approval_scores_topk(prof, k = 2L)
-approval_all_winners_topk(prof, k = 2L)
+borda_ranking(prof)                    # full social ordering
+approval_scores_topk(prof, k = 2L)    # each voter approves top 2
 ```
 
 ## 8 — Pareto efficiency and Condorcet consistency
@@ -149,85 +124,74 @@ approval_all_winners_topk(prof, k = 2L)
 ```{r properties}
 pareto_set(prof)                  # Pareto-efficient alternatives (1-based)
 has_condorcet_winner_profile(prof)
-condorcet_winner_profile(prof)    # 1-based index or NA
-
-# Check whether alt 1 is Condorcet-consistent:
-is_condorcet_consistent(prof, 1L)
+condorcet_winner_profile(prof)    # 1-based index, or NULL
+is_condorcet_consistent(prof, 1L) # is alternative 1 Condorcet-consistent?
 ```
 
-## 9 — Interactive visualization
+## 9 — Built-in scenarios
 
-`socialchoicelab` includes a thin Plotly-based visualization layer.  All
-plotting functions return `plotly` figures that can be displayed inline in
-RStudio, saved as self-contained HTML, or composed by piping the figure from
-one layer function into the next.
+`socialchoicelab` ships 33 canonical spatial voting scenarios:
 
-### 9.1 — Base plot
+```{r scenarios}
+list_scenarios()                          # character vector of names
+s <- load_scenario("laing_olmsted_bear")  # returns list(voters, status_quo, ...)
+s$voters                                  # flat [x0, y0, ...] vector
+s$status_quo                              # length-2 vector
+```
 
-```{r plot-base}
-# Flat [x0, y0, x1, y1, ...] representation of all actors.
-alts_flat <- c(sq, a, b)   # 3 alternatives
+## 10 — Interactive visualization
+
+All plotting functions return composable **Plotly** figures.
+
+```{r plot-setup}
+voter_names <- paste0("P", 1:5)
+alts_flat   <- c(sq, a, b)
 
 fig <- plot_spatial_voting(
   voters,
   alts_flat,
   sq          = sq,
-  voter_names = paste0("V", 1:5),
+  voter_names = voter_names,
   alt_names   = c("SQ", "A", "B"),
   title       = "5-voter legislature"
 )
 fig
 ```
 
-### 9.2 — Winset layer
+Add geometric layers one at a time — each returns the same figure enriched
+with a new trace:
 
-```{r plot-winset}
-ws  <- winset_2d(sq, voters)
-fig <- plot_spatial_voting(voters, alts_flat, sq = sq)
-fig <- layer_winset(fig, ws)
-fig
-```
-
-### 9.3 — Uncovered set layer
-
-```{r plot-uncovered}
-bnd <- uncovered_set_boundary_2d(voters, grid_resolution = 12L)
-fig <- plot_spatial_voting(voters, alts_flat, sq = sq)
-fig <- layer_uncovered_set(fig, bnd)
-fig
-```
-
-### 9.4 — Convex hull of voter ideal points
-
-```{r plot-hull}
+```{r plot-layers}
 hull <- convex_hull_2d(voters)
-fig  <- plot_spatial_voting(voters, alts_flat, sq = sq)
-fig  <- layer_convex_hull(fig, hull)
-fig
-```
+ws   <- winset_2d(sq, voters)
+bnd  <- uncovered_set_boundary_2d(voters, grid_resolution = 12L)
 
-### 9.5 — Yolk (manually specified center and radius)
-
-The yolk is the smallest circle intersecting all median hyperplanes.
-Supply its center and radius directly (e.g., from a numerical estimate):
-
-```{r plot-yolk}
-fig <- plot_spatial_voting(voters, alts_flat, sq = sq)
-fig <- layer_yolk(fig, center_x = 0.1, center_y = 0.0, radius = 0.25)
-fig
-```
-
-### 9.6 — Full composite plot
-
-Layers compose freely — each function returns the same figure with an
-additional trace added:
-
-```{r plot-composite}
 fig <- plot_spatial_voting(voters, alts_flat, sq = sq,
-                           title = "Full spatial analysis")
+                           voter_names = voter_names,
+                           alt_names   = c("SQ", "A", "B"),
+                           title       = "Spatial analysis — composite layers")
+fig <- layer_convex_hull(fig, hull)
 fig <- layer_winset(fig, ws)
 fig <- layer_uncovered_set(fig, bnd)
-fig <- layer_convex_hull(fig, hull)
-fig <- layer_yolk(fig, center_x = 0.1, center_y = 0.0, radius = 0.25)
+fig <- layer_ic(fig, voters, sq, color_by_voter = TRUE)
+fig <- layer_centroid(fig, voters)
+fig <- layer_marginal_median(fig, voters)
+fig <- finalize_plot(fig)
 fig
+```
+
+### Color themes
+
+All `layer_*()` functions accept a `theme` argument for colorblind-safe palettes:
+
+```{r themes}
+scl_palette("okabe_ito", n = 5)  # return hex colors from the Okabe-Ito palette
+scl_theme_colors("winset")       # canonical color for the winset layer
+```
+
+### Saving plots
+
+```{r save}
+save_plot(fig, "analysis.html")           # self-contained HTML
+# save_plot(fig, "analysis.png")          # raster image (requires kaleido)
 ```
