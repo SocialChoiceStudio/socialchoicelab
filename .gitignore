@@ -104,3 +104,4 @@ scripts/plot_*.py
 scratch/
 r/.Renviron
 r/*.Rproj
+# CI test trigger
