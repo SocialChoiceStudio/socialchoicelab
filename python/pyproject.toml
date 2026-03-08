@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "socialchoicelab"
-version = "0.1.0"
+version = "0.2.0"
 description = "Spatial social choice analysis: winsets, majority preference, voting rules, and more."
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }

@@ -1,7 +1,7 @@
 Package: socialchoicelab
 Type: Package
 Title: Spatial Social Choice Analysis
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person("SocialChoiceLab Authors", role = c("aut", "cre"),
                   email = "maintainer@socialchoicelab.example")
 Description: Spatial and general social choice analysis: distance and loss
