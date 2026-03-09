@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pre-push.sh — pre-push hook that runs binding checks when r/ or python/ changed.
+# pre-push.sh — pre-push hook that runs the full check suite when r/ or python/ changed.
 #
 # Install:
 #   cp scripts/pre-push.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push
@@ -35,13 +35,13 @@ if [[ $CHANGED_BINDINGS -eq 0 ]]; then
   exit 0  # no binding files changed; skip the check
 fi
 
-echo "pre-push: r/ or python/ files changed — running binding checks."
+echo "pre-push: r/ or python/ files changed — running full check suite."
 echo "pre-push: (skip with: git push --no-verify)"
 echo ""
 
-if ! "$ROOT/scripts/check-bindings.sh"; then
+if ! "$ROOT/scripts/check-all.sh"; then
   echo "" >&2
-  echo "pre-push: binding checks FAILED. Fix the errors above before pushing." >&2
+  echo "pre-push: checks FAILED. Fix the errors above before pushing." >&2
   echo "pre-push: to bypass (use sparingly): git push --no-verify" >&2
   exit 1
 fi
