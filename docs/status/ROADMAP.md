@@ -37,7 +37,7 @@ High-level direction for the project. This document does not duplicate detail; i
 ## Mid-term (3–6 months)
 
 - **First R and Python bindings:** Complete ✅. `socialchoicelab` R (`.Call()`) and Python (cffi) packages calling the pre-built `libscs_api` via the C ABI. See [archive/binding_plan_completed.md](archive/binding_plan_completed.md).
-- **Visualization layer:** Complete ✅. Plotly-based spatial voting plot helpers in R and Python. Composable layers, colorblind-safe theme system, built-in scenario datasets, indifference curves, preferred-region overlays, `save_plot()`. See [visualization_plan.md](visualization_plan.md).
+- **Visualization layer:** Complete ✅. Plotly-based spatial voting plot helpers in R and Python. Composable layers, colorblind-safe theme system, built-in scenario datasets, indifference curves, preferred-region overlays, `save_plot()`. See [archive/visualization_plan.md](archive/visualization_plan.md).
 - **`0.2.0` tag:** Pending final release-gate confirmation; see [milestone_gates.md](milestone_gates.md).
 
 ---

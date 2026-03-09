@@ -9,7 +9,7 @@ This file is the single entry point for project documentation.
 | What's next / current position | `docs/status/where_we_are.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
 | Layer 7 competition implementation plan | `docs/status/competition_plan.md` |
-| Visualization layer implementation plan (complete) | `docs/status/visualization_plan.md` |
+| Visualization layer implementation plan (archived) | `docs/status/archive/visualization_plan.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
 | Archived plans (geometry, C API, bindings, aggregation, consensus reviews) | `docs/status/archive/` |
 | Revisit before release or before opening to others | `docs/status/milestone_gates.md` § Revisit before release |
@@ -49,7 +49,7 @@ docs/
 │   ├── where_we_are.md                    ← current position + recent work log
 │   ├── roadmap.md                         ← near-term, mid-term, long-term plans
 │   ├── competition_plan.md                ← Layer 7 competition implementation plan
-│   ├── visualization_plan.md              ← visualization layer plan (complete)
+│   │   ├── visualization_plan.md          ← visualization layer plan (complete, archived)
 │   ├── milestone_gates.md                 ← definition of done per milestone
 │   ├── project_log.md                     ← chronological narrative history
 │   └── archive/                           ← completed short-term plans (for reference)
