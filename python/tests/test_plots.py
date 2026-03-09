@@ -124,7 +124,15 @@ def test_animate_competition_trajectories_returns_figure_with_frames():
         assert fig.layout.updatemenus[0].y < 0
         assert fig.layout.sliders[0].currentvalue.visible is False
         assert "select2d" in fig.layout.modebar.remove
-        overlay_modes = [trace.mode for trace in fig.data if getattr(trace, "meta", {}).get("scl_role") == "overlay"]
+        overlay_traces = [t for t in fig.data if getattr(t, "meta", {}).get("scl_role") == "overlay"]
+        assert overlay_traces
+
+
+def test_animate_competition_trajectories_trail_none_markers_only():
+    """With trail='none' all overlay traces must be markers."""
+    with _competition_trace_2d() as trace:
+        fig = sclp.animate_competition_trajectories(trace, voters=VOTERS, trail="none")
+        overlay_modes = [t.mode for t in fig.data if getattr(t, "meta", {}).get("scl_role") == "overlay"]
         assert overlay_modes
         assert all(mode == "markers" for mode in overlay_modes)
 

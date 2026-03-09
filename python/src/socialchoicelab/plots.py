@@ -362,10 +362,76 @@ def animate_competition_trajectories(
     theme="dark2",
     width=700,
     height=600,
-    trail="none",
+    trail="fade",
     trail_length="medium",
 ):
-    """Animate 2D competition trajectories from a CompetitionTrace."""
+    """Animate 2D competition trajectories from a CompetitionTrace.
+
+    Parameters
+    ----------
+    trace:
+        A ``CompetitionTrace`` object from ``competition_run``. Must be 2D.
+    voters:
+        Flat array or array-like of voter ideal points (row-major, 2 columns).
+        Passed directly to ``plot_spatial_voting``.
+    competitor_names:
+        List of display names for each competitor. Defaults to
+        ``["Competitor 1", "Competitor 2", ...]``.
+    title:
+        Plot title string.
+    theme:
+        Colour theme name (see ``scl_palette``).
+    width, height:
+        Figure dimensions in pixels.
+    trail:
+        Trail style for animated paths. Three modes are supported:
+
+        ``"fade"`` *(default)*
+            Each animation step shows a short fading trail of recent segments
+            behind each competitor. Opacity decays exponentially from the
+            current position outward; segments older than ``trail_length`` are
+            hidden. Conveys direction and recent history without cluttering
+            the plot.
+
+        ``"full"``
+            The complete path from round 1 to the current step is drawn as a
+            continuous line. Useful for inspecting the entire trajectory, but
+            can become visually busy in long competitions.
+
+        ``"none"``
+            Markers only; no path segments are drawn. Cleanest output,
+            suitable when only final positions matter or the animation is
+            embedded in a space-constrained layout.
+
+    trail_length:
+        Controls how many past segments are shown when ``trail="fade"``.
+        Accepts a string shorthand or a positive integer:
+
+        ``"short"``
+            The most recent 1/3 of all rounds. Good for dense or fast-moving
+            competitions.
+
+        ``"medium"`` *(default)*
+            The most recent 1/2 of all rounds. Balances recency and context
+            for most competition lengths.
+
+        ``"long"``
+            The most recent 3/4 of all rounds. Useful when the full trajectory
+            arc matters but ``"full"`` would be too cluttered.
+
+        *positive integer*
+            Exact number of segments to retain, independent of total round
+            count.
+
+        Ignored when ``trail`` is ``"none"`` or ``"full"``.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        A Plotly figure with animation frames, a slider, and Play/Pause
+        controls. The slider starts paused (``active=-1``); press Play or
+        drag the slider to animate.
+    """
     _require_plotly()
     n_rounds, n_competitors, n_dims = trace.dims()
     if n_dims != 2:

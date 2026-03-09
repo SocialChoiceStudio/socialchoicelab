@@ -98,9 +98,23 @@ test_that("animate_competition_trajectories returns a plotly object with frames"
   expect_lt(built$x$layout$sliders[[1]]$y, 0)
   expect_lt(built$x$layout$updatemenus[[1]]$y, 0)
   expect_false(isTRUE(built$x$layout$sliders[[1]]$currentvalue$visible))
-  overlay_names <- vapply(Filter(function(tr) identical(tr$scl_role, "overlay"), fig$x$attrs),
-                          function(tr) tr$mode %||% "", character(1))
-  expect_true(all(overlay_names == "markers"))
+  expect_true(length(built$x$data) > 0L)
+})
+
+test_that("animate_competition_trajectories trail=none uses markers only", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  fig <- animate_competition_trajectories(trace, voters = VOTERS, trail = "none")
+  built <- plotly::plotly_build(fig)
+  # Static traces (e.g. Voters) have showlegend TRUE; overlay markers are the
+  # non-Voters traces. Check that every non-Voters trace is mode "markers".
+  d <- trace$dims()
+  non_voter_modes <- vapply(
+    Filter(function(tr) !identical(tr$name, "Voters"), built$x$data),
+    function(tr) tr$mode %||% "", character(1)
+  )
+  expect_true(length(non_voter_modes) >= d$n_competitors)
+  expect_true(all(non_voter_modes == "markers"))
 })
 
 test_that("animate_competition_trajectories trail=fade produces frames", {
