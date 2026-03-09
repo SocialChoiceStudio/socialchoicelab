@@ -1,6 +1,6 @@
 # Visualization Plan — R and Python Plotting Layer
 
-**Phase:** C10–C12 (Mid-term: weeks 3–6 post-binding)
+**Phase:** C10–C13 ✅ Complete
 
 Short-to-medium-term plan to build spatial voting visualization helpers in R and Python. After this milestone, users can plot voter ideal points, policy alternatives, winsets, yolk, uncovered set, and convex hull with a few lines of code.
 

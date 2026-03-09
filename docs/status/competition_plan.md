@@ -1,4 +1,4 @@
-# Competition Roadmap
+# Competition Plan
 
 Roadmap for adding Layer 7 multi-candidate electoral competition to SocialChoiceLab.
 

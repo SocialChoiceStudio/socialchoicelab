@@ -192,10 +192,6 @@ Support for user-provided external scenario files (complement to the bundled sce
 
 ---
 
-## Symbolic computation via SymPy (post-open-source)
-
----
-
 ## C API wrapper tooling for external contributors
 
 **When relevant:** When the project opens for external contributions.

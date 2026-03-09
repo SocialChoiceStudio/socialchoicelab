@@ -8,14 +8,20 @@ This file is the single entry point for project documentation.
 |---------------|---------------|
 | What's next / current position | `docs/status/where_we_are.md` |
 | Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
-| Geometry plan (Foundation + Services, Steps A–E) | `docs/status/geometry_plan.md` |
+| Layer 7 competition implementation plan | `docs/status/competition_plan.md` |
+| Visualization layer implementation plan (complete) | `docs/status/visualization_plan.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
-| Archived plans (consensus reviews, core completion) | `docs/status/archive/` |
+| Archived plans (geometry, C API, bindings, aggregation, consensus reviews) | `docs/status/archive/` |
 | Revisit before release or before opening to others | `docs/status/milestone_gates.md` § Revisit before release |
 | Chronological project history | `docs/status/project_log.md` |
 | Architecture intent | `docs/architecture/design_document.md` |
+| Geometry services design (CGAL 2D, winsets, Yolk, Heart, etc.) | `docs/architecture/geometry_design.md` |
+| Aggregation design (profiles, voting rules, Pareto, Condorcet) | `docs/architecture/aggregation_design.md` |
+| C API design and contracts | `docs/architecture/c_api_design.md` |
+| Competition layer (Layer 7) design | `docs/architecture/competition_design.md` |
 | StreamManager design & rules | `docs/architecture/stream_manager_design.md` |
 | Indifference (level-set) API spec | `docs/architecture/indifference_design.md` |
+| Visualization layer design (color system, layer stack, theme decisions) | `docs/development/visualization_design.md` |
 | Code style, build, test | `docs/development/development.md` |
 | Git and GitHub workflow | `docs/development/git_reference.md` |
 | Simulation terminology & example | `docs/development/sample_simulation_description.md` |
@@ -42,21 +48,33 @@ docs/
 ├── status/
 │   ├── where_we_are.md                    ← current position + recent work log
 │   ├── roadmap.md                         ← near-term, mid-term, long-term plans
-│   ├── c_api_plan.md                      ← c_api run plan (spec, implement, test, document)
+│   ├── competition_plan.md                ← Layer 7 competition implementation plan
+│   ├── visualization_plan.md              ← visualization layer plan (complete)
 │   ├── milestone_gates.md                 ← definition of done per milestone
 │   ├── project_log.md                     ← chronological narrative history
 │   └── archive/                           ← completed short-term plans (for reference)
 │       ├── README.md
+│       ├── c_api_plan.md
+│       ├── c_api_extensions_plan.md
+│       ├── geometry_plan.md
+│       ├── profiles_and_aggregation_plan.md
+│       ├── binding_plan_completed.md
+│       ├── binding_decisions_resolved.md
 │       ├── consensus_plan_3.md
 │       ├── consensus_plan_4.md
 │       └── core_completion_plan.md
 ├── architecture/
 │   ├── design_document.md                 ← living system architecture
-│   ├── stream_manager_design.md            ← RNG single-owner policy and rules
-│   └── indifference_design.md              ← level-set API spec (Layer 2)
+│   ├── geometry_design.md                 ← CGAL 2D geometry API and kernel policy
+│   ├── aggregation_design.md              ← profiles, voting rules, aggregation properties
+│   ├── c_api_design.md                    ← stable C ABI design and contracts
+│   ├── competition_design.md              ← Layer 7 competition engine design
+│   ├── stream_manager_design.md           ← RNG single-owner policy and rules
+│   └── indifference_design.md             ← level-set API spec (Layer 2)
 ├── development/
 │   ├── development.md                     ← code style, build, lint, test instructions
 │   ├── git_reference.md                   ← solo git/github workflow
+│   ├── visualization_design.md            ← color system, layer stack, theme decisions
 │   └── sample_simulation_description.md   ← illustrative walkthrough + glossary (non-governing)
 └── references/
     ├── README.md                          ← reference library index
