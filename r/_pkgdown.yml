@@ -130,6 +130,22 @@ reference:
       - list_scenarios
       - load_scenario
 
+  - title: "Candidate Competition"
+    desc: >
+      Run multi-candidate spatial competition simulations (Layer 7).
+      Sticker, Hunter, Aggregator, and Predator strategies; plurality and
+      proportional seat conversion; full trace recording and experiment sweeps.
+    contents:
+      - competition_run
+      - competition_run_experiment
+      - make_competition_engine_config
+      - make_competition_step_config
+      - make_competition_termination_config
+      - CompetitionTrace
+      - CompetitionExperiment
+      - plot_competition_trajectories
+      - animate_competition_trajectories
+
   - title: "Stream Manager"
     desc: "Reproducible pseudo-random number streams."
     contents:

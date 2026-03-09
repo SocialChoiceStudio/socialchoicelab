@@ -27,6 +27,9 @@ animate_competition_trajectories(
 \item{theme}{Colour theme.}
 
 \item{width, height}{Plot dimensions in pixels.}
+
+\item{trail}{Trail style: \code{"none"} (default, markers only),
+\code{"full"} (full path), or \code{"fade"} (fading trail).}
 }
 \value{
 A \code{plotly} figure object with animation frames.

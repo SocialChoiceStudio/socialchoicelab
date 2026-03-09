@@ -17,7 +17,9 @@ competition_run_experiment(
 )
 }
 \arguments{
-\item{competitor_positions, strategy_kinds, voter_ideals, competitor_headings, }{dist_config,engine_config See \code{\link{competition_run}}.}
+\item{competitor_positions, strategy_kinds, voter_ideals, competitor_headings}{See \code{\link{competition_run}}.}
+
+\item{dist_config, engine_config}{See \code{\link{competition_run}}.}
 
 \item{master_seed}{Numeric scalar used to derive per-run seeds.}
 

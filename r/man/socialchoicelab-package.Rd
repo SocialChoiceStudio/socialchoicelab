@@ -8,6 +8,13 @@
 \description{
 Spatial and general social choice analysis: distance and loss functions, majority preference, winsets, uncovered set, Copeland scores, preference profiles, and positional voting rules. Calls the pre-built libscs_api shared library via the C ABI; no C++ compilation required.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://socialchoicestudio.github.io/socialchoicelab/r}
+}
+
+}
 \author{
 \strong{Maintainer}: SocialChoiceLab Authors \email{maintainer@socialchoicelab.example}
 

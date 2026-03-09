@@ -8,6 +8,7 @@ Description: Spatial and general social choice analysis: distance and loss
     functions, majority preference, winsets, uncovered set, Copeland scores,
     preference profiles, and positional voting rules. Calls the pre-built
     libscs_api shared library via the C ABI; no C++ compilation required.
+URL: https://socialchoicestudio.github.io/socialchoicelab/r
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

@@ -276,8 +276,9 @@ competition_run <- function(competitor_positions,
 
 #' Run replicated competition simulations
 #'
-#' @param competitor_positions,strategy_kinds,voter_ideals,competitor_headings,
-#'   dist_config,engine_config See \code{\link{competition_run}}.
+#' @param competitor_positions,strategy_kinds,voter_ideals,competitor_headings
+#'   See \code{\link{competition_run}}.
+#' @param dist_config,engine_config See \code{\link{competition_run}}.
 #' @param master_seed Numeric scalar used to derive per-run seeds.
 #' @param num_runs Integer number of replications.
 #' @param retain_traces Logical. Whether to retain full per-run traces inside

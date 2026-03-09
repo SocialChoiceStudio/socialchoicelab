@@ -330,6 +330,8 @@ plot_competition_trajectories <- function(trace,
 #' @param title Plot title.
 #' @param theme Colour theme.
 #' @param width,height Plot dimensions in pixels.
+#' @param trail Trail style: \code{"none"} (default, markers only),
+#'   \code{"full"} (full path), or \code{"fade"} (fading trail).
 #' @return A \code{plotly} figure object with animation frames.
 #' @export
 animate_competition_trajectories <- function(trace,
