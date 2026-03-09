@@ -375,98 +375,131 @@ animate_competition_trajectories <- function(trace,
   n_segments_max <- max(length(frame_names) - 1L, 0L)
 
   if (trail == "none") {
-    anim_df <- do.call(rbind, lapply(seq_along(frame_names), function(frame_idx) {
-      pos <- positions[[frame_idx]]
-      data.frame(
-        frame = frame_names[frame_idx],
-        competitor = competitor_names,
-        x = pos[, 1],
-        y = pos[, 2],
-        hover_text = frame_names[frame_idx],
-        stringsAsFactors = FALSE
-      )
-    }))
-    anim_df$frame <- factor(anim_df$frame, levels = frame_names, ordered = TRUE)
+    # ── Manual frame construction with explicit trace targeting ──
+    #
+    # We bypass plotly R's native frame = ~frame path (which goes through
+    # registerFrames() in plotly_build) and instead build fig$x$frames
+    # manually with an explicit 'traces' field in each frame.
+    #
+    # Why: registerFrames() uses name-based object-constancy matching,
+    # global-trace-range enforcement, and visibility toggling that can
+    # produce incorrect interpolation artifacts — specifically, oversized
+    # jumps on the first two frame transitions. This is a known class of
+    # issues in plotly.R (see plotly/plotly.R #1696, #1903, #1618).
+    #
+    # The manual approach matches what the Python binding does:
+    # 1. Record how many static (non-animated) traces exist before adding
+    #    competitor traces.
+    # 2. Add unframed base traces at the round-1 positions.
+    # 3. Build frames containing ONLY competitor data, with a 'traces'
+    #    field that tells plotly.js exactly which trace indices to update.
+    # 4. Wire up slider + Play/Pause buttons directly in layout.
+    #
+    # This talks directly to plotly.js, bypassing registerFrames() entirely.
 
+    # Count existing typed traces (voters, etc.) — these are static.
+    n_static <- sum(vapply(fig$x$attrs, function(tr) !is.null(tr$type), logical(1)))
+
+    initial <- positions[[1L]]
     for (i in seq_len(d$n_competitors)) {
-      comp_df <- anim_df[anim_df$competitor == competitor_names[i], , drop = FALSE]
-      comp_df <- comp_df[order(comp_df$frame, decreasing = TRUE), , drop = FALSE]
       fig <- .add_role_trace(
         fig,
         role = "overlay",
-        data = comp_df,
-        x = ~x,
-        y = ~y,
-        frame = ~frame,
+        x = initial[i, 1],
+        y = initial[i, 2],
         type = "scatter",
         mode = "markers",
         name = competitor_names[i],
         marker = list(symbol = "diamond", size = 12, color = colors[i],
                       line = list(color = "white", width = 1)),
-        text = ~hover_text,
+        text = frame_names[1L],
         hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
       )
     }
 
-    fig <- plotly::layout(fig, margin = list(t = 95, r = 20, b = 240, l = 65))
-    fig <- plotly::animation_opts(
-      fig,
-      frame = 700,
-      transition = 0,
-      redraw = FALSE,
-      mode = "next"
+    # 0-based indices of the competitor traces we just added.
+    competitor_trace_indices <- as.integer(
+      seq.int(n_static, n_static + d$n_competitors - 1L)
     )
-    fig <- plotly::animation_slider(
-      fig,
-      x = 0.08,
-      y = -0.20,
-      len = 0.84,
-      currentvalue = list(visible = FALSE),
-      pad = list(t = 0, b = 0)
-    )
-    fig <- plotly::animation_button(
-      fig,
-      x = 0.5,
-      y = -0.42,
-      xanchor = "center",
-      yanchor = "top",
-      direction = "right",
-      showactive = FALSE,
-      pad = list(t = 0, r = 8)
-    )
-    if (!is.null(fig$x$layout$updatemenus) && length(fig$x$layout$updatemenus) >= 1L) {
-      play_button <- fig$x$layout$updatemenus[[1]]$buttons[[1]]
-      pause_button <- list(
-        label = "Pause",
-        method = "animate",
-        args = list(list(NULL), list(
-          frame = list(duration = 0, redraw = FALSE),
-          transition = list(duration = 0),
-          mode = "immediate"
-        ))
-      )
-      fig$x$layout$updatemenus[[1]]$buttons <- list(play_button, pause_button)
-    }
-    if (!is.null(fig$x$layout$sliders) && length(fig$x$layout$sliders) >= 1L) {
-      fig$x$layout$sliders[[1]]$steps <- lapply(fig$x$layout$sliders[[1]]$steps, function(step) {
-        step$label <- ""
-        step
-      })
-    }
-    built <- plotly::plotly_build(fig)
-    first_pos <- positions[[1L]]
-    trace_idx <- which(vapply(built$x$data, function(tr) identical(tr$name %||% "", "Voters"), logical(1)))
-    first_overlay <- if (length(trace_idx) >= 1L) max(trace_idx) + 1L else 2L
-    for (i in seq_len(d$n_competitors)) {
-      idx <- first_overlay + i - 1L
-      if (idx <= length(built$x$data)) {
-        built$x$data[[idx]]$x <- first_pos[i, 1]
-        built$x$data[[idx]]$y <- first_pos[i, 2]
-        built$x$data[[idx]]$text <- frame_names[1L]
-        built$x$data[[idx]]$frame <- NULL
+
+    frames <- lapply(seq_along(frame_names), function(frame_idx) {
+      frame_data <- list()
+      for (i in seq_len(d$n_competitors)) {
+        current <- positions[[frame_idx]][i, ]
+        frame_data[[length(frame_data) + 1L]] <- list(
+          x = I(current[1]),
+          y = I(current[2]),
+          type = "scatter",
+          mode = "markers",
+          name = competitor_names[i],
+          marker = list(symbol = "diamond", size = 12, color = colors[i],
+                        line = list(color = "white", width = 1)),
+          text = I(frame_names[frame_idx]),
+          hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+        )
       }
-    }
-    fig <- built
+      list(
+        name = frame_names[frame_idx],
+        data = frame_data,
+        traces = as.list(competitor_trace_indices)
+      )
+    })
+
+    fig$x$frames <- frames
+    fig <- plotly::layout(
+      fig,
+      margin = list(t = 95, r = 20, b = 220, l = 65),
+      updatemenus = list(list(
+        type = "buttons",
+        showactive = FALSE,
+        x = 0.5,
+        y = -0.36,
+        xanchor = "center",
+        yanchor = "top",
+        pad = list(t = 0, r = 8),
+        direction = "right",
+        buttons = list(
+          list(
+            label = "Play",
+            method = "animate",
+            args = list(frame_names, list(
+              frame = list(duration = 700, redraw = TRUE),
+              transition = list(duration = 0),
+              fromcurrent = FALSE,
+              mode = "next"
+            ))
+          ),
+          list(
+            label = "Pause",
+            method = "animate",
+            args = list(list(NULL), list(
+              frame = list(duration = 0, redraw = TRUE),
+              transition = list(duration = 0),
+              mode = "immediate"
+            ))
+          )
+        )
+      )),
+      sliders = list(list(
+        active = 0,
+        x = 0.08,
+        y = -0.17,
+        len = 0.84,
+        currentvalue = list(visible = FALSE),
+        pad = list(t = 0, b = 0),
+        steps = lapply(frame_names, function(frame_name) {
+          list(
+            label = "",
+            method = "animate",
+            args = list(list(frame_name), list(
+              frame = list(duration = 0, redraw = TRUE),
+              transition = list(duration = 0),
+              mode = "immediate"
+            ))
+          )
+        })
+      ))
+    )
     return(.apply_plot_config(fig))
   }
 

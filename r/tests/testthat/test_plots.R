@@ -94,7 +94,7 @@ test_that("animate_competition_trajectories returns a plotly object with frames"
   built <- plotly::plotly_build(fig)
   expect_s3_class(fig, "plotly")
   expect_true(length(fig$x$frames) >= 2L)
-  expect_equal(built$x$layout$margin$b, 240)
+  expect_equal(built$x$layout$margin$b, 220)
   expect_lt(built$x$layout$sliders[[1]]$y, 0)
   expect_lt(built$x$layout$updatemenus[[1]]$y, 0)
   expect_false(isTRUE(built$x$layout$sliders[[1]]$currentvalue$visible))
