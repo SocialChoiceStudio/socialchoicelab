@@ -103,6 +103,73 @@ test_that("animate_competition_trajectories returns a plotly object with frames"
   expect_true(all(overlay_names == "markers"))
 })
 
+test_that("animate_competition_trajectories trail=fade produces frames", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  fig <- animate_competition_trajectories(trace, voters = VOTERS, trail = "fade")
+  expect_s3_class(fig, "plotly")
+  expect_true(length(fig$x$frames) >= 2L)
+})
+
+test_that("animate_competition_trajectories trail=fade respects integer trail_length", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  d <- trace$dims()
+  fig <- animate_competition_trajectories(
+    trace, voters = VOTERS, trail = "fade", trail_length = 2L
+  )
+  built <- plotly::plotly_build(fig)
+  for (frame in built$x$frames) {
+    non_empty <- Filter(function(tr) {
+      identical(tr$mode, "lines") && length(tr$x) > 0L
+    }, frame$data)
+    expect_lte(length(non_empty), d$n_competitors * 2L)
+  }
+})
+
+test_that("animate_competition_trajectories trail=fade accepts string shorthands", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  d <- trace$dims()
+  n_seg <- d$n_rounds  # n_rounds + 1 frames → n_rounds segments
+  for (shorthand in c("short", "medium", "long")) {
+    fig <- animate_competition_trajectories(
+      trace, voters = VOTERS, trail = "fade", trail_length = shorthand
+    )
+    expect_s3_class(fig, "plotly")
+    expected_max <- switch(shorthand,
+      short  = max(1L, floor(n_seg / 3L)),
+      medium = max(1L, floor(n_seg / 2L)),
+      long   = max(1L, floor(n_seg * 3L / 4L))
+    )
+    built <- plotly::plotly_build(fig)
+    for (frame in built$x$frames) {
+      non_empty <- Filter(function(tr) {
+        identical(tr$mode, "lines") && length(tr$x) > 0L
+      }, frame$data)
+      expect_lte(length(non_empty), d$n_competitors * expected_max)
+    }
+  }
+})
+
+test_that("animate_competition_trajectories rejects unrecognised trail_length string", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  expect_error(
+    animate_competition_trajectories(trace, trail = "fade", trail_length = "huge"),
+    "trail_length"
+  )
+})
+
+test_that("animate_competition_trajectories rejects trail_length < 1", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  expect_error(
+    animate_competition_trajectories(trace, trail = "fade", trail_length = 0L),
+    "trail_length"
+  )
+})
+
 test_that("background regions stay below points in canonical order", {
   hull <- convex_hull_2d(VOTERS)
   ws <- winset_2d(SQ, VOTERS)

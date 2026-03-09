@@ -332,6 +332,11 @@ plot_competition_trajectories <- function(trace,
 #' @param width,height Plot dimensions in pixels.
 #' @param trail Trail style: \code{"none"} (default, markers only),
 #'   \code{"full"} (full path), or \code{"fade"} (fading trail).
+#' @param trail_length Maximum number of fading segments to show when
+#'   \code{trail = "fade"}. Older segments beyond this limit are hidden.
+#'   Accepts a positive integer (exact count) or one of \code{"short"}
+#'   (1/3 of rounds), \code{"medium"} (1/2, default), or \code{"long"}
+#'   (3/4 of rounds). Ignored for other trail modes.
 #' @return A \code{plotly} figure object with animation frames.
 #' @export
 animate_competition_trajectories <- function(trace,
@@ -341,7 +346,8 @@ animate_competition_trajectories <- function(trace,
                                              theme = "dark2",
                                              width = 700L,
                                              height = 600L,
-                                             trail = c("none", "full", "fade")) {
+                                             trail = c("none", "full", "fade"),
+                                             trail_length = "medium") {
   if (!inherits(trace, "CompetitionTrace")) {
     stop("Expected a CompetitionTrace object, got ", class(trace)[1], ".")
   }
@@ -357,6 +363,13 @@ animate_competition_trajectories <- function(trace,
     stop("competitor_names length must match n_competitors.")
   }
   trail <- match.arg(trail)
+  if (!is.character(trail_length) && !is.numeric(trail_length)) {
+    stop('trail_length must be an integer or one of "short", "medium", "long".')
+  }
+  if (is.character(trail_length) && !trail_length %in% c("short", "medium", "long")) {
+    stop('trail_length "', trail_length, '" is not recognised. ',
+         'Use "short" (1/3 rounds), "medium" (1/2 rounds), "long" (3/4 rounds), or a positive integer.')
+  }
 
   fig <- plot_spatial_voting(
     voters = voters,
@@ -370,6 +383,17 @@ animate_competition_trajectories <- function(trace,
   frame_names <- c(paste("Round", seq_len(d$n_rounds)), "Final")
   colors <- scl_palette(theme, d$n_competitors, alpha = 0.95)
   n_segments_max <- max(length(frame_names) - 1L, 0L)
+  trail_length <- if (is.character(trail_length)) {
+    switch(trail_length,
+      short  = max(1L, floor(n_segments_max / 3L)),
+      medium = max(1L, floor(n_segments_max / 2L)),
+      long   = max(1L, floor(n_segments_max * 3L / 4L))
+    )
+  } else {
+    tl <- as.integer(trail_length)
+    if (tl < 1L) stop("trail_length must be >= 1, got ", tl, ".")
+    tl
+  }
 
   if (trail == "none") {
     # ── Manual frame construction with explicit trace targeting ──
@@ -593,11 +617,11 @@ animate_competition_trajectories <- function(trace,
           )
         } else {
           age <- r$age
-          if (age <= actual_segments) {
+          if (age <= actual_segments && age <= trail_length) {
             seg_idx <- actual_segments - age + 1L
             p0 <- positions[[seg_idx]][i, ]
             p1 <- positions[[seg_idx + 1L]][i, ]
-            alpha <- max(0.20, 0.90 - 0.18 * (age - 1L))
+            alpha <- max(0.12, 0.88 * (0.55 ^ (age - 1L)))
             list(
               x = c(p0[1], p1[1]),
               y = c(p0[2], p1[2]),

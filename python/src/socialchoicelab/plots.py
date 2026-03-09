@@ -363,6 +363,7 @@ def animate_competition_trajectories(
     width=700,
     height=600,
     trail="none",
+    trail_length="medium",
 ):
     """Animate 2D competition trajectories from a CompetitionTrace."""
     _require_plotly()
@@ -377,6 +378,15 @@ def animate_competition_trajectories(
         raise ValueError("competitor_names length must match n_competitors.")
     if trail not in {"none", "full", "fade"}:
         raise ValueError("trail must be one of: 'none', 'full', 'fade'.")
+    _TRAIL_LENGTH_SHORTHANDS = {"short", "medium", "long"}
+    if isinstance(trail_length, str) and trail_length not in _TRAIL_LENGTH_SHORTHANDS:
+        raise ValueError(
+            f"trail_length {trail_length!r} is not recognised. "
+            "Use 'short' (1/3 rounds), 'medium' (1/2 rounds), 'long' (3/4 rounds), "
+            "or a positive integer."
+        )
+    if not isinstance(trail_length, (str, int)):
+        raise ValueError("trail_length must be a positive integer or one of 'short', 'medium', 'long'.")
 
     voter_flat = np.asarray(voters if voters is not None else [], dtype=float).ravel()
     fig = plot_spatial_voting(
@@ -393,6 +403,16 @@ def animate_competition_trajectories(
     frame_names = [f"Round {r + 1}" for r in range(n_rounds)] + ["Final"]
     colors = scl_palette(theme, n_competitors, alpha=0.95)
     n_segments_max = max(len(frame_names) - 1, 0)
+    if isinstance(trail_length, str):
+        trail_length = max(1, {
+            "short":  n_segments_max // 3,
+            "medium": n_segments_max // 2,
+            "long":   (n_segments_max * 3) // 4,
+        }[trail_length])
+    else:
+        trail_length = int(trail_length)
+        if trail_length < 1:
+            raise ValueError(f"trail_length must be >= 1, got {trail_length}.")
 
     initial = positions[0]
     if trail == "none":
@@ -491,11 +511,11 @@ def animate_competition_trajectories(
             for idx in range(n_competitors):
                 actual_segments = frame_idx
                 for age in range(1, n_segments_max + 1):
-                    if age <= actual_segments:
+                    if age <= actual_segments and age <= trail_length:
                         seg_idx = actual_segments - age
                         p0 = positions[seg_idx][idx, :]
                         p1 = positions[seg_idx + 1][idx, :]
-                        alpha = max(0.20, 0.90 - 0.18 * (age - 1))
+                        alpha = max(0.12, 0.88 * (0.55 ** (age - 1)))
                         frame_data.append(
                             go.Scatter(
                                 x=[p0[0], p1[0]],

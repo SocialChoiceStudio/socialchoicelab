@@ -129,6 +129,66 @@ def test_animate_competition_trajectories_returns_figure_with_frames():
         assert all(mode == "markers" for mode in overlay_modes)
 
 
+def test_animate_competition_trajectories_fade_trail_produces_frames():
+    with _competition_trace_2d() as trace:
+        fig = sclp.animate_competition_trajectories(trace, voters=VOTERS, trail="fade")
+        assert isinstance(fig, go.Figure)
+        assert len(fig.frames) >= 2
+
+
+def test_animate_competition_trajectories_fade_trail_length_integer_respected():
+    """With trail_length=2 (integer), no frame should contain more than 2 non-empty
+    segments per competitor."""
+    with _competition_trace_2d() as trace:
+        n_rounds, n_competitors, _ = trace.dims()
+        fig = sclp.animate_competition_trajectories(
+            trace, voters=VOTERS, trail="fade", trail_length=2
+        )
+        for frame in fig.frames:
+            non_empty = [
+                t for t in frame.data
+                if t.mode == "lines" and t.x is not None and len(t.x) > 0
+            ]
+            assert len(non_empty) <= n_competitors * 2
+
+
+@pytest.mark.parametrize("shorthand,divisor", [
+    ("short", 3),
+    ("medium", 2),
+    ("long", 4),  # 3/4 rounds, so max_segments // 4 * 3
+])
+def test_animate_competition_trajectories_fade_trail_length_shorthand(shorthand, divisor):
+    """String shorthands resolve relative to total rounds and cap segments correctly."""
+    with _competition_trace_2d() as trace:
+        n_rounds, n_competitors, _ = trace.dims()
+        n_segments_max = n_rounds  # n_rounds + 1 frames → n_rounds segments
+        if shorthand == "long":
+            expected_max = max(1, (n_segments_max * 3) // 4)
+        else:
+            expected_max = max(1, n_segments_max // divisor)
+        fig = sclp.animate_competition_trajectories(
+            trace, voters=VOTERS, trail="fade", trail_length=shorthand
+        )
+        for frame in fig.frames:
+            non_empty = [
+                t for t in frame.data
+                if t.mode == "lines" and t.x is not None and len(t.x) > 0
+            ]
+            assert len(non_empty) <= n_competitors * expected_max
+
+
+def test_animate_competition_trajectories_trail_length_invalid_string_raises():
+    with _competition_trace_2d() as trace:
+        with pytest.raises(ValueError, match="trail_length"):
+            sclp.animate_competition_trajectories(trace, trail="fade", trail_length="huge")
+
+
+def test_animate_competition_trajectories_trail_length_zero_raises():
+    with _competition_trace_2d() as trace:
+        with pytest.raises(ValueError, match="trail_length"):
+            sclp.animate_competition_trajectories(trace, trail="fade", trail_length=0)
+
+
 # ---------------------------------------------------------------------------
 # layer_yolk  (no C library needed)
 # ---------------------------------------------------------------------------
