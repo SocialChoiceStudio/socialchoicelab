@@ -7,7 +7,7 @@ High-level direction for the project. This document does not duplicate detail; i
 | Architecture, layers, and integration pattern | [Design Document](../architecture/design_document.md) |
 | Feature and algorithm prioritization (Yolk, voting rules, etc.) | [Implementation Priority Guide](../references/implementation_priority.md) |
 | Current position and recent work | [where_we_are.md](where_we_are.md) |
-| Layer 7 candidate-competition implementation plan | [competition_roadmap.md](competition_roadmap.md) |
+| Layer 7 candidate-competition implementation plan | [competition_plan.md](competition_plan.md) |
 | Archived plans (consensus reviews, core completion) | [archive/](archive/README.md) |
 | Definition of done per milestone (features, tests, docs, API stability) | [milestone_gates.md](milestone_gates.md) |
 
@@ -20,7 +20,7 @@ High-level direction for the project. This document does not duplicate detail; i
 - **c_api before language bindings:** R and Python packages call the C API only; do not bind C++ directly. Implement and stabilize the c_api surface before building R/Python packages.
 - **Geometry primitives before advanced electoral methods:** Implement exact 2D geometry (CGAL), voting rules, and core outcome concepts (Yolk, Heart, etc.) before simulation engines, electoral competition models, or advanced applications that depend on them.
 - **Foundation before new layers:** Keep the existing core (distance, loss, PRNG, StreamManager) stable; add new layers (geometry, aggregation, c_api) on top without breaking existing behaviour.
-- **For Layer 7, stabilize the one-run competition engine before the sweep/experiment runner:** adaptive candidate competition is the foundation; parameter sweeps, replications, and animated trajectories should consume the engine's stable trace format rather than define it indirectly. See [competition_roadmap.md](competition_roadmap.md).
+- **For Layer 7, stabilize the one-run competition engine before the sweep/experiment runner:** adaptive candidate competition is the foundation; parameter sweeps, replications, and animated trajectories should consume the engine's stable trace format rather than define it indirectly. See [competition_plan.md](competition_plan.md).
 
 ---
 
@@ -47,7 +47,7 @@ High-level direction for the project. This document does not duplicate detail; i
 - **R and Python packages:** Full-featured `socialchoicelab` packages with ModelConfig-driven repro, `export_script(config, lang="R|python")`, and documentation.
 - **GUI and web:** "GUI-lite" (R Shiny / Shiny for Python) and optional web app (Shiny for Python deployment) as in the [Design Document](../architecture/design_document.md).
 - **Layer 7 simulation engines (`0.3.0` track, now in active implementation/refinement):**
-  - **Adaptive candidate / party competition:** multi-candidate spatial competition with Sticker, Hunter, Aggregator, and Predator heuristics; plurality and PR seat conversion; deterministic trace recording; convergence/cycle diagnostics; C API wrappers; R/Python bindings; Plotly trajectory animation. Authoritative plan: [competition_roadmap.md](competition_roadmap.md).
+  - **Adaptive candidate / party competition:** multi-candidate spatial competition with Sticker, Hunter, Aggregator, and Predator heuristics; plurality and PR seat conversion; deterministic trace recording; convergence/cycle diagnostics; C API wrappers; R/Python bindings; Plotly trajectory animation. Authoritative plan: [competition_plan.md](competition_plan.md).
   - **Experiment runner:** reproducible parameter sweeps and parallel replications built on top of the stable competition engine, using named streams and per-run seeds.
   - **Remaining near-term Layer 7 blocker:** R animated competition plots still show oversized first jumps in some runs; once solved, the next work item is further animation refinement (trail toggles, fade tuning, layout polish, R/Python parity).
 - **Next major feature track after candidate competition:** working title **Characteristics of Voting Rules**. This will be renamed when its scope is formalized, but it is currently the feature family intended to take the project from `0.3.0` to `1.0.0`.
