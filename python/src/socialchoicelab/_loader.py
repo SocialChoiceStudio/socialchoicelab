@@ -150,6 +150,73 @@ _DECLARATIONS = """
     typedef struct SCS_StreamManagerImpl SCS_StreamManager;
     typedef struct SCS_WinsetImpl        SCS_Winset;
     typedef struct SCS_ProfileImpl       SCS_Profile;
+    typedef struct SCS_CompetitionTraceImpl SCS_CompetitionTrace;
+    typedef struct SCS_CompetitionExperimentImpl SCS_CompetitionExperiment;
+
+    typedef enum {
+        SCS_COMPETITION_STRATEGY_STICKER = 0,
+        SCS_COMPETITION_STRATEGY_HUNTER = 1,
+        SCS_COMPETITION_STRATEGY_AGGREGATOR = 2,
+        SCS_COMPETITION_STRATEGY_PREDATOR = 3
+    } SCS_CompetitionStrategyKind;
+
+    typedef enum {
+        SCS_COMPETITION_SEAT_RULE_PLURALITY_TOP_K = 0,
+        SCS_COMPETITION_SEAT_RULE_HARE_LARGEST_REMAINDER = 1
+    } SCS_CompetitionSeatRule;
+
+    typedef enum {
+        SCS_COMPETITION_STEP_FIXED = 0,
+        SCS_COMPETITION_STEP_RANDOM_UNIFORM = 1,
+        SCS_COMPETITION_STEP_SHARE_DELTA_PROPORTIONAL = 2
+    } SCS_CompetitionStepPolicyKind;
+
+    typedef enum {
+        SCS_COMPETITION_BOUNDARY_PROJECT_TO_BOX = 0,
+        SCS_COMPETITION_BOUNDARY_STAY_PUT = 1,
+        SCS_COMPETITION_BOUNDARY_REFLECT = 2
+    } SCS_CompetitionBoundaryPolicy;
+
+    typedef enum {
+        SCS_COMPETITION_OBJECTIVE_VOTE_SHARE = 0,
+        SCS_COMPETITION_OBJECTIVE_SEAT_SHARE = 1
+    } SCS_CompetitionObjectiveKind;
+
+    typedef enum {
+        SCS_COMPETITION_TERM_MAX_ROUNDS = 0,
+        SCS_COMPETITION_TERM_CONVERGED = 1,
+        SCS_COMPETITION_TERM_CYCLE_DETECTED = 2,
+        SCS_COMPETITION_TERM_NO_IMPROVEMENT_WINDOW = 3
+    } SCS_CompetitionTerminationReason;
+
+    typedef struct {
+        SCS_CompetitionStepPolicyKind kind;
+        double fixed_step_size;
+        double min_step_size;
+        double max_step_size;
+        double proportionality_constant;
+    } SCS_CompetitionStepConfig;
+
+    typedef struct {
+        int stop_on_convergence;
+        double position_epsilon;
+        int stop_on_cycle;
+        int cycle_memory;
+        double signature_resolution;
+        int stop_on_no_improvement;
+        int no_improvement_window;
+        double objective_epsilon;
+    } SCS_CompetitionTerminationConfig;
+
+    typedef struct {
+        int seat_count;
+        SCS_CompetitionSeatRule seat_rule;
+        SCS_CompetitionStepConfig step_config;
+        SCS_CompetitionBoundaryPolicy boundary_policy;
+        SCS_CompetitionObjectiveKind objective_kind;
+        int max_rounds;
+        SCS_CompetitionTerminationConfig termination;
+    } SCS_CompetitionEngineConfig;
 
     /* ---------------------------------------------------------------------------
      * API version
@@ -573,8 +640,114 @@ _DECLARATIONS = """
                         char* err_buf, int err_buf_len);
 
     int scs_geometric_mean_2d(const double* voter_ideals_xy, int n_voters,
-                               double* out_x, double* out_y,
-                               char* err_buf, int err_buf_len);
+                              double* out_x, double* out_y,
+                              char* err_buf, int err_buf_len);
+
+    /* ---------------------------------------------------------------------------
+     * Competition
+     * ------------------------------------------------------------------------- */
+    SCS_CompetitionTrace* scs_competition_run(
+        const double* competitor_positions, const double* competitor_headings,
+        const int* strategy_kinds, int n_competitors, const double* voter_ideals,
+        int n_voters, int n_dims, const SCS_DistanceConfig* dist_cfg,
+        const SCS_CompetitionEngineConfig* engine_cfg, SCS_StreamManager* mgr,
+        char* err_buf, int err_buf_len);
+
+    void scs_competition_trace_destroy(SCS_CompetitionTrace* trace);
+
+    int scs_competition_trace_dims(const SCS_CompetitionTrace* trace,
+                                   int* out_n_rounds,
+                                   int* out_n_competitors,
+                                   int* out_n_dims, char* err_buf,
+                                   int err_buf_len);
+
+    int scs_competition_trace_termination(
+        const SCS_CompetitionTrace* trace, int* out_terminated_early,
+        SCS_CompetitionTerminationReason* out_reason, char* err_buf,
+        int err_buf_len);
+
+    int scs_competition_trace_round_positions(
+        const SCS_CompetitionTrace* trace, int round_index, double* out_positions,
+        int out_len, char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_final_positions(
+        const SCS_CompetitionTrace* trace, double* out_positions, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_round_vote_shares(
+        const SCS_CompetitionTrace* trace, int round_index, double* out_shares,
+        int out_len, char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_round_seat_shares(
+        const SCS_CompetitionTrace* trace, int round_index, double* out_shares,
+        int out_len, char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_round_vote_totals(
+        const SCS_CompetitionTrace* trace, int round_index, int* out_totals,
+        int out_len, char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_round_seat_totals(
+        const SCS_CompetitionTrace* trace, int round_index, int* out_totals,
+        int out_len, char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_final_vote_shares(
+        const SCS_CompetitionTrace* trace, double* out_shares, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_final_seat_shares(
+        const SCS_CompetitionTrace* trace, double* out_shares, int out_len,
+        char* err_buf, int err_buf_len);
+
+    SCS_CompetitionExperiment* scs_competition_run_experiment(
+        const double* competitor_positions, const double* competitor_headings,
+        const int* strategy_kinds, int n_competitors, const double* voter_ideals,
+        int n_voters, int n_dims, const SCS_DistanceConfig* dist_cfg,
+        const SCS_CompetitionEngineConfig* engine_cfg, uint64_t master_seed,
+        int num_runs, int retain_traces, char* err_buf, int err_buf_len);
+
+    void scs_competition_experiment_destroy(
+        SCS_CompetitionExperiment* experiment);
+
+    int scs_competition_experiment_dims(
+        const SCS_CompetitionExperiment* experiment, int* out_num_runs,
+        int* out_n_competitors, int* out_n_dims, char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_summary(
+        const SCS_CompetitionExperiment* experiment, double* out_mean_rounds,
+        double* out_early_termination_rate, char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_mean_final_vote_shares(
+        const SCS_CompetitionExperiment* experiment, double* out_shares, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_mean_final_seat_shares(
+        const SCS_CompetitionExperiment* experiment, double* out_shares, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_run_round_counts(
+        const SCS_CompetitionExperiment* experiment, int* out_round_counts,
+        int out_len, char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_run_termination_reasons(
+        const SCS_CompetitionExperiment* experiment,
+        SCS_CompetitionTerminationReason* out_reasons, int out_len, char* err_buf,
+        int err_buf_len);
+
+    int scs_competition_experiment_run_terminated_early_flags(
+        const SCS_CompetitionExperiment* experiment, int* out_flags, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_run_final_vote_shares(
+        const SCS_CompetitionExperiment* experiment, double* out_shares, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_run_final_seat_shares(
+        const SCS_CompetitionExperiment* experiment, double* out_shares, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_experiment_run_final_positions(
+        const SCS_CompetitionExperiment* experiment, double* out_positions,
+        int out_len, char* err_buf, int err_buf_len);
 """
 
 

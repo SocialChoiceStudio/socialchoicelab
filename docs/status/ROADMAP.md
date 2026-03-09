@@ -13,7 +13,7 @@ High-level direction for the project. This document does not duplicate detail; i
 
 **Dependency order** (from design): core C++ and foundation first → stable **c_api** → geometry primitives (e.g. CGAL 2D) → voting rules and outcome concepts → **then** R/Python bindings and GUI. Language bindings and advanced electoral methods depend on the C API and core geometry.
 
-**Release numbering plan:** the next public release is `0.2.0`, reflecting that the core library, C API, bindings, and visualization layer exist but the major planned feature tracks are not complete. `0.3.0` is reserved for the candidate-competition / Layer 7 milestone. `1.0.0` is reserved for the point at which the remaining major feature track after candidate competition — currently described as *Characteristics of Voting Rules* (working title; rename later) — is also complete.
+**Release numbering plan:** the next public release is `0.2.0`, reflecting that the core library, C API, bindings, and visualization layer exist but the major planned feature tracks are not complete. `0.3.0` is reserved for the candidate-competition / Layer 7 milestone, which is now substantially implemented locally and in active refinement. `1.0.0` is reserved for the point at which the remaining major feature track after candidate competition — currently described as *Characteristics of Voting Rules* (working title; rename later) — is also complete.
 
 ### Dependency sequencing (what must come first)
 
@@ -46,9 +46,10 @@ High-level direction for the project. This document does not duplicate detail; i
 
 - **R and Python packages:** Full-featured `socialchoicelab` packages with ModelConfig-driven repro, `export_script(config, lang="R|python")`, and documentation.
 - **GUI and web:** "GUI-lite" (R Shiny / Shiny for Python) and optional web app (Shiny for Python deployment) as in the [Design Document](../architecture/design_document.md).
-- **Layer 7 simulation engines (next major implementation track after `0.2.0`):**
+- **Layer 7 simulation engines (`0.3.0` track, now in active implementation/refinement):**
   - **Adaptive candidate / party competition:** multi-candidate spatial competition with Sticker, Hunter, Aggregator, and Predator heuristics; plurality and PR seat conversion; deterministic trace recording; convergence/cycle diagnostics; C API wrappers; R/Python bindings; Plotly trajectory animation. Authoritative plan: [competition_roadmap.md](competition_roadmap.md).
   - **Experiment runner:** reproducible parameter sweeps and parallel replications built on top of the stable competition engine, using named streams and per-run seeds.
+  - **Remaining near-term Layer 7 blocker:** R animated competition plots still show oversized first jumps in some runs; once solved, the next work item is further animation refinement (trail toggles, fade tuning, layout polish, R/Python parity).
 - **Next major feature track after candidate competition:** working title **Characteristics of Voting Rules**. This will be renamed when its scope is formalized, but it is currently the feature family intended to take the project from `0.3.0` to `1.0.0`.
 - **Advanced features beyond Layer 7:** 3D/N-D geometry, empirical profiles, preference estimation — per [implementation priority](../references/implementation_priority.md) Phases 3–4.
 - **Contributor C API wrapper tooling:** When the project opens to external contributors, any new C++ functionality (preference generation, voting rules, candidate/party strategy, etc.) will require a corresponding C API wrapper. Provide either: (a) documented wrapper templates so contributors know the expected pattern, (b) a template generator script, or (c) a PR-triggered agent that drafts wrapper boilerplate for review. Without this, C API coverage will fall behind the C++ surface. See expanded note at the bottom of this file.
@@ -65,6 +66,25 @@ The broad order for Layer 7 work is:
 6. Visualization and trajectory animation.
 
 This sequencing mirrors how the geometry and aggregation layers were delivered: core first, then stable C API, then bindings and user-facing helpers.
+
+### Current Layer 7 status snapshot
+
+Substantial Layer 7 work has landed locally:
+
+- competition core engine
+- strategy layer
+- step and boundary policies
+- election feedback and seat conversion
+- experiment runner
+- competition C API
+- R and Python wrappers
+- first static and animated trajectory plots
+
+The remaining work is no longer "build Layer 7 from scratch." It is now:
+
+1. Resolve the remaining R animation jump issue.
+2. Refine the competition animation UX.
+3. Finish docs/polish/release-gate decisions for the `0.3.0` line.
 
 ### Release ladder
 
@@ -98,7 +118,7 @@ These are not on the active roadmap but are worth keeping in view as the project
 | Horizon  | Focus |
 |----------|-------|
 | **Near** | Close the current release gate → tag `0.2.0`. |
-| **Mid**  | Deliver Layer 7 candidate competition and iterate to `0.3.0`. |
+| **Mid**  | Finish Layer 7 candidate competition refinements and iterate to `0.3.0`. |
 | **Long** | Complete the next major feature track, then tag `1.0.0`; after that, GUI-lite/web and other advanced spatial features. |
 
 ---

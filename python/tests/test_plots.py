@@ -20,6 +20,24 @@ VOTERS = np.array([-1.0, -0.5,  0.0,  0.0,  0.8,  0.6, -0.4,  0.8,  0.5, -0.7])
 ALTS   = np.array([ 0.0,  0.0,  0.6,  0.4, -0.5,  0.3])
 SQ     = np.array([ 0.0,  0.0])
 
+
+def _competition_trace_2d():
+    competitors = np.array([[0.0, 0.0], [2.0, 0.0]])
+    voters = np.array([[-0.5, 0.0], [0.0, 0.2], [1.8, 0.1]])
+    cfg = scl.CompetitionEngineConfig(
+        seat_count=1,
+        seat_rule="plurality_top_k",
+        max_rounds=2,
+        step_config=scl.CompetitionStepConfig(kind="fixed", fixed_step_size=0.5),
+    )
+    return scl.competition_run(
+        competitors,
+        ["sticker", "sticker"],
+        voters,
+        dist_config=scl.DistanceConfig(salience_weights=[1.0, 1.0]),
+        engine_config=cfg,
+    )
+
 # ---------------------------------------------------------------------------
 # plot_spatial_voting
 # ---------------------------------------------------------------------------
@@ -65,6 +83,20 @@ def test_plot_spatial_voting_auto_range_set():
     assert fig.layout.xaxis.range is not None
 
 
+def test_plot_spatial_voting_defaults_include_origin_and_center_title():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    assert fig.layout.title.x == 0.5
+    assert fig.layout.plot_bgcolor == "white"
+    assert fig.layout.xaxis.range[0] <= 0 <= fig.layout.xaxis.range[1]
+    assert fig.layout.yaxis.range[0] <= 0 <= fig.layout.yaxis.range[1]
+
+
+def test_plot_spatial_voting_does_not_label_sq_by_default():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    sq_trace = next(trace for trace in fig.data if trace.name == "Status Quo")
+    assert sq_trace.mode == "markers"
+
+
 def test_plot_spatial_voting_no_alternatives():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     assert isinstance(fig, go.Figure)
@@ -73,6 +105,28 @@ def test_plot_spatial_voting_no_alternatives():
 def test_plot_spatial_voting_show_labels():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, show_labels=True)
     assert isinstance(fig, go.Figure)
+
+
+def test_plot_competition_trajectories_returns_figure():
+    with _competition_trace_2d() as trace:
+        fig = sclp.plot_competition_trajectories(trace, voters=VOTERS)
+        assert isinstance(fig, go.Figure)
+        assert len(fig.data) >= 3  # voter layer + competitor paths
+
+
+def test_animate_competition_trajectories_returns_figure_with_frames():
+    with _competition_trace_2d() as trace:
+        fig = sclp.animate_competition_trajectories(trace, voters=VOTERS)
+        assert isinstance(fig, go.Figure)
+        assert len(fig.frames) >= 2
+        assert fig.layout.margin.b == 220
+        assert fig.layout.sliders[0].y < 0
+        assert fig.layout.updatemenus[0].y < 0
+        assert fig.layout.sliders[0].currentvalue.visible is False
+        assert "select2d" in fig.layout.modebar.remove
+        overlay_modes = [trace.mode for trace in fig.data if getattr(trace, "meta", {}).get("scl_role") == "overlay"]
+        assert overlay_modes
+        assert all(mode == "markers" for mode in overlay_modes)
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +159,17 @@ def test_layer_convex_hull_returns_figure():
     fig  = sclp.plot_spatial_voting(VOTERS, ALTS)
     fig  = sclp.layer_convex_hull(fig, hull)
     assert isinstance(fig, go.Figure)
+
+
+def test_background_regions_stay_below_points_without_zorder_dependency():
+    hull = scl.convex_hull_2d(VOTERS)
+    ws = scl.winset_2d(SQ[0], SQ[1], VOTERS)
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.layer_convex_hull(fig, hull)
+    fig = sclp.layer_winset(fig, ws)
+    names = [trace.name for trace in fig.data]
+    assert names[:2] == ["Convex Hull", "Winset"]
+    assert names[-2:] == ["Voters", "Status Quo"]
 
 
 def test_layer_convex_hull_empty():

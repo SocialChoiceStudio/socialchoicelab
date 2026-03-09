@@ -532,6 +532,217 @@ TEST(CApi_StreamManager, ResetAllRestoresSeed) {
   scs_stream_manager_destroy(mgr);
 }
 
+TEST(CApi_Competition, RunTraceAndExportRoundData) {
+  double competitor_positions[2] = {0.0, 3.0};
+  double competitor_headings[2] = {0.0, 0.0};
+  int strategies[2] = {SCS_COMPETITION_STRATEGY_STICKER,
+                       SCS_COMPETITION_STRATEGY_STICKER};
+  double voters[3] = {0.1, 0.2, 2.9};
+  double weights[1] = {1.0};
+  SCS_DistanceConfig dc{};
+  dc.distance_type = SCS_DIST_EUCLIDEAN;
+  dc.order_p = 2.0;
+  dc.salience_weights = weights;
+  dc.n_weights = 1;
+
+  SCS_CompetitionEngineConfig cfg{};
+  cfg.seat_count = 1;
+  cfg.seat_rule = SCS_COMPETITION_SEAT_RULE_PLURALITY_TOP_K;
+  cfg.step_config.kind = SCS_COMPETITION_STEP_FIXED;
+  cfg.step_config.fixed_step_size = 1.0;
+  cfg.boundary_policy = SCS_COMPETITION_BOUNDARY_PROJECT_TO_BOX;
+  cfg.objective_kind = SCS_COMPETITION_OBJECTIVE_VOTE_SHARE;
+  cfg.max_rounds = 2;
+
+  char err[256] = {};
+  SCS_CompetitionTrace* trace =
+      scs_competition_run(competitor_positions, competitor_headings, strategies,
+                          2, voters, 3, 1, &dc, &cfg, nullptr, err, 256);
+  ASSERT_NE(trace, nullptr) << err;
+
+  int n_rounds = 0, n_competitors = 0, n_dims = 0;
+  EXPECT_EQ(scs_competition_trace_dims(trace, &n_rounds, &n_competitors,
+                                       &n_dims, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(n_rounds, 2);
+  EXPECT_EQ(n_competitors, 2);
+  EXPECT_EQ(n_dims, 1);
+
+  int terminated_early = 0;
+  SCS_CompetitionTerminationReason reason = SCS_COMPETITION_TERM_CONVERGED;
+  EXPECT_EQ(scs_competition_trace_termination(trace, &terminated_early, &reason,
+                                              err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(terminated_early, 0);
+  EXPECT_EQ(reason, SCS_COMPETITION_TERM_MAX_ROUNDS);
+
+  double round_positions[2] = {};
+  EXPECT_EQ(scs_competition_trace_round_positions(trace, 0, round_positions, 2,
+                                                  err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(round_positions[0], 0.0);
+  EXPECT_DOUBLE_EQ(round_positions[1], 3.0);
+
+  double vote_shares[2] = {};
+  EXPECT_EQ(scs_competition_trace_round_vote_shares(trace, 0, vote_shares, 2,
+                                                    err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(vote_shares[0], 2.0 / 3.0);
+  EXPECT_DOUBLE_EQ(vote_shares[1], 1.0 / 3.0);
+
+  int vote_totals[2] = {};
+  EXPECT_EQ(scs_competition_trace_round_vote_totals(trace, 0, vote_totals, 2,
+                                                    err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(vote_totals[0], 2);
+  EXPECT_EQ(vote_totals[1], 1);
+
+  int seat_totals[2] = {};
+  EXPECT_EQ(scs_competition_trace_round_seat_totals(trace, 0, seat_totals, 2,
+                                                    err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(seat_totals[0], 1);
+  EXPECT_EQ(seat_totals[1], 0);
+
+  double final_vote_shares[2] = {};
+  EXPECT_EQ(scs_competition_trace_final_vote_shares(trace, final_vote_shares, 2,
+                                                    err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(final_vote_shares[0], 2.0 / 3.0);
+  EXPECT_DOUBLE_EQ(final_vote_shares[1], 1.0 / 3.0);
+
+  double final_seat_shares[2] = {};
+  EXPECT_EQ(scs_competition_trace_final_seat_shares(trace, final_seat_shares, 2,
+                                                    err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(final_seat_shares[0], 1.0);
+  EXPECT_DOUBLE_EQ(final_seat_shares[1], 0.0);
+
+  scs_competition_trace_destroy(trace);
+}
+
+TEST(CApi_Competition, RunExperimentAndExportSummary) {
+  double competitor_positions[2] = {0.0, 3.0};
+  int strategies[2] = {SCS_COMPETITION_STRATEGY_STICKER,
+                       SCS_COMPETITION_STRATEGY_STICKER};
+  double voters[3] = {0.1, 0.2, 2.9};
+  double weights[1] = {1.0};
+  SCS_DistanceConfig dc{};
+  dc.distance_type = SCS_DIST_EUCLIDEAN;
+  dc.order_p = 2.0;
+  dc.salience_weights = weights;
+  dc.n_weights = 1;
+
+  SCS_CompetitionEngineConfig cfg{};
+  cfg.seat_count = 1;
+  cfg.seat_rule = SCS_COMPETITION_SEAT_RULE_PLURALITY_TOP_K;
+  cfg.step_config.kind = SCS_COMPETITION_STEP_FIXED;
+  cfg.step_config.fixed_step_size = 1.0;
+  cfg.boundary_policy = SCS_COMPETITION_BOUNDARY_PROJECT_TO_BOX;
+  cfg.objective_kind = SCS_COMPETITION_OBJECTIVE_VOTE_SHARE;
+  cfg.max_rounds = 3;
+  cfg.termination.stop_on_convergence = 1;
+  cfg.termination.position_epsilon = 1e-12;
+
+  char err[256] = {};
+  SCS_CompetitionExperiment* experiment = scs_competition_run_experiment(
+      competitor_positions, nullptr, strategies, 2, voters, 3, 1, &dc, &cfg,
+      2026u, 3, 0, err, 256);
+  ASSERT_NE(experiment, nullptr) << err;
+
+  int num_runs = 0, n_competitors = 0, n_dims = 0;
+  EXPECT_EQ(scs_competition_experiment_dims(experiment, &num_runs,
+                                            &n_competitors, &n_dims, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(num_runs, 3);
+  EXPECT_EQ(n_competitors, 2);
+  EXPECT_EQ(n_dims, 1);
+
+  double mean_rounds = 0.0;
+  double early_rate = 0.0;
+  EXPECT_EQ(scs_competition_experiment_summary(experiment, &mean_rounds,
+                                               &early_rate, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(mean_rounds, 1.0);
+  EXPECT_DOUBLE_EQ(early_rate, 1.0);
+
+  double mean_vote_shares[2] = {};
+  EXPECT_EQ(scs_competition_experiment_mean_final_vote_shares(
+                experiment, mean_vote_shares, 2, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(mean_vote_shares[0], 2.0 / 3.0);
+
+  int round_counts[3] = {};
+  EXPECT_EQ(scs_competition_experiment_run_round_counts(
+                experiment, round_counts, 3, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(round_counts[0], 1);
+  EXPECT_EQ(round_counts[1], 1);
+  EXPECT_EQ(round_counts[2], 1);
+
+  SCS_CompetitionTerminationReason reasons[3] = {};
+  EXPECT_EQ(scs_competition_experiment_run_termination_reasons(
+                experiment, reasons, 3, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(reasons[0], SCS_COMPETITION_TERM_CONVERGED);
+  EXPECT_EQ(reasons[1], SCS_COMPETITION_TERM_CONVERGED);
+  EXPECT_EQ(reasons[2], SCS_COMPETITION_TERM_CONVERGED);
+
+  int early_flags[3] = {};
+  EXPECT_EQ(scs_competition_experiment_run_terminated_early_flags(
+                experiment, early_flags, 3, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(early_flags[0], 1);
+  EXPECT_EQ(early_flags[1], 1);
+  EXPECT_EQ(early_flags[2], 1);
+
+  double run_vote_shares[6] = {};
+  EXPECT_EQ(scs_competition_experiment_run_final_vote_shares(
+                experiment, run_vote_shares, 6, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(run_vote_shares[0], 2.0 / 3.0);
+  EXPECT_DOUBLE_EQ(run_vote_shares[1], 1.0 / 3.0);
+  EXPECT_DOUBLE_EQ(run_vote_shares[2], 2.0 / 3.0);
+  EXPECT_DOUBLE_EQ(run_vote_shares[3], 1.0 / 3.0);
+
+  double run_seat_shares[6] = {};
+  EXPECT_EQ(scs_competition_experiment_run_final_seat_shares(
+                experiment, run_seat_shares, 6, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(run_seat_shares[0], 1.0);
+  EXPECT_DOUBLE_EQ(run_seat_shares[1], 0.0);
+  EXPECT_DOUBLE_EQ(run_seat_shares[2], 1.0);
+  EXPECT_DOUBLE_EQ(run_seat_shares[3], 0.0);
+
+  double run_final_positions[6] = {};
+  EXPECT_EQ(scs_competition_experiment_run_final_positions(
+                experiment, run_final_positions, 6, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_DOUBLE_EQ(run_final_positions[0], 0.0);
+  EXPECT_DOUBLE_EQ(run_final_positions[1], 3.0);
+  EXPECT_DOUBLE_EQ(run_final_positions[2], 0.0);
+  EXPECT_DOUBLE_EQ(run_final_positions[3], 3.0);
+
+  scs_competition_experiment_destroy(experiment);
+}
+
 TEST(CApi_StreamManager, ResetStreamRestoresSeed) {
   SCS_StreamManager* mgr = scs_stream_manager_create(1u, nullptr, 0);
   ASSERT_NE(mgr, nullptr);

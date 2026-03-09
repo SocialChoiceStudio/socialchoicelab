@@ -46,6 +46,8 @@ except ImportError:
 
 __all__ = [
     "plot_spatial_voting",
+    "plot_competition_trajectories",
+    "animate_competition_trajectories",
     "layer_ic",
     "layer_preferred_regions",
     "layer_winset",
@@ -60,6 +62,13 @@ __all__ = [
     "scl_palette",
     "scl_theme_colors",
 ]
+
+_TRACE_ROLE_PRIORITY = {
+    "region": 1,
+    "line": 2,
+    "point": 3,
+    "overlay": 4,
+}
 
 
 def _require_plotly() -> None:
@@ -84,6 +93,57 @@ def _padded_range(vals: np.ndarray, pad_frac: float = 0.12, min_pad: float = 0.5
     lo, hi = float(np.min(vals)), float(np.max(vals))
     pad = max((hi - lo) * pad_frac, min_pad)
     return [lo - pad, hi + pad]
+
+
+def _range_with_origin(vals: np.ndarray, pad_frac: float = 0.12, min_pad: float = 0.5) -> list[float]:
+    lo, hi = _padded_range(vals, pad_frac=pad_frac, min_pad=min_pad)
+    return [min(lo, 0.0), max(hi, 0.0)]
+
+
+def _trace_role(trace) -> str:
+    meta = getattr(trace, "meta", None)
+    if isinstance(meta, dict):
+        return str(meta.get("scl_role", "point"))
+    return "point"
+
+
+def _set_trace_role(trace, role: str):
+    meta = getattr(trace, "meta", None)
+    trace.meta = dict(meta) if isinstance(meta, dict) else {}
+    trace.meta["scl_role"] = role
+    return trace
+
+
+def _normalize_trace_roles(fig):
+    ordered = sorted(
+        enumerate(fig.data),
+        key=lambda item: (_TRACE_ROLE_PRIORITY.get(_trace_role(item[1]), 99), item[0]),
+    )
+    fig.data = tuple(trace for _, trace in ordered)
+    return fig
+
+
+def _add_role_trace(fig, trace, role: str):
+    fig.add_trace(_set_trace_role(trace, role))
+    return _normalize_trace_roles(fig)
+
+
+def _set_rgba_alpha(color: str, alpha: float) -> str:
+    if color.startswith("rgba(") and color.endswith(")"):
+        parts = [p.strip() for p in color[5:-1].split(",")]
+        if len(parts) == 4:
+            parts[3] = f"{alpha:.3f}"
+            return f"rgba({', '.join(parts)})"
+    return color
+
+
+def _apply_plot_config(fig):
+    fig.update_layout(modebar=dict(remove=["select2d", "lasso2d", "autoScale2d"]))
+    fig._config = {
+        "displaylogo": False,
+        "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"],
+    }
+    return fig
 
 
 def plot_spatial_voting(
@@ -159,22 +219,21 @@ def plot_spatial_voting(
         all_x.append(float(sqv[0]))
         all_y.append(float(sqv[1]))
     if xlim is None and len(all_x) > 0:
-        xlim = _padded_range(np.array(all_x))
+        xlim = _range_with_origin(np.array(all_x))
     if ylim is None and len(all_y) > 0:
-        ylim = _padded_range(np.array(all_y))
+        ylim = _range_with_origin(np.array(all_y))
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
+    fig = _add_role_trace(fig, go.Scatter(
         x=vx, y=vy,
         mode="markers",
         name="Voters",
-        marker=dict(symbol="circle", size=12, color=voter_col,
+        marker=dict(symbol="circle", size=8, color=voter_col,
                     line=dict(color="white", width=1.5)),
         text=voter_names,
         hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-        zorder=8,
-    ))
+    ), "point")
 
     if alternatives is not None:
         ax, ay = _flat_to_xy(np.asarray(alternatives, dtype=float).ravel())
@@ -183,7 +242,7 @@ def plot_spatial_voting(
             alt_names = [f"Alt {i + 1}" for i in range(n_a)]
         all_x.extend(list(ax))
         all_y.extend(list(ay))
-        fig.add_trace(go.Scatter(
+        fig = _add_role_trace(fig, go.Scatter(
             x=ax, y=ay,
             mode="markers+text" if show_labels else "markers",
             name="Alternatives",
@@ -192,35 +251,369 @@ def plot_spatial_voting(
             text=alt_names,
             textposition="top center",
             hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-            zorder=9,
-        ))
+        ), "point")
 
     if sq is not None:
-        fig.add_trace(go.Scatter(
+        fig = _add_role_trace(fig, go.Scatter(
             x=[sqv[0]], y=[sqv[1]],
             mode="markers+text" if show_labels else "markers",
             name="Status Quo",
             marker=dict(symbol="star", size=18, color=sq_col,
                         line=dict(color="white", width=1.5)),
-            text=["SQ"],
-            textposition="top center",
+            text=["SQ"] if show_labels else None,
+            textposition="top center" if show_labels else None,
             hovertemplate="Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-            zorder=9,
-        ))
+        ), "point")
 
     fig.update_layout(
-        title=dict(text=title, x=0.05),
+        title=dict(text=title, x=0.5, xanchor="center"),
         xaxis=dict(title=dim_names[0], zeroline=True,
-                   zerolinecolor="#cccccc", zerolinewidth=1, range=xlim),
+                   zerolinecolor="rgba(140,140,140,0.45)", zerolinewidth=1,
+                   showgrid=True, gridcolor="rgba(140,140,140,0.25)",
+                   gridwidth=1, range=xlim),
         yaxis=dict(title=dim_names[1], zeroline=True,
-                   zerolinecolor="#cccccc", zerolinewidth=1,
-                   scaleanchor="x", scaleratio=1, range=ylim),
+                   zerolinecolor="rgba(140,140,140,0.45)", zerolinewidth=1,
+                   showgrid=True, gridcolor="rgba(140,140,140,0.25)",
+                   gridwidth=1, scaleanchor="x", scaleratio=1, range=ylim),
         legend=dict(x=1.02, y=1, xanchor="left"),
         hovermode="closest",
-        plot_bgcolor="#f8f9fa",
+        plot_bgcolor="white",
         paper_bgcolor="white",
         width=width,
         height=height,
+    )
+    return _apply_plot_config(fig)
+
+
+def plot_competition_trajectories(
+    trace,
+    voters=None,
+    competitor_names=None,
+    title="Competition Trajectories",
+    theme="dark2",
+    width=700,
+    height=600,
+):
+    """Plot 2D competition trajectories from a CompetitionTrace.
+
+    Parameters
+    ----------
+    trace:
+        A :class:`socialchoicelab.CompetitionTrace`.
+    voters:
+        Optional flat or ``(n, 2)`` voter array for background points.
+    competitor_names:
+        Optional labels for competitors.
+    title, theme, width, height:
+        Standard plotting options.
+    """
+    _require_plotly()
+    n_rounds, n_competitors, n_dims = trace.dims()
+    if n_dims != 2:
+        raise ValueError(
+            f"plot_competition_trajectories currently supports only 2D traces, got n_dims={n_dims}."
+        )
+    if competitor_names is None:
+        competitor_names = [f"Competitor {i + 1}" for i in range(n_competitors)]
+    if len(competitor_names) != n_competitors:
+        raise ValueError("competitor_names length must match n_competitors.")
+
+    voter_flat = np.asarray(voters if voters is not None else [], dtype=float).ravel()
+    fig = plot_spatial_voting(
+        voter_flat,
+        alternatives=None,
+        sq=None,
+        title=title,
+        theme=theme,
+        width=width,
+        height=height,
+    )
+
+    round_positions = [trace.round_positions(r) for r in range(n_rounds)]
+    round_positions.append(trace.final_positions())
+    colors = scl_palette(theme, n_competitors, alpha=0.95)
+
+    for idx in range(n_competitors):
+        path = np.vstack([pos[idx, :] for pos in round_positions])
+        fig = _add_role_trace(
+            fig,
+            go.Scatter(
+                x=path[:, 0],
+                y=path[:, 1],
+                mode="lines+markers",
+                name=competitor_names[idx],
+                marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                line=dict(color=colors[idx], width=3),
+                text=[f"Round {r}" for r in range(n_rounds)] + ["Final"],
+                hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+            )
+            ,
+            "overlay",
+        )
+
+    return _apply_plot_config(fig)
+
+
+def animate_competition_trajectories(
+    trace,
+    voters=None,
+    competitor_names=None,
+    title="Competition Trajectories",
+    theme="dark2",
+    width=700,
+    height=600,
+    trail="none",
+):
+    """Animate 2D competition trajectories from a CompetitionTrace."""
+    _require_plotly()
+    n_rounds, n_competitors, n_dims = trace.dims()
+    if n_dims != 2:
+        raise ValueError(
+            f"animate_competition_trajectories currently supports only 2D traces, got n_dims={n_dims}."
+        )
+    if competitor_names is None:
+        competitor_names = [f"Competitor {i + 1}" for i in range(n_competitors)]
+    if len(competitor_names) != n_competitors:
+        raise ValueError("competitor_names length must match n_competitors.")
+    if trail not in {"none", "full", "fade"}:
+        raise ValueError("trail must be one of: 'none', 'full', 'fade'.")
+
+    voter_flat = np.asarray(voters if voters is not None else [], dtype=float).ravel()
+    fig = plot_spatial_voting(
+        voter_flat,
+        alternatives=None,
+        sq=None,
+        title=title,
+        theme=theme,
+        width=width,
+        height=height,
+    )
+    positions = [trace.round_positions(r) for r in range(n_rounds)]
+    positions.append(trace.final_positions())
+    frame_names = [f"Round {r + 1}" for r in range(n_rounds)] + ["Final"]
+    colors = scl_palette(theme, n_competitors, alpha=0.95)
+    n_segments_max = max(len(frame_names) - 1, 0)
+
+    initial = positions[0]
+    if trail == "none":
+        static_count = len(fig.data)
+        anim_records = []
+        for frame_idx, frame_name in enumerate(frame_names):
+            for idx in range(n_competitors):
+                anim_records.append(
+                    {
+                        "frame": frame_name,
+                        "competitor": competitor_names[idx],
+                        "x": float(positions[frame_idx][idx, 0]),
+                        "y": float(positions[frame_idx][idx, 1]),
+                        "hover_text": frame_name,
+                        "color": colors[idx],
+                    }
+                )
+        for idx in range(n_competitors):
+            fig = _add_role_trace(
+                fig,
+                go.Scatter(
+                    x=[initial[idx, 0]],
+                    y=[initial[idx, 1]],
+                    mode="markers",
+                    name=competitor_names[idx],
+                    marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                    text=[frame_names[0]],
+                    hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+                ),
+                "overlay",
+            )
+
+        frames = []
+        for frame_name in frame_names:
+            frame_rows = [row for row in anim_records if row["frame"] == frame_name]
+            frame_data = []
+            for idx in range(n_competitors):
+                row = frame_rows[idx]
+                frame_data.append(
+                    go.Scatter(
+                        x=[row["x"]],
+                        y=[row["y"]],
+                        mode="markers",
+                        name=row["competitor"],
+                        marker=dict(
+                            symbol="diamond",
+                            size=12,
+                            color=row["color"],
+                            line=dict(color="white", width=1.0),
+                        ),
+                        text=[row["hover_text"]],
+                        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+                    )
+                )
+            frames.append(
+                go.Frame(
+                    data=frame_data,
+                    name=frame_name,
+                    traces=list(range(static_count, static_count + n_competitors)),
+                )
+            )
+        fig.frames = frames
+    elif trail == "fade":
+        overlay_start = len(fig.data)
+        for idx in range(n_competitors):
+            for _ in range(n_segments_max):
+                fig = _add_role_trace(
+                    fig,
+                    go.Scatter(
+                        x=[],
+                        y=[],
+                        mode="lines",
+                        name=competitor_names[idx],
+                        showlegend=False,
+                        hoverinfo="skip",
+                        line=dict(color=colors[idx], width=3),
+                    ),
+                    "overlay",
+                )
+            fig = _add_role_trace(
+                fig,
+                go.Scatter(
+                    x=[initial[idx, 0]],
+                    y=[initial[idx, 1]],
+                    mode="markers",
+                    name=competitor_names[idx],
+                    marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                    text=[frame_names[0]],
+                    hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+                    ),
+                    "overlay",
+                )
+    else:
+        mode = "lines+markers"
+        overlay_start = len(fig.data)
+        for idx in range(n_competitors):
+            line_spec = dict(color=colors[idx], width=3)
+            fig = _add_role_trace(
+                fig,
+                go.Scatter(
+                    x=[initial[idx, 0]],
+                    y=[initial[idx, 1]],
+                    mode=mode,
+                    name=competitor_names[idx],
+                    marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                    line=line_spec,
+                    text=[frame_names[0]],
+                    hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+                ),
+                "overlay",
+            )
+        frames = []
+        for frame_idx, frame_name in enumerate(frame_names):
+            frame_data = []
+            if trail == "fade":
+                for idx in range(n_competitors):
+                    actual_segments = frame_idx
+                    for age in range(1, n_segments_max + 1):
+                        if age <= actual_segments:
+                            seg_idx = actual_segments - age
+                            p0 = positions[seg_idx][idx, :]
+                            p1 = positions[seg_idx + 1][idx, :]
+                            alpha = max(0.20, 0.90 - 0.18 * (age - 1))
+                            frame_data.append(
+                                go.Scatter(
+                                    x=[p0[0], p1[0]],
+                                    y=[p0[1], p1[1]],
+                                    mode="lines",
+                                    name=competitor_names[idx],
+                                    showlegend=False,
+                                    hoverinfo="skip",
+                                    line=dict(color=_set_rgba_alpha(colors[idx], alpha), width=3),
+                                )
+                            )
+                        else:
+                            frame_data.append(
+                                go.Scatter(x=[], y=[], mode="lines", showlegend=False, hoverinfo="skip")
+                            )
+                    current = positions[frame_idx][idx, :]
+                    frame_data.append(
+                        go.Scatter(
+                            x=[current[0]],
+                            y=[current[1]],
+                            mode="markers",
+                            name=competitor_names[idx],
+                            marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                            text=[frame_name],
+                            hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+                        )
+                    )
+            else:
+                for idx in range(n_competitors):
+                    current_path = [pos[idx, :] for pos in positions[: frame_idx + 1]]
+                    path = np.vstack(current_path)
+                    frame_data.append(
+                        go.Scatter(
+                            x=path[:, 0],
+                            y=path[:, 1],
+                            mode="lines+markers",
+                            name=competitor_names[idx],
+                            marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                            line=dict(color=colors[idx], width=3),
+                            text=[f"Round {r + 1}" for r in range(min(frame_idx + 1, n_rounds))]
+                            + (["Final"] if frame_idx == len(frame_names) - 1 else []),
+                            hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+                        )
+                    )
+            traces = list(range(overlay_start, overlay_start + len(frame_data)))
+            frames.append(go.Frame(data=frame_data, name=frame_name, traces=traces))
+        fig.frames = frames
+    fig.update_layout(
+        margin=dict(t=95, r=20, b=220, l=65),
+        updatemenus=[
+            dict(
+                type="buttons",
+                showactive=False,
+                x=0.5,
+                y=-0.36,
+                xanchor="center",
+                yanchor="top",
+                pad={"t": 0, "r": 8},
+                direction="right",
+                buttons=[
+                    dict(
+                        label="Play",
+                        method="animate",
+                        args=[frame_names, {"frame": {"duration": 700, "redraw": False},
+                                     "transition": {"duration": 0},
+                                     "fromcurrent": False,
+                                     "mode": "next"}],
+                    ),
+                    dict(
+                        label="Pause",
+                        method="animate",
+                        args=[[None], {"frame": {"duration": 0, "redraw": False},
+                                       "transition": {"duration": 0},
+                                       "mode": "immediate"}],
+                    ),
+                ],
+            )
+        ],
+        sliders=[
+            dict(
+                active=0,
+                x=0.08,
+                y=-0.17,
+                len=0.84,
+                currentvalue={"visible": False},
+                pad={"t": 0, "b": 0},
+                steps=[
+                    dict(
+                        label="",
+                        method="animate",
+                        args=[[frame_name], {"frame": {"duration": 0, "redraw": False},
+                                             "transition": {"duration": 0},
+                                             "mode": "immediate"}],
+                    )
+                    for frame_name in frame_names
+                ],
+            )
+        ],
     )
     return fig
 
@@ -309,7 +702,7 @@ def layer_ic(
         lgroup = voter_names[i] if color_by_voter else name
         show_lg = True if color_by_voter else (i == 0)
         use_fill = fill_color is not None or color_by_voter
-        fig.add_trace(go.Scatter(
+        fig = _add_role_trace(fig, go.Scatter(
             x=cx, y=cy,
             mode="lines",
             fill="toself" if use_fill else "none",
@@ -319,8 +712,7 @@ def layer_ic(
             legendgroup=lgroup,
             showlegend=show_lg,
             hovertemplate=f"{voter_names[i]} IC (r={r:.3f})<extra></extra>",
-            zorder=1,
-        ))
+        ), "region")
     return fig
 
 
@@ -403,7 +795,7 @@ def layer_preferred_regions(
         lname = voter_names[i] if color_by_voter else name
         lgroup = voter_names[i] if color_by_voter else name
         show_lg = True if color_by_voter else (i == 0)
-        fig.add_trace(go.Scatter(
+        fig = _add_role_trace(fig, go.Scatter(
             x=cx, y=cy,
             mode="lines",
             fill="toself",
@@ -413,8 +805,7 @@ def layer_preferred_regions(
             legendgroup=lgroup,
             showlegend=show_lg,
             hovertemplate=f"{voter_names[i]} preferred region (r={r:.3f})<extra></extra>",
-            zorder=1,
-        ))
+        ), "region")
     return fig
 
 
@@ -498,7 +889,7 @@ def layer_winset(
         s, e = int(starts[i]), int(ends[i])
         px = list(xy[s:e, 0]) + [xy[s, 0]]
         py = list(xy[s:e, 1]) + [xy[s, 1]]
-        fig.add_trace(go.Scatter(
+        fig = _add_role_trace(fig, go.Scatter(
             x=px, y=py,
             mode="lines",
             fill="toself",
@@ -508,8 +899,7 @@ def layer_winset(
             showlegend=show_legend,
             legendgroup=name,
             hoverinfo="skip",
-            zorder=6,
-        ))
+        ), "region")
         show_legend = False
     return fig
 
@@ -559,7 +949,7 @@ def layer_yolk(
     fill_color = fill_color if fill_color is not None else _layer_fill_color("yolk", theme)
     line_color = line_color if line_color is not None else _layer_line_color("yolk", theme)
     cx, cy = _circle_pts(float(center_x), float(center_y), float(radius))
-    fig.add_trace(go.Scatter(
+    fig = _add_role_trace(fig, go.Scatter(
         x=cx, y=cy,
         mode="lines",
         fill="toself",
@@ -567,8 +957,7 @@ def layer_yolk(
         line=dict(color=line_color, width=2, dash="longdashdot"),
         name=name,
         hovertemplate=f"{name} (r={radius:.4f})<extra></extra>",
-        zorder=5,
-    ))
+    ), "region")
     return fig
 
 
@@ -641,7 +1030,7 @@ def layer_uncovered_set(
         return fig
     px = list(bxy[:, 0]) + [bxy[0, 0]]
     py = list(bxy[:, 1]) + [bxy[0, 1]]
-    fig.add_trace(go.Scatter(
+    fig = _add_role_trace(fig, go.Scatter(
         x=px, y=py,
         mode="lines",
         fill="toself",
@@ -649,8 +1038,7 @@ def layer_uncovered_set(
         line=dict(color=line_color, width=1.5, dash="longdash"),
         name=name,
         hovertemplate=f"{name}<extra></extra>",
-        zorder=4,
-    ))
+    ), "region")
     return fig
 
 
@@ -702,7 +1090,7 @@ def layer_convex_hull(
         return fig
     px = list(hxy[:, 0]) + [hxy[0, 0]]
     py = list(hxy[:, 1]) + [hxy[0, 1]]
-    fig.add_trace(go.Scatter(
+    fig = _add_role_trace(fig, go.Scatter(
         x=px, y=py,
         mode="lines",
         fill="toself",
@@ -710,8 +1098,7 @@ def layer_convex_hull(
         line=dict(color=line_color, width=1.5, dash="dash"),
         name=name,
         hovertemplate=f"{name}<extra></extra>",
-        zorder=2,
-    ))
+    ), "region")
     return fig
 
 
@@ -773,9 +1160,7 @@ def save_plot(fig, path, width=None, height=None):
 
 
 def finalize_plot(fig):
-    """Enforce the canonical layer stack order (no-op; kept for API compatibility).
-
-    Layer ordering is handled natively via the ``zorder`` attribute on each trace.
+    """Enforce the canonical layer stack order.
 
     Parameters
     ----------
@@ -794,7 +1179,7 @@ def finalize_plot(fig):
     >>> fig = sclp.plot_spatial_voting(voters, sq=np.array([0.0, 0.0]))
     >>> fig = sclp.finalize_plot(fig)
     """
-    return fig
+    return _normalize_trace_roles(fig)
 
 
 def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
@@ -832,7 +1217,8 @@ def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
         raise ImportError("plotly is required: pip install plotly")
     color = color or _alt_point_color(theme)
     x, y = centroid_2d(voters)
-    fig.add_trace(
+    fig = _add_role_trace(
+        fig,
         go.Scatter(
             x=[x], y=[y],
             mode="markers+text",
@@ -842,8 +1228,9 @@ def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
             textposition="top center",
             name=name,
             hovertemplate=f"{name} ({x:.4f}, {y:.4f})<extra></extra>",
-            zorder=8,
         )
+        ,
+        "point",
     )
     return fig
 
@@ -884,7 +1271,8 @@ def layer_marginal_median(fig, voters, color=None, name="Marginal Median",
         raise ImportError("plotly is required: pip install plotly")
     color = color or _alt_point_color(theme)
     x, y = marginal_median_2d(voters)
-    fig.add_trace(
+    fig = _add_role_trace(
+        fig,
         go.Scatter(
             x=[x], y=[y],
             mode="markers+text",
@@ -894,7 +1282,8 @@ def layer_marginal_median(fig, voters, color=None, name="Marginal Median",
             textposition="top center",
             name=name,
             hovertemplate=f"{name} ({x:.4f}, {y:.4f})<extra></extra>",
-            zorder=8,
         )
+        ,
+        "point",
     )
     return fig

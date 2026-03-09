@@ -51,6 +51,33 @@ extern SEXP r_scs_profile_get_ranking(SEXP, SEXP);
 extern SEXP r_scs_profile_impartial_culture(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_profile_uniform_spatial(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
+/* Competition (competition.c) */
+extern SEXP r_scs_competition_run(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_competition_trace_destroy(SEXP);
+extern SEXP r_scs_competition_trace_dims(SEXP);
+extern SEXP r_scs_competition_trace_termination(SEXP);
+extern SEXP r_scs_competition_trace_round_positions(SEXP, SEXP);
+extern SEXP r_scs_competition_trace_final_positions(SEXP);
+extern SEXP r_scs_competition_trace_round_vote_shares(SEXP, SEXP);
+extern SEXP r_scs_competition_trace_round_seat_shares(SEXP, SEXP);
+extern SEXP r_scs_competition_trace_round_vote_totals(SEXP, SEXP);
+extern SEXP r_scs_competition_trace_round_seat_totals(SEXP, SEXP);
+extern SEXP r_scs_competition_trace_final_vote_shares(SEXP);
+extern SEXP r_scs_competition_trace_final_seat_shares(SEXP);
+extern SEXP r_scs_competition_run_experiment(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP,
+                                             SEXP, SEXP, SEXP);
+extern SEXP r_scs_competition_experiment_destroy(SEXP);
+extern SEXP r_scs_competition_experiment_dims(SEXP);
+extern SEXP r_scs_competition_experiment_summary(SEXP);
+extern SEXP r_scs_competition_experiment_mean_final_vote_shares(SEXP);
+extern SEXP r_scs_competition_experiment_mean_final_seat_shares(SEXP);
+extern SEXP r_scs_competition_experiment_run_round_counts(SEXP);
+extern SEXP r_scs_competition_experiment_run_termination_reasons(SEXP);
+extern SEXP r_scs_competition_experiment_run_terminated_early_flags(SEXP);
+extern SEXP r_scs_competition_experiment_run_final_vote_shares(SEXP);
+extern SEXP r_scs_competition_experiment_run_final_seat_shares(SEXP);
+extern SEXP r_scs_competition_experiment_run_final_positions(SEXP);
+
 /* ---------------------------------------------------------------------------
  * Forward declarations — B3: function groups
  * --------------------------------------------------------------------------- */
@@ -152,6 +179,38 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_profile_get_ranking",         (DL_FUNC)&r_scs_profile_get_ranking,         2},
     {"r_scs_profile_impartial_culture",   (DL_FUNC)&r_scs_profile_impartial_culture,   4},
     {"r_scs_profile_uniform_spatial",     (DL_FUNC)&r_scs_profile_uniform_spatial,     7},
+    /* --- B8: Competition --- */
+    {"r_scs_competition_run",                         (DL_FUNC)&r_scs_competition_run,                         7},
+    {"r_scs_competition_trace_destroy",               (DL_FUNC)&r_scs_competition_trace_destroy,               1},
+    {"r_scs_competition_trace_dims",                  (DL_FUNC)&r_scs_competition_trace_dims,                  1},
+    {"r_scs_competition_trace_termination",           (DL_FUNC)&r_scs_competition_trace_termination,           1},
+    {"r_scs_competition_trace_round_positions",       (DL_FUNC)&r_scs_competition_trace_round_positions,       2},
+    {"r_scs_competition_trace_final_positions",       (DL_FUNC)&r_scs_competition_trace_final_positions,       1},
+    {"r_scs_competition_trace_round_vote_shares",     (DL_FUNC)&r_scs_competition_trace_round_vote_shares,     2},
+    {"r_scs_competition_trace_round_seat_shares",     (DL_FUNC)&r_scs_competition_trace_round_seat_shares,     2},
+    {"r_scs_competition_trace_round_vote_totals",     (DL_FUNC)&r_scs_competition_trace_round_vote_totals,     2},
+    {"r_scs_competition_trace_round_seat_totals",     (DL_FUNC)&r_scs_competition_trace_round_seat_totals,     2},
+    {"r_scs_competition_trace_final_vote_shares",     (DL_FUNC)&r_scs_competition_trace_final_vote_shares,     1},
+    {"r_scs_competition_trace_final_seat_shares",     (DL_FUNC)&r_scs_competition_trace_final_seat_shares,     1},
+    {"r_scs_competition_run_experiment",              (DL_FUNC)&r_scs_competition_run_experiment,              9},
+    {"r_scs_competition_experiment_destroy",          (DL_FUNC)&r_scs_competition_experiment_destroy,          1},
+    {"r_scs_competition_experiment_dims",             (DL_FUNC)&r_scs_competition_experiment_dims,             1},
+    {"r_scs_competition_experiment_summary",          (DL_FUNC)&r_scs_competition_experiment_summary,          1},
+    {"r_scs_competition_experiment_mean_final_vote_shares",
+                                                    (DL_FUNC)&r_scs_competition_experiment_mean_final_vote_shares, 1},
+    {"r_scs_competition_experiment_mean_final_seat_shares",
+                                                    (DL_FUNC)&r_scs_competition_experiment_mean_final_seat_shares, 1},
+    {"r_scs_competition_experiment_run_round_counts", (DL_FUNC)&r_scs_competition_experiment_run_round_counts, 1},
+    {"r_scs_competition_experiment_run_termination_reasons",
+                                                    (DL_FUNC)&r_scs_competition_experiment_run_termination_reasons, 1},
+    {"r_scs_competition_experiment_run_terminated_early_flags",
+                                                    (DL_FUNC)&r_scs_competition_experiment_run_terminated_early_flags, 1},
+    {"r_scs_competition_experiment_run_final_vote_shares",
+                                                    (DL_FUNC)&r_scs_competition_experiment_run_final_vote_shares, 1},
+    {"r_scs_competition_experiment_run_final_seat_shares",
+                                                    (DL_FUNC)&r_scs_competition_experiment_run_final_seat_shares, 1},
+    {"r_scs_competition_experiment_run_final_positions",
+                                                    (DL_FUNC)&r_scs_competition_experiment_run_final_positions, 1},
     /* --- B3: version, distance, level-set, convex hull, majority --- */
     {"r_scs_api_version",                    (DL_FUNC)&r_scs_api_version,                    1},
     {"r_scs_calculate_distance",             (DL_FUNC)&r_scs_calculate_distance,             3},

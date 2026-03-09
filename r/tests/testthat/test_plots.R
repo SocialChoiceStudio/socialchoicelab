@@ -4,6 +4,24 @@ VOTERS <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6, -0.4, 0.8, 0.5, -0.7)
 ALTS   <- c( 0.0,  0.0, 0.6, 0.4, -0.5, 0.3)
 SQ     <- c(0.0, 0.0)
 
+.competition_trace_2d <- function() {
+  competition_run(
+    competitor_positions = c(0.0, 0.0, 2.0, 0.0),
+    strategy_kinds = c("sticker", "sticker"),
+    voter_ideals = c(-0.5, 0.0, 0.0, 0.2, 1.8, 0.1),
+    dist_config = make_dist_config(n_dims = 2L),
+    engine_config = make_competition_engine_config(
+      seat_count = 1L,
+      seat_rule = "plurality_top_k",
+      max_rounds = 2L,
+      step_config = make_competition_step_config(
+        kind = "fixed",
+        fixed_step_size = 0.5
+      )
+    )
+  )
+}
+
 # ---------------------------------------------------------------------------
 # plot_spatial_voting
 # ---------------------------------------------------------------------------
@@ -40,9 +58,61 @@ test_that("plot_spatial_voting accepts explicit xlim and ylim", {
   expect_s3_class(fig, "plotly")
 })
 
+test_that("plot_spatial_voting defaults include origin and centered title", {
+  fig <- plot_spatial_voting(VOTERS, ALTS, sq = SQ)
+  built <- plotly::plotly_build(fig)
+  expect_equal(built$x$layout$title$x, 0.5)
+  expect_identical(built$x$layout$plot_bgcolor, "white")
+  expect_lte(built$x$layout$xaxis$range[[1]], 0)
+  expect_gte(built$x$layout$xaxis$range[[2]], 0)
+  expect_lte(built$x$layout$yaxis$range[[1]], 0)
+  expect_gte(built$x$layout$yaxis$range[[2]], 0)
+})
+
+test_that("plot_spatial_voting does not label SQ by default", {
+  fig <- plot_spatial_voting(VOTERS, sq = SQ)
+  sq_trace <- Filter(function(tr) identical(tr$name, "Status Quo"), fig$x$attrs)[[1]]
+  expect_identical(sq_trace$mode, "markers")
+})
+
 test_that("plot_spatial_voting show_labels flag works", {
   fig <- plot_spatial_voting(VOTERS, ALTS, sq = SQ, show_labels = TRUE)
   expect_s3_class(fig, "plotly")
+})
+
+test_that("plot_competition_trajectories returns a plotly object", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  fig <- plot_competition_trajectories(trace, voters = VOTERS)
+  expect_s3_class(fig, "plotly")
+})
+
+test_that("animate_competition_trajectories returns a plotly object with frames", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  fig <- animate_competition_trajectories(trace, voters = VOTERS)
+  built <- plotly::plotly_build(fig)
+  expect_s3_class(fig, "plotly")
+  expect_true(length(fig$x$frames) >= 2L)
+  expect_equal(built$x$layout$margin$b, 240)
+  expect_lt(built$x$layout$sliders[[1]]$y, 0)
+  expect_lt(built$x$layout$updatemenus[[1]]$y, 0)
+  expect_false(isTRUE(built$x$layout$sliders[[1]]$currentvalue$visible))
+  overlay_names <- vapply(Filter(function(tr) identical(tr$scl_role, "overlay"), fig$x$attrs),
+                          function(tr) tr$mode %||% "", character(1))
+  expect_true(all(overlay_names == "markers"))
+})
+
+test_that("background regions stay below points in canonical order", {
+  hull <- convex_hull_2d(VOTERS)
+  ws <- winset_2d(SQ, VOTERS)
+  fig <- plot_spatial_voting(VOTERS, sq = SQ)
+  fig <- layer_convex_hull(fig, hull)
+  fig <- layer_winset(fig, ws)
+  built <- plotly::plotly_build(fig)
+  names <- vapply(built$x$data, function(tr) tr$name %||% "", character(1))
+  expect_identical(names[1:2], c("Convex Hull", "Winset"))
+  expect_identical(tail(names, 2), c("Voters", "Status Quo"))
 })
 
 test_that("plot_spatial_voting with no alternatives works", {

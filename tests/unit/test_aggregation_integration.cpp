@@ -83,6 +83,15 @@ static const std::vector<Point2d> kCycleAlts = {
 static const std::vector<Point2d> kCycleVoters = {
   {1.0, 0.5}, {-0.5, 1.5}, {-0.5, -1.0}};
 
+// Explicit 1D compatibility fixture using x-axis embedding in Point2d.
+// Alternatives A=(0,0), B=(2,0), C=(5,0).
+// Voters at x={1.6, 2.1, 2.4} all rank B first, so B should be the
+// Condorcet winner in both the profile and geometry layers.
+static const std::vector<Point2d> kLineAlts = {
+  {0.0, 0.0}, {2.0, 0.0}, {5.0, 0.0}};
+static const std::vector<Point2d> kLineVoters = {
+  {1.6, 0.0}, {2.1, 0.0}, {2.4, 0.0}};
+
 // ---------------------------------------------------------------------------
 // (a) Condorcet winner: all positional rules agree, consistency checks pass.
 // ---------------------------------------------------------------------------
@@ -147,6 +156,36 @@ TEST(Integration_Cycle, GeometryAndProfileCycleAgree) {
   EXPECT_FALSE(has_condorcet_winner(kCycleAlts, kCycleVoters, kEuc));
   const auto profile = build_spatial_profile(kCycleAlts, kCycleVoters, kEuc);
   EXPECT_FALSE(has_condorcet_winner_profile(profile));
+}
+
+TEST(Integration_OneDimensionalEmbeddedFixture, GeometryAndProfileAgree) {
+  const auto profile = build_spatial_profile(kLineAlts, kLineVoters, kEuc);
+  ASSERT_TRUE(is_well_formed(profile));
+
+  EXPECT_TRUE(has_condorcet_winner(kLineAlts, kLineVoters, kEuc));
+  EXPECT_TRUE(has_condorcet_winner_profile(profile));
+
+  const auto prof_cw = condorcet_winner_profile(profile);
+  ASSERT_TRUE(prof_cw.has_value());
+  EXPECT_EQ(*prof_cw, 1);  // B
+
+  const auto geo_cw = condorcet_winner(kLineAlts, kLineVoters, kEuc);
+  ASSERT_TRUE(geo_cw.has_value());
+  EXPECT_TRUE(geo_cw->isApprox(kLineAlts[1]));
+
+  EXPECT_EQ(plurality_one_winner(profile, TieBreak::kSmallestIndex), 1);
+  EXPECT_EQ(borda_one_winner(profile, TieBreak::kSmallestIndex), 1);
+  EXPECT_TRUE(is_condorcet_consistent(profile, 1));
+  EXPECT_TRUE(is_majority_consistent(profile, 1));
+}
+
+TEST(Integration_OneDimensionalEmbeddedFixture, PositionalRulesMatchOnLine) {
+  const auto profile = build_spatial_profile(kLineAlts, kLineVoters, kEuc);
+  ASSERT_TRUE(is_well_formed(profile));
+
+  EXPECT_EQ(plurality_all_winners(profile), (std::vector<int>{1}));
+  EXPECT_EQ(borda_all_winners(profile), (std::vector<int>{1}));
+  EXPECT_EQ(antiplurality_all_winners(profile), (std::vector<int>{0, 1}));
 }
 
 // ---------------------------------------------------------------------------

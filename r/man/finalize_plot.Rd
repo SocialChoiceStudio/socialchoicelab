@@ -13,8 +13,9 @@ finalize_plot(fig)
 The same plotly figure unchanged.
 }
 \description{
-Layer ordering is handled natively via the \code{zorder} attribute on each
-trace. This function is kept for API compatibility.
+Reapplies the package's canonical visual stack: regions, then lines, then
+points, then overlays. It is primarily useful when users have manipulated a
+figure directly and want to restore package ordering.
 }
 \examples{
 \dontrun{

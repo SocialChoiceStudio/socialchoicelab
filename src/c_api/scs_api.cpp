@@ -25,6 +25,7 @@
 #include <socialchoicelab/aggregation/scoring_rule.h>
 #include <socialchoicelab/aggregation/social_ranking.h>
 #include <socialchoicelab/aggregation/tie_break.h>
+#include <socialchoicelab/competition/experiment_runner.h>
 #include <socialchoicelab/geometry/centrality.h>
 #include <socialchoicelab/geometry/convex_hull.h>
 #include <socialchoicelab/geometry/copeland.h>
@@ -67,6 +68,14 @@ struct SCS_WinsetImpl {
 
 struct SCS_ProfileImpl {
   socialchoicelab::aggregation::Profile profile;
+};
+
+struct SCS_CompetitionTraceImpl {
+  socialchoicelab::competition::CompetitionTrace trace;
+};
+
+struct SCS_CompetitionExperimentImpl {
+  socialchoicelab::competition::CompetitionExperimentResult result;
 };
 
 // ---------------------------------------------------------------------------
@@ -120,6 +129,23 @@ bool validate_finite_doubles(const double* p, int count, const char* context,
     }
   }
   return true;
+}
+
+int copy_int_vector(const std::vector<int>& values, int* out, int out_len,
+                    char* err_buf, int err_buf_len, const char* label) {
+  if (!out) {
+    set_error(
+        err_buf, err_buf_len,
+        (std::string(label) + ": output buffer must not be null").c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < static_cast<int>(values.size())) {
+    set_error(err_buf, err_buf_len,
+              (std::string(label) + ": output buffer is too small").c_str());
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (size_t i = 0; i < values.size(); ++i) out[i] = values[i];
+  return SCS_OK;
 }
 
 // Convert a C SCS_DistanceConfig to the C++ geometry::DistConfig.
@@ -230,6 +256,279 @@ std::vector<socialchoicelab::core::types::Point2d> build_voters(
   v.reserve(static_cast<std::size_t>(n));
   for (int i = 0; i < n; ++i) v.emplace_back(xy[2 * i], xy[2 * i + 1]);
   return v;
+}
+
+bool to_competition_dist_config(const SCS_DistanceConfig* dist_cfg, int n_dims,
+                                socialchoicelab::geometry::DistConfig& out,
+                                char* err_buf, int err_buf_len) {
+  using DT = socialchoicelab::preference::distance::DistanceType;
+  if (!dist_cfg) {
+    set_error(err_buf, err_buf_len, "dist_cfg must not be null");
+    return false;
+  }
+  if (dist_cfg->n_weights != n_dims) {
+    set_error(err_buf, err_buf_len,
+              "dist_cfg->n_weights must match n_dims for competition");
+    return false;
+  }
+  if (!dist_cfg->salience_weights) {
+    set_error(err_buf, err_buf_len,
+              "dist_cfg->salience_weights must not be null");
+    return false;
+  }
+  if (!validate_finite_doubles(dist_cfg->salience_weights, dist_cfg->n_weights,
+                               "dist_cfg->salience_weights", err_buf,
+                               err_buf_len)) {
+    return false;
+  }
+  switch (dist_cfg->distance_type) {
+    case SCS_DIST_EUCLIDEAN:
+      out.type = DT::EUCLIDEAN;
+      break;
+    case SCS_DIST_MANHATTAN:
+      out.type = DT::MANHATTAN;
+      break;
+    case SCS_DIST_CHEBYSHEV:
+      out.type = DT::CHEBYSHEV;
+      break;
+    case SCS_DIST_MINKOWSKI:
+      out.type = DT::MINKOWSKI;
+      break;
+    default:
+      set_error(err_buf, err_buf_len, "unknown SCS_DistanceType value");
+      return false;
+  }
+  out.order_p = dist_cfg->order_p;
+  out.salience_weights.assign(dist_cfg->salience_weights,
+                              dist_cfg->salience_weights + dist_cfg->n_weights);
+  return true;
+}
+
+std::vector<socialchoicelab::core::types::PointNd> build_points_nd(
+    const double* values, int n_points, int n_dims) {
+  std::vector<socialchoicelab::core::types::PointNd> pts;
+  pts.reserve(static_cast<std::size_t>(n_points));
+  for (int i = 0; i < n_points; ++i) {
+    socialchoicelab::core::types::PointNd p(n_dims);
+    for (int d = 0; d < n_dims; ++d) p[d] = values[i * n_dims + d];
+    pts.push_back(std::move(p));
+  }
+  return pts;
+}
+
+socialchoicelab::competition::CompetitorStrategyKind to_cpp_comp_strategy(
+    int kind) {
+  using K = socialchoicelab::competition::CompetitorStrategyKind;
+  switch (kind) {
+    case SCS_COMPETITION_STRATEGY_STICKER:
+      return K::kSticker;
+    case SCS_COMPETITION_STRATEGY_HUNTER:
+      return K::kHunter;
+    case SCS_COMPETITION_STRATEGY_AGGREGATOR:
+      return K::kAggregator;
+    case SCS_COMPETITION_STRATEGY_PREDATOR:
+      return K::kPredator;
+    default:
+      throw std::invalid_argument("unknown SCS_CompetitionStrategyKind value");
+  }
+}
+
+socialchoicelab::competition::SeatRuleKind to_cpp_seat_rule(
+    SCS_CompetitionSeatRule rule) {
+  using R = socialchoicelab::competition::SeatRuleKind;
+  switch (rule) {
+    case SCS_COMPETITION_SEAT_RULE_PLURALITY_TOP_K:
+      return R::kPluralityTopK;
+    case SCS_COMPETITION_SEAT_RULE_HARE_LARGEST_REMAINDER:
+      return R::kHareLargestRemainder;
+    default:
+      return R::kPluralityTopK;
+  }
+}
+
+socialchoicelab::competition::StepPolicyConfig to_cpp_step_config(
+    const SCS_CompetitionStepConfig& cfg) {
+  using K = socialchoicelab::competition::StepPolicyKind;
+  socialchoicelab::competition::StepPolicyConfig out;
+  switch (cfg.kind) {
+    case SCS_COMPETITION_STEP_FIXED:
+      out.kind = K::kFixed;
+      break;
+    case SCS_COMPETITION_STEP_RANDOM_UNIFORM:
+      out.kind = K::kRandomUniform;
+      break;
+    case SCS_COMPETITION_STEP_SHARE_DELTA_PROPORTIONAL:
+      out.kind = K::kShareDeltaProportional;
+      break;
+    default:
+      throw std::invalid_argument(
+          "unknown SCS_CompetitionStepPolicyKind value");
+  }
+  out.fixed_step_size = cfg.fixed_step_size;
+  out.min_step_size = cfg.min_step_size;
+  out.max_step_size = cfg.max_step_size;
+  out.proportionality_constant = cfg.proportionality_constant;
+  return out;
+}
+
+socialchoicelab::competition::BoundaryPolicyKind to_cpp_boundary_policy(
+    SCS_CompetitionBoundaryPolicy policy) {
+  using B = socialchoicelab::competition::BoundaryPolicyKind;
+  switch (policy) {
+    case SCS_COMPETITION_BOUNDARY_PROJECT_TO_BOX:
+      return B::kProjectToBox;
+    case SCS_COMPETITION_BOUNDARY_STAY_PUT:
+      return B::kStayPut;
+    case SCS_COMPETITION_BOUNDARY_REFLECT:
+      return B::kReflect;
+    default:
+      return B::kProjectToBox;
+  }
+}
+
+socialchoicelab::competition::CompetitionObjectiveKind to_cpp_objective_kind(
+    SCS_CompetitionObjectiveKind kind) {
+  using O = socialchoicelab::competition::CompetitionObjectiveKind;
+  switch (kind) {
+    case SCS_COMPETITION_OBJECTIVE_VOTE_SHARE:
+      return O::kVoteShare;
+    case SCS_COMPETITION_OBJECTIVE_SEAT_SHARE:
+      return O::kSeatShare;
+    default:
+      return O::kVoteShare;
+  }
+}
+
+SCS_CompetitionTerminationReason to_c_termination_reason(
+    socialchoicelab::competition::TerminationReason reason) {
+  switch (reason) {
+    case socialchoicelab::competition::TerminationReason::kMaxRounds:
+      return SCS_COMPETITION_TERM_MAX_ROUNDS;
+    case socialchoicelab::competition::TerminationReason::kConverged:
+      return SCS_COMPETITION_TERM_CONVERGED;
+    case socialchoicelab::competition::TerminationReason::kCycleDetected:
+      return SCS_COMPETITION_TERM_CYCLE_DETECTED;
+    case socialchoicelab::competition::TerminationReason::kNoImprovementWindow:
+      return SCS_COMPETITION_TERM_NO_IMPROVEMENT_WINDOW;
+  }
+  return SCS_COMPETITION_TERM_MAX_ROUNDS;
+}
+
+socialchoicelab::competition::TerminationConfig to_cpp_termination_config(
+    const SCS_CompetitionTerminationConfig& cfg) {
+  socialchoicelab::competition::TerminationConfig out;
+  out.stop_on_convergence = cfg.stop_on_convergence != 0;
+  out.position_epsilon = cfg.position_epsilon;
+  out.stop_on_cycle = cfg.stop_on_cycle != 0;
+  out.cycle_memory = cfg.cycle_memory;
+  out.signature_resolution =
+      cfg.signature_resolution > 0.0 ? cfg.signature_resolution : 1e-6;
+  out.stop_on_no_improvement = cfg.stop_on_no_improvement != 0;
+  out.no_improvement_window = cfg.no_improvement_window;
+  out.objective_epsilon = cfg.objective_epsilon;
+  return out;
+}
+
+bool to_cpp_competition_engine_config(
+    const SCS_CompetitionEngineConfig* cfg, const SCS_DistanceConfig* dist_cfg,
+    int n_dims, socialchoicelab::competition::CompetitionEngineConfig& out,
+    char* err_buf, int err_buf_len) {
+  if (!cfg) {
+    set_error(err_buf, err_buf_len, "engine_cfg must not be null");
+    return false;
+  }
+  out.election_feedback.seat_count = cfg->seat_count;
+  out.election_feedback.seat_rule = to_cpp_seat_rule(cfg->seat_rule);
+  if (!to_competition_dist_config(dist_cfg, n_dims,
+                                  out.election_feedback.distance_config,
+                                  err_buf, err_buf_len)) {
+    return false;
+  }
+  out.step_policy = to_cpp_step_config(cfg->step_config);
+  out.boundary_policy = to_cpp_boundary_policy(cfg->boundary_policy);
+  out.objective_kind = to_cpp_objective_kind(cfg->objective_kind);
+  out.max_rounds = cfg->max_rounds;
+  out.termination = to_cpp_termination_config(cfg->termination);
+  return true;
+}
+
+std::vector<socialchoicelab::competition::CompetitorState> build_competitors(
+    const double* positions, const double* headings, const int* strategy_kinds,
+    int n_competitors, int n_dims) {
+  std::vector<socialchoicelab::competition::CompetitorState> competitors;
+  competitors.reserve(static_cast<std::size_t>(n_competitors));
+  for (int i = 0; i < n_competitors; ++i) {
+    socialchoicelab::competition::CompetitorState competitor;
+    competitor.id = i;
+    competitor.strategy_kind = to_cpp_comp_strategy(strategy_kinds[i]);
+    competitor.position = socialchoicelab::core::types::PointNd(n_dims);
+    competitor.heading = socialchoicelab::core::types::PointNd(n_dims);
+    for (int d = 0; d < n_dims; ++d) {
+      competitor.position[d] = positions[i * n_dims + d];
+      competitor.heading[d] = headings ? headings[i * n_dims + d] : 0.0;
+    }
+    competitors.push_back(std::move(competitor));
+  }
+  return competitors;
+}
+
+int copy_positions(
+    const std::vector<socialchoicelab::competition::CompetitorState>&
+        competitors,
+    double* out_positions, int out_len, char* err_buf, int err_buf_len) {
+  const int n_competitors = static_cast<int>(competitors.size());
+  const int n_dims =
+      n_competitors == 0 ? 0 : static_cast<int>(competitors[0].position.size());
+  const int needed = n_competitors * n_dims;
+  if (!out_positions) {
+    set_error(err_buf, err_buf_len, "positions output buffer must not be null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < needed) {
+    set_error(err_buf, err_buf_len, "positions output buffer is too small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int i = 0; i < n_competitors; ++i) {
+    for (int d = 0; d < n_dims; ++d) {
+      out_positions[i * n_dims + d] = competitors[i].position[d];
+    }
+  }
+  return SCS_OK;
+}
+
+int copy_double_vector(const std::vector<double>& values, double* out,
+                       int out_len, char* err_buf, int err_buf_len,
+                       const char* label) {
+  if (!out) {
+    set_error(
+        err_buf, err_buf_len,
+        (std::string(label) + ": output buffer must not be null").c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (out_len < static_cast<int>(values.size())) {
+    set_error(err_buf, err_buf_len,
+              (std::string(label) + ": output buffer is too small").c_str());
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (size_t i = 0; i < values.size(); ++i) out[i] = values[i];
+  return SCS_OK;
+}
+
+std::vector<double> final_metric_shares_from_trace(
+    const socialchoicelab::competition::CompetitionTrace& trace,
+    bool use_seat_share) {
+  std::vector<double> shares;
+  shares.reserve(trace.final_competitors.size());
+  for (const auto& competitor : trace.final_competitors) {
+    if (competitor.current_round_metrics.has_value()) {
+      shares.push_back(use_seat_share
+                           ? competitor.current_round_metrics->seat_share
+                           : competitor.current_round_metrics->vote_share);
+    } else {
+      shares.push_back(0.0);
+    }
+  }
+  return shares;
 }
 
 }  // namespace
@@ -3243,4 +3542,561 @@ extern "C" int scs_geometric_mean_2d(const double* voter_ideals_xy,
     set_error(err_buf, err_buf_len, e.what());
     return SCS_ERROR_INTERNAL;
   }
+}
+
+extern "C" SCS_CompetitionTrace* scs_competition_run(
+    const double* competitor_positions, const double* competitor_headings,
+    const int* strategy_kinds, int n_competitors, const double* voter_ideals,
+    int n_voters, int n_dims, const SCS_DistanceConfig* dist_cfg,
+    const SCS_CompetitionEngineConfig* engine_cfg, SCS_StreamManager* mgr,
+    char* err_buf, int err_buf_len) {
+  if (!competitor_positions || !strategy_kinds || !voter_ideals || !dist_cfg ||
+      !engine_cfg) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_run: null pointer argument");
+    return nullptr;
+  }
+  if (n_competitors < 1 || n_voters < 1 || n_dims < 1) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_run: n_competitors, n_voters, and n_dims must "
+              "all be >= 1");
+    return nullptr;
+  }
+  if (!validate_finite_doubles(competitor_positions, n_competitors * n_dims,
+                               "competitor_positions", err_buf, err_buf_len) ||
+      (competitor_headings &&
+       !validate_finite_doubles(competitor_headings, n_competitors * n_dims,
+                                "competitor_headings", err_buf, err_buf_len)) ||
+      !validate_finite_doubles(voter_ideals, n_voters * n_dims, "voter_ideals",
+                               err_buf, err_buf_len)) {
+    return nullptr;
+  }
+  try {
+    socialchoicelab::competition::CompetitionEngineConfig cpp_cfg;
+    if (!to_cpp_competition_engine_config(engine_cfg, dist_cfg, n_dims, cpp_cfg,
+                                          err_buf, err_buf_len)) {
+      return nullptr;
+    }
+    cpp_cfg.bounds.lower =
+        socialchoicelab::core::types::PointNd::Constant(n_dims, -1.0);
+    cpp_cfg.bounds.upper =
+        socialchoicelab::core::types::PointNd::Constant(n_dims, 1.0);
+    // Infer minimal axis-aligned bounds that contain initial competitors and
+    // voters.
+    for (int d = 0; d < n_dims; ++d) {
+      double min_value = std::numeric_limits<double>::infinity();
+      double max_value = -std::numeric_limits<double>::infinity();
+      for (int i = 0; i < n_competitors; ++i) {
+        const double value = competitor_positions[i * n_dims + d];
+        min_value = std::min(min_value, value);
+        max_value = std::max(max_value, value);
+      }
+      for (int i = 0; i < n_voters; ++i) {
+        const double value = voter_ideals[i * n_dims + d];
+        min_value = std::min(min_value, value);
+        max_value = std::max(max_value, value);
+      }
+      cpp_cfg.bounds.lower[d] = min_value - 1.0;
+      cpp_cfg.bounds.upper[d] = max_value + 1.0;
+    }
+
+    auto competitors =
+        build_competitors(competitor_positions, competitor_headings,
+                          strategy_kinds, n_competitors, n_dims);
+    auto voters = build_points_nd(voter_ideals, n_voters, n_dims);
+    auto trace = socialchoicelab::competition::run_fixed_round_competition(
+        cpp_cfg, competitors, voters, mgr ? &mgr->mgr : nullptr);
+    return new SCS_CompetitionTraceImpl{std::move(trace)};
+  } catch (const std::bad_alloc&) {
+    set_error(err_buf, err_buf_len, "scs_competition_run: out of memory");
+    return nullptr;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return nullptr;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return nullptr;
+  }
+}
+
+extern "C" void scs_competition_trace_destroy(SCS_CompetitionTrace* trace) {
+  delete trace;
+}
+
+extern "C" int scs_competition_trace_dims(const SCS_CompetitionTrace* trace,
+                                          int* out_n_rounds,
+                                          int* out_n_competitors,
+                                          int* out_n_dims, char* err_buf,
+                                          int err_buf_len) {
+  if (!trace || !out_n_rounds || !out_n_competitors || !out_n_dims) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_dims: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  *out_n_rounds = static_cast<int>(trace->trace.rounds.size());
+  *out_n_competitors = static_cast<int>(trace->trace.final_competitors.size());
+  *out_n_dims =
+      trace->trace.final_competitors.empty()
+          ? 0
+          : static_cast<int>(trace->trace.final_competitors[0].position.size());
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_trace_termination(
+    const SCS_CompetitionTrace* trace, int* out_terminated_early,
+    SCS_CompetitionTerminationReason* out_reason, char* err_buf,
+    int err_buf_len) {
+  if (!trace || !out_terminated_early || !out_reason) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_termination: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  *out_terminated_early = trace->trace.terminated_early ? 1 : 0;
+  *out_reason = to_c_termination_reason(trace->trace.termination_reason);
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_trace_round_positions(
+    const SCS_CompetitionTrace* trace, int round_index, double* out_positions,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_round_positions: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (round_index < 0 ||
+      round_index >= static_cast<int>(trace->trace.rounds.size())) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_competition_trace_round_positions: round_index out of range");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_positions(trace->trace.rounds[round_index].evaluated_competitors,
+                        out_positions, out_len, err_buf, err_buf_len);
+}
+
+extern "C" int scs_competition_trace_final_positions(
+    const SCS_CompetitionTrace* trace, double* out_positions, int out_len,
+    char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_final_positions: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_positions(trace->trace.final_competitors, out_positions, out_len,
+                        err_buf, err_buf_len);
+}
+
+extern "C" int scs_competition_trace_round_vote_shares(
+    const SCS_CompetitionTrace* trace, int round_index, double* out_shares,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_round_vote_shares: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (round_index < 0 ||
+      round_index >= static_cast<int>(trace->trace.rounds.size())) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_competition_trace_round_vote_shares: round_index out of range");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_double_vector(
+      trace->trace.rounds[round_index].feedback.vote_shares, out_shares,
+      out_len, err_buf, err_buf_len, "scs_competition_trace_round_vote_shares");
+}
+
+extern "C" int scs_competition_trace_round_seat_shares(
+    const SCS_CompetitionTrace* trace, int round_index, double* out_shares,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_round_seat_shares: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (round_index < 0 ||
+      round_index >= static_cast<int>(trace->trace.rounds.size())) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_competition_trace_round_seat_shares: round_index out of range");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_double_vector(
+      trace->trace.rounds[round_index].feedback.seat_shares, out_shares,
+      out_len, err_buf, err_buf_len, "scs_competition_trace_round_seat_shares");
+}
+
+extern "C" int scs_competition_trace_round_vote_totals(
+    const SCS_CompetitionTrace* trace, int round_index, int* out_totals,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_round_vote_totals: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (round_index < 0 ||
+      round_index >= static_cast<int>(trace->trace.rounds.size())) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_competition_trace_round_vote_totals: round_index out of range");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_int_vector(trace->trace.rounds[round_index].feedback.vote_totals,
+                         out_totals, out_len, err_buf, err_buf_len,
+                         "scs_competition_trace_round_vote_totals");
+}
+
+extern "C" int scs_competition_trace_round_seat_totals(
+    const SCS_CompetitionTrace* trace, int round_index, int* out_totals,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_round_seat_totals: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (round_index < 0 ||
+      round_index >= static_cast<int>(trace->trace.rounds.size())) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_competition_trace_round_seat_totals: round_index out of range");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_int_vector(trace->trace.rounds[round_index].feedback.seats,
+                         out_totals, out_len, err_buf, err_buf_len,
+                         "scs_competition_trace_round_seat_totals");
+}
+
+extern "C" int scs_competition_trace_final_vote_shares(
+    const SCS_CompetitionTrace* trace, double* out_shares, int out_len,
+    char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_final_vote_shares: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_double_vector(final_metric_shares_from_trace(trace->trace, false),
+                            out_shares, out_len, err_buf, err_buf_len,
+                            "scs_competition_trace_final_vote_shares");
+}
+
+extern "C" int scs_competition_trace_final_seat_shares(
+    const SCS_CompetitionTrace* trace, double* out_shares, int out_len,
+    char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_final_seat_shares: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_double_vector(final_metric_shares_from_trace(trace->trace, true),
+                            out_shares, out_len, err_buf, err_buf_len,
+                            "scs_competition_trace_final_seat_shares");
+}
+
+extern "C" SCS_CompetitionExperiment* scs_competition_run_experiment(
+    const double* competitor_positions, const double* competitor_headings,
+    const int* strategy_kinds, int n_competitors, const double* voter_ideals,
+    int n_voters, int n_dims, const SCS_DistanceConfig* dist_cfg,
+    const SCS_CompetitionEngineConfig* engine_cfg, uint64_t master_seed,
+    int num_runs, int retain_traces, char* err_buf, int err_buf_len) {
+  if (!competitor_positions || !strategy_kinds || !voter_ideals || !dist_cfg ||
+      !engine_cfg) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_run_experiment: null pointer argument");
+    return nullptr;
+  }
+  if (n_competitors < 1 || n_voters < 1 || n_dims < 1 || num_runs < 1) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_run_experiment: invalid dimensions or num_runs");
+    return nullptr;
+  }
+  try {
+    socialchoicelab::competition::CompetitionEngineConfig cpp_engine_cfg;
+    if (!to_cpp_competition_engine_config(engine_cfg, dist_cfg, n_dims,
+                                          cpp_engine_cfg, err_buf,
+                                          err_buf_len)) {
+      return nullptr;
+    }
+    cpp_engine_cfg.bounds.lower =
+        socialchoicelab::core::types::PointNd::Constant(n_dims, -1.0);
+    cpp_engine_cfg.bounds.upper =
+        socialchoicelab::core::types::PointNd::Constant(n_dims, 1.0);
+    for (int d = 0; d < n_dims; ++d) {
+      double min_value = std::numeric_limits<double>::infinity();
+      double max_value = -std::numeric_limits<double>::infinity();
+      for (int i = 0; i < n_competitors; ++i) {
+        const double value = competitor_positions[i * n_dims + d];
+        min_value = std::min(min_value, value);
+        max_value = std::max(max_value, value);
+      }
+      for (int i = 0; i < n_voters; ++i) {
+        const double value = voter_ideals[i * n_dims + d];
+        min_value = std::min(min_value, value);
+        max_value = std::max(max_value, value);
+      }
+      cpp_engine_cfg.bounds.lower[d] = min_value - 1.0;
+      cpp_engine_cfg.bounds.upper[d] = max_value + 1.0;
+    }
+    socialchoicelab::competition::CompetitionExperimentConfig cpp_cfg;
+    cpp_cfg.engine_config = cpp_engine_cfg;
+    cpp_cfg.initial_competitors =
+        build_competitors(competitor_positions, competitor_headings,
+                          strategy_kinds, n_competitors, n_dims);
+    cpp_cfg.voter_ideals = build_points_nd(voter_ideals, n_voters, n_dims);
+    cpp_cfg.master_seed = master_seed;
+    cpp_cfg.num_runs = num_runs;
+    cpp_cfg.retain_traces = retain_traces != 0;
+    auto result =
+        socialchoicelab::competition::run_competition_experiment(cpp_cfg);
+    return new SCS_CompetitionExperimentImpl{std::move(result)};
+  } catch (const std::bad_alloc&) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_run_experiment: out of memory");
+    return nullptr;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return nullptr;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return nullptr;
+  }
+}
+
+extern "C" void scs_competition_experiment_destroy(
+    SCS_CompetitionExperiment* experiment) {
+  delete experiment;
+}
+
+extern "C" int scs_competition_experiment_dims(
+    const SCS_CompetitionExperiment* experiment, int* out_num_runs,
+    int* out_n_competitors, int* out_n_dims, char* err_buf, int err_buf_len) {
+  if (!experiment || !out_num_runs || !out_n_competitors || !out_n_dims) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_dims: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  *out_num_runs = experiment->result.summary.num_runs;
+  *out_n_competitors =
+      experiment->result.run_summaries.empty()
+          ? 0
+          : static_cast<int>(
+                experiment->result.run_summaries[0].final_vote_shares.size());
+  *out_n_dims =
+      experiment->result.run_summaries.empty()
+          ? 0
+          : static_cast<int>(
+                experiment->result.run_summaries[0].final_positions[0].size());
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_experiment_summary(
+    const SCS_CompetitionExperiment* experiment, double* out_mean_rounds,
+    double* out_early_termination_rate, char* err_buf, int err_buf_len) {
+  if (!experiment || !out_mean_rounds || !out_early_termination_rate) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_summary: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  *out_mean_rounds = experiment->result.summary.mean_rounds_completed;
+  *out_early_termination_rate =
+      experiment->result.summary.early_termination_rate;
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_experiment_mean_final_vote_shares(
+    const SCS_CompetitionExperiment* experiment, double* out_shares,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!experiment) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_mean_final_vote_shares: experiment "
+              "is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_double_vector(
+      experiment->result.summary.mean_final_vote_shares, out_shares, out_len,
+      err_buf, err_buf_len,
+      "scs_competition_experiment_mean_final_vote_shares");
+}
+
+extern "C" int scs_competition_experiment_mean_final_seat_shares(
+    const SCS_CompetitionExperiment* experiment, double* out_shares,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!experiment) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_mean_final_seat_shares: experiment "
+              "is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  return copy_double_vector(
+      experiment->result.summary.mean_final_seat_shares, out_shares, out_len,
+      err_buf, err_buf_len,
+      "scs_competition_experiment_mean_final_seat_shares");
+}
+
+extern "C" int scs_competition_experiment_run_round_counts(
+    const SCS_CompetitionExperiment* experiment, int* out_round_counts,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!experiment || !out_round_counts) {
+    set_error(
+        err_buf, err_buf_len,
+        "scs_competition_experiment_run_round_counts: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const int needed = static_cast<int>(experiment->result.run_summaries.size());
+  if (out_len < needed) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_round_counts: output buffer is "
+              "too small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int i = 0; i < needed; ++i) {
+    out_round_counts[i] = experiment->result.run_summaries[i].rounds_completed;
+  }
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_experiment_run_termination_reasons(
+    const SCS_CompetitionExperiment* experiment,
+    SCS_CompetitionTerminationReason* out_reasons, int out_len, char* err_buf,
+    int err_buf_len) {
+  if (!experiment || !out_reasons) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_termination_reasons: null "
+              "pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const int needed = static_cast<int>(experiment->result.run_summaries.size());
+  if (out_len < needed) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_termination_reasons: output "
+              "buffer is too small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int i = 0; i < needed; ++i) {
+    out_reasons[i] = to_c_termination_reason(
+        experiment->result.run_summaries[i].termination_reason);
+  }
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_experiment_run_terminated_early_flags(
+    const SCS_CompetitionExperiment* experiment, int* out_flags, int out_len,
+    char* err_buf, int err_buf_len) {
+  if (!experiment || !out_flags) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_terminated_early_flags: null "
+              "pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const int needed = static_cast<int>(experiment->result.run_summaries.size());
+  if (out_len < needed) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_terminated_early_flags: output "
+              "buffer is too small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int i = 0; i < needed; ++i) {
+    out_flags[i] = experiment->result.run_summaries[i].terminated_early ? 1 : 0;
+  }
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_experiment_run_final_vote_shares(
+    const SCS_CompetitionExperiment* experiment, double* out_shares,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!experiment || !out_shares) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_final_vote_shares: null pointer "
+              "argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const int n_runs = static_cast<int>(experiment->result.run_summaries.size());
+  const int n_competitors =
+      n_runs == 0
+          ? 0
+          : static_cast<int>(
+                experiment->result.run_summaries[0].final_vote_shares.size());
+  const int needed = n_runs * n_competitors;
+  if (out_len < needed) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_final_vote_shares: output buffer "
+              "is too small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int run = 0; run < n_runs; ++run) {
+    for (int i = 0; i < n_competitors; ++i) {
+      out_shares[run * n_competitors + i] =
+          experiment->result.run_summaries[run].final_vote_shares[i];
+    }
+  }
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_experiment_run_final_seat_shares(
+    const SCS_CompetitionExperiment* experiment, double* out_shares,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!experiment || !out_shares) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_final_seat_shares: null pointer "
+              "argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const int n_runs = static_cast<int>(experiment->result.run_summaries.size());
+  const int n_competitors =
+      n_runs == 0
+          ? 0
+          : static_cast<int>(
+                experiment->result.run_summaries[0].final_seat_shares.size());
+  const int needed = n_runs * n_competitors;
+  if (out_len < needed) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_final_seat_shares: output buffer "
+              "is too small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int run = 0; run < n_runs; ++run) {
+    for (int i = 0; i < n_competitors; ++i) {
+      out_shares[run * n_competitors + i] =
+          experiment->result.run_summaries[run].final_seat_shares[i];
+    }
+  }
+  return SCS_OK;
+}
+
+extern "C" int scs_competition_experiment_run_final_positions(
+    const SCS_CompetitionExperiment* experiment, double* out_positions,
+    int out_len, char* err_buf, int err_buf_len) {
+  if (!experiment || !out_positions) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_final_positions: null pointer "
+              "argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const int n_runs = static_cast<int>(experiment->result.run_summaries.size());
+  const int n_competitors =
+      n_runs == 0
+          ? 0
+          : static_cast<int>(
+                experiment->result.run_summaries[0].final_positions.size());
+  const int n_dims =
+      (n_runs == 0 || n_competitors == 0)
+          ? 0
+          : static_cast<int>(
+                experiment->result.run_summaries[0].final_positions[0].size());
+  const int needed = n_runs * n_competitors * n_dims;
+  if (out_len < needed) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_experiment_run_final_positions: output buffer "
+              "is too small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (int run = 0; run < n_runs; ++run) {
+    for (int c = 0; c < n_competitors; ++c) {
+      for (int d = 0; d < n_dims; ++d) {
+        out_positions[(run * n_competitors + c) * n_dims + d] =
+            experiment->result.run_summaries[run].final_positions[c][d];
+      }
+    }
+  }
+  return SCS_OK;
 }

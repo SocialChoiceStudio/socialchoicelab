@@ -203,7 +203,7 @@ SEXP r_scs_winset_boundary_2d(SEXP ptr) {
     SET_VECTOR_ELT(result, 2, is_hole_sexp);
     SET_STRING_ELT(rnames, 2, mkChar("is_hole"));
     setAttrib(result, R_NamesSymbol, rnames);
-    UNPROTECT(6); /* xy_mat, starts_sexp, is_hole_sexp, result, rnames */
+    UNPROTECT(5); /* xy_mat, starts_sexp, is_hole_sexp, result, rnames */
     return result;
 }
 

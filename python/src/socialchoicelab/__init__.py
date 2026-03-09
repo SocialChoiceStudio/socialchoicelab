@@ -102,6 +102,16 @@ from socialchoicelab._social import (  # noqa: F401
     is_majority_consistent,
 )
 
+from socialchoicelab._competition import (  # noqa: F401
+    CompetitionStepConfig,
+    CompetitionTerminationConfig,
+    CompetitionEngineConfig,
+    CompetitionTrace,
+    CompetitionExperiment,
+    competition_run,
+    competition_run_experiment,
+)
+
 # C13.B — Built-in scenarios
 from socialchoicelab.scenarios import (  # noqa: F401
     list_scenarios,
@@ -114,4 +124,4 @@ from socialchoicelab.palette import (  # noqa: F401
     scl_theme_colors,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

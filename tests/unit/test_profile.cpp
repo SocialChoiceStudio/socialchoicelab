@@ -141,6 +141,38 @@ TEST(BuildSpatialProfile, MultipleVoters_WellFormed) {
   EXPECT_EQ(p.rankings[2][0], 1);
 }
 
+TEST(BuildSpatialProfile, OneDimensionalEmbeddedFixture_BehavesAsExpected) {
+  // Explicit 1D compatibility check using x-axis embedding in Point2d.
+  // Alternatives at x = {0, 2, 4}; voters at x = {0.25, 1.0, 3.0}.
+  const std::vector<Point2d> alts = {{0.0, 0.0}, {2.0, 0.0}, {4.0, 0.0}};
+  const std::vector<Point2d> voters = {{0.25, 0.0}, {1.0, 0.0}, {3.0, 0.0}};
+  const auto p = build_spatial_profile(alts, voters, kEuc);
+
+  ASSERT_TRUE(is_well_formed(p));
+  ASSERT_EQ(p.n_voters, 3);
+  ASSERT_EQ(p.n_alts, 3);
+
+  // Voter at 0.25: 0 is closest, then 2, then 4.
+  EXPECT_EQ(p.rankings[0], (std::vector<int>{0, 1, 2}));
+
+  // Voter at 1.0: tie between 0 and 2; index 0 should win the tie.
+  EXPECT_EQ(p.rankings[1], (std::vector<int>{0, 1, 2}));
+
+  // Voter at 3.0: tie between 2 and 4; index 1 should win the tie.
+  EXPECT_EQ(p.rankings[2], (std::vector<int>{1, 2, 0}));
+}
+
+TEST(BuildSpatialProfile, OneDimensionalEmbeddedMidpointTie_BreaksByIndex) {
+  // On the line, a midpoint voter should rank the lower-index tied
+  // alternative first.
+  const std::vector<Point2d> alts = {{-1.0, 0.0}, {1.0, 0.0}, {3.0, 0.0}};
+  const std::vector<Point2d> voters = {{0.0, 0.0}};
+  const auto p = build_spatial_profile(alts, voters, kEuc);
+
+  ASSERT_TRUE(is_well_formed(p));
+  EXPECT_EQ(p.rankings[0], (std::vector<int>{0, 1, 2}));
+}
+
 // ---------------------------------------------------------------------------
 // P1 — profile_from_utility_matrix
 // ---------------------------------------------------------------------------

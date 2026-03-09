@@ -260,6 +260,36 @@ TEST(Approval, Spatial_LargeThreshold_AllApproved) {
   EXPECT_EQ(static_cast<int>(winners.size()), 3);
 }
 
+TEST(Approval, Spatial_OneDimensionalEmbeddedThreshold_IsInclusive) {
+  // Explicit 1D compatibility check using x-axis embedding in Point2d.
+  // Voter at x=1 is exactly distance 1 from alts at x=0 and x=2, and distance 3
+  // from alt at x=4. Threshold comparison should be inclusive.
+  const std::vector<Point2d> alts = {{0.0, 0.0}, {2.0, 0.0}, {4.0, 0.0}};
+  const std::vector<Point2d> voters = {{1.0, 0.0}};
+
+  const auto scores = approval_scores_spatial(alts, voters, kEuc, 1.0);
+  ASSERT_EQ(scores.size(), 3u);
+  EXPECT_EQ(scores[0], 1);
+  EXPECT_EQ(scores[1], 1);
+  EXPECT_EQ(scores[2], 0);
+
+  const auto winners = approval_all_winners_spatial(alts, voters, kEuc, 1.0);
+  EXPECT_EQ(winners, (std::vector<int>{0, 1}));
+}
+
+TEST(Approval, Spatial_OneDimensionalEmbeddedMidpointApprovesSymmetrically) {
+  // A midpoint voter on the line should approve both equidistant alternatives
+  // when the threshold matches that shared distance exactly.
+  const std::vector<Point2d> alts = {{-2.0, 0.0}, {2.0, 0.0}, {5.0, 0.0}};
+  const std::vector<Point2d> voters = {{0.0, 0.0}};
+
+  const auto scores = approval_scores_spatial(alts, voters, kEuc, 2.0);
+  ASSERT_EQ(scores.size(), 3u);
+  EXPECT_EQ(scores[0], 1);
+  EXPECT_EQ(scores[1], 1);
+  EXPECT_EQ(scores[2], 0);
+}
+
 TEST(Approval, Spatial_DistanceThreshold_CorrectSubset) {
   // Alternatives at (0,0) and (10,0); voter at (1,0) with threshold 2.
   // dist to A = 1 ≤ 2 → approved.  dist to B = 9 > 2 → not approved.

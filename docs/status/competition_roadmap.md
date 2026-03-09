@@ -4,6 +4,39 @@ Roadmap for adding Layer 7 multi-candidate electoral competition to SocialChoice
 
 This plan is based on the current project architecture, milestone-gate style, the deprecated `voteR` implementation, and the main competition references: Laver and Sergenti's party-competition ABM baseline, Fowler and Laver's tournament framework, and related work on convergence, centrifugal/centripetal incentives, and multicandidate equilibrium.
 
+## Implementation status (2026-03-09)
+
+This roadmap began as a forward plan. It now also needs to reflect the fact
+that most of the baseline Layer 7 stack is already implemented locally.
+
+### Largely implemented
+
+- Phase 0: 1D compatibility audit and test backfill
+- Phase A: competition domain model and initialization
+- Phase B: electoral evaluation bridge and seat allocation service
+- Phase C: adaptation strategy framework and baseline strategies
+- Phase D: step-size policies and boundary handling
+- Phase E: stateful competition engine and trace recording
+- Phase F: termination, convergence, and cycle diagnostics
+- Phase G: competition C API
+- Phase H: R and Python bindings
+- Phase I: experiment runner baseline
+- Phase J: first static and animated trajectory plotting
+
+### Still actively being refined
+
+- R animated competition plots still show oversized initial jumps in some runs.
+- Animation UX still needs follow-on refinement even after that bug is solved:
+  - trail toggles
+  - fade-trail behavior
+  - final spacing/layout polish
+  - remaining R/Python parity cleanup
+
+### Practical next step
+
+After the remaining R jump issue is solved, the next work item is **further
+animation refinement**, not more core-engine expansion.
+
 ## Scope and sequencing
 
 This roadmap departs slightly from the user-suggested phase order in three places:
@@ -16,11 +49,12 @@ This roadmap departs slightly from the user-suggested phase order in three place
 
 ### 1. Internal dimensionality vs public API
 
-Recommendation: make the C++ core dimension-ready, but ship a **2D-first public API** in the first milestone.
+Recommendation: make the C++ core explicitly support **1D and 2D**, but ship a **2D-first public API** in the first milestone.
 
-- Why: current `Profile`, geometry, and plotting infrastructure are already 2D-centered.
-- Consequence: core value types can store `Eigen::VectorXd` or an equivalent ND representation, while the first `scs_api.h` entry points should be `*_2d` to match existing conventions.
-- Follow-on: add 1D/ND wrappers only after the 2D engine and bindings are stable.
+- Why: 1D competition is theoretically important, simpler to benchmark, and should be supported in core logic from the start; current geometry and plotting infrastructure are still primarily 2D-centered at the public boundary.
+- Consequence: the core should not bake in 2D assumptions where 1D has a natural interpretation, while the first `scs_api.h` entry points can still be `*_2d` to match existing conventions.
+- Constraint: docs and API names should not imply that ND competition is already supported end-to-end just because some internal types are dimension-ready; similarly, a 2D-first public API must not be mistaken for a 2D-only core.
+- Follow-on: add 1D wrappers once the 1D-capable core is stable and the 2D API/bindings are in place.
 
 ### 2. Synchronous vs asynchronous adaptation
 
@@ -37,7 +71,9 @@ Recommendation: model these as **separate components**.
 - `vote_rule`: how votes/scores are computed from a profile.
 - `seat_rule`: how vote totals/scores are turned into seats.
 
-Why: plurality and PR are not the same kind of operation. The engine should reuse Layer 5 profile/rule logic for vote generation, then apply a reusable seat-allocation service. This also keeps the architecture open to later combinations such as approval voting with PR seat conversion.
+Why: plurality and PR are not the same kind of operation. The engine should reuse Layer 5 profile/rule logic where that fits cleanly, then apply a reusable seat-allocation service for turning round vote totals into seats. This also keeps the architecture open to later combinations such as approval voting with PR seat conversion.
+
+Clarification: Layer 5 currently provides ordinal-profile construction and social-choice rules, not a full multi-seat competition layer. The competition engine therefore needs a small additional bridge from spatial round state to vote totals/supporter sets, plus a dedicated seat-allocation service for electoral competition.
 
 ### 4. Equilibrium detection
 
@@ -60,15 +96,59 @@ Recommendation: store a **full competition trace handle** in core/API layers.
 - The architecture should remain open to tournament-style or evolutionary decision-rule competitions without rewriting the engine (Fowler and Laver 2008).
 - The simulation must use named RNG streams and deterministic run-level seeding per `StreamManager`.
 - Every binding-visible feature must land through `scs_api.h` first.
+- The first competition release should state its electoral formulas precisely: plurality seat assignment and one named PR seat-conversion rule, not an undifferentiated claim of supporting "PR" in general.
+- The core competition logic should support **1D and 2D** from the outset; where public wrappers are 2D-first, 1D support must still be preserved and tested internally.
+
+## Phase 0: 1D compatibility audit and test backfill
+
+**Goal**
+
+Audit the existing codebase for 1D compatibility in the components the competition layer will depend on, and add missing 1D tests wherever current 2D-heavy coverage is not enough to protect later competition work.
+
+**Prerequisites**
+
+- None beyond the current repository state.
+
+**Deliverables**
+
+- Read-through and compatibility notes for the Layer 1-5 components that the competition engine will rely on:
+  - PRNG / `StreamManager`
+  - distance / loss infrastructure
+  - profile construction and aggregation rules
+  - any geometry/centrality helpers intended for competition metrics
+- New or expanded tests in existing suites where 1D behavior is material and not already covered.
+- `docs/architecture/competition_design.md`
+  - short note documenting what the project already supports in 1D before Layer 7 work begins, and which Layer 7 components are required to preserve that support.
+
+**C API surface**
+
+- None. This is a read-through and test-backfill phase.
+
+**Tests**
+
+- Add 1D tests for existing dependencies where competition will rely on them and current 2D tests are insufficient.
+- Prefer targeted additions to existing test files rather than inventing a new “1D compatibility” abstraction.
+- Minimum expectation:
+  - ranking/profile behavior in 1D where ties and left/right ordering matter
+  - distance/loss combinations used by competition feedback
+  - any movement/math helpers introduced early for Layer 7 should be designed with 1D cases in mind before 2D wrappers are added
+
+**Milestone gate**
+
+- Features: the dependency audit is complete and documents which existing components are already safe for 1D use.
+- Tests: missing 1D coverage needed by Layer 7 has been added before competition implementation begins.
+- Docs: `competition_design.md` records the 1D/2D support stance for Layer 7.
+- API stability: N/A — no new public API in this phase.
 
 ## Phase A: Competition domain model and initialization
 
 **Goal**
 
-Establish the core Layer 7 types, validation rules, and deterministic initialization pipeline so later phases can build on strong, testable contracts instead of ad hoc data frames.
+Establish the core Layer 7 types, validation rules, and deterministic initialization pipeline so later phases can build on strong, testable contracts instead of ad hoc data frames, while preserving 1D and 2D support in the core.
 
 **Prerequisites**
 
+- Phase 0 complete.
 - Layers 1-5 complete.
 - `scs_api` patterns and `StreamManager` conventions stable.
 
@@ -77,9 +157,9 @@ Establish the core Layer 7 types, validation rules, and deterministic initializa
 - `include/socialchoicelab/simulation/competition/competitor.h`
   - `Competitor`, `CompetitorType`, `CompetitorObjective`, and immutable competitor IDs.
 - `include/socialchoicelab/simulation/competition/competition_config.h`
-  - global engine config, initialization modes, round limits, dimension/bounds metadata.
+  - global engine config, initialization modes, round limits, dimension/bounds metadata for 1D or 2D runs.
 - `include/socialchoicelab/simulation/competition/initialization.h`
-  - fixed-position initialization, random initialization, and validation helpers.
+  - fixed-position initialization, random initialization, and validation helpers for 1D and 2D competitor sets.
 - `include/socialchoicelab/simulation/competition/competition_state.h`
   - per-round state snapshot with positions, headings, step sizes, vote totals, seat totals, and termination metadata.
 - `docs/architecture/competition_design.md`
@@ -94,7 +174,7 @@ Establish the core Layer 7 types, validation rules, and deterministic initializa
 - `tests/unit/test_competitor.cpp`
   - validates IDs, type/objective enums, bounds, and dimensional consistency.
 - `tests/unit/test_competition_initialization.cpp`
-  - verifies fixed and random initialization, reproducibility under a named stream, and failure on invalid bounds or duplicate IDs.
+  - verifies fixed and random initialization in 1D and 2D, reproducibility under a named stream, and failure on invalid bounds or duplicate IDs.
 
 **Milestone gate**
 
@@ -107,7 +187,7 @@ Establish the core Layer 7 types, validation rules, and deterministic initializa
 
 **Goal**
 
-Create the stateless "round evaluation" layer that turns voter/candidate positions into vote totals, vote shares, seat allocations, and supporter assignments using existing aggregation infrastructure wherever possible.
+Create the stateless "round evaluation" layer that turns voter/candidate positions into vote totals, vote shares, seat allocations, and supporter assignments using existing aggregation infrastructure wherever possible, without hard-coding 2D assumptions into core competition feedback.
 
 **Prerequisites**
 
@@ -116,16 +196,17 @@ Create the stateless "round evaluation" layer that turns voter/candidate positio
 **Deliverables**
 
 - `include/socialchoicelab/simulation/competition/election_feedback.h`
-  - builds per-round profiles from voter ideals and competitor positions;
-  - computes vote totals, shares, supporter sets, and leader rankings.
+  - builds the round-level evaluation bridge from voter ideals and competitor positions in 1D or 2D;
+  - computes vote totals, shares, supporter sets, and leader rankings;
+  - uses Layer 5 profile/ranking logic where appropriate, but owns the competition-specific mapping from spatial state to round feedback.
 - `include/socialchoicelab/aggregation/seat_allocation.h`
   - new reusable stateless seat-allocation helpers:
     - plurality top-`k` seat allocation;
-    - proportional allocation by Hare largest remainder for the first PR milestone.
+    - proportional allocation by **Hare largest remainder** for the first PR milestone.
 - `tests/unit/test_seat_allocation.cpp`
   - aggregation-level tests for plurality and PR seat conversion.
 - `tests/unit/test_competition_election_feedback.cpp`
-  - end-to-end feedback tests from positions -> profile -> votes -> seats.
+  - end-to-end feedback tests from positions -> profile -> votes -> seats in both 1D and 2D where behavior differs materially.
 
 **C API surface**
 
@@ -137,19 +218,20 @@ Create the stateless "round evaluation" layer that turns voter/candidate positio
 - Verify PR seat totals preserve seat count and behave correctly under exact ties and zero-vote competitors.
 - Verify supporter assignment needed by Aggregator is stable and well-defined under ties.
 - Verify objective metrics can be computed by vote share or seat share.
+- Verify 1D fixtures where left/right ordering and exact midpoint ties could mask bugs that 2D tests would not catch.
 
 **Milestone gate**
 
-- Features: a stateless round-evaluation service exists; plurality and PR seat conversion are both implemented and reusable.
+- Features: a stateless round-evaluation service exists; plurality and Hare-largest-remainder PR seat conversion are both implemented and reusable.
 - Tests: vote, share, and seat outputs match hand-worked toy examples and deterministic tie-break cases.
-- Docs: `competition_design.md` documents the vote-rule/seat-rule split and the first supported formulas.
+- Docs: `competition_design.md` documents the vote-rule/seat-rule split and names Hare largest remainder as the initial PR formula rather than implying a generic PR layer.
 - API stability: internal-only; no public ABI promised yet.
 
 ## Phase C: Adaptation strategy framework and baseline strategies
 
 **Goal**
 
-Implement a pluggable adaptation framework with the four baseline Laver strategies: Sticker, Hunter, Aggregator, and Predator.
+Implement a pluggable adaptation framework with the four baseline Laver strategies: Sticker, Hunter, Aggregator, and Predator, with explicit 1D and 2D interpretations in core logic.
 
 **Prerequisites**
 
@@ -174,9 +256,9 @@ Implement a pluggable adaptation framework with the four baseline Laver strategi
 
 - `tests/unit/test_competition_strategies.cpp`
   - Sticker never moves.
-  - Hunter keeps heading after improvement and redraws heading after non-improvement.
-  - Aggregator moves toward the weighted mean of current supporters.
-  - Predator moves toward the current leader under the chosen objective metric.
+  - Hunter keeps heading after improvement and redraws heading after non-improvement in 1D and 2D.
+  - Aggregator moves toward the weighted mean of current supporters in 1D and 2D.
+  - Predator moves toward the current leader under the chosen objective metric in 1D and 2D.
 - Seeded tests confirm random Hunter behavior is reproducible through named streams.
 - Mixed-strategy tests confirm the factory can host heterogeneous competitor types in the same run.
 
@@ -191,7 +273,7 @@ Implement a pluggable adaptation framework with the four baseline Laver strategi
 
 **Goal**
 
-Separate movement magnitude and feasible-space handling from strategy logic so strategies choose directions/objectives while shared motion policies handle geometry consistently.
+Separate movement magnitude and feasible-space handling from strategy logic so strategies choose directions/objectives while shared motion policies handle geometry consistently in both 1D and 2D.
 
 **Prerequisites**
 
@@ -208,7 +290,7 @@ Separate movement magnitude and feasible-space handling from strategy logic so s
   - stay-put;
   - reflect (optional in the first competition release if time allows, but the interface should allow it).
 - `include/socialchoicelab/simulation/competition/motion.h`
-  - shared vector movement helpers and heading updates.
+  - shared movement helpers and heading updates, with explicit 1D left/right semantics and 2D angle/vector semantics.
 
 **C API surface**
 
@@ -217,10 +299,10 @@ Separate movement magnitude and feasible-space handling from strategy logic so s
 **Tests**
 
 - `tests/unit/test_competition_motion.cpp`
-  - verifies motion length, deterministic projection, and boundary clipping/projection.
+  - verifies motion length, deterministic projection, and boundary clipping/projection in 1D and 2D.
 - `tests/unit/test_step_policy.cpp`
   - verifies fixed and share-dependent steps, including zero-share, leader-share, and minimum-step cases.
-- 1D-style edge tests should be included even if the public API is 2D-first, because fixed-axis movement is common in theory and old demos.
+- 1D edge tests are required, not optional, because fixed-axis competition is part of the intended core support surface.
 
 **Milestone gate**
 
@@ -242,15 +324,17 @@ Build the actual Layer 7 engine: initialize -> evaluate -> adapt -> move -> reco
 **Deliverables**
 
 - `include/socialchoicelab/simulation/competition/competition_engine.h`
-  - one-run stateful engine API.
+  - one-run stateful engine API for 1D and 2D core runs.
 - `include/socialchoicelab/simulation/competition/competition_trace.h`
   - full round history for analysis and later FFI export.
 - `include/socialchoicelab/simulation/competition/voter_sources.h`
   - fixed voters and generated voters (uniform and Gaussian at minimum, using named streams).
 - `include/socialchoicelab/simulation/competition/round_metrics.h`
-  - per-round derived measures: vote shares, seat shares, distances to centroid/marginal median, leader IDs, support centroids.
+  - per-round derived measures: vote shares, seat shares, leader IDs, support centroids, plus 1D/2D-appropriate central-reference metrics.
 - `tests/unit/test_competition_engine.cpp`
   - end-to-end engine tests.
+
+Note: the first engine milestone should target **fixed-party-count** competition only. Party birth/death, survival thresholds, and tournament-style rule churn remain later extensions even though the architecture should leave room for them.
 
 **C API surface**
 
@@ -259,6 +343,9 @@ Build the actual Layer 7 engine: initialize -> evaluate -> adapt -> move -> reco
 **Tests**
 
 - Deterministic end-to-end runs for:
+  - 1D all-Sticker;
+  - 1D all-Aggregator;
+  - 1D all-Hunter;
   - all-Sticker;
   - all-Aggregator;
   - all-Hunter;
@@ -266,6 +353,7 @@ Build the actual Layer 7 engine: initialize -> evaluate -> adapt -> move -> reco
 - Tests that fixed voters remain fixed across rounds and generated-voter modes consume only the documented voter stream.
 - Tests that synchronous updates use round-`t` feedback for all competitors before any round-`t+1` positions are committed.
 - Tests that recorded traces contain every round, including round 0 initialization.
+- Tests that 1D runs do not depend on 2D-only metrics being present.
 
 **Milestone gate**
 
@@ -318,7 +406,7 @@ Add principled stopping conditions and diagnostics so the engine can support bot
 
 **Goal**
 
-Expose Layer 7 through the stable C ABI using the same patterns already used for StreamManager, Winset, and Profile handles.
+Expose Layer 7 through the stable C ABI using the same patterns already used for StreamManager, Winset, and Profile handles. First public wrappers remain 2D-first even though the core is intended to support 1D as well.
 
 **Prerequisites**
 

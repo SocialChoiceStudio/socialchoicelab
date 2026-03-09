@@ -33,6 +33,98 @@
   c(rng[1L] - pad, rng[2L] + pad)
 }
 
+.range_with_origin <- function(vals, pad_frac = 0.12, min_pad = 0.5) {
+  rng <- .padded_range(vals, pad_frac = pad_frac, min_pad = min_pad)
+  c(min(rng[1L], 0), max(rng[2L], 0))
+}
+
+.trace_role_priority <- function(role) {
+  switch(role,
+         region = 1L,
+         line = 2L,
+         point = 3L,
+         overlay = 4L,
+         99L)
+}
+
+.trace_role <- function(trace) {
+  if (!is.null(trace$scl_role)) {
+    return(trace$scl_role)
+  }
+  name <- trace$name %||% ""
+  mode <- trace$mode %||% ""
+  fill <- trace$fill %||% "none"
+
+  if (identical(mode, "lines+markers")) {
+    return("overlay")
+  }
+  if (name %in% c("Voters", "Alternatives", "Status Quo", "Centroid",
+                  "Marginal Median")) {
+    return("point")
+  }
+  if (identical(fill, "toself")) {
+    return("region")
+  }
+  if (grepl("lines", mode, fixed = TRUE)) {
+    return("line")
+  }
+  "point"
+}
+
+.tag_last_trace_role <- function(fig, role) {
+  n <- length(fig$x$attrs)
+  if (n > 0L) {
+    fig$x$attrs[[n]]$scl_role <- role
+  }
+  fig
+}
+
+.normalize_plot_roles <- function(fig) {
+  n <- length(fig$x$attrs)
+  if (n <= 1L) return(fig)
+  trace_flags <- vapply(fig$x$attrs, function(trace) {
+    !is.null(trace$type)
+  }, logical(1))
+  if (!any(trace_flags)) return(fig)
+  trace_idx <- which(trace_flags)
+  priorities <- vapply(fig$x$attrs[trace_idx], function(trace) {
+    .trace_role_priority(.trace_role(trace))
+  }, integer(1))
+  ord <- trace_idx[order(priorities, seq_along(trace_idx))]
+  fig$x$attrs[trace_idx] <- fig$x$attrs[ord]
+  fig$x$attrs[trace_idx] <- lapply(fig$x$attrs[trace_idx], function(trace) {
+    trace$scl_role <- NULL
+    trace
+  })
+  fig
+}
+
+.add_role_trace <- function(fig, role, ...) {
+  fig <- plotly::add_trace(fig, ...)
+  fig <- .tag_last_trace_role(fig, role)
+  .normalize_plot_roles(fig)
+}
+
+.set_rgba_alpha <- function(color, alpha) {
+  if (startsWith(color, "rgba(") && endsWith(color, ")")) {
+    parts <- strsplit(sub("^rgba\\((.*)\\)$", "\\1", color), ",")[[1]]
+    if (length(parts) == 4L) {
+      parts <- trimws(parts)
+      parts[4] <- sprintf("%.3f", alpha)
+      return(sprintf("rgba(%s)", paste(parts, collapse = ", ")))
+    }
+  }
+  color
+}
+
+.apply_plot_config <- function(fig) {
+  plotly::config(
+    fig,
+    displaylogo = FALSE,
+    modeBarButtonsToRemove = c("select2d", "lasso2d", "autoScale2d")
+  )
+}
+
 # ---------------------------------------------------------------------------
 # Base plot
 # ---------------------------------------------------------------------------
@@ -100,64 +192,469 @@ plot_spatial_voting <- function(voters,
 
   all_x <- c(vxy$x, if (n_a > 0L) axy$x, if (!is.null(sq)) sq[1L])
   all_y <- c(vxy$y, if (n_a > 0L) axy$y, if (!is.null(sq)) sq[2L])
-  if (is.null(xlim) && length(all_x) > 0L) xlim <- .padded_range(all_x)
-  if (is.null(ylim) && length(all_y) > 0L) ylim <- .padded_range(all_y)
+  if (is.null(xlim) && length(all_x) > 0L) xlim <- .range_with_origin(all_x)
+  if (is.null(ylim) && length(all_y) > 0L) ylim <- .range_with_origin(all_y)
 
   fig <- plotly::plot_ly(width = as.integer(width), height = as.integer(height))
 
-  fig <- plotly::add_trace(
+  fig <- .add_role_trace(
     fig, x = vxy$x, y = vxy$y, type = "scatter", mode = "markers",
+    role = "point",
     name   = "Voters",
-    marker = list(symbol = "circle", size = 12, color = voter_col,
+    marker = list(symbol = "circle", size = 8, color = voter_col,
                   line = list(color = "white", width = 1.5)),
     text          = voter_names,
-    hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-    zorder        = 8L
+    hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
   )
 
   if (n_a > 0L) {
-    fig <- plotly::add_trace(
+    fig <- .add_role_trace(
       fig, x = axy$x, y = axy$y, type = "scatter",
+      role = "point",
       mode   = if (show_labels) "markers+text" else "markers",
       name   = "Alternatives",
       marker = list(symbol = "diamond", size = 14, color = alt_col,
                     line = list(color = "white", width = 1.5)),
       text          = alt_names,
       textposition  = "top center",
-      hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-      zorder        = 9L
+      hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
     )
   }
 
   if (!is.null(sq)) {
-    fig <- plotly::add_trace(
+    fig <- .add_role_trace(
       fig, x = sq[1L], y = sq[2L], type = "scatter",
+      role = "point",
       mode   = if (show_labels) "markers+text" else "markers",
       name   = "Status Quo",
       marker = list(symbol = "star", size = 18, color = sq_col,
                     line = list(color = "white", width = 1.5)),
-      text          = "SQ",
-      textposition  = "top center",
-      hovertemplate = "Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-      zorder        = 9L
+      text          = if (show_labels) "SQ" else NULL,
+      textposition  = if (show_labels) "top center" else NULL,
+      hovertemplate = "Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
     )
   }
 
-  plotly::layout(
+  fig <- plotly::layout(
     fig,
-    title       = list(text = title, x = 0.05),
+    title       = list(text = title, x = 0.5, xanchor = "center"),
+    margin      = list(t = 95, r = 20, b = 55, l = 65),
     xaxis       = list(title = dim_names[1L], zeroline = TRUE,
-                       zerolinecolor = "#cccccc", zerolinewidth = 1,
+                       zerolinecolor = "rgba(140,140,140,0.45)",
+                       zerolinewidth = 1, showgrid = TRUE,
+                       gridcolor = "rgba(140,140,140,0.25)", gridwidth = 1,
                        range = xlim),
     yaxis       = list(title = dim_names[2L], zeroline = TRUE,
-                       zerolinecolor = "#cccccc", zerolinewidth = 1,
+                       zerolinecolor = "rgba(140,140,140,0.45)",
+                       zerolinewidth = 1, showgrid = TRUE,
+                       gridcolor = "rgba(140,140,140,0.25)", gridwidth = 1,
                        scaleanchor = "x", scaleratio = 1,
                        range = ylim),
     legend      = list(x = 1.02, y = 1, xanchor = "left"),
     hovermode     = "closest",
-    plot_bgcolor  = "#f8f9fa",
+    plot_bgcolor  = "white",
     paper_bgcolor = "white"
   )
+  .apply_plot_config(fig)
+}
+
+#' Plot 2D competition trajectories from a CompetitionTrace
+#'
+#' @param trace A \code{\link{CompetitionTrace}} object.
+#' @param voters Optional flat numeric voter vector or \code{numeric(0)}.
+#' @param competitor_names Optional character labels for competitors.
+#' @param title Plot title.
+#' @param theme Colour theme.
+#' @param width,height Plot dimensions in pixels.
+#' @return A \code{plotly} figure object.
+#' @export
+plot_competition_trajectories <- function(trace,
+                                          voters = numeric(0),
+                                          competitor_names = NULL,
+                                          title = "Competition Trajectories",
+                                          theme = "dark2",
+                                          width = 700L,
+                                          height = 600L) {
+  if (!inherits(trace, "CompetitionTrace")) {
+    stop("Expected a CompetitionTrace object, got ", class(trace)[1], ".")
+  }
+  d <- trace$dims()
+  if (d$n_dims != 2L) {
+    stop("plot_competition_trajectories currently supports only 2D traces, got n_dims = ",
+         d$n_dims, ".")
+  }
+  if (is.null(competitor_names)) {
+    competitor_names <- paste0("Competitor ", seq_len(d$n_competitors))
+  }
+  if (length(competitor_names) != d$n_competitors) {
+    stop("competitor_names length must match n_competitors.")
+  }
+
+  fig <- plot_spatial_voting(
+    voters = voters,
+    title = title,
+    theme = theme,
+    width = width,
+    height = height
+  )
+  colors <- scl_palette(theme, d$n_competitors, alpha = 0.95)
+  positions <- lapply(seq_len(d$n_rounds), function(r) trace$round_positions(r))
+  positions[[d$n_rounds + 1L]] <- trace$final_positions()
+
+  for (i in seq_len(d$n_competitors)) {
+    xy <- do.call(rbind, lapply(positions, function(pos) pos[i, , drop = FALSE]))
+    fig <- .add_role_trace(
+      fig,
+      role = "overlay",
+      x = xy[, 1],
+      y = xy[, 2],
+      type = "scatter",
+      mode = "lines+markers",
+      name = competitor_names[i],
+      marker = list(symbol = "diamond", size = 12, color = colors[i],
+                    line = list(color = "white", width = 1)),
+      line = list(color = colors[i], width = 3),
+      text = c(paste("Round", seq_len(d$n_rounds)), "Final"),
+      hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+    )
+  }
+
+  fig
+}
+
+#' Animate 2D competition trajectories from a CompetitionTrace
+#'
+#' @param trace A \code{\link{CompetitionTrace}} object.
+#' @param voters Optional flat numeric voter vector or \code{numeric(0)}.
+#' @param competitor_names Optional character labels for competitors.
+#' @param title Plot title.
+#' @param theme Colour theme.
+#' @param width,height Plot dimensions in pixels.
+#' @return A \code{plotly} figure object with animation frames.
+#' @export
+animate_competition_trajectories <- function(trace,
+                                             voters = numeric(0),
+                                             competitor_names = NULL,
+                                             title = "Competition Trajectories",
+                                             theme = "dark2",
+                                             width = 700L,
+                                             height = 600L,
+                                             trail = c("none", "full", "fade")) {
+  if (!inherits(trace, "CompetitionTrace")) {
+    stop("Expected a CompetitionTrace object, got ", class(trace)[1], ".")
+  }
+  d <- trace$dims()
+  if (d$n_dims != 2L) {
+    stop("animate_competition_trajectories currently supports only 2D traces, got n_dims = ",
+         d$n_dims, ".")
+  }
+  if (is.null(competitor_names)) {
+    competitor_names <- paste0("Competitor ", seq_len(d$n_competitors))
+  }
+  if (length(competitor_names) != d$n_competitors) {
+    stop("competitor_names length must match n_competitors.")
+  }
+  trail <- match.arg(trail)
+
+  fig <- plot_spatial_voting(
+    voters = voters,
+    title = title,
+    theme = theme,
+    width = width,
+    height = height
+  )
+  trace_idx <- which(vapply(fig$x$attrs, function(tr) !is.null(tr$type), logical(1)))
+  voter_frame_trace <- if (length(trace_idx) > 0L) fig$x$attrs[[trace_idx[1L]]] else NULL
+
+  positions <- lapply(seq_len(d$n_rounds), function(r) trace$round_positions(r))
+  positions[[d$n_rounds + 1L]] <- trace$final_positions()
+  frame_names <- c(paste("Round", seq_len(d$n_rounds)), "Final")
+  colors <- scl_palette(theme, d$n_competitors, alpha = 0.95)
+  n_segments_max <- max(length(frame_names) - 1L, 0L)
+
+  if (trail == "none") {
+    anim_df <- do.call(rbind, lapply(seq_along(frame_names), function(frame_idx) {
+      pos <- positions[[frame_idx]]
+      data.frame(
+        frame = frame_names[frame_idx],
+        competitor = competitor_names,
+        x = pos[, 1],
+        y = pos[, 2],
+        hover_text = frame_names[frame_idx],
+        stringsAsFactors = FALSE
+      )
+    }))
+    anim_df$frame <- factor(anim_df$frame, levels = frame_names, ordered = TRUE)
+
+    for (i in seq_len(d$n_competitors)) {
+      comp_df <- anim_df[anim_df$competitor == competitor_names[i], , drop = FALSE]
+      comp_df <- comp_df[order(comp_df$frame, decreasing = TRUE), , drop = FALSE]
+      fig <- .add_role_trace(
+        fig,
+        role = "overlay",
+        data = comp_df,
+        x = ~x,
+        y = ~y,
+        frame = ~frame,
+        type = "scatter",
+        mode = "markers",
+        name = competitor_names[i],
+        marker = list(symbol = "diamond", size = 12, color = colors[i],
+                      line = list(color = "white", width = 1)),
+        text = ~hover_text,
+        hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+      )
+    }
+
+    fig <- plotly::layout(fig, margin = list(t = 95, r = 20, b = 240, l = 65))
+    fig <- plotly::animation_opts(
+      fig,
+      frame = 700,
+      transition = 0,
+      redraw = FALSE,
+      mode = "next"
+    )
+    fig <- plotly::animation_slider(
+      fig,
+      x = 0.08,
+      y = -0.20,
+      len = 0.84,
+      currentvalue = list(visible = FALSE),
+      pad = list(t = 0, b = 0)
+    )
+    fig <- plotly::animation_button(
+      fig,
+      x = 0.5,
+      y = -0.42,
+      xanchor = "center",
+      yanchor = "top",
+      direction = "right",
+      showactive = FALSE,
+      pad = list(t = 0, r = 8)
+    )
+    if (!is.null(fig$x$layout$updatemenus) && length(fig$x$layout$updatemenus) >= 1L) {
+      play_button <- fig$x$layout$updatemenus[[1]]$buttons[[1]]
+      pause_button <- list(
+        label = "Pause",
+        method = "animate",
+        args = list(list(NULL), list(
+          frame = list(duration = 0, redraw = FALSE),
+          transition = list(duration = 0),
+          mode = "immediate"
+        ))
+      )
+      fig$x$layout$updatemenus[[1]]$buttons <- list(play_button, pause_button)
+    }
+    if (!is.null(fig$x$layout$sliders) && length(fig$x$layout$sliders) >= 1L) {
+      fig$x$layout$sliders[[1]]$steps <- lapply(fig$x$layout$sliders[[1]]$steps, function(step) {
+        step$label <- ""
+        step
+      })
+    }
+    built <- plotly::plotly_build(fig)
+    first_pos <- positions[[1L]]
+    trace_idx <- which(vapply(built$x$data, function(tr) identical(tr$name %||% "", "Voters"), logical(1)))
+    first_overlay <- if (length(trace_idx) >= 1L) max(trace_idx) + 1L else 2L
+    for (i in seq_len(d$n_competitors)) {
+      idx <- first_overlay + i - 1L
+      if (idx <= length(built$x$data)) {
+        built$x$data[[idx]]$x <- first_pos[i, 1]
+        built$x$data[[idx]]$y <- first_pos[i, 2]
+        built$x$data[[idx]]$text <- frame_names[1L]
+        built$x$data[[idx]]$frame <- NULL
+      }
+    }
+    fig <- built
+    return(.apply_plot_config(fig))
+  }
+
+  initial <- positions[[1L]]
+  if (trail == "fade") {
+    for (i in seq_len(d$n_competitors)) {
+      for (j in seq_len(n_segments_max)) {
+        fig <- .add_role_trace(
+          fig,
+          role = "overlay",
+          x = numeric(0),
+          y = numeric(0),
+          type = "scatter",
+          mode = "lines",
+          name = competitor_names[i],
+          showlegend = FALSE,
+          hoverinfo = "skip",
+          line = list(color = colors[i], width = 3)
+        )
+      }
+      fig <- .add_role_trace(
+        fig,
+        role = "overlay",
+        x = initial[i, 1],
+        y = initial[i, 2],
+        type = "scatter",
+        mode = "markers",
+        name = competitor_names[i],
+        marker = list(symbol = "diamond", size = 12, color = colors[i],
+                      line = list(color = "white", width = 1)),
+        text = frame_names[1L],
+        hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+      )
+    }
+  } else {
+    mode <- if (trail == "none") "markers" else "lines+markers"
+    for (i in seq_len(d$n_competitors)) {
+      line_spec <- if (trail == "none") NULL else list(color = colors[i], width = 3)
+      fig <- .add_role_trace(
+        fig,
+        role = "overlay",
+        x = initial[i, 1],
+        y = initial[i, 2],
+        type = "scatter",
+        mode = mode,
+        name = competitor_names[i],
+        marker = list(symbol = "diamond", size = 12, color = colors[i],
+                      line = list(color = "white", width = 1)),
+        line = line_spec,
+        text = frame_names[1L],
+        hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+      )
+    }
+  }
+
+  frames <- lapply(seq_along(frame_names), function(frame_idx) {
+    frame_data <- if (!is.null(voter_frame_trace)) list(voter_frame_trace) else list()
+    if (trail == "fade") {
+      for (i in seq_len(d$n_competitors)) {
+        actual_segments <- frame_idx - 1L
+        for (age in seq_len(n_segments_max)) {
+          if (age <= actual_segments) {
+            seg_idx <- actual_segments - age + 1L
+            p0 <- positions[[seg_idx]][i, ]
+            p1 <- positions[[seg_idx + 1L]][i, ]
+            alpha <- max(0.20, 0.90 - 0.18 * (age - 1L))
+            frame_data[[length(frame_data) + 1L]] <- list(
+              x = c(p0[1], p1[1]),
+              y = c(p0[2], p1[2]),
+              type = "scatter",
+              mode = "lines",
+              name = competitor_names[i],
+              showlegend = FALSE,
+              hoverinfo = "skip",
+              line = list(color = .set_rgba_alpha(colors[i], alpha), width = 3)
+            )
+          } else {
+            frame_data[[length(frame_data) + 1L]] <- list(
+              x = numeric(0),
+              y = numeric(0),
+              type = "scatter",
+              mode = "lines",
+              showlegend = FALSE,
+              hoverinfo = "skip"
+            )
+          }
+        }
+        current <- positions[[frame_idx]][i, ]
+        frame_data[[length(frame_data) + 1L]] <- list(
+          x = current[1],
+          y = current[2],
+          type = "scatter",
+          mode = "markers",
+          name = competitor_names[i],
+          marker = list(symbol = "diamond", size = 12, color = colors[i],
+                        line = list(color = "white", width = 1)),
+          text = frame_names[frame_idx],
+          hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+        )
+      }
+    } else {
+      mode <- if (trail == "none") "markers" else "lines+markers"
+      for (i in seq_len(d$n_competitors)) {
+        line_spec <- if (trail == "none") NULL else list(color = colors[i], width = 3)
+        xy <- if (trail == "none") {
+          positions[[frame_idx]][i, , drop = FALSE]
+        } else {
+          do.call(rbind, lapply(positions[seq_len(frame_idx)], function(pos) {
+            pos[i, , drop = FALSE]
+          }))
+        }
+        text <- if (trail == "none") {
+          frame_names[frame_idx]
+        } else {
+          c(paste("Round", seq_len(min(frame_idx, d$n_rounds))),
+            if (frame_idx == length(frame_names)) "Final" else NULL)
+        }
+        frame_data[[length(frame_data) + 1L]] <- list(
+          x = xy[, 1],
+          y = xy[, 2],
+          type = "scatter",
+          mode = mode,
+          name = competitor_names[i],
+          marker = list(symbol = "diamond", size = 12, color = colors[i],
+                        line = list(color = "white", width = 1)),
+          line = line_spec,
+          text = text,
+          hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+        )
+      }
+    }
+    list(name = frame_names[frame_idx], data = frame_data)
+  })
+
+  fig$x$frames <- frames
+  fig <- plotly::layout(
+    fig,
+    margin = list(t = 95, r = 20, b = 220, l = 65),
+    updatemenus = list(list(
+      type = "buttons",
+      showactive = FALSE,
+      x = 0.5,
+      y = -0.36,
+      xanchor = "center",
+      yanchor = "top",
+      pad = list(t = 0, r = 8),
+      direction = "right",
+      buttons = list(
+        list(
+          label = "Play",
+          method = "animate",
+          args = list(frame_names, list(
+            frame = list(duration = 700, redraw = TRUE),
+            transition = list(duration = 0),
+            fromcurrent = FALSE,
+            mode = "next"
+          ))
+        ),
+        list(
+          label = "Pause",
+          method = "animate",
+          args = list(list(NULL), list(
+            frame = list(duration = 0, redraw = TRUE),
+            transition = list(duration = 0),
+            mode = "immediate"
+          ))
+        )
+      )
+    )),
+    sliders = list(list(
+      active = 0,
+      x = 0.08,
+      y = -0.17,
+      len = 0.84,
+      currentvalue = list(visible = FALSE),
+      pad = list(t = 0, b = 0),
+      steps = lapply(frame_names, function(frame_name) {
+        list(
+          label = "",
+          method = "animate",
+          args = list(list(frame_name), list(
+            frame = list(duration = 0, redraw = TRUE),
+            transition = list(duration = 0),
+            mode = "immediate"
+          ))
+        )
+      })
+    ))
+  )
+  .apply_plot_config(fig)
 }
 
 # ---------------------------------------------------------------------------
@@ -230,8 +727,9 @@ layer_ic <- function(fig,
     lgroup  <- if (color_by_voter) voter_names[i] else name
     show_lg <- if (color_by_voter) TRUE else (i == 1L)
     use_fill <- !is.null(fill_color) || color_by_voter
-    fig <- plotly::add_trace(
+    fig <- .add_role_trace(
       fig, x = circ$x, y = circ$y, type = "scatter", mode = "lines",
+      role = "region",
       fill          = if (use_fill) "toself" else "none",
       fillcolor     = fill_colors[i],
       line          = list(color = line_colors[i], width = 1, dash = "dot"),
@@ -239,8 +737,7 @@ layer_ic <- function(fig,
       legendgroup   = lgroup,
       showlegend    = show_lg,
       hovertemplate = paste0(voter_names[i], " IC (r=", round(r, 3L),
-                             ")<extra></extra>"),
-      zorder        = 1L
+                             ")<extra></extra>")
     )
   }
   fig
@@ -309,8 +806,9 @@ layer_preferred_regions <- function(fig,
     lname   <- if (color_by_voter) voter_names[i] else name
     lgroup  <- if (color_by_voter) voter_names[i] else name
     show_lg <- if (color_by_voter) TRUE else (i == 1L)
-    fig <- plotly::add_trace(
+    fig <- .add_role_trace(
       fig, x = circ$x, y = circ$y, type = "scatter", mode = "lines",
+      role = "region",
       fill          = "toself",
       fillcolor     = fill_colors[i],
       line          = list(color = line_colors[i], width = 1, dash = "dot"),
@@ -318,8 +816,7 @@ layer_preferred_regions <- function(fig,
       legendgroup   = lgroup,
       showlegend    = show_lg,
       hovertemplate = paste0(voter_names[i], " preferred region (r=",
-                             round(r, 3L), ")<extra></extra>"),
-      zorder        = 1L
+                             round(r, 3L), ")<extra></extra>")
     )
   }
   fig
@@ -388,8 +885,9 @@ layer_winset <- function(fig,
   for (i in seq_len(n_paths)) {
     rows <- starts[i]:ends[i]
     fc   <- if (isTRUE(is_hole[i])) "rgba(248,249,250,0.95)" else fill_color
-    fig <- plotly::add_trace(
+    fig <- .add_role_trace(
       fig,
+      role = "region",
       x = c(xy[rows, "x"], xy[rows[1L], "x"]),
       y = c(xy[rows, "y"], xy[rows[1L], "y"]),
       type = "scatter", mode = "lines",
@@ -399,8 +897,7 @@ layer_winset <- function(fig,
       name          = name,
       showlegend    = show_legend,
       legendgroup   = name,
-      hoverinfo     = "skip",
-      zorder        = 6L
+      hoverinfo     = "skip"
     )
     show_legend <- FALSE
   }
@@ -442,14 +939,14 @@ layer_yolk <- function(fig,
   fill_color <- fill_color %||% .layer_fill_color("yolk", theme)
   line_color <- line_color %||% .layer_line_color("yolk", theme)
   circ <- .circle_pts(as.double(center_x), as.double(center_y), as.double(radius))
-  plotly::add_trace(
+  .add_role_trace(
     fig, x = circ$x, y = circ$y, type = "scatter", mode = "lines",
+    role = "region",
     fill          = "toself",
     fillcolor     = fill_color,
     line          = list(color = line_color, width = 2, dash = "longdashdot"),
     name          = name,
-    hovertemplate = paste0(name, " (r=", round(radius, 4L), ")<extra></extra>"),
-    zorder        = 5L
+    hovertemplate = paste0(name, " (r=", round(radius, 4L), ")<extra></extra>")
   )
 }
 
@@ -504,8 +1001,9 @@ layer_uncovered_set <- function(fig,
   line_color <- line_color %||% .layer_line_color("uncovered_set", theme)
 
   if (nrow(boundary_xy) == 0L) return(fig)
-  plotly::add_trace(
+  .add_role_trace(
     fig,
+    role = "region",
     x = c(boundary_xy[, "x"], boundary_xy[1L, "x"]),
     y = c(boundary_xy[, "y"], boundary_xy[1L, "y"]),
     type = "scatter", mode = "lines",
@@ -513,8 +1011,7 @@ layer_uncovered_set <- function(fig,
     fillcolor     = fill_color,
     line          = list(color = line_color, width = 1.5, dash = "longdash"),
     name          = name,
-    hovertemplate = paste0(name, "<extra></extra>"),
-    zorder        = 4L
+    hovertemplate = paste0(name, "<extra></extra>")
   )
 }
 
@@ -554,8 +1051,9 @@ layer_convex_hull <- function(fig,
   line_color <- line_color %||% .layer_line_color("convex_hull", theme)
 
   if (nrow(hull_xy) == 0L) return(fig)
-  plotly::add_trace(
+  .add_role_trace(
     fig,
+    role = "region",
     x = c(hull_xy[, "x"], hull_xy[1L, "x"]),
     y = c(hull_xy[, "y"], hull_xy[1L, "y"]),
     type = "scatter", mode = "lines",
@@ -563,8 +1061,7 @@ layer_convex_hull <- function(fig,
     fillcolor     = fill_color,
     line          = list(color = line_color, width = 1.5, dash = "dash"),
     name          = name,
-    hovertemplate = paste0(name, "<extra></extra>"),
-    zorder        = 2L
+    hovertemplate = paste0(name, "<extra></extra>")
   )
 }
 
@@ -627,8 +1124,9 @@ save_plot <- function(fig, path, width = NULL, height = NULL) {
 
 #' Enforce the canonical layer stack order
 #'
-#' Layer ordering is handled natively via the \code{zorder} attribute on each
-#' trace. This function is kept for API compatibility.
+#' Reapplies the package's canonical visual stack: regions, then lines, then
+#' points, then overlays. It is primarily useful when users have manipulated a
+#' figure directly and want to restore package ordering.
 #'
 #' @param fig A plotly figure.
 #' @return The same plotly figure unchanged.
@@ -642,7 +1140,7 @@ save_plot <- function(fig, path, width = NULL, height = NULL) {
 #' }
 #' @export
 finalize_plot <- function(fig) {
-  fig
+  .normalize_plot_roles(fig)
 }
 
 # ---------------------------------------------------------------------------
@@ -674,16 +1172,16 @@ layer_centroid <- function(fig, voters, color = NULL, name = "Centroid",
                             theme = "dark2") {
   color <- color %||% .alt_point_color(theme)
   pt <- centroid_2d(as.double(voters))
-  plotly::add_trace(
+  .add_role_trace(
     fig, x = pt$x, y = pt$y, type = "scatter", mode = "markers+text",
+    role = "point",
     marker        = list(symbol = "diamond", size = 12, color = color,
                          line = list(color = color, width = 2)),
     text          = name,
     textposition  = "top center",
     name          = name,
     hovertemplate = paste0(name, " (", round(pt$x, 4L), ", ",
-                           round(pt$y, 4L), ")<extra></extra>"),
-    zorder        = 8L
+                           round(pt$y, 4L), ")<extra></extra>")
   )
 }
 
@@ -717,15 +1215,15 @@ layer_marginal_median <- function(fig, voters, color = NULL,
                                    name = "Marginal Median", theme = "dark2") {
   color <- color %||% .alt_point_color(theme)
   pt <- marginal_median_2d(as.double(voters))
-  plotly::add_trace(
+  .add_role_trace(
     fig, x = pt$x, y = pt$y, type = "scatter", mode = "markers+text",
+    role = "point",
     marker        = list(symbol = "cross", size = 14, color = color,
                          line = list(color = color, width = 2)),
     text          = name,
     textposition  = "top center",
     name          = name,
     hovertemplate = paste0(name, " (", round(pt$x, 4L), ", ",
-                           round(pt$y, 4L), ")<extra></extra>"),
-    zorder        = 8L
+                           round(pt$y, 4L), ")<extra></extra>")
   )
 }

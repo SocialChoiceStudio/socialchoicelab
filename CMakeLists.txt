@@ -231,6 +231,81 @@ target_link_libraries(test_aggregation_integration PRIVATE socialchoicelab_aggre
 add_test(NAME AggregationIntegrationTest COMMAND test_aggregation_integration)
 
 # ---------------------------------------------------------------------------
+# socialchoicelab_competition: Layer 7 core state and initialization
+# foundation. Header-only for Phase A.
+# ---------------------------------------------------------------------------
+add_library(socialchoicelab_competition INTERFACE)
+target_include_directories(socialchoicelab_competition INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(socialchoicelab_competition INTERFACE
+    socialchoicelab_core)
+target_compile_features(socialchoicelab_competition INTERFACE cxx_std_20)
+
+add_executable(test_competitor_initialization
+    tests/unit/test_competitor_initialization.cpp)
+target_compile_options(test_competitor_initialization PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_competitor_initialization PRIVATE
+    socialchoicelab_competition gtest_main)
+add_test(NAME CompetitorInitializationTest COMMAND test_competitor_initialization)
+
+add_executable(test_competition_strategies
+    tests/unit/test_competition_strategies.cpp)
+target_compile_options(test_competition_strategies PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_competition_strategies PRIVATE
+    socialchoicelab_competition gtest_main)
+add_test(NAME CompetitionStrategiesTest COMMAND test_competition_strategies)
+
+add_executable(test_competition_motion
+    tests/unit/test_competition_motion.cpp)
+target_compile_options(test_competition_motion PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_competition_motion PRIVATE
+    socialchoicelab_competition gtest_main)
+add_test(NAME CompetitionMotionTest COMMAND test_competition_motion)
+
+add_executable(test_seat_allocation
+    tests/unit/test_seat_allocation.cpp)
+target_compile_options(test_seat_allocation PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_seat_allocation PRIVATE
+    socialchoicelab_aggregation gtest_main)
+add_test(NAME SeatAllocationTest COMMAND test_seat_allocation)
+
+add_executable(test_competition_election_feedback
+    tests/unit/test_competition_election_feedback.cpp)
+target_compile_options(test_competition_election_feedback PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_competition_election_feedback PRIVATE
+    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+add_test(NAME CompetitionElectionFeedbackTest COMMAND test_competition_election_feedback)
+
+add_executable(test_competition_engine
+    tests/unit/test_competition_engine.cpp)
+target_compile_options(test_competition_engine PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_competition_engine PRIVATE
+    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+add_test(NAME CompetitionEngineTest COMMAND test_competition_engine)
+
+add_executable(test_competition_termination
+    tests/unit/test_competition_termination.cpp)
+target_compile_options(test_competition_termination PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_competition_termination PRIVATE
+    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+add_test(NAME CompetitionTerminationTest COMMAND test_competition_termination)
+
+add_executable(test_competition_experiment_runner
+    tests/unit/test_competition_experiment_runner.cpp)
+target_compile_options(test_competition_experiment_runner PRIVATE
+    ${SocialChoiceLab_compile_options})
+target_link_libraries(test_competition_experiment_runner PRIVATE
+    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+add_test(NAME CompetitionExperimentRunnerTest COMMAND test_competition_experiment_runner)
+
+# ---------------------------------------------------------------------------
 # scs_api: stable C API shared library (wraps socialchoicelab_core)
 # ---------------------------------------------------------------------------
 add_library(scs_api SHARED

@@ -2,11 +2,11 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** All core milestones complete — c_api, R/Python bindings, and visualization layer (C10–C13) are done. All "Revisit before release" items resolved (C++20 confirmed, citations corrected). Assessing the **`0.2.0`** release gate.
-- **Next:** Verify all `0.2.0` gate criteria are met (see [milestone_gates.md](milestone_gates.md) § First public release / `0.2.0`), then prepare the `0.2.0` tag and release docs.
-- **After `0.2.0`:** Begin Layer 7 candidate competition work — first the one-run adaptive candidate engine, then C API exposure, then bindings, then the experiment runner. That is the planned `0.3.0` track. Authoritative plan: [competition_roadmap.md](competition_roadmap.md).
+- **Current phase:** Layer 7 candidate competition is now substantially implemented locally: core engine, experiment runner, C API, R/Python bindings, and first static/animated plotting support all exist. The main open blocker is an R animation issue where the first two animated jumps can still appear too large in some runs.
+- **Next:** Solve the remaining R animation jump issue, then continue animation refinement (trail toggles, fade behavior, layout polish, parity checks). That work sits inside the active **`0.3.0`** track.
+- **Release context:** The `0.2.0` base-release line is still the last completed major stack boundary. Candidate competition is the current active implementation line on top of that base. Authoritative plan: [competition_roadmap.md](competition_roadmap.md).
 - **After `0.3.0`:** Begin the next major feature track, currently described as **Characteristics of Voting Rules** (working title), then iterate to `1.0.0` once all major components are in place.
-- **Last updated:** 2026-03-08
+- **Last updated:** 2026-03-09
 
 **Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
 
@@ -44,6 +44,17 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 ---
 
 ## Recent Work
+
+### Session: 2026-03-09 — Layer 7 candidate competition largely implemented; animation refinement active
+
+- **Competition core:** typed competitor/config/state model; deterministic initialization; Sticker/Hunter/Aggregator/Predator strategies; step-size and boundary policies; synchronous competition engine; convergence/cycle diagnostics.
+- **Electoral evaluation:** plurality feedback plus Hare largest remainder seat conversion; supporter assignment for adaptation strategies.
+- **Experiment runner:** serial replicated experiments, labeled sweeps, per-run summaries, and cross-run summary statistics.
+- **C API:** competition trace and experiment handles added to `scs_api.h` / `scs_api.cpp`, including round/final exports for positions, vote totals/shares, and seat totals/shares.
+- **Bindings:** R and Python wrappers for competition runs and experiments landed, including `CompetitionTrace` / `CompetitionExperiment` user-facing objects.
+- **Visualization:** static and animated competition trajectory plots added in both bindings. The default no-trail animation path is now parallel across R and Python at the conceptual level.
+- **Remaining blocker:** R animated competition plots can still show two oversized initial jumps in some runs even though the underlying engine positions are correct. This is now the main open Layer 7 problem.
+- **Next after the blocker:** further animation refinement — trail toggles, fade tuning, layout polish, and remaining R/Python parity work.
 
 ### Sessions: 2026-03-07/08 — Visualization layer (C10–C13) COMPLETE
 

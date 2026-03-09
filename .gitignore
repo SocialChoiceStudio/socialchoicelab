@@ -48,6 +48,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# LaTeX build artifacts
+docs/.texpadtmp/
+
 # Development temporary directories
 temp/
 debug/
@@ -99,6 +102,14 @@ yarn-error.log*
 
 # Local scratch plotting scripts (not part of the codebase)
 scripts/plot_*.py
+
+# Manual test/visual-check scripts (local only)
+python/TestScript_*.py
+r/TestScript_*.R
+
+# LaTeX source and build artifacts
+docs/*.tex
+docs/.texpadtmp/
 
 # Scratch visualisation helpers (source + binaries — local only)
 scratch/
