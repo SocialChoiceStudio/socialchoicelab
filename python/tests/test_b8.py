@@ -223,6 +223,73 @@ class TestErrorPaths:
 
 
 # ---------------------------------------------------------------------------
+# StreamManager multi-name registration (regression for CFFI lifetime bug)
+# ---------------------------------------------------------------------------
+
+class TestStreamManagerMultiRegister:
+    """Regression tests for the char[] lifetime bug in StreamManager.register.
+
+    The underlying CFFI call (scs_register_streams) receives a const char*[]
+    whose pointees were previously created as an anonymous inline list and
+    could be GC'd before the C function read them. All tests here confirm that
+    every registered name is actually usable after registration, not just that
+    the registration call returned without error.
+    """
+
+    NAMES = [
+        "competition_adaptation_hunter",
+        "competition_motion_step_sizes",
+        "web_voter_generation",
+    ]
+
+    def test_multi_register_via_init_all_names_usable(self):
+        """Names passed to __init__ stream_names must all be usable."""
+        sm = scl.StreamManager(master_seed=17, stream_names=self.NAMES)
+        for name in self.NAMES:
+            val = sm.uniform_real(name)
+            assert isinstance(val, float), f"stream '{name}' not usable after init registration"
+
+    def test_multi_register_via_register_all_names_usable(self):
+        """Names passed to register([...]) in one call must all be usable."""
+        sm = scl.StreamManager(master_seed=17)
+        sm.register(self.NAMES)
+        for name in self.NAMES:
+            val = sm.uniform_real(name)
+            assert isinstance(val, float), f"stream '{name}' not usable after register() call"
+
+    def test_multi_register_reproducible(self):
+        """Two StreamManagers with the same seed and the same multi-name registration
+        must produce identical draws from each stream."""
+        sm1 = scl.StreamManager(master_seed=42, stream_names=self.NAMES)
+        sm2 = scl.StreamManager(master_seed=42, stream_names=self.NAMES)
+        for name in self.NAMES:
+            assert sm1.uniform_real(name) == pytest.approx(sm2.uniform_real(name))
+
+    def test_multi_register_in_competition(self):
+        """Registering the three competition streams and then running a
+        competition must succeed end-to-end (the originally reported failure
+        path in the website backend)."""
+        competitors = np.array([[-0.3], [0.4]])
+        voters = np.array([[-0.5], [-0.3], [0.1], [0.4], [0.6]])
+        sm = scl.StreamManager(master_seed=17, stream_names=self.NAMES)
+        cfg = scl.CompetitionEngineConfig(
+            seat_count=1,
+            seat_rule="plurality_top_k",
+            max_rounds=5,
+            step_config=scl.CompetitionStepConfig(kind="fixed", fixed_step_size=0.1),
+        )
+        with scl.competition_run(
+            competitors,
+            ["sticker", "sticker"],
+            voters,
+            dist_config=scl.DistanceConfig(salience_weights=[1.0]),
+            engine_config=cfg,
+            stream_manager=sm,
+        ) as trace:
+            assert trace.dims()[1] == 2  # 2 competitors
+
+
+# ---------------------------------------------------------------------------
 # 0-based index contract (Python vs R: R is 1-based, Python is 0-based)
 # ---------------------------------------------------------------------------
 

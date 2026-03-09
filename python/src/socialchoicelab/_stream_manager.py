@@ -88,7 +88,8 @@ class StreamManager:
         self
         """
         encoded = [s.encode() for s in stream_names]
-        arr = _ffi.new("const char *[]", [_ffi.new("char[]", s) for s in encoded])
+        bufs = [_ffi.new("char[]", s) for s in encoded]  # keep alive until C call returns
+        arr = _ffi.new("const char *[]", bufs)
         err = new_err_buf()
         _check(_lib.scs_register_streams(self._ptr, arr, len(stream_names), err, _ERR_BUF_SIZE), err)
         return self
