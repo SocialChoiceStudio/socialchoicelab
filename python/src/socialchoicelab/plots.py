@@ -482,23 +482,63 @@ def animate_competition_trajectories(
                     marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
                     text=[frame_names[0]],
                     hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                    ),
-                    "overlay",
+                ),
+                "overlay",
+            )
+        frames = []
+        for frame_idx, frame_name in enumerate(frame_names):
+            frame_data = []
+            for idx in range(n_competitors):
+                actual_segments = frame_idx
+                for age in range(1, n_segments_max + 1):
+                    if age <= actual_segments:
+                        seg_idx = actual_segments - age
+                        p0 = positions[seg_idx][idx, :]
+                        p1 = positions[seg_idx + 1][idx, :]
+                        alpha = max(0.20, 0.90 - 0.18 * (age - 1))
+                        frame_data.append(
+                            go.Scatter(
+                                x=[p0[0], p1[0]],
+                                y=[p0[1], p1[1]],
+                                mode="lines",
+                                name=competitor_names[idx],
+                                showlegend=False,
+                                hoverinfo="skip",
+                                line=dict(color=_set_rgba_alpha(colors[idx], alpha), width=3),
+                            )
+                        )
+                    else:
+                        frame_data.append(
+                            go.Scatter(x=[], y=[], mode="lines", showlegend=False, hoverinfo="skip")
+                        )
+                current = positions[frame_idx][idx, :]
+                frame_data.append(
+                    go.Scatter(
+                        x=[current[0]],
+                        y=[current[1]],
+                        mode="markers",
+                        name=competitor_names[idx],
+                        marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                        text=[frame_name],
+                        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
+                    )
                 )
+            traces = list(range(overlay_start, overlay_start + n_competitors * (n_segments_max + 1)))
+            frames.append(go.Frame(data=frame_data, name=frame_name, traces=traces))
+        fig.frames = frames
     else:
-        mode = "lines+markers"
+        # trail == "full": one lines+markers trace per competitor, accumulating positions.
         overlay_start = len(fig.data)
         for idx in range(n_competitors):
-            line_spec = dict(color=colors[idx], width=3)
             fig = _add_role_trace(
                 fig,
                 go.Scatter(
                     x=[initial[idx, 0]],
                     y=[initial[idx, 1]],
-                    mode=mode,
+                    mode="lines+markers",
                     name=competitor_names[idx],
                     marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                    line=line_spec,
+                    line=dict(color=colors[idx], width=3),
                     text=[frame_names[0]],
                     hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
                 ),
@@ -507,60 +547,23 @@ def animate_competition_trajectories(
         frames = []
         for frame_idx, frame_name in enumerate(frame_names):
             frame_data = []
-            if trail == "fade":
-                for idx in range(n_competitors):
-                    actual_segments = frame_idx
-                    for age in range(1, n_segments_max + 1):
-                        if age <= actual_segments:
-                            seg_idx = actual_segments - age
-                            p0 = positions[seg_idx][idx, :]
-                            p1 = positions[seg_idx + 1][idx, :]
-                            alpha = max(0.20, 0.90 - 0.18 * (age - 1))
-                            frame_data.append(
-                                go.Scatter(
-                                    x=[p0[0], p1[0]],
-                                    y=[p0[1], p1[1]],
-                                    mode="lines",
-                                    name=competitor_names[idx],
-                                    showlegend=False,
-                                    hoverinfo="skip",
-                                    line=dict(color=_set_rgba_alpha(colors[idx], alpha), width=3),
-                                )
-                            )
-                        else:
-                            frame_data.append(
-                                go.Scatter(x=[], y=[], mode="lines", showlegend=False, hoverinfo="skip")
-                            )
-                    current = positions[frame_idx][idx, :]
-                    frame_data.append(
-                        go.Scatter(
-                            x=[current[0]],
-                            y=[current[1]],
-                            mode="markers",
-                            name=competitor_names[idx],
-                            marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                            text=[frame_name],
-                            hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                        )
+            for idx in range(n_competitors):
+                current_path = [pos[idx, :] for pos in positions[: frame_idx + 1]]
+                path = np.vstack(current_path)
+                frame_data.append(
+                    go.Scatter(
+                        x=path[:, 0],
+                        y=path[:, 1],
+                        mode="lines+markers",
+                        name=competitor_names[idx],
+                        marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
+                        line=dict(color=colors[idx], width=3),
+                        text=[f"Round {r + 1}" for r in range(min(frame_idx + 1, n_rounds))]
+                        + (["Final"] if frame_idx == len(frame_names) - 1 else []),
+                        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
                     )
-            else:
-                for idx in range(n_competitors):
-                    current_path = [pos[idx, :] for pos in positions[: frame_idx + 1]]
-                    path = np.vstack(current_path)
-                    frame_data.append(
-                        go.Scatter(
-                            x=path[:, 0],
-                            y=path[:, 1],
-                            mode="lines+markers",
-                            name=competitor_names[idx],
-                            marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                            line=dict(color=colors[idx], width=3),
-                            text=[f"Round {r + 1}" for r in range(min(frame_idx + 1, n_rounds))]
-                            + (["Final"] if frame_idx == len(frame_names) - 1 else []),
-                            hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                        )
-                    )
-            traces = list(range(overlay_start, overlay_start + len(frame_data)))
+                )
+            traces = list(range(overlay_start, overlay_start + n_competitors))
             frames.append(go.Frame(data=frame_data, name=frame_name, traces=traces))
         fig.frames = frames
     fig.update_layout(
@@ -579,7 +582,7 @@ def animate_competition_trajectories(
                     dict(
                         label="Play",
                         method="animate",
-                        args=[frame_names, {"frame": {"duration": 700, "redraw": False},
+                        args=[frame_names, {"frame": {"duration": 700, "redraw": True},
                                      "transition": {"duration": 0},
                                      "fromcurrent": False,
                                      "mode": "next"}],
@@ -587,7 +590,7 @@ def animate_competition_trajectories(
                     dict(
                         label="Pause",
                         method="animate",
-                        args=[[None], {"frame": {"duration": 0, "redraw": False},
+                        args=[[None], {"frame": {"duration": 0, "redraw": True},
                                        "transition": {"duration": 0},
                                        "mode": "immediate"}],
                     ),
@@ -606,7 +609,7 @@ def animate_competition_trajectories(
                     dict(
                         label="",
                         method="animate",
-                        args=[[frame_name], {"frame": {"duration": 0, "redraw": False},
+                        args=[[frame_name], {"frame": {"duration": 0, "redraw": True},
                                              "transition": {"duration": 0},
                                              "mode": "immediate"}],
                     )
@@ -615,6 +618,11 @@ def animate_competition_trajectories(
             )
         ],
     )
+    # Plotly.js accepts active=-1 (no step executed on initial render, preventing
+    # autoplay on load), but the Python wrapper validates active >= 0. Patch the
+    # internal props dict directly so the correct value reaches the browser.
+    if fig.layout.sliders:
+        fig.layout.sliders[0]._props["active"] = -1
     return fig
 
 

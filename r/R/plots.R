@@ -365,9 +365,6 @@ animate_competition_trajectories <- function(trace,
     width = width,
     height = height
   )
-  trace_idx <- which(vapply(fig$x$attrs, function(tr) !is.null(tr$type), logical(1)))
-  voter_frame_trace <- if (length(trace_idx) > 0L) fig$x$attrs[[trace_idx[1L]]] else NULL
-
   positions <- lapply(seq_len(d$n_rounds), function(r) trace$round_positions(r))
   positions[[d$n_rounds + 1L]] <- trace$final_positions()
   frame_names <- c(paste("Round", seq_len(d$n_rounds)), "Final")
@@ -481,7 +478,7 @@ animate_competition_trajectories <- function(trace,
         )
       )),
       sliders = list(list(
-        active = 0,
+        active = -1L,
         x = 0.08,
         y = -0.17,
         len = 0.84,
@@ -503,8 +500,12 @@ animate_competition_trajectories <- function(trace,
     return(.apply_plot_config(fig))
   }
 
+  # Count static traces before adding overlay traces for explicit trace targeting.
+  n_static <- sum(vapply(fig$x$attrs, function(tr) !is.null(tr$type), logical(1)))
   initial <- positions[[1L]]
+
   if (trail == "fade") {
+    # Phase 1: add n_segments_max blank segment traces + 1 marker per competitor.
     for (i in seq_len(d$n_competitors)) {
       for (j in seq_len(n_segments_max)) {
         fig <- .add_role_trace(
@@ -534,39 +535,70 @@ animate_competition_trajectories <- function(trace,
         hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
       )
     }
-  } else {
-    mode <- if (trail == "none") "markers" else "lines+markers"
-    for (i in seq_len(d$n_competitors)) {
-      line_spec <- if (trail == "none") NULL else list(color = colors[i], width = 3)
-      fig <- .add_role_trace(
-        fig,
-        role = "overlay",
-        x = initial[i, 1],
-        y = initial[i, 2],
-        type = "scatter",
-        mode = mode,
-        name = competitor_names[i],
-        marker = list(symbol = "diamond", size = 12, color = colors[i],
-                      line = list(color = "white", width = 1)),
-        line = line_spec,
-        text = frame_names[1L],
-        hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
-      )
-    }
-  }
 
-  frames <- lapply(seq_along(frame_names), function(frame_idx) {
-    frame_data <- if (!is.null(voter_frame_trace)) list(voter_frame_trace) else list()
-    if (trail == "fade") {
-      for (i in seq_len(d$n_competitors)) {
-        actual_segments <- frame_idx - 1L
-        for (age in seq_len(n_segments_max)) {
+    # Phase 2: pre-build to discover the actual 0-based positions of overlay
+    # traces in the serialised figure. .normalize_plot_roles() re-sorts traces
+    # by visual priority at every .add_role_trace() call, so segment traces
+    # (mode="lines", priority "line"=2) can end up sorted before the static
+    # Voters trace (priority "point"=3). We cannot rely on n_static alone to
+    # predict which indices the overlay traces land on; we must inspect the
+    # built output to find out.
+    pre_built <- plotly::plotly_build(fig)
+
+    # Classify each built trace: "static" (Voters, etc.), "segment" (fade helper
+    # line), or "marker" (competitor diamond).  Segment traces have showlegend=FALSE;
+    # marker traces have showlegend=NULL/TRUE.
+    trace_roles <- lapply(seq_along(pre_built$x$data), function(bi) {
+      tr  <- pre_built$x$data[[bi]]
+      nm  <- tr$name %||% ""
+      comp <- match(nm, competitor_names)
+      if (is.na(comp)) return(list(type = "static"))
+      if (isFALSE(tr$showlegend)) return(list(type = "segment", comp = comp, idx0 = bi - 1L))
+      list(type = "marker", comp = comp, idx0 = bi - 1L)
+    })
+
+    overlay_roles <- Filter(function(r) r$type != "static", trace_roles)
+    all_overlay_indices <- as.list(vapply(overlay_roles, function(r) r$idx0, integer(1)))
+
+    # Assign a sequential age (1 = newest, n_segments_max = oldest) to each
+    # segment slot per competitor, in the order they appear in the built output.
+    seg_counters <- integer(d$n_competitors)
+    overlay_roles <- lapply(overlay_roles, function(r) {
+      if (r$type == "segment") {
+        seg_counters[r$comp] <<- seg_counters[r$comp] + 1L
+        r$age <- seg_counters[r$comp]
+      }
+      r
+    })
+
+    # Phase 3: build frames with frame_data ordered to match overlay_roles.
+    frames <- lapply(seq_along(frame_names), function(frame_idx) {
+      actual_segments <- frame_idx - 1L
+      frame_data <- lapply(overlay_roles, function(r) {
+        i <- r$comp
+        if (r$type == "marker") {
+          current <- positions[[frame_idx]][i, ]
+          # I() wraps ensure single-point x/y serialise as JSON arrays, not bare
+          # scalars. plotly.js requires array-valued trace data during animation.
+          list(
+            x = I(current[1]),
+            y = I(current[2]),
+            type = "scatter",
+            mode = "markers",
+            name = competitor_names[i],
+            marker = list(symbol = "diamond", size = 12, color = colors[i],
+                          line = list(color = "white", width = 1)),
+            text = I(frame_names[frame_idx]),
+            hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+          )
+        } else {
+          age <- r$age
           if (age <= actual_segments) {
             seg_idx <- actual_segments - age + 1L
             p0 <- positions[[seg_idx]][i, ]
             p1 <- positions[[seg_idx + 1L]][i, ]
             alpha <- max(0.20, 0.90 - 0.18 * (age - 1L))
-            frame_data[[length(frame_data) + 1L]] <- list(
+            list(
               x = c(p0[1], p1[1]),
               y = c(p0[2], p1[2]),
               type = "scatter",
@@ -577,62 +609,65 @@ animate_competition_trajectories <- function(trace,
               line = list(color = .set_rgba_alpha(colors[i], alpha), width = 3)
             )
           } else {
-            frame_data[[length(frame_data) + 1L]] <- list(
-              x = numeric(0),
-              y = numeric(0),
-              type = "scatter",
-              mode = "lines",
-              showlegend = FALSE,
-              hoverinfo = "skip"
-            )
+            list(x = numeric(0), y = numeric(0), type = "scatter", mode = "lines",
+                 showlegend = FALSE, hoverinfo = "skip")
           }
         }
-        current <- positions[[frame_idx]][i, ]
-        frame_data[[length(frame_data) + 1L]] <- list(
-          x = current[1],
-          y = current[2],
-          type = "scatter",
-          mode = "markers",
-          name = competitor_names[i],
-          marker = list(symbol = "diamond", size = 12, color = colors[i],
-                        line = list(color = "white", width = 1)),
-          text = frame_names[frame_idx],
-          hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
-        )
-      }
-    } else {
-      mode <- if (trail == "none") "markers" else "lines+markers"
-      for (i in seq_len(d$n_competitors)) {
-        line_spec <- if (trail == "none") NULL else list(color = colors[i], width = 3)
-        xy <- if (trail == "none") {
-          positions[[frame_idx]][i, , drop = FALSE]
-        } else {
-          do.call(rbind, lapply(positions[seq_len(frame_idx)], function(pos) {
-            pos[i, , drop = FALSE]
-          }))
-        }
-        text <- if (trail == "none") {
-          frame_names[frame_idx]
-        } else {
-          c(paste("Round", seq_len(min(frame_idx, d$n_rounds))),
-            if (frame_idx == length(frame_names)) "Final" else NULL)
-        }
-        frame_data[[length(frame_data) + 1L]] <- list(
-          x = xy[, 1],
-          y = xy[, 2],
-          type = "scatter",
-          mode = mode,
-          name = competitor_names[i],
-          marker = list(symbol = "diamond", size = 12, color = colors[i],
-                        line = list(color = "white", width = 1)),
-          line = line_spec,
-          text = text,
-          hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
-        )
-      }
+      })
+      list(name = frame_names[frame_idx], data = frame_data, traces = all_overlay_indices)
+    })
+  } else {
+    # trail == "full": one lines+markers trace per competitor.
+    # "lines+markers" traces get role "overlay" (priority 4) in .normalize_plot_roles(),
+    # so they sort after the Voters trace (priority 3). n_static is therefore correct.
+    for (i in seq_len(d$n_competitors)) {
+      fig <- .add_role_trace(
+        fig,
+        role = "overlay",
+        x = initial[i, 1],
+        y = initial[i, 2],
+        type = "scatter",
+        mode = "lines+markers",
+        name = competitor_names[i],
+        marker = list(symbol = "diamond", size = 12, color = colors[i],
+                      line = list(color = "white", width = 1)),
+        line = list(color = colors[i], width = 3),
+        text = frame_names[1L],
+        hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+      )
     }
-    list(name = frame_names[frame_idx], data = frame_data)
-  })
+    all_overlay_indices <- as.list(
+      seq.int(n_static, n_static + d$n_competitors - 1L)
+    )
+
+    frames <- lapply(seq_along(frame_names), function(frame_idx) {
+      frame_data <- list()
+      for (i in seq_len(d$n_competitors)) {
+        xy <- do.call(rbind, lapply(positions[seq_len(frame_idx)], function(pos) {
+          pos[i, , drop = FALSE]
+        }))
+        text <- c(paste("Round", seq_len(min(frame_idx, d$n_rounds))),
+                  if (frame_idx == length(frame_names)) "Final" else NULL)
+        # I() wraps ensure x, y, and text serialise as JSON arrays even when
+        # frame_idx=1 yields a single-row matrix (making xy[,1] a named scalar
+        # rather than a vector). Plotly.js drops lines+markers traces whose
+        # frame-update coordinates arrive as bare scalars rather than arrays.
+        frame_data[[length(frame_data) + 1L]] <- list(
+          x = I(xy[, 1]),
+          y = I(xy[, 2]),
+          type = "scatter",
+          mode = "lines+markers",
+          name = competitor_names[i],
+          marker = list(symbol = "diamond", size = 12, color = colors[i],
+                        line = list(color = "white", width = 1)),
+          line = list(color = colors[i], width = 3),
+          text = I(text),
+          hovertemplate = "%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
+        )
+      }
+      list(name = frame_names[frame_idx], data = frame_data, traces = all_overlay_indices)
+    })
+  }
 
   fig$x$frames <- frames
   fig <- plotly::layout(
@@ -670,7 +705,7 @@ animate_competition_trajectories <- function(trace,
       )
     )),
     sliders = list(list(
-      active = 0,
+      active = -1L,
       x = 0.08,
       y = -0.17,
       len = 0.84,
