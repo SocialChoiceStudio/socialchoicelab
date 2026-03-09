@@ -53,6 +53,16 @@ namespace detail {
   return seats;
 }
 
+// Hare Largest Remainder proportional seat allocation.
+//
+// Note on seat_count vs. competitor count: unlike plurality_top_k_seat_
+// allocation, this function intentionally does not require seat_count <=
+// vote_totals.size(). In a PR system a single party can legitimately win
+// multiple seats (e.g., 2 parties, 10 seats — one party may receive 8).
+// Callers using kHareLargestRemainder with seat_count > n_competitors will
+// see one or more competitors receive multiple seats, which is correct PR
+// behaviour. The inconsistency with plurality_top_k is by design: the two
+// rules have fundamentally different natural constraints.
 [[nodiscard]] inline std::vector<int> hare_largest_remainder_allocation(
     const std::vector<int>& vote_totals, int seat_count) {
   if (seat_count < 0) {

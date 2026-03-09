@@ -180,3 +180,33 @@ TEST(CompetitionStrategies, PredatorMovesTowardLeaderByCurrentObjective) {
   const auto decision = predator->adapt(competitors[0], context);
   EXPECT_DOUBLE_EQ(decision.next_heading[0], 1.0);
 }
+
+// When the Predator is the current leader, the target is itself. The direction
+// toward itself is the zero vector, which normalizes to zero.
+// advance_competitor short-circuits on a zero heading and leaves the position
+// unchanged. This is the correct behaviour: the leader has no incentive to
+// chase itself.
+TEST(CompetitionStrategies, PredatorAsLeaderProducesZeroHeading) {
+  const auto& registry = StrategyRegistry::built_in();
+  const auto* predator = registry.find(CompetitorStrategyKind::kPredator);
+  ASSERT_NE(predator, nullptr);
+
+  CompetitionBounds bounds{point({-5.0}), point({5.0})};
+  std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kPredator, point({1.0}),
+               point({0.0})),
+    competitor(1, CompetitorStrategyKind::kSticker, point({3.0}),
+               point({0.0}))};
+  // Competitor 0 (Predator) leads with 0.8 vote share.
+  competitors[0].current_round_metrics = metrics(0.8);
+  competitors[1].current_round_metrics = metrics(0.2);
+
+  std::vector<std::vector<PointNd>> supporters(2);
+  AdaptationContext context{bounds, CompetitionObjectiveKind::kVoteShare,
+                            competitors, supporters, nullptr};
+
+  const auto decision = predator->adapt(competitors[0], context);
+  // Heading toward self is zero — advance_competitor will leave position
+  // frozen.
+  EXPECT_DOUBLE_EQ(decision.next_heading.norm(), 0.0);
+}

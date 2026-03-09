@@ -20,6 +20,7 @@ namespace socialchoicelab::competition {
   }
 
   std::ostringstream out;
+  out.imbue(std::locale::classic());
   for (const auto& competitor : competitors) {
     out << competitor.id << ':';
     for (int d = 0; d < competitor.position.size(); ++d) {

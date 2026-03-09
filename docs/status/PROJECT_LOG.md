@@ -135,3 +135,35 @@ Entries are in chronological order (oldest first, newest last).
 **Documentation content review**: Corrected stale content across all docs — design_document.md (loss functions list, benchmark description, consensus_plan file reference); milestone_gates.md (ALL_CAPS filenames in prose, Phase 3 marked complete); consensus_plan.md (added Status column to Phase 3 and Backlog table headers); where_we_are.md (chronological session order, last updated date).
 
 **Consensus plan (second review) complete**: All actionable items (1–35) done. Batches 1–4: script fixes, documentation truthfulness, build/CI alignment, input validation (distance, loss, PRNG), test coverage. c_api design inputs (29–31) documented in design_document.md; Item 30 (register_streams) implemented in C++, Item 31 (do not expose engine()) documented. Deferred items 32–35 implemented per best-practice check: SplitMix64-style finalizer in stream seed mixing, CMake compiler-ID guard for flags, empty SetUp() overrides removed. WHERE_WE_ARE updated: next see roadmap.md.
+
+## 2026-03-05 (continued) — C API Phase C0 through C3 complete
+
+**c_api minimal milestone** (tag: `c-api-minimal`): C API surface over core. `scs_api.h` / `scs_api.cpp` with `SCS_LossConfig`, `SCS_DistanceConfig`, `SCS_LevelSet2d`, `SCS_StreamManager` opaque handle, version/visibility macros, error codes C0–C4, `SCS_PairwiseResult` fixed-width typedef. 35 GTest cases in `test_c_api.cpp`; all pass. `c_api_design.md` created with constraints, error contract, struct layout, function signatures, and C usage example.
+
+**c_api C1–C3**: majority/pairwise wrappers (C1), `SCS_Winset*` opaque handle + boolean ops + veto + weighted (C2), `SCS_Yolk2d` + `scs_yolk_2d` LP-yolk approximation (C3). 21 new tests; all pass.
+
+## 2026-03-06 — Geometry Layer 3, Aggregation Layers 4–5, and C API C4–C5 complete
+
+**Geometry Layer 3** (tag: `geometry-complete`): CGAL EPEC integration, exact 2D types, convex hull, majority/pairwise/weighted, winsets + boolean ops + veto + weighted, Yolk, uncovered set (discrete + boundary), core detection, Copeland, Heart (discrete + boundary), geometry centrality (`marginal_median_2d`, `centroid_2d`, `geometric_mean_2d`), geometry integration tests. 250+ tests across 14 test files. `geometry_design.md` complete with 14 verified citations.
+
+**Profiles & Aggregation Layers 4–5** (tag: `aggregation-complete`): `Profile` struct, spatial/utility/synthetic generators, plurality/Borda/approval/anti-plurality/scoring rules, `rank_by_scores`, `pairwise_ranking`, Pareto, Condorcet/majority consistency, `TieBreak` enum. 100 tests across 4 files. `aggregation_design.md` complete.
+
+**c_api C4–C5**: uncovered set/Copeland/core/Heart wrappers (C4); `SCS_Profile*` opaque handle, all generators, lifecycle and export functions (C5). 30 + 13 new tests.
+
+## 2026-03-07 — C API extensions and visualization layer complete
+
+**c_api C6–C8** (tag: `c-api-extensions`): all voting-rule wrappers (C6), social rankings/Pareto/Condorcet properties (C7), non-finite double input validation at every C API entry point (C8). `c_api_design.md` updated. Total: 113 tests in `test_c_api.cpp`, all passing. Archived in `docs/status/archive/c_api_extensions_plan.md`.
+
+## 2026-03-07/08 — Visualization layer complete
+
+**Visualization layer** (tag: `visualization-complete`): Plotly-based spatial voting plot helpers in R and Python. `plot_spatial_voting()`, all `layer_*()` functions, `save_plot()`, `load_scenario()` / `list_scenarios()` with 33 built-in JSON scenarios, `scl_palette()` / `scl_theme_colors()` with 5 named themes, `layer_ic()`, `layer_preferred_regions()`, auto-axis range, composable layer API with `zorder` support. Full R and Python unit test suites pass in CI. `visualization_plan.md` all phases C10–C13 complete. Archived in `docs/status/archive/visualization_plan.md`.
+
+## 2026-03-09 — Layer 7 candidate competition substantially implemented
+
+**Competition engine (Layer 7, toward `0.3.0`)**: Typed competitor/config/state model; deterministic initialization; Sticker/Hunter/Aggregator/Predator strategies; step-size and boundary policies; synchronous competition engine; convergence/cycle diagnostics; plurality feedback + Hare largest remainder seat conversion; experiment runner for replicated sweeps. C API competition handles added to `scs_api.h` / `scs_api.cpp`. R and Python bindings (`competition_run`, `CompetitionTrace`, `CompetitionExperiment`) and static + animated trajectory plots shipped in both packages. Phases 0–J of `competition_plan.md` largely complete.
+
+**Remaining blocker**: R animated competition plots still show oversized initial jumps in some runs. This is the primary open Layer 7 work item before `0.3.0` can be declared complete.
+
+**Tooling**: Added `scripts/check-all.sh` to unify all local checks (format, C++ build, C++ tests, lint, R/Python bindings, pkgdown, mkdocs). Updated `scripts/pre-push.sh` to call `check-all.sh`. Cursor rule `Run-All-Local-Checks-Before-Push.mdc` rewritten to reference `check-all.sh` unconditionally.
+
+**Doc maintenance**: Renamed `competition_roadmap.md` → `competition_plan.md` to follow project naming convention; updated all cross-references.

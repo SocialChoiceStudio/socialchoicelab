@@ -410,6 +410,9 @@ SCS_CompetitionTerminationReason to_c_termination_reason(
       return SCS_COMPETITION_TERM_CYCLE_DETECTED;
     case socialchoicelab::competition::TerminationReason::kNoImprovementWindow:
       return SCS_COMPETITION_TERM_NO_IMPROVEMENT_WINDOW;
+    case socialchoicelab::competition::TerminationReason::kCount:
+      // kCount is a sizing sentinel; it must never appear in a live trace.
+      break;
   }
   return SCS_COMPETITION_TERM_MAX_ROUNDS;
 }

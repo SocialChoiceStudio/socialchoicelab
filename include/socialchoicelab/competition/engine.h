@@ -47,6 +47,31 @@ struct CompetitionRoundStepResult {
 
 namespace detail {
 
+// Returns indices (into `competitors`) of all active competitors, preserving
+// their original order. Active-flag semantics: an inactive competitor is fully
+// excluded from the election (voters do not rank it as an alternative) and does
+// not adapt or move. This models a candidate who has dropped out of the race.
+//
+// Design decision (2026-03-09): We chose "fully excluded" over "frozen on
+// ballot" because the Laver/Fowler literature frames inactivity as party death
+// — the party ceases to be an option for voters, not merely a non-campaigning
+// one. This also keeps the election feedback clean: vote_totals and seat_shares
+// correctly reflect the contest among live candidates only.
+//
+// Future extension: birth/death dynamics will flip `active` mid-run when a
+// competitor falls below a survival threshold. The engine processes the flag
+// every round, so the transition takes effect immediately in the next round
+// without any additional bookkeeping.
+[[nodiscard]] inline std::vector<int> active_competitor_indices(
+    const std::vector<CompetitorState>& competitors) {
+  std::vector<int> indices;
+  indices.reserve(competitors.size());
+  for (size_t i = 0; i < competitors.size(); ++i) {
+    if (competitors[i].active) indices.push_back(static_cast<int>(i));
+  }
+  return indices;
+}
+
 [[nodiscard]] inline std::vector<PointNd> competitor_positions(
     const std::vector<CompetitorState>& competitors) {
   std::vector<PointNd> positions;
@@ -81,6 +106,14 @@ inline void validate_engine_inputs(
         "validate_engine_inputs: voter_ideals must not be empty.");
   }
 
+  // At least one competitor must be active. An all-inactive field means no
+  // alternatives exist for voters to rank, which is an invalid election.
+  const auto active = active_competitor_indices(competitors);
+  if (active.empty()) {
+    throw std::invalid_argument(
+        "validate_engine_inputs: at least one competitor must be active.");
+  }
+
   const int dimension = competition_dimension(config.bounds);
   if (static_cast<int>(
           config.election_feedback.distance_config.salience_weights.size()) !=
@@ -105,6 +138,46 @@ inline void validate_engine_inputs(
   }
 }
 
+// Scatters feedback from an active-only election back into a full-sized
+// ElectionFeedback whose vectors are indexed by total competitor count.
+// Inactive competitor slots receive zero vote totals, zero shares, zero seats,
+// and empty supporter lists. The embedded profile retains the active-only
+// alternative count, which is the correct record of the actual election.
+//
+// Why scatter into a full-sized struct rather than carrying only active-sized
+// feedback? The C API functions (scs_competition_trace_round_vote_shares, etc.)
+// return fixed-length buffers indexed by total competitor count. Storing
+// full-sized feedback in the trace record lets those functions remain a simple
+// memcpy without needing an additional active→total index mapping at read time.
+[[nodiscard]] inline ElectionFeedback scatter_feedback(
+    const ElectionFeedback& active_feedback,
+    const std::vector<int>& active_indices, size_t total_count) {
+  ElectionFeedback full;
+  full.profile = active_feedback.profile;
+  full.vote_totals.assign(total_count, 0);
+  full.vote_shares.assign(total_count, 0.0);
+  full.seats.assign(total_count, 0);
+  full.seat_shares.assign(total_count, 0.0);
+  full.supporter_indices.assign(total_count, {});
+  full.supporter_ideal_points.assign(total_count, {});
+
+  for (size_t k = 0; k < active_indices.size(); ++k) {
+    const int i = active_indices[k];
+    full.vote_totals[i] = active_feedback.vote_totals[k];
+    full.vote_shares[i] = active_feedback.vote_shares[k];
+    full.seats[i] = active_feedback.seats[k];
+    full.seat_shares[i] = active_feedback.seat_shares[k];
+    full.supporter_indices[i] = active_feedback.supporter_indices[k];
+    full.supporter_ideal_points[i] = active_feedback.supporter_ideal_points[k];
+  }
+
+  // Rebuild the leader ranking over all competitors. Inactive competitors (zero
+  // votes) will sort to the end, which is the correct interpretation: they are
+  // not in contention.
+  full.leader_ranking = rank_by_totals(full.vote_totals);
+  return full;
+}
+
 }  // namespace detail
 
 [[nodiscard]] inline CompetitionRoundStepResult run_competition_round(
@@ -116,29 +189,81 @@ inline void validate_engine_inputs(
     int round_index = 0) {
   detail::validate_engine_inputs(config, competitors, voter_ideals);
 
-  const auto feedback =
-      evaluate_election_feedback(detail::competitor_positions(competitors),
-                                 voter_ideals, config.election_feedback);
+  // --- Active/inactive partitioning ---
+  //
+  // Only active competitors participate in the election and may move.
+  // Inactive competitors are fully excluded: they are not alternatives voters
+  // rank, they receive zero metrics, and their position is frozen for the
+  // round.
+  //
+  // We compute active indices once and reuse them throughout to keep the
+  // three phases (election, adaptation context, motion) consistent.
+  const std::vector<int> active_indices =
+      detail::active_competitor_indices(competitors);
+
+  // Build the position vector for the active-only election.
+  std::vector<PointNd> active_positions;
+  active_positions.reserve(active_indices.size());
+  for (const int idx : active_indices) {
+    active_positions.push_back(competitors[idx].position);
+  }
+
+  // --- Election phase (active competitors only) ---
+  //
+  // active_feedback is sized to active_count, not total competitor count.
+  const auto active_feedback = evaluate_election_feedback(
+      active_positions, voter_ideals, config.election_feedback);
+
+  // Scatter active_feedback into a full-sized struct (indexed by total count)
+  // so that the trace record and C API can always index by competitor id
+  // without needing to know which competitors were active in each round.
+  const ElectionFeedback feedback = detail::scatter_feedback(
+      active_feedback, active_indices, competitors.size());
+
+  // Apply the full-sized feedback to all competitors. Inactive competitors
+  // receive zero current_round_metrics (correctly reflecting their exclusion).
   const auto evaluated_competitors =
       apply_feedback_to_competitors(competitors, feedback);
 
-  AdaptationContext context{config.bounds, config.objective_kind,
-                            evaluated_competitors,
-                            feedback.supporter_ideal_points, stream_manager};
+  // --- Adaptation context (active competitors only) ---
+  //
+  // The AdaptationContext is built from active competitors and their
+  // supporter data. Strategies must only see and react to active competitors:
+  //   - Hunter uses objective deltas of the calling competitor (active).
+  //   - Aggregator computes the mean of its own supporters (active slot only).
+  //   - Predator targets the leader among active competitors.
+  //
+  // We build active_evaluated by extracting post-feedback states for active
+  // competitors. supporter_ideal_points comes from active_feedback (not the
+  // scattered full version) because it is indexed in active-competitor order.
+  std::vector<CompetitorState> active_evaluated;
+  active_evaluated.reserve(active_indices.size());
+  for (const int idx : active_indices) {
+    active_evaluated.push_back(evaluated_competitors[idx]);
+  }
 
-  std::vector<CompetitorState> next_competitors;
-  next_competitors.reserve(evaluated_competitors.size());
+  AdaptationContext context{
+    config.bounds, config.objective_kind, active_evaluated,
+    active_feedback.supporter_ideal_points, stream_manager};
 
-  for (const auto& competitor : evaluated_competitors) {
+  // --- Motion phase ---
+  //
+  // Start next_competitors as a copy of evaluated_competitors so that inactive
+  // competitors carry their frozen positions and zero metrics forward without
+  // any special-casing in the motion loop.
+  std::vector<CompetitorState> next_competitors = evaluated_competitors;
+
+  for (const int i : active_indices) {
+    const auto& competitor = evaluated_competitors[i];
     const auto* strategy = registry.find(competitor.strategy_kind);
     if (strategy == nullptr) {
       throw std::invalid_argument(
           "run_competition_round: no registered strategy for competitor kind.");
     }
     const auto decision = strategy->adapt(competitor, context);
-    next_competitors.push_back(advance_competitor_state(
+    next_competitors[i] = advance_competitor_state(
         competitor, decision, config.bounds, config.step_policy,
-        config.boundary_policy, config.objective_kind, stream_manager));
+        config.boundary_policy, config.objective_kind, stream_manager);
   }
 
   CompetitionRoundStepResult result;

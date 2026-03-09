@@ -102,6 +102,23 @@ TEST(CompetitionMotion, ProportionalStepUsesObjectiveDelta) {
   EXPECT_DOUBLE_EQ(step, 0.6);
 }
 
+// On round 1, a competitor has no previous_round_metrics, so the objective
+// delta is undefined (treated as zero). kShareDeltaProportional must return
+// step size 0, leaving the competitor stationary. This prevents a spurious
+// large first step if the implementation were to subtract from an uninitialised
+// value or treat the absence of history as a large improvement.
+TEST(CompetitionMotion, ProportionalStepIsZeroOnFirstRound) {
+  // No previous_round_metrics set — simulates the state at round 1.
+  CompetitorState state = competitor(point({0.0}), point({1.0}));
+  state.current_round_metrics = metrics(0.5);
+  const StepPolicyConfig policy{StepPolicyKind::kShareDeltaProportional, 0.0,
+                                0.0, 0.0, 2.0};
+
+  const double step = resolve_step_size(
+      state, policy, CompetitionObjectiveKind::kVoteShare, nullptr);
+  EXPECT_DOUBLE_EQ(step, 0.0);
+}
+
 TEST(CompetitionMotion, ProjectToBoxClampsOutOfBoundsMove) {
   const CompetitionBounds bounds{point({-1.0}), point({1.0})};
   const auto bounded = apply_boundary_policy(point({0.5}), point({2.5}), bounds,

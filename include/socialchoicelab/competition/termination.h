@@ -18,6 +18,10 @@ enum class TerminationReason {
   kConverged,
   kCycleDetected,
   kNoImprovementWindow,
+  // kCount must remain last. It is used to size per-reason count arrays
+  // (e.g. CompetitionExperimentSummary::termination_reason_counts) without
+  // hardcoding a magic number. Add new reasons above this line.
+  kCount,
 };
 
 struct TerminationConfig {

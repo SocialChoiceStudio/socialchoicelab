@@ -99,13 +99,13 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ## Competition Layer 7 / `0.3.0` (tag: `v0.3.0`) 🟨 In progress
 
-**Scope:** Multi-candidate spatial competition engine (adaptive candidates + trace export) with stable C API and R/Python access. Detailed phase plan: [competition_roadmap.md](competition_roadmap.md).
+**Scope:** Multi-candidate spatial competition engine (adaptive candidates + trace export) with stable C API and R/Python access. Detailed phase plan: [competition_plan.md](competition_plan.md).
 
 | Gate | Criteria |
 |------|----------|
 | **Features** | Baseline Layer 7 scope complete: typed competitor/config/state model; fixed and generated voters; Sticker/Hunter/Aggregator/Predator strategies; plurality and proportional seat conversion; synchronous round engine; step-size and boundary policies; convergence/cycle diagnostics; full trace recording/export. |
 | **Tests** | CI green. C++ unit/integration tests cover strategy behavior, one-run engine correctness, reproducibility by seed/stream map, and termination diagnostics. C API tests cover handle lifecycle, size-query trace export, and failure paths. R/Python tests cover at least one end-to-end competition run and trace inspection. |
-| **Docs** | `docs/architecture/competition_design.md` complete with verified citations and stream map; `docs/status/competition_roadmap.md` updated to reflect delivered scope; ROADMAP and where_we_are updated. Remaining visual-polish blocker explicitly recorded, including the current R animation jump issue and the follow-on animation-refinement work. |
+| **Docs** | `docs/architecture/competition_design.md` complete with verified citations and stream map; `docs/status/competition_plan.md` updated to reflect delivered scope; ROADMAP and where_we_are updated. Remaining visual-polish blocker explicitly recorded, including the current R animation jump issue and the follow-on animation-refinement work. |
 | **API stability** | Competition C API surface declared stable for the tag; binding APIs for competition runs/trace access stable behind that boundary. |
 
 **Current status note (2026-03-09):**

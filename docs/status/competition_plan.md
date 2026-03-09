@@ -37,6 +37,26 @@ that most of the baseline Layer 7 stack is already implemented locally.
 After the remaining R jump issue is solved, the next work item is **further
 animation refinement**, not more core-engine expansion.
 
+### Planned engine extension: per-run position re-randomization
+
+The experiment runner currently uses the same `initial_competitors` for every
+run, so only RNG streams vary across runs. This is appropriate for studying how
+strategy stochasticity affects outcomes from a fixed starting configuration, but
+it does not capture sensitivity to initial conditions.
+
+**Feature:** Add an optional `InitializationConfig` field to
+`CompetitionExperimentConfig`. When present, the runner re-initializes
+competitor positions (and headings and step sizes) from that config for each
+run, using the run's RNG stream for the random draws. When absent, the existing
+`initial_competitors` field governs as today — so the change is fully backward
+compatible.
+
+**Sequencing:** Implement after the R animation bug and animation UX
+refinements are resolved. This is an engine feature, so it touches
+`experiment_runner.h`, the C API (`scs_api.h` / `scs_api.cpp`), and the
+R/Python experiment wrappers. Do not implement until the animation layer is
+stable.
+
 ## Scope and sequencing
 
 This roadmap departs slightly from the user-suggested phase order in three places:

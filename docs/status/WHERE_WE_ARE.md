@@ -4,7 +4,7 @@
 
 - **Current phase:** Layer 7 candidate competition is now substantially implemented locally: core engine, experiment runner, C API, R/Python bindings, and first static/animated plotting support all exist. The main open blocker is an R animation issue where the first two animated jumps can still appear too large in some runs.
 - **Next:** Solve the remaining R animation jump issue, then continue animation refinement (trail toggles, fade behavior, layout polish, parity checks). That work sits inside the active **`0.3.0`** track.
-- **Release context:** The `0.2.0` base-release line is still the last completed major stack boundary. Candidate competition is the current active implementation line on top of that base. Authoritative plan: [competition_roadmap.md](competition_roadmap.md).
+- **Release context:** The `0.2.0` base-release line is still the last completed major stack boundary. Candidate competition is the current active implementation line on top of that base. Authoritative plan: [competition_plan.md](competition_plan.md).
 - **After `0.3.0`:** Begin the next major feature track, currently described as **Characteristics of Voting Rules** (working title), then iterate to `1.0.0` once all major components are in place.
 - **Last updated:** 2026-03-09
 

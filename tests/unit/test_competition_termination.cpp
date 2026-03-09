@@ -5,6 +5,7 @@
 #include <socialchoicelab/competition/engine.h>
 #include <socialchoicelab/competition/termination.h>
 
+#include <locale>
 #include <string>
 #include <utility>
 #include <vector>
@@ -78,6 +79,30 @@ TEST(CompetitionTermination, StateSignatureRoundsDeterministically) {
   const auto signature = state_signature(competitors, 1e-3);
   EXPECT_NE(signature.find("0:0,"), std::string::npos);
   EXPECT_NE(signature.find("1:1.5,"), std::string::npos);
+}
+
+// state_signature must produce locale-independent output regardless of what
+// the global locale is set to. Some European locales (e.g. de_DE) use ',' as
+// the decimal separator, which would corrupt the signature format and break
+// cycle detection. We inject a comma-decimal locale portably via a custom
+// numpunct facet — this does not require any system locale to be installed.
+TEST(CompetitionTermination, StateSignatureIsLocaleIndependent) {
+  struct CommaDecimal : std::numpunct<char> {
+    char do_decimal_point() const override { return ','; }
+  };
+
+  const std::locale comma_locale(std::locale::classic(), new CommaDecimal);
+  const std::locale old_locale = std::locale::global(comma_locale);
+
+  const std::vector<CompetitorState> competitors = {
+    competitor(0, point({1.5}))};
+  const auto signature = state_signature(competitors, 1e-6);
+
+  std::locale::global(old_locale);
+
+  // Must contain '.' (classic decimal), never ',' from the injected locale.
+  EXPECT_NE(signature.find("1.5"), std::string::npos);
+  EXPECT_EQ(signature.find("1,5"), std::string::npos);
 }
 
 TEST(CompetitionTermination, NoImprovementDetectionReadsRoundMetrics) {

@@ -157,3 +157,94 @@ TEST(CompetitionEngine, HunterRoundIsReproducibleWithNamedStream) {
   EXPECT_TRUE(step_a.next_competitors[0].position.isApprox(
       step_b.next_competitors[0].position));
 }
+
+// --- Inactive competitor tests ---
+//
+// Inactive competitors are fully excluded from voting and motion. They do not
+// appear as alternatives that voters rank, they receive zero metrics, and their
+// position is frozen every round. This models a candidate who has dropped out.
+// See the design comment on `detail::active_competitor_indices` in engine.h
+// for the full rationale.
+
+TEST(CompetitionEngine, InactiveCompetitorIsExcludedFromElectionAndFrozen) {
+  auto config = one_dimensional_engine_config();
+  config.step_policy = StepPolicyConfig{StepPolicyKind::kFixed, 1.0};
+
+  // Competitor 0 is inactive. Competitor 1 is an Aggregator at 4.0.
+  // Three voters at 0.1, 0.2, 3.9 — all closer to competitor 1 if comp 0
+  // is excluded, so comp 1 should get all votes.
+  std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kSticker, point({0.0})),
+    competitor(1, CompetitorStrategyKind::kAggregator, point({4.0}))};
+  competitors[0].active = false;
+
+  const std::vector<PointNd> voters = {point({0.1}), point({0.2}),
+                                       point({3.9})};
+
+  const auto step = run_competition_round(config, competitors, voters, nullptr);
+
+  // Inactive competitor 0: zero metrics in every slot.
+  ASSERT_TRUE(
+      step.record.evaluated_competitors[0].current_round_metrics.has_value());
+  EXPECT_EQ(
+      step.record.evaluated_competitors[0].current_round_metrics->vote_total,
+      0);
+  EXPECT_DOUBLE_EQ(
+      step.record.evaluated_competitors[0].current_round_metrics->vote_share,
+      0.0);
+
+  // Active competitor 1: all three voters, since comp 0 is excluded.
+  ASSERT_TRUE(
+      step.record.evaluated_competitors[1].current_round_metrics.has_value());
+  EXPECT_EQ(
+      step.record.evaluated_competitors[1].current_round_metrics->vote_total,
+      3);
+
+  // Inactive competitor 0 must not move.
+  EXPECT_DOUBLE_EQ(step.next_competitors[0].position[0], 0.0);
+
+  // The round feedback vote_totals are indexed by total competitor count.
+  EXPECT_EQ(step.record.feedback.vote_totals[0], 0);
+  EXPECT_EQ(step.record.feedback.vote_totals[1], 3);
+}
+
+TEST(CompetitionEngine, AllInactiveCompetitorsIsRejected) {
+  auto config = one_dimensional_engine_config();
+  std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kSticker, point({0.0})),
+    competitor(1, CompetitorStrategyKind::kSticker, point({3.0}))};
+  competitors[0].active = false;
+  competitors[1].active = false;
+
+  const std::vector<PointNd> voters = {point({1.0})};
+
+  EXPECT_THROW(
+      (void)run_competition_round(config, competitors, voters, nullptr),
+      std::invalid_argument);
+}
+
+TEST(CompetitionEngine, InactiveCompetitorPositionFrozenAcrossMultipleRounds) {
+  auto config = one_dimensional_engine_config();
+  config.max_rounds = 5;
+  config.step_policy = StepPolicyConfig{StepPolicyKind::kFixed, 1.0};
+
+  // Competitor 0 inactive at 0.0. Competitor 1 active (Aggregator) at 2.0.
+  // Voters near 3.0 — Aggregator will converge toward them.
+  std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kSticker, point({0.0})),
+    competitor(1, CompetitorStrategyKind::kAggregator, point({2.0}))};
+  competitors[0].active = false;
+
+  const std::vector<PointNd> voters = {point({2.9}), point({3.0}),
+                                       point({3.1})};
+
+  const auto trace =
+      run_fixed_round_competition(config, competitors, voters, nullptr);
+
+  // Inactive competitor must be frozen at 0.0 in every recorded round.
+  for (const auto& round : trace.rounds) {
+    EXPECT_DOUBLE_EQ(round.evaluated_competitors[0].position[0], 0.0)
+        << "Inactive competitor moved in round " << round.round_index;
+  }
+  EXPECT_DOUBLE_EQ(trace.final_competitors[0].position[0], 0.0);
+}

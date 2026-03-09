@@ -63,6 +63,18 @@ struct CompetitionSweepResult {
 
 namespace detail {
 
+// Returns the per-run seed derived from (master_seed, run_index).
+//
+// How it works: reset_for_run() internally calls combine_seed(master_seed,
+// run_index) and then reset_all(run_seed), which stores the derived run seed
+// as the StreamManager's new master_seed_. master_seed() then retrieves it.
+//
+// This is the same derivation used by the live stream_manager in
+// run_competition_experiment, so the reported run_seed in CompetitionRunSummary
+// exactly matches the seed used during that run.
+//
+// If combine_seed() is ever exposed as a public StreamManager utility, this
+// function can be simplified to a direct call without constructing a full SM.
 [[nodiscard]] inline uint64_t run_seed_for_index(uint64_t master_seed,
                                                  uint64_t run_index) {
   core::rng::StreamManager stream_manager(master_seed);
@@ -117,7 +129,8 @@ inline void validate_experiment_config(
     const std::vector<CompetitionRunSummary>& run_summaries) {
   CompetitionExperimentSummary summary;
   summary.num_runs = static_cast<int>(run_summaries.size());
-  summary.termination_reason_counts.assign(4, 0);
+  summary.termination_reason_counts.assign(
+      static_cast<size_t>(TerminationReason::kCount), 0);
   if (run_summaries.empty()) return summary;
 
   const size_t competitor_count =
@@ -161,9 +174,12 @@ inline void validate_experiment_config(
   if (config.retain_traces) result.traces.reserve(config.num_runs);
 
   core::rng::StreamManager stream_manager(config.master_seed);
-  detail::register_competition_streams(stream_manager);
 
   for (int run = 0; run < config.num_runs; ++run) {
+    // reset_for_run calls reset_all, which clears the stream map (PRNG states)
+    // but leaves the allowlist untouched. We re-register after the reset so
+    // the allowlist is explicitly set for this run regardless of any prior
+    // state, making the per-run setup self-contained and easy to reason about.
     stream_manager.reset_for_run(config.master_seed,
                                  static_cast<uint64_t>(run));
     detail::register_competition_streams(stream_manager);
