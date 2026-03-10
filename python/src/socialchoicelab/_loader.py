@@ -195,6 +195,7 @@ _DECLARATIONS = """
         double min_step_size;
         double max_step_size;
         double proportionality_constant;
+        double jitter;
     } SCS_CompetitionStepConfig;
 
     typedef struct {

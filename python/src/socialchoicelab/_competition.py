@@ -66,6 +66,7 @@ class CompetitionStepConfig:
     min_step_size: float = 0.0
     max_step_size: float = 1.0
     proportionality_constant: float = 1.0
+    jitter: float = 0.0
 
 
 @dataclass
@@ -101,6 +102,7 @@ def _to_cffi_step_config(cfg: CompetitionStepConfig):
     out.min_step_size = float(cfg.min_step_size)
     out.max_step_size = float(cfg.max_step_size)
     out.proportionality_constant = float(cfg.proportionality_constant)
+    out.jitter = float(cfg.jitter)
     return out
 
 
