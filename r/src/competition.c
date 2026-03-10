@@ -56,6 +56,7 @@ static SCS_CompetitionStepConfig build_competition_step_config(SEXP cfg_s) {
     cfg.min_step_size = REAL(VECTOR_ELT(cfg_s, 2))[0];
     cfg.max_step_size = REAL(VECTOR_ELT(cfg_s, 3))[0];
     cfg.proportionality_constant = REAL(VECTOR_ELT(cfg_s, 4))[0];
+    cfg.jitter = REAL(VECTOR_ELT(cfg_s, 5))[0];
     return cfg;
 }
 
@@ -437,7 +438,7 @@ SEXP r_scs_competition_experiment_dims(SEXP ptr) {
     SEXP result = PROTECT(allocVector(VECSXP, 3));
     SEXP names = PROTECT(allocVector(STRSXP, 3));
     SET_VECTOR_ELT(result, 0, ScalarInteger(num_runs));
-    SET_STRING_ELT(names, 0, mkChar("num_runs"));
+    SET_STRING_ELT(names, 0, mkChar("n_runs"));
     SET_VECTOR_ELT(result, 1, ScalarInteger(n_competitors));
     SET_STRING_ELT(names, 1, mkChar("n_competitors"));
     SET_VECTOR_ELT(result, 2, ScalarInteger(n_dims));

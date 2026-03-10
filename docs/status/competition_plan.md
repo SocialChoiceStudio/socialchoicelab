@@ -23,19 +23,17 @@ that most of the baseline Layer 7 stack is already implemented locally.
 - Phase I: experiment runner baseline
 - Phase J: first static and animated trajectory plotting
 
-### Still actively being refined
+### Complete
 
-- R animated competition plots still show oversized initial jumps in some runs.
-- Animation UX still needs follow-on refinement even after that bug is solved:
-  - trail toggles
-  - fade-trail behavior
-  - final spacing/layout polish
-  - remaining R/Python parity cleanup
+- R animation jump bug: fixed.
+- Animation UX refinement: complete (trail toggles, fade-trail behavior, layout polish).
+- R/Python parity: audited and fixed (`jitter` gap, `n_runs` rename).
 
 ### Practical next step
 
-After the remaining R jump issue is solved, the next work item is **further
-animation refinement**, not more core-engine expansion.
+All Layer 7 implementation work is done. The remaining work is the **`0.3.0`
+release gate**: citation verification in `competition_design.md`, CI green
+check, and API stability declaration.
 
 ### Planned engine extension: per-run position re-randomization
 

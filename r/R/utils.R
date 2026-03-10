@@ -113,13 +113,16 @@ make_loss_config <- function(loss_type   = "linear",
 #' @param min_step_size,max_step_size Numeric. Bounds for random-uniform steps.
 #' @param proportionality_constant Numeric. Scale for share-delta-proportional
 #'   step sizing.
+#' @param jitter Numeric. Uniform noise magnitude added to each step after
+#'   the primary step size is computed. Default \code{0.0} (no jitter).
 #' @return Named list accepted by competition wrappers.
 #' @export
 make_competition_step_config <- function(kind = "fixed",
                                          fixed_step_size = 1.0,
                                          min_step_size = 0.0,
                                          max_step_size = 1.0,
-                                         proportionality_constant = 1.0) {
+                                         proportionality_constant = 1.0,
+                                         jitter = 0.0) {
   kind_int <- switch(kind,
     fixed = 0L,
     random_uniform = 1L,
@@ -134,7 +137,8 @@ make_competition_step_config <- function(kind = "fixed",
     fixed_step_size = as.double(fixed_step_size),
     min_step_size = as.double(min_step_size),
     max_step_size = as.double(max_step_size),
-    proportionality_constant = as.double(proportionality_constant)
+    proportionality_constant = as.double(proportionality_constant),
+    jitter = as.double(jitter)
   )
 }
 

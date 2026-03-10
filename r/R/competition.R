@@ -154,7 +154,7 @@ CompetitionExperiment <- R6::R6Class(
     },
 
     #' @description Return basic experiment dimensions.
-    #' @return Named list with \code{num_runs}, \code{n_competitors}, and \code{n_dims}.
+    #' @return Named list with \code{n_runs}, \code{n_competitors}, and \code{n_dims}.
     dims = function() {
       .Call("r_scs_competition_experiment_dims", private$ptr,
             PACKAGE = "socialchoicelab")
