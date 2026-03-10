@@ -68,7 +68,7 @@ test_that("competition_run_experiment returns summary statistics", {
   )
   expect_s3_class(experiment, "CompetitionExperiment")
   expect_equal(experiment$dims(),
-               list(num_runs = 3L, n_competitors = 2L, n_dims = 1L))
+               list(n_runs = 3L, n_competitors = 2L, n_dims = 1L))
   expect_equal(experiment$summary()$mean_rounds, 1.0, tolerance = 1e-12)
   expect_equal(experiment$summary()$early_termination_rate, 1.0, tolerance = 1e-12)
   expect_equal(unname(experiment$mean_final_vote_shares()),
