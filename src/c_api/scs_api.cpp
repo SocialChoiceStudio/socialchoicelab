@@ -368,6 +368,7 @@ socialchoicelab::competition::StepPolicyConfig to_cpp_step_config(
   out.min_step_size = cfg.min_step_size;
   out.max_step_size = cfg.max_step_size;
   out.proportionality_constant = cfg.proportionality_constant;
+  out.jitter = cfg.jitter;
   return out;
 }
 

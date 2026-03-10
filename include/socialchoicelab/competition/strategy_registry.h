@@ -110,15 +110,21 @@ class StrategyRegistry {
             const double current_value = detail::objective_value(
                 *competitor.current_round_metrics, context.objective_kind);
 
-            if (current_value > previous_value &&
+            if (current_value >= previous_value &&
                 current_heading.norm() != 0.0) {
               return {current_heading};
             }
 
+            // Laver (2005): reverse heading when performance drops.
+            if (current_heading.norm() != 0.0) {
+              return {-current_heading};
+            }
+
+            // Fallback: no usable heading — pick a random direction.
             if (context.stream_manager == nullptr) {
               throw std::invalid_argument(
                   "BuiltInStrategyService::adapt: Hunter requires a "
-                  "StreamManager for heading redraw.");
+                  "StreamManager when no usable heading exists.");
             }
             auto& stream =
                 context.stream_manager->get_stream(kHunterAdaptationStreamName);

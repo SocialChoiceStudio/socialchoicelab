@@ -86,6 +86,12 @@ The remaining work is no longer "build Layer 7 from scratch." It is now:
 2. Refine the competition animation UX.
 3. Finish docs/polish/release-gate decisions for the `0.3.0` line.
 
+### Known limitation: animation implementation
+
+The current animation approach (Plotly frame-based HTML export) generates one complete data payload per animation frame. This scales poorly with round count: a 1000-round trace with fade trails produces a very large HTML file that is slow to write and slow to load in the browser. The current approach was chosen for availability and cross-language consistency, not performance.
+
+**Revisit before `0.3.0` release:** investigate a more efficient animation backend — candidates include streaming/chunked approaches, canvas-based rendering, or a lightweight custom viewer — that can handle long competitions (hundreds to thousands of rounds) without prohibitive file sizes or generation times.
+
 ### Release ladder
 
 | Version | Meaning |
@@ -151,6 +157,18 @@ Specifically, for every test that asserts a spatial-voting or social-choice clai
 The trigger for adding this item: a test asserting that the centroid of an equilateral triangle is a Condorcet winner under simple majority was written and passed through review. This is false — an empty majority-rule winset requires Plott's radial symmetry conditions (Plott 1967), which the equilateral centroid does not satisfy. Both algorithms correctly returned non-empty winsets; the test was wrong. The error was caught only by domain knowledge, not by the test framework.
 
 Files to review: `test_majority.cpp`, `test_winset.cpp`, `test_geom2d.cpp`, `test_convex_hull.cpp`, `test_c_api.cpp`.
+
+**Additional item (from paper reference review, March 2026):** The paper
+(`introducing_socialchoicelab_PCS2026.tex`, Testing and Reliability paragraph)
+claims: "for profiles with three alternatives, the Condorcet winner (when one
+exists) is verified to also be the Borda winner (Fishburn 1977)." This claim is
+**false**. Counterexample: 3 voters rank A > C > B, 2 voters rank C > B > A —
+A is the Condorcet winner (beats B 3–2, beats C 3–2) but C is the Borda winner
+(score 7 vs. A's 6). The correct result (Fishburn 1973) is that the Borda count
+never ranks the Condorcet winner *last* among 3 alternatives, which is weaker.
+If a unit test asserts Condorcet-winner = Borda-winner for m = 3, that test
+encodes a false theorem and must be corrected. The paper text must also be fixed
+(the Fishburn 1977 reference is additionally missing from the bibliography).
 
 ---
 

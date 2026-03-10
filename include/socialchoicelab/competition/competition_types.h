@@ -53,6 +53,7 @@ struct StepPolicyConfig {
   double min_step_size = 0.0;
   double max_step_size = 0.0;
   double proportionality_constant = 1.0;
+  double jitter = 0.0;
 };
 
 [[nodiscard]] inline const char* stable_strategy_id(
@@ -113,6 +114,12 @@ inline void validate_step_policy(const StepPolicyConfig& config) {
       if (config.fixed_step_size < 0.0) {
         throw std::invalid_argument(
             "validate_step_policy: fixed_step_size must be non-negative.");
+      }
+      if (config.jitter < 0.0 || config.jitter > 1.0) {
+        throw std::invalid_argument(
+            "validate_step_policy: jitter must be in [0, 1]. "
+            "Got " +
+            std::to_string(config.jitter) + ".");
       }
       return;
     case StepPolicyKind::kRandomUniform:

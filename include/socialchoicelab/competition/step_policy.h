@@ -38,8 +38,15 @@ namespace detail {
   validate_step_policy(config);
 
   switch (config.kind) {
-    case StepPolicyKind::kFixed:
+    case StepPolicyKind::kFixed: {
+      if (config.jitter > 0.0 && stream_manager != nullptr) {
+        auto& stream = stream_manager->get_stream(kMotionStepSizesStreamName);
+        std::uniform_real_distribution<double> dist(-config.jitter,
+                                                    config.jitter);
+        return config.fixed_step_size * (1.0 + dist(stream.engine()));
+      }
       return config.fixed_step_size;
+    }
     case StepPolicyKind::kRandomUniform: {
       if (stream_manager == nullptr) {
         throw std::invalid_argument(

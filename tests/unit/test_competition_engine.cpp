@@ -248,3 +248,71 @@ TEST(CompetitionEngine, InactiveCompetitorPositionFrozenAcrossMultipleRounds) {
   }
   EXPECT_DOUBLE_EQ(trace.final_competitors[0].position[0], 0.0);
 }
+
+TEST(CompetitionEngine, FixedStepJitterProducesDifferentStepSizesPerRound) {
+  auto config = one_dimensional_engine_config();
+  config.max_rounds = 10;
+  config.step_policy = StepPolicyConfig{StepPolicyKind::kFixed, 1.0};
+  config.step_policy.jitter = 0.2;
+
+  const std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kSticker, point({0.0})),
+    competitor(1, CompetitorStrategyKind::kHunter, point({-3.0}),
+               point({1.0}))};
+  const std::vector<PointNd> voters = {point({0.0}), point({0.5}),
+                                       point({1.0})};
+
+  StreamManager sm(42);
+  const auto trace =
+      run_fixed_round_competition(config, competitors, voters, &sm);
+
+  // With 20% jitter across 10 rounds, the Hunter should NOT land at
+  // integer multiples of 1.0.  Collect all distinct positions.
+  std::vector<double> positions;
+  for (const auto& round : trace.rounds) {
+    positions.push_back(round.evaluated_competitors[1].position[0]);
+  }
+  positions.push_back(trace.final_competitors[1].position[0]);
+
+  // At least two positions should differ by something other than exactly 1.0
+  // (a sign that jitter is being applied).
+  bool found_non_integer_step = false;
+  for (size_t i = 1; i < positions.size(); ++i) {
+    double step = std::abs(positions[i] - positions[i - 1]);
+    if (std::abs(step - 1.0) > 1e-12 && step > 1e-12) {
+      found_non_integer_step = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(found_non_integer_step)
+      << "Jitter should cause non-integer step sizes.";
+}
+
+TEST(CompetitionEngine, FixedStepJitterZeroProducesExactSteps) {
+  auto config = one_dimensional_engine_config();
+  config.max_rounds = 3;
+  config.step_policy = StepPolicyConfig{StepPolicyKind::kFixed, 1.0};
+  config.step_policy.jitter = 0.0;
+
+  const std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kSticker, point({0.0})),
+    competitor(1, CompetitorStrategyKind::kHunter, point({-3.0}),
+               point({1.0}))};
+  const std::vector<PointNd> voters = {point({0.0}), point({0.5}),
+                                       point({1.0})};
+
+  StreamManager sm(42);
+  const auto trace =
+      run_fixed_round_competition(config, competitors, voters, &sm);
+
+  // Without jitter, every step should be exactly 1.0.
+  double prev = -3.0;
+  for (const auto& round : trace.rounds) {
+    double cur = round.evaluated_competitors[1].position[0];
+    double step = std::abs(cur - prev);
+    if (step > 1e-12) {
+      EXPECT_DOUBLE_EQ(step, 1.0);
+    }
+    prev = cur;
+  }
+}
