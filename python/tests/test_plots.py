@@ -301,7 +301,9 @@ def test_layer_winset_empty():
     n_before = len(fig.data)
     fig = sclp.layer_winset(fig, ws)
     assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before
+    assert len(fig.data) == n_before + 1
+    empty_traces = [t for t in fig.data if "\u2205" in (t.name or "")]
+    assert len(empty_traces) == 1
 
 
 def test_layer_winset_auto_compute():
