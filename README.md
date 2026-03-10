@@ -35,46 +35,11 @@ All randomness is controlled through a **named-stream pseudorandom number genera
 
 ---
 
-## Quick Start
-
-```r
-# R
-library(socialchoicelab)
-
-# Spatial voting: winset from the origin, 5 voters
-voters <- c(0.0, 1.0, 0.0, -1.0, 0.87, 0.5, -0.87, 0.5, 0.0, 0.0)
-ws <- winset_2d(c(0, 0), voters)
-ws$is_empty()  # TRUE — Plott symmetry holds; origin is the core
-
-# Electoral competition: two Hunters converging to the median
-trace <- competition_run(
-  competitor_positions = c(0.2, 0.8),
-  strategy_kinds       = c("hunter", "hunter"),
-  voter_ideals         = runif(1000),
-  dist_config          = make_dist_config(n_dims = 1L),
-  engine_config        = make_competition_engine_config(max_rounds = 100L)
-)
-trace$termination()  # Converged
-```
-
-```python
-# Python
-from socialchoicelab import winset_2d, competition_run
-
-voters = [0.0, 1.0, 0.0, -1.0, 0.87, 0.5, -0.87, 0.5, 0.0, 0.0]
-ws = winset_2d([0.0, 0.0], voters)
-ws.is_empty()  # True
-```
-
----
-
 ## Documentation
 
 | Resource | Link |
 |----------|------|
 | Architecture | [docs/architecture/design_document.md](docs/architecture/design_document.md) |
-| Roadmap | [docs/status/ROADMAP.md](docs/status/ROADMAP.md) |
-| Current status | [docs/status/where_we_are.md](docs/status/where_we_are.md) |
 | C API reference | [docs/architecture/c_api_design.md](docs/architecture/c_api_design.md) |
 | Full docs index | [docs/README.md](docs/README.md) |
 
