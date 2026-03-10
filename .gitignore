@@ -28,6 +28,7 @@ _deps
 # IDE files
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
@@ -50,6 +51,9 @@ Thumbs.db
 
 # LaTeX build artifacts
 docs/.texpadtmp/
+
+# Papers and presentations (local only, not tracked)
+papers_and_presentations/
 
 # Development temporary directories
 temp/
