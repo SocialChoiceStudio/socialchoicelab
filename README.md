@@ -33,7 +33,8 @@ All randomness is controlled through a **named-stream pseudorandom number genera
 - **Stable C API** — Binary-stable boundary for language bindings.
 - **R package** — Native-feeling interface with Plotly-compatible output and built-in scenarios.
 - **Python package** — Identical API with NumPy, pandas, and Plotly integration.
-- **Jupyter notebooks** — Recommended entry point for new users and classroom use.
+- **SocialChoiceStudio** — Web GUI interface. Recommended entry point for new users and classroom use.
+- **Jupyter notebooks** — Recommended entry point for more advanced new users and graduate level classroom use.
 - **Command-line interface** — For parameter sweeps, batch jobs, and scripted pipelines.
 
 ---
