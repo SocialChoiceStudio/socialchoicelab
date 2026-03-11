@@ -4,6 +4,7 @@
 
 Part of the [SocialChoiceStudio](https://github.com/SocialChoiceStudio) project.
 
+Successor to the voteR  project (2015 - 2025).
 ---
 
 ## What It Does
