@@ -26,11 +26,10 @@ from pathlib import Path
 
 import numpy as np
 
-# Path to the shared JS canvas player (one source of truth for both R and Python).
-_CANVAS_JS_PATH = (
-    Path(__file__).parent.parent.parent.parent
-    / "r" / "inst" / "htmlwidgets" / "competition_canvas.js"
-)
+# Path to the canvas player JS bundled with the Python package.
+# The canonical source lives in r/inst/htmlwidgets/competition_canvas.js;
+# a copy is kept here so it is available after pip install.
+_CANVAS_JS_PATH = Path(__file__).parent / "competition_canvas.js"
 
 from socialchoicelab._geometry import centroid_2d, marginal_median_2d
 from socialchoicelab.palette import (
