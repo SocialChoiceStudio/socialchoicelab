@@ -167,6 +167,8 @@ animate_competition_canvas <- function(trace,
   colors <- scl_palette(theme, d$n_competitors, alpha = 0.95)
   voter_color <- .voter_point_color(theme)
 
+  overlays_serialised <- .serialise_overlays_static(overlays)
+
   payload <- list(
     voters_x = unname(as.list(vxy$x)),
     voters_y = unname(as.list(vxy$y)),
@@ -183,9 +185,11 @@ animate_competition_canvas <- function(trace,
     vote_shares = unname(vote_shares_list),
     trail = trail,
     trail_length = trail_len,
-    title = title,
-    overlays_static = .serialise_overlays_static(overlays)
+    title = title
   )
+  if (!is.null(overlays_serialised)) {
+    payload$overlays_static <- overlays_serialised
+  }
 
   htmlwidgets::createWidget(
     name = "competition_canvas",
