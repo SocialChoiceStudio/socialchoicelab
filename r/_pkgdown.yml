@@ -145,6 +145,13 @@ reference:
       - CompetitionExperiment
       - plot_competition_trajectories
       - animate_competition_trajectories
+      - animate_competition_canvas
+
+  - title: "Voter Sampling"
+    desc: "Draw random voter ideal points from spatial distributions."
+    contents:
+      - make_voter_sampler
+      - draw_voters
 
   - title: "Stream Manager"
     desc: "Reproducible pseudo-random number streams."
