@@ -185,7 +185,6 @@ TEST(CompetitionStrategies, HunterLossThrowsWithoutStreamIn2D) {
   AdaptationContext context{bounds, CompetitionObjectiveKind::kVoteShare,
                             competitors, supporters, nullptr};
 
-  // NOLINTNEXTLINE(clang-diagnostic-unused-result)
   EXPECT_THROW((void)hunter->adapt(competitors[0], context),
                std::invalid_argument);
 }
