@@ -86,11 +86,11 @@ The remaining work is no longer "build Layer 7 from scratch." It is now:
 2. Refine the competition animation UX.
 3. Finish docs/polish/release-gate decisions for the `0.3.0` line.
 
-### Known limitation: animation implementation
+### Animation implementation
 
-The current animation approach (Plotly frame-based HTML export) generates one complete data payload per animation frame. This scales poorly with round count: a 1000-round trace with fade trails produces a very large HTML file that is slow to write and slow to load in the browser. The current approach was chosen for availability and cross-language consistency, not performance.
+The Plotly frame-based approach (`animate_competition_trajectories`) has been superseded by a canvas-based player (`animate_competition_canvas`) that stores data once and draws frames on demand. The canvas version handles long runs (hundreds to thousands of rounds) without prohibitive file sizes or generation times, and supports additional features (KDE heatmap, vote-share bar, movement arrows, ghost position, keyboard scrubbing, loop toggle) that are impractical to implement cleanly in Plotly. R and Python share the same JS player file for consistency.
 
-**Revisit before `0.3.0` release:** investigate a more efficient animation backend — candidates include streaming/chunked approaches, canvas-based rendering, or a lightweight custom viewer — that can handle long competitions (hundreds to thousands of rounds) without prohibitive file sizes or generation times.
+The Plotly implementation is retained with its tests for now because the project is not yet open to external users. It should be revisited and retired before `1.0.0`.
 
 ### Release ladder
 
@@ -98,7 +98,43 @@ The current animation approach (Plotly frame-based HTML export) generates one co
 |---------|---------|
 | `0.2.0` | First cohesive public package release: core + c_api + geometry + aggregation + bindings + visualization. |
 | `0.3.0` | Candidate competition / Layer 7 release: adaptive candidate engine + trace/C API/bindings + experiment runner baseline. |
+| pre-`1.0.0` | **Clean up deprecated animation code:** retire `animate_competition_trajectories` (R and Python) and its tests now that the canvas player is the sole animation backend. |
 | `1.0.0` | Major components complete: `0.3.0` scope plus the next major feature track (currently "Characteristics of Voting Rules", working title). |
+
+---
+
+## Non-Euclidean geometry (deferred)
+
+Several geometry services are currently valid only under Euclidean distance (or
+have not been verified for other metrics). These must be addressed before the
+project is used with non-Euclidean `DistanceConfig` settings in production:
+
+- **Pareto set under non-Euclidean metrics:** The Pareto set is a
+  metric-independent concept, but a correct general implementation does not yet
+  exist. Currently the convex hull is used as a proxy — it equals the Pareto set
+  only under Euclidean distance with uniform salience. Under other metrics the
+  convex hull is an outer bound, not the Pareto set. The overlay must not be
+  labelled "Pareto Set" when a non-Euclidean `DistanceConfig` is active.
+  See `geometry_design.md` open question.
+- **Candidate Regions (generalised Voronoi) under non-Euclidean metrics:** The
+  nearest-candidate partition is not yet implemented for non-Euclidean distance.
+  Under uniform Euclidean the partition boundary coincides with the indifference
+  boundaries (perpendicular bisectors). Under other metrics it curves.
+- **Yolk, Heart, Uncovered Set, Core under non-Euclidean metrics:** These are
+  defined via median hyperplanes and pairwise majority over winsets. Their
+  behaviour under non-Euclidean `DistanceConfig` has not been verified. Until
+  verified, the R/Python layer must warn or error when these overlays are
+  requested with a non-Euclidean config.
+
+**Guard requirement:** `animate_competition_canvas()` in R and Python must
+check the `DistanceConfig` from the trace and suppress or relabel any overlay
+that is not valid for the active metric, with a clear user-facing error message.
+This guard must be implemented before any of the overlay pipeline goes into
+production use.
+
+Once verified/corrected, add Yolk, Heart, Uncovered Set, and Core as static canvas overlays following the centroid/marginal median/Pareto Set pattern.
+
+**When:** After the canvas overlay pipeline is built and before `1.0.0`.
 
 ---
 
@@ -116,6 +152,7 @@ These are not on the active roadmap but are worth keeping in view as the project
 - **Bipartisan set:** The support of the unique mixed-strategy Nash equilibrium of the symmetric zero-sum game where two candidates simultaneously choose platforms and each voter votes for the nearer one (Laffond, Laslier & Le Breton 1993). Always a subset of the uncovered set. Requires solving a linear program over the pairwise comparison matrix.
 - **Tri-Median set:** The set of all possible multidimensional medians — points that are the median voter projection in every direction simultaneously. Related to the Yolk and the Schattschneider set. Relevant for understanding the structure of issue-by-issue voting outcomes (Feld and Grofman 1988).
 - **Shapley-Owen Power Index (SOV):** The spatial analogue of the Shapley-Shubik power index. For each voter, the SOV is the proportion of directions (angles of rotation of a median line) on which that voter is the pivot (the median projection). SOVs sum to 1 across all voters. Key property: the strong point (spatial Copeland winner) is the SOV-weighted average of voter ideal points. Win-set area increases with the square of distance from the strong point along any ray (Shapley and Owen 1989; Godfrey, Grofman & Feld 2011).
+- **Radar charts for voting rules:** Comparative visualization of voting rules across multiple criteria (e.g., Condorcet efficiency, monotonicity, strategic robustness, computational complexity). Allows side-by-side assessment of rule properties and trade-offs. Useful for educational scenarios and rule selection workflows.
 
 ---
 
@@ -199,6 +236,19 @@ This is a significant architectural undertaking and only worthwhile once the API
 ---
 
 ## Data and I/O — Future features
+
+### PrefLib and COMSOC ecosystem integration
+
+Evaluate and build interoperability with the [PrefLib](https://preflib.org/) ecosystem and other Computational Social Choice (COMSOC) tools. PrefLib maintains a large collection of real and synthetic preference datasets in a well-specified ordinal format (SOC/SOI/TOC/TOI/CAT/WMD — see [FORMAT_SPECIFICATION.md](https://github.com/PrefLib/PrefLib-Data/blob/main/FORMAT_SPECIFICATION.md)).
+
+PrefLib's format is purely ordinal (rankings, not spatial coordinates), so it maps to our `Profile` layer, not the spatial/geometric layer. The integration strategy:
+
+1. **Import:** Read PrefLib `.soc`/`.soi`/`.toc`/`.toi` files into our `Profile` object. Allows users to run our voting rules and analysis on real election data.
+2. **Export:** Write our `Profile` objects out in PrefLib format. Allows our synthetic profiles to be shared with the broader COMSOC research community.
+3. **Survey other COMSOC tools** (e.g., PrefLib-Tools, abcvoting, pref_voting) for complementary functionality worth linking to or learning from.
+4. **PrefSampling interop** ([COMSOC-Community/prefsampling](https://github.com/COMSOC-Community/prefsampling)): a lightweight Python library of point samplers (uniform ball, sphere, cube, Gaussian variants) and ordinal statistical cultures (Mallows, Pólya urn, single-peaked, etc.). For our spatial work, their point samplers return `np.ndarray` of shape `(num_points, num_dimensions)`, which converts to our flat interleaved format with a single `.flatten()`. Only the point samplers are relevant for spatial models; the ordinal cultures produce rankings with no underlying coordinates and are not applicable to our geometry/competition engine. Integration path: accept PrefSampling arrays directly as voter ideals in Python via a thin adapter; R users continue using our native generators or scenarios.
+
+**When:** After the `0.3.0` competition milestone is stable and before `1.0.0`. The profile layer is already complete; this adds I/O and adapter utilities, not new computation.
 
 ### C13.1: Load scenario from external file format
 

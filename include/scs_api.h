@@ -1190,6 +1190,48 @@ SCS_API SCS_Profile* scs_profile_gaussian_spatial(
     const char* stream_name, char* err_buf, int err_buf_len);
 
 // ---------------------------------------------------------------------------
+// Voter sampling  (C5.6)
+// ---------------------------------------------------------------------------
+
+typedef enum {
+  SCS_VOTER_SAMPLER_UNIFORM = 0,
+  SCS_VOTER_SAMPLER_GAUSSIAN = 1
+} SCS_VoterSamplerKind;
+
+/**
+ * Configuration for standalone voter ideal-point generation.
+ *
+ * kind == SCS_VOTER_SAMPLER_UNIFORM:
+ *   param1 = lo, param2 = hi  (draws from U([lo, hi]))
+ * kind == SCS_VOTER_SAMPLER_GAUSSIAN:
+ *   param1 = mean, param2 = stddev  (draws from N(mean, stddev²))
+ */
+typedef struct {
+  SCS_VoterSamplerKind kind;
+  double param1; /**< lo (uniform) or mean (gaussian) */
+  double param2; /**< hi (uniform) or stddev (gaussian) */
+} SCS_VoterSamplerConfig;
+
+/**
+ * @brief Draw voter ideal points as a flat interleaved array [x0,y0,x1,y1,...].
+ *
+ * @param n_voters     Number of voters to draw (>= 1).
+ * @param n_dims       Number of spatial dimensions (currently only 2
+ * supported).
+ * @param config       Sampler configuration (must be non-null).
+ * @param mgr          Stream manager (must be non-null).
+ * @param stream_name  Named stream to use for randomness.
+ * @param out_xy       Output buffer of length >= n_voters * n_dims.
+ * @param out_len      Length of out_xy.
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_draw_voters(int n_voters, int n_dims,
+                            const SCS_VoterSamplerConfig* config,
+                            SCS_StreamManager* mgr, const char* stream_name,
+                            double* out_xy, int out_len, char* err_buf,
+                            int err_buf_len);
+
+// ---------------------------------------------------------------------------
 // Aggregation — Profile lifecycle and inspection  (C5.5)
 // ---------------------------------------------------------------------------
 
@@ -1696,6 +1738,10 @@ SCS_API int scs_competition_trace_final_vote_shares(
 
 SCS_API int scs_competition_trace_final_seat_shares(
     const SCS_CompetitionTrace* trace, double* out_shares, int out_len,
+    char* err_buf, int err_buf_len);
+
+SCS_API int scs_competition_trace_strategy_kinds(
+    const SCS_CompetitionTrace* trace, int* out_kinds, int out_len,
     char* err_buf, int err_buf_len);
 
 SCS_API SCS_CompetitionExperiment* scs_competition_run_experiment(

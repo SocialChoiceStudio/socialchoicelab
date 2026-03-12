@@ -10,6 +10,40 @@
 #include "scs_r_helpers.h"
 
 /* ---------------------------------------------------------------------------
+ * Voter sampling
+ * --------------------------------------------------------------------------- */
+
+SEXP r_scs_draw_voters(SEXP n_voters_s, SEXP n_dims_s, SEXP sampler_cfg,
+                       SEXP mgr_ptr, SEXP stream_name_s) {
+    int n_voters = asInteger(n_voters_s);
+    int n_dims   = asInteger(n_dims_s);
+
+    /* Extract sampler config from positional list: [[1]] kind, [[2]] param1,
+     * [[3]] param2.  The R make_voter_sampler() constructor guarantees this. */
+    SCS_VoterSamplerConfig cfg;
+    cfg.kind   = (SCS_VoterSamplerKind)asInteger(VECTOR_ELT(sampler_cfg, 0));
+    cfg.param1 = asReal(VECTOR_ELT(sampler_cfg, 1));
+    cfg.param2 = asReal(VECTOR_ELT(sampler_cfg, 2));
+
+    SCS_StreamManager *mgr = (SCS_StreamManager *)get_extptr(mgr_ptr);
+    if (!mgr)
+        Rf_error("StreamManager handle is NULL or has already been destroyed.");
+
+    int out_len = n_voters * n_dims;
+    SEXP result = PROTECT(Rf_allocVector(REALSXP, out_len));
+    char err[SCS_ERR_BUF_SIZE] = {0};
+
+    scs_check(
+        scs_draw_voters(n_voters, n_dims, &cfg, mgr,
+                        CHAR(STRING_ELT(stream_name_s, 0)),
+                        REAL(result), out_len, err, SCS_ERR_BUF_SIZE),
+        err);
+
+    UNPROTECT(1);
+    return result;
+}
+
+/* ---------------------------------------------------------------------------
  * GC finalizer and EXTPTR wrapper helper
  * --------------------------------------------------------------------------- */
 

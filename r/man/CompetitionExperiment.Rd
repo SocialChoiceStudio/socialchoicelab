@@ -56,7 +56,7 @@ Return basic experiment dimensions.
 }
 
 \subsection{Returns}{
-Named list with \code{num_runs}, \code{n_competitors}, and \code{n_dims}.
+Named list with \code{n_runs}, \code{n_competitors}, and \code{n_dims}.
 }
 }
 \if{html}{\out{<hr>}}

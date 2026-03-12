@@ -626,6 +626,14 @@ TEST(CApi_Competition, RunTraceAndExportRoundData) {
   EXPECT_DOUBLE_EQ(final_seat_shares[0], 1.0);
   EXPECT_DOUBLE_EQ(final_seat_shares[1], 0.0);
 
+  int strategy_kinds[2] = {-1, -1};
+  EXPECT_EQ(
+      scs_competition_trace_strategy_kinds(trace, strategy_kinds, 2, err, 256),
+      SCS_OK)
+      << err;
+  EXPECT_EQ(strategy_kinds[0], SCS_COMPETITION_STRATEGY_STICKER);
+  EXPECT_EQ(strategy_kinds[1], SCS_COMPETITION_STRATEGY_STICKER);
+
   scs_competition_trace_destroy(trace);
 }
 
@@ -1873,6 +1881,80 @@ TEST(CApi_Profile, GaussianSpatial_CorrectDims) {
   EXPECT_EQ(na, 4);
 
   scs_profile_destroy(p);
+  scs_stream_manager_destroy(mgr);
+}
+
+// ==========================================================================
+// C5.6 — Voter sampling: scs_draw_voters
+// ==========================================================================
+
+TEST(CApi_VoterSampler, Uniform_CorrectLength) {
+  SCS_StreamManager* mgr = scs_stream_manager_create(42u, nullptr, 0);
+  ASSERT_NE(mgr, nullptr);
+  SCS_VoterSamplerConfig cfg{SCS_VOTER_SAMPLER_UNIFORM, -1.0, 1.0};
+  double out[20] = {};
+  char err[256] = {};
+  ASSERT_EQ(scs_draw_voters(10, 2, &cfg, mgr, "v", out, 20, err, 256), SCS_OK)
+      << err;
+  scs_stream_manager_destroy(mgr);
+}
+
+TEST(CApi_VoterSampler, Uniform_AllInRange) {
+  SCS_StreamManager* mgr = scs_stream_manager_create(7u, nullptr, 0);
+  ASSERT_NE(mgr, nullptr);
+  SCS_VoterSamplerConfig cfg{SCS_VOTER_SAMPLER_UNIFORM, -1.0, 1.0};
+  double out[400] = {};
+  char err[256] = {};
+  ASSERT_EQ(scs_draw_voters(200, 2, &cfg, mgr, "v", out, 400, err, 256), SCS_OK)
+      << err;
+  for (int i = 0; i < 400; ++i) {
+    EXPECT_GE(out[i], -1.0);
+    EXPECT_LE(out[i], 1.0);
+  }
+  scs_stream_manager_destroy(mgr);
+}
+
+TEST(CApi_VoterSampler, Gaussian_AllFinite) {
+  SCS_StreamManager* mgr = scs_stream_manager_create(3u, nullptr, 0);
+  ASSERT_NE(mgr, nullptr);
+  SCS_VoterSamplerConfig cfg{SCS_VOTER_SAMPLER_GAUSSIAN, 0.0, 0.5};
+  double out[200] = {};
+  char err[256] = {};
+  ASSERT_EQ(scs_draw_voters(100, 2, &cfg, mgr, "v", out, 200, err, 256), SCS_OK)
+      << err;
+  for (int i = 0; i < 200; ++i) EXPECT_TRUE(std::isfinite(out[i]));
+  scs_stream_manager_destroy(mgr);
+}
+
+TEST(CApi_VoterSampler, Error_NullConfig) {
+  SCS_StreamManager* mgr = scs_stream_manager_create(1u, nullptr, 0);
+  ASSERT_NE(mgr, nullptr);
+  double out[4] = {};
+  char err[256] = {};
+  int rc = scs_draw_voters(2, 2, nullptr, mgr, "v", out, 4, err, 256);
+  EXPECT_NE(rc, SCS_OK);
+  EXPECT_GT(std::strlen(err), 0u);
+  scs_stream_manager_destroy(mgr);
+}
+
+TEST(CApi_VoterSampler, Error_NullManager) {
+  SCS_VoterSamplerConfig cfg{SCS_VOTER_SAMPLER_UNIFORM, -1.0, 1.0};
+  double out[4] = {};
+  char err[256] = {};
+  int rc = scs_draw_voters(2, 2, &cfg, nullptr, "v", out, 4, err, 256);
+  EXPECT_NE(rc, SCS_OK);
+  EXPECT_GT(std::strlen(err), 0u);
+}
+
+TEST(CApi_VoterSampler, Error_UnsupportedNDims) {
+  SCS_StreamManager* mgr = scs_stream_manager_create(1u, nullptr, 0);
+  ASSERT_NE(mgr, nullptr);
+  SCS_VoterSamplerConfig cfg{SCS_VOTER_SAMPLER_UNIFORM, -1.0, 1.0};
+  double out[6] = {};
+  char err[256] = {};
+  int rc = scs_draw_voters(2, 3, &cfg, mgr, "v", out, 6, err, 256);
+  EXPECT_NE(rc, SCS_OK);
+  EXPECT_GT(std::strlen(err), 0u);
   scs_stream_manager_destroy(mgr);
 }
 

@@ -23,6 +23,9 @@ __all__ = [
     "profile_impartial_culture",
     "profile_uniform_spatial",
     "profile_gaussian_spatial",
+    "VoterSamplerConfig",
+    "make_voter_sampler",
+    "draw_voters",
 ]
 
 _ERR_BUF_SIZE = 512
@@ -359,3 +362,124 @@ def profile_gaussian_spatial(
         from socialchoicelab._error import _ffi_string
         raise SCSError(f"scs_profile_gaussian_spatial failed: {_ffi_string(err)}")
     return Profile(ptr)
+
+
+# ---------------------------------------------------------------------------
+# Voter sampling
+# ---------------------------------------------------------------------------
+
+from dataclasses import dataclass  # noqa: E402 (after Profile definitions)
+
+
+@dataclass
+class VoterSamplerConfig:
+    """Configuration for standalone voter ideal-point generation.
+
+    Create instances via :func:`make_voter_sampler` rather than directly.
+
+    Attributes
+    ----------
+    kind : int
+        0 = uniform, 1 = gaussian.
+    param1 : float
+        lo (uniform) or mean (gaussian).
+    param2 : float
+        hi (uniform) or stddev (gaussian).
+    """
+    kind: int
+    param1: float
+    param2: float
+
+
+def make_voter_sampler(
+    kind: str,
+    *,
+    mean: float = 0.0,
+    stddev: float = 1.0,
+    lo: float = -1.0,
+    hi: float = 1.0,
+) -> VoterSamplerConfig:
+    """Create a voter sampler configuration.
+
+    Parameters
+    ----------
+    kind:
+        Distribution to draw from: ``"gaussian"`` or ``"uniform"``.
+    mean:
+        Mean for the Gaussian distribution (ignored for ``"uniform"``).
+    stddev:
+        Standard deviation for the Gaussian distribution (must be > 0).
+    lo:
+        Lower bound for the Uniform distribution (ignored for ``"gaussian"``).
+    hi:
+        Upper bound for the Uniform distribution (must be > lo).
+
+    Returns
+    -------
+    VoterSamplerConfig
+        Configuration object for use with :func:`draw_voters`.
+    """
+    kind = kind.lower()
+    if kind == "gaussian":
+        return VoterSamplerConfig(kind=1, param1=float(mean), param2=float(stddev))
+    elif kind == "uniform":
+        return VoterSamplerConfig(kind=0, param1=float(lo), param2=float(hi))
+    else:
+        raise ValueError(
+            f"make_voter_sampler: unknown kind {kind!r}. "
+            "Use 'gaussian' or 'uniform'."
+        )
+
+
+def draw_voters(
+    n: int,
+    sampler: VoterSamplerConfig,
+    stream_manager,
+    stream_name: str,
+    n_dims: int = 2,
+) -> np.ndarray:
+    """Draw voter ideal points from a spatial distribution.
+
+    Parameters
+    ----------
+    n:
+        Number of voters to draw (>= 1).
+    sampler:
+        A :class:`VoterSamplerConfig` from :func:`make_voter_sampler`.
+    stream_manager:
+        A :class:`~socialchoicelab.StreamManager` instance.
+    stream_name:
+        Named stream to use for randomness.
+    n_dims:
+        Number of spatial dimensions (currently only 2 is supported).
+
+    Returns
+    -------
+    np.ndarray
+        1-D float64 array of length ``n * n_dims`` in row-major interleaved
+        order ``[x0, y0, x1, y1, ...]``, ready to pass as ``voter_ideals``
+        to :func:`~socialchoicelab.competition_run` or
+        :func:`profile_build_spatial`.
+    """
+    if not isinstance(sampler, VoterSamplerConfig):
+        raise TypeError(
+            "draw_voters: sampler must be a VoterSamplerConfig from "
+            "make_voter_sampler()."
+        )
+    out_len = int(n) * int(n_dims)
+    out = _ffi.new("double[]", out_len)
+    cfg = _ffi.new("SCS_VoterSamplerConfig *")
+    cfg.kind   = sampler.kind
+    cfg.param1 = sampler.param1
+    cfg.param2 = sampler.param2
+    err = new_err_buf()
+    from socialchoicelab._error import _check
+    _check(
+        _lib.scs_draw_voters(
+            int(n), int(n_dims), cfg,
+            stream_manager._handle(), stream_name.encode(),
+            out, out_len, err, _ERR_BUF_SIZE,
+        ),
+        err,
+    )
+    return np.array([out[i] for i in range(out_len)], dtype=np.float64)

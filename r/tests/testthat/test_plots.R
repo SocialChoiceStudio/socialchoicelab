@@ -184,6 +184,82 @@ test_that("animate_competition_trajectories rejects trail_length < 1", {
   )
 })
 
+# ---------------------------------------------------------------------------
+# animate_competition_canvas (canvas backend widget)
+# ---------------------------------------------------------------------------
+
+test_that("animate_competition_canvas returns an htmlwidget with expected payload", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  w <- animate_competition_canvas(trace, voters = VOTERS)
+  expect_s3_class(w, "competition_canvas")
+  expect_s3_class(w, "htmlwidget")
+  expect_true("x" %in% names(w))
+  expect_equal(names(w$x), c(
+    "voters_x", "voters_y", "voter_color", "xlim", "ylim", "dim_names",
+    "rounds", "positions", "competitor_names", "competitor_colors",
+    "vote_shares", "trail", "trail_length", "title"
+  ))
+  d <- trace$dims()
+  expect_length(w$x$rounds, d$n_rounds + 1L)
+  expect_length(w$x$positions, d$n_rounds + 1L)
+  expect_length(w$x$competitor_names, d$n_competitors)
+  expect_identical(w$x$trail, "fade")
+})
+
+test_that("animate_competition_canvas accepts trail none and full", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  w_none <- animate_competition_canvas(trace, voters = VOTERS, trail = "none")
+  w_full <- animate_competition_canvas(trace, voters = VOTERS, trail = "full")
+  expect_identical(w_none$x$trail, "none")
+  expect_identical(w_full$x$trail, "full")
+})
+
+test_that("animate_competition_canvas rejects non-CompetitionTrace", {
+  expect_error(
+    animate_competition_canvas(list(a = 1)),
+    "Expected a CompetitionTrace"
+  )
+})
+
+test_that("animate_competition_canvas rejects 1D trace", {
+  skip_without_lib()
+  trace <- competition_run(
+    c(0.0, 3.0), c("sticker", "sticker"), c(0.1, 0.2, 2.9),
+    dist_config = make_dist_config(n_dims = 1L),
+    engine_config = make_competition_engine_config(
+      seat_count = 1L, seat_rule = "plurality_top_k", max_rounds = 2L,
+      step_config = make_competition_step_config(kind = "fixed", fixed_step_size = 1.0)
+    )
+  )
+  expect_error(animate_competition_canvas(trace), "only 2D")
+})
+
+test_that("strategy_kinds returns correct strategies from trace", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  kinds <- trace$strategy_kinds()
+  expect_equal(kinds, c("sticker", "sticker"))
+})
+
+test_that("animate_competition_canvas auto-generates names from strategies", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  w <- animate_competition_canvas(trace, voters = VOTERS)
+  expect_equal(w$x$competitor_names, list("Sticker A", "Sticker B"))
+})
+
+test_that("animate_competition_canvas annotates user-supplied names with strategy", {
+  skip_without_lib()
+  trace <- .competition_trace_2d()
+  w <- animate_competition_canvas(
+    trace, voters = VOTERS,
+    competitor_names = c("Alice", "Bob")
+  )
+  expect_equal(w$x$competitor_names, list("Alice (Sticker)", "Bob (Sticker)"))
+})
+
 test_that("background regions stay below points in canonical order", {
   hull <- convex_hull_2d(VOTERS)
   ws <- winset_2d(SQ, VOTERS)

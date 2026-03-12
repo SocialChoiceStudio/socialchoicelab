@@ -20,10 +20,17 @@ Layers compose by passing the figure returned by one function into the next::
 
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 
 import numpy as np
+
+# Path to the shared JS canvas player (one source of truth for both R and Python).
+_CANVAS_JS_PATH = (
+    Path(__file__).parent.parent.parent.parent
+    / "r" / "inst" / "htmlwidgets" / "competition_canvas.js"
+)
 
 from socialchoicelab._geometry import centroid_2d, marginal_median_2d
 from socialchoicelab.palette import (
@@ -48,6 +55,7 @@ __all__ = [
     "plot_spatial_voting",
     "plot_competition_trajectories",
     "animate_competition_trajectories",
+    "animate_competition_canvas",
     "layer_ic",
     "layer_preferred_regions",
     "layer_winset",
@@ -98,6 +106,32 @@ def _padded_range(vals: np.ndarray, pad_frac: float = 0.12, min_pad: float = 0.5
 def _range_with_origin(vals: np.ndarray, pad_frac: float = 0.12, min_pad: float = 0.5) -> list[float]:
     lo, hi = _padded_range(vals, pad_frac=pad_frac, min_pad=min_pad)
     return [min(lo, 0.0), max(hi, 0.0)]
+
+
+def _names_from_strategies(kinds: list[str]) -> list[str]:
+    """Generate display names from strategy kinds.
+
+    If a strategy appears once, just use its title-cased name (e.g. "Hunter").
+    If it appears multiple times, append a letter: "Hunter A", "Hunter B", etc.
+    """
+    from collections import Counter
+    counts = Counter(kinds)
+    labels: list[str] = []
+    counters: dict[str, int] = {}
+    for k in kinds:
+        nice = k.title()
+        if counts[k] == 1:
+            labels.append(nice)
+        else:
+            idx = counters.get(k, 0)
+            counters[k] = idx + 1
+            labels.append(f"{nice} {chr(65 + idx)}")
+    return labels
+
+
+def _annotate_names_with_strategies(names: list[str], kinds: list[str]) -> list[str]:
+    """Append strategy kind to user-supplied names: 'Biden' → 'Biden (Hunter)'."""
+    return [f"{name} ({kind.title()})" for name, kind in zip(names, kinds)]
 
 
 def _trace_role(trace) -> str:
@@ -710,6 +744,230 @@ def animate_competition_trajectories(
     if fig.layout.sliders:
         fig.layout.sliders[0]._props["active"] = -1
     return fig
+
+
+def _serialise_overlays_static(overlays):
+    """Convert an overlays dict to the overlays_static JSON structure."""
+    if not overlays:
+        return None
+    _POINT_KEYS   = {"centroid", "marginal_median", "geometric_mean"}
+    _POLYGON_KEYS = {"pareto_set"}
+    result = {}
+    for key, obj in overlays.items():
+        if key in _POINT_KEYS:
+            if not (isinstance(obj, (tuple, list)) and len(obj) == 2):
+                raise TypeError(
+                    f"Overlay '{key}' must be a (x, y) tuple from the "
+                    "corresponding _2d() function."
+                )
+            result[key] = {"x": float(obj[0]), "y": float(obj[1])}
+        elif key in _POLYGON_KEYS:
+            arr = np.asarray(obj, dtype=float)
+            if arr.ndim != 2 or arr.shape[1] != 2:
+                raise TypeError(
+                    f"Overlay '{key}' must be an (n, 2) array from convex_hull_2d()."
+                )
+            result[key] = {"polygon": arr.tolist()}
+        else:
+            valid = sorted(_POINT_KEYS | _POLYGON_KEYS)
+            raise ValueError(
+                f"Unknown overlay key '{key}'. Valid keys: {valid}."
+            )
+    return result
+
+
+def animate_competition_canvas(
+    trace,
+    voters=None,
+    competitor_names=None,
+    title="Competition Trajectories",
+    theme="dark2",
+    width=900,
+    height=800,
+    trail="fade",
+    trail_length="medium",
+    dim_names=("Dimension 1", "Dimension 2"),
+    overlays=None,
+    path=None,
+):
+    """Animate 2D competition trajectories using the canvas-based player.
+
+    Produces the same animation as :func:`animate_competition_trajectories` but
+    delivers it as a self-contained HTML file using the shared Canvas 2D player.
+    Data is stored once and frames are drawn on demand, so it scales to long
+    runs without the large payload that Plotly frame-based animations require.
+
+    Parameters
+    ----------
+    trace:
+        A :class:`socialchoicelab.CompetitionTrace`. Must be 2D.
+    voters:
+        Flat array or ``(n, 2)`` array of voter ideal points, or ``None``.
+    competitor_names:
+        Display labels for competitors. Defaults to ``["Competitor 1", ...]``.
+    title:
+        Plot title drawn on the canvas.
+    theme:
+        Colour theme — same options as :func:`plot_spatial_voting`.
+    width, height:
+        Widget dimensions in pixels.
+    trail:
+        ``"fade"`` (default), ``"full"``, or ``"none"``.
+    trail_length:
+        ``"short"`` (1/3 rounds), ``"medium"`` (1/2 rounds), ``"long"``
+        (3/4 rounds), or a positive integer. Ignored when trail is not
+        ``"fade"``.
+    dim_names:
+        Pair of axis title strings.
+    path:
+        If given, write the HTML to this file path in addition to returning it.
+
+    Returns
+    -------
+    str
+        A self-contained HTML string. If ``path`` is provided the same string
+        is written to that file.
+    """
+    n_rounds, n_competitors, n_dims = trace.dims()
+    if n_dims != 2:
+        raise ValueError(
+            f"animate_competition_canvas currently supports only 2D traces, "
+            f"got n_dims={n_dims}."
+        )
+    strategy_kinds = trace.strategy_kinds()
+    if competitor_names is None:
+        competitor_names = _names_from_strategies(strategy_kinds)
+    else:
+        if len(competitor_names) != n_competitors:
+            raise ValueError("competitor_names length must match n_competitors.")
+        competitor_names = _annotate_names_with_strategies(
+            list(competitor_names), strategy_kinds
+        )
+    if trail not in {"none", "full", "fade"}:
+        raise ValueError("trail must be one of: 'none', 'full', 'fade'.")
+    _TRAIL_SHORTHANDS = {"short", "medium", "long"}
+    if isinstance(trail_length, str) and trail_length not in _TRAIL_SHORTHANDS:
+        raise ValueError(
+            f"trail_length {trail_length!r} is not recognised. "
+            "Use 'short' (1/3 rounds), 'medium' (1/2 rounds), 'long' (3/4 rounds), "
+            "or a positive integer."
+        )
+
+    # Positions — mirrors R: list of (n_rounds + 1) matrices, last is final.
+    positions = [trace.round_positions(r) for r in range(n_rounds)]
+    positions.append(trace.final_positions())
+    frame_names = [f"Round {r + 1}" for r in range(n_rounds)] + ["Final"]
+
+    vote_shares = [trace.round_vote_shares(r).tolist() for r in range(n_rounds)]
+    vote_shares.append(trace.final_vote_shares().tolist())
+
+    # Voters
+    voter_flat = np.asarray(voters if voters is not None else [], dtype=float).ravel()
+    voters_x = voter_flat[0::2].tolist()
+    voters_y = voter_flat[1::2].tolist()
+
+    # Axis ranges
+    all_x = voters_x + [float(p[c, 0]) for p in positions for c in range(n_competitors)]
+    all_y = voters_y + [float(p[c, 1]) for p in positions for c in range(n_competitors)]
+    xlim = _range_with_origin(np.array(all_x)) if all_x else [-1.0, 1.0]
+    ylim = _range_with_origin(np.array(all_y)) if all_y else [-1.0, 1.0]
+
+    # Trail length — identical logic to R and the Plotly version.
+    n_segments_max = max(len(frame_names) - 1, 0)
+    if isinstance(trail_length, str):
+        trail_len = max(1, {
+            "short":  n_segments_max // 3,
+            "medium": n_segments_max // 2,
+            "long":   (n_segments_max * 3) // 4,
+        }[trail_length])
+    else:
+        trail_len = int(trail_length)
+        if trail_len < 1:
+            raise ValueError(f"trail_length must be >= 1, got {trail_len}.")
+
+    colors = scl_palette(theme, n_competitors, alpha=0.95)
+    voter_color = _voter_point_color(theme)
+
+    # JSON payload — identical structure to the R binding.
+    payload = {
+        "voters_x":          voters_x,
+        "voters_y":          voters_y,
+        "voter_color":       voter_color,
+        "xlim":              xlim,
+        "ylim":              ylim,
+        "dim_names":         list(dim_names),
+        "rounds":            frame_names,
+        "positions":         [
+            [[float(p[c, 0]), float(p[c, 1])] for c in range(n_competitors)]
+            for p in positions
+        ],
+        "competitor_names":  list(competitor_names),
+        "competitor_colors": list(colors),
+        "vote_shares":       vote_shares,
+        "trail":             trail,
+        "trail_length":      trail_len,
+        "title":             title,
+        "overlays_static":   _serialise_overlays_static(overlays),
+    }
+
+    if not _CANVAS_JS_PATH.exists():
+        raise FileNotFoundError(
+            f"Canvas player JS not found at {_CANVAS_JS_PATH}. "
+            "Ensure r/inst/htmlwidgets/competition_canvas.js is present."
+        )
+    js_player = _CANVAS_JS_PATH.read_text(encoding="utf-8")
+    json_payload = json.dumps(payload)
+
+    # Build self-contained HTML. String concatenation avoids f-string/format
+    # conflicts with the curly braces that appear throughout the JS source.
+    w = str(int(width))
+    h = str(int(height))
+    html = "\n".join([
+        "<!DOCTYPE html>",
+        "<html>",
+        "<head>",
+        '  <meta charset="utf-8">',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+        "  <title>" + title + "</title>",
+        "  <style>",
+        "    * { box-sizing: border-box; margin: 0; padding: 0; }",
+        "    body { background: #fff; }",
+        '    #competition-canvas { width: ' + w + 'px; height: ' + h + 'px; }',
+        "  </style>",
+        "</head>",
+        "<body>",
+        '  <div id="competition-canvas"></div>',
+        "  <script>",
+        # Minimal HTMLWidgets polyfill — registers factory then initialises it.
+        "    window.HTMLWidgets = (function() {",
+        "      var defs = [];",
+        "      return {",
+        "        widget: function(d) { defs.push(d); },",
+        "        _init:  function(el, w, h, data) {",
+        "          defs.forEach(function(d) {",
+        '            if (d.type === "output") { d.factory(el, w, h).renderValue(data); }',
+        "          });",
+        "        }",
+        "      };",
+        "    })();",
+        "  </script>",
+        "  <script>",
+        js_player,
+        "  </script>",
+        "  <script>",
+        "    HTMLWidgets._init(",
+        '      document.getElementById("competition-canvas"),',
+        "      " + w + ", " + h + ",",
+        "      " + json_payload,
+        "    );",
+        "  </script>",
+        "</body>",
+        "</html>",
+    ])
+
+    if path is not None:
+        Path(path).write_text(html, encoding="utf-8")
+    return html
 
 
 def layer_ic(

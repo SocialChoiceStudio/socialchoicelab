@@ -117,6 +117,25 @@ inline void validate_adaptation_context(const AdaptationContext& context) {
   return mean / static_cast<double>(supporters.size());
 }
 
+// Sample a unit vector uniformly from the backward half-space of
+// `forward_heading` (all directions d such that d · forward_heading <= 0).
+//
+// In 1D the backward half-space is a single point — the negation — so no
+// randomness is required. In dimensions >= 2 the Fowler-Laver Hunter
+// definition specifies a uniform draw from the backward hemisphere: sample a
+// random unit vector and reflect it into the backward half-space when needed.
+[[nodiscard]] inline PointNd random_in_backward_halfspace(
+    int dimension, const PointNd& forward_heading, core::rng::PRNG& prng) {
+  if (dimension == 1) {
+    return -forward_heading;
+  }
+  PointNd v = random_unit_heading(dimension, prng);
+  if (v.dot(forward_heading) > 0.0) {
+    v = -v;
+  }
+  return v;
+}
+
 }  // namespace detail
 
 }  // namespace socialchoicelab::competition

@@ -9,7 +9,7 @@ To replicate the maintainer’s workflow after cloning the repo:
 1. **Install required tools** — clang-format 21 (to match CI), cpplint, CMake, and a C++20-capable compiler. See [Installation](#installation) below for OS-specific commands.
 2. **Build** — From the project root: `mkdir build && cd build && cmake .. && make`. Run tests with `ctest -LE benchmark`.
 3. **Optional: pre-commit hook** — So every commit runs `./lint.sh format` and blocks if code is not formatted. See [Pre-commit hook (optional)](#pre-commit-hook-optional).
-4. **Optional: Cursor** — The repo includes `.cursor/rules/` (agent rules, apply automatically) and `.cursor/hooks/` (Model Matchmaker for model routing). Because Cursor only reads hooks from the user-level config, a one-time install is required for the advisor to run:
+4. **Optional: Cursor** — If you use Cursor, you can add `.cursor/rules/` (agent rules) and `.cursor/hooks/` (e.g. Model Matchmaker for model routing) locally; `.cursor/` is gitignored. Because Cursor only reads hooks from the user-level config, a one-time install is required for the advisor to run:
    ```bash
    cp .cursor/hooks/session-init.sh ~/.cursor/hooks/
    cp .cursor/hooks/model-advisor.sh ~/.cursor/hooks/
@@ -17,6 +17,34 @@ To replicate the maintainer’s workflow after cloning the repo:
    # Then create or merge ~/.cursor/hooks.json — see .cursor/hooks.json for the content.
    ```
    After installing, restart Cursor. The advisor logs to **`~/.cursor/hooks/model-advisor.log`** (your user Cursor config directory, not the project’s `.cursor/hooks/`).
+
+## Working on multiple machines
+
+When you use the same repo on more than one computer (e.g. desktop and laptop, or different usernames), follow this so you don't hit path or sync issues.
+
+### Before you leave a machine
+
+- **Commit and push** any work you want to have on the other machine. Uncommitted changes don't sync; only what's in git does.
+- If you're mid-task and don't want a full commit to `main`, push a **WIP branch**:  
+  `git checkout -b wip/short-description && git push -u origin wip/short-description`  
+  On the other machine you can pull that branch and continue.
+
+### When you land on a machine
+
+1. **Pull** so this clone is up to date:  
+   `git pull` (or `git pull --rebase` if you prefer).
+2. **Ensure the build is valid here.** The `build/` directory is not in git. CMake caches absolute paths, so a `build/` created on another machine (e.g. under `/Users/otheruser/...`) will fail here with "source directory does not exist". Run:
+   ```bash
+   ./scripts/setup-build.sh
+   ```
+   This reconfigures and builds if the current `build/` was created elsewhere; otherwise it just builds. Use `./scripts/setup-build.sh Debug` for a Debug build.
+3. Optionally run tests:  
+   `cd build && ctest --output-on-failure -LE benchmark`
+
+### Why this is needed
+
+- **Build directory:** `build/` is gitignored. Each machine has its own. CMake's `CMakeCache.txt` stores the source path; if that path doesn't exist on this machine (different username or path), `cmake --build build` fails. Nuking `build/` and reconfiguring fixes it; `setup-build.sh` does that when needed.
+- **Code:** Only committed-and-pushed changes exist on the other machine. So "commit and push before leaving" (or push a WIP branch) is the rule.
 
 ## Code Style and Linting
 

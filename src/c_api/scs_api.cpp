@@ -25,6 +25,7 @@
 #include <socialchoicelab/aggregation/scoring_rule.h>
 #include <socialchoicelab/aggregation/social_ranking.h>
 #include <socialchoicelab/aggregation/tie_break.h>
+#include <socialchoicelab/aggregation/voter_sampler.h>
 #include <socialchoicelab/competition/experiment_runner.h>
 #include <socialchoicelab/geometry/centrality.h>
 #include <socialchoicelab/geometry/convex_hull.h>
@@ -2344,6 +2345,77 @@ extern "C" SCS_Profile* scs_profile_gaussian_spatial(
 }
 
 // ---------------------------------------------------------------------------
+// Voter sampling  (C5.6)
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_draw_voters(int n_voters, int n_dims,
+                               const SCS_VoterSamplerConfig* config,
+                               SCS_StreamManager* mgr, const char* stream_name,
+                               double* out_xy, int out_len, char* err_buf,
+                               int err_buf_len) {
+  if (!config || !mgr || !stream_name || !out_xy) {
+    set_error(err_buf, err_buf_len, "scs_draw_voters: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_dims != 2) {
+    set_error(err_buf, err_buf_len,
+              ("scs_draw_voters: only n_dims == 2 is supported (got " +
+               std::to_string(n_dims) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_voters < 1) {
+    set_error(err_buf, err_buf_len,
+              ("scs_draw_voters: n_voters must be >= 1 (got " +
+               std::to_string(n_voters) + ")")
+                  .c_str());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const int needed = n_voters * n_dims;
+  if (out_len < needed) {
+    set_error(
+        err_buf, err_buf_len,
+        ("scs_draw_voters: out_len too small (need " + std::to_string(needed) +
+         ", got " + std::to_string(out_len) + ")")
+            .c_str());
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+
+  socialchoicelab::aggregation::VoterSamplerKind kind;
+  switch (config->kind) {
+    case SCS_VOTER_SAMPLER_UNIFORM:
+      kind = socialchoicelab::aggregation::VoterSamplerKind::Uniform;
+      break;
+    case SCS_VOTER_SAMPLER_GAUSSIAN:
+      kind = socialchoicelab::aggregation::VoterSamplerKind::Gaussian;
+      break;
+    default:
+      set_error(err_buf, err_buf_len,
+                "scs_draw_voters: unknown SCS_VoterSamplerKind");
+      return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const socialchoicelab::aggregation::VoterSamplerConfig cpp_cfg{
+    kind, config->param1, config->param2};
+  try {
+    auto& prng = mgr->mgr.get_stream(stream_name);
+    auto coords = socialchoicelab::aggregation::draw_voters(n_voters, n_dims,
+                                                            cpp_cfg, prng);
+    for (int i = 0; i < needed; ++i)
+      out_xy[i] = coords[static_cast<std::size_t>(i)];
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::bad_alloc&) {
+    set_error(err_buf, err_buf_len, "scs_draw_voters: out of memory");
+    return SCS_ERROR_OUT_OF_MEMORY;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Aggregation — Profile lifecycle and inspection  (C5.5)
 // ---------------------------------------------------------------------------
 
@@ -3795,6 +3867,27 @@ extern "C" int scs_competition_trace_final_seat_shares(
   return copy_double_vector(final_metric_shares_from_trace(trace->trace, true),
                             out_shares, out_len, err_buf, err_buf_len,
                             "scs_competition_trace_final_seat_shares");
+}
+
+extern "C" int scs_competition_trace_strategy_kinds(
+    const SCS_CompetitionTrace* trace, int* out_kinds, int out_len,
+    char* err_buf, int err_buf_len) {
+  if (!trace) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_strategy_kinds: trace is null");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const auto& competitors = trace->trace.final_competitors;
+  const int n = static_cast<int>(competitors.size());
+  if (out_len < n) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_strategy_kinds: out_len too small");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  for (int i = 0; i < n; ++i) {
+    out_kinds[i] = static_cast<int>(competitors[i].strategy_kind);
+  }
+  return SCS_OK;
 }
 
 extern "C" SCS_CompetitionExperiment* scs_competition_run_experiment(

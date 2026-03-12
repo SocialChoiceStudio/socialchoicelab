@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -195,6 +196,103 @@ def test_animate_competition_trajectories_trail_length_zero_raises():
     with _competition_trace_2d() as trace:
         with pytest.raises(ValueError, match="trail_length"):
             sclp.animate_competition_trajectories(trace, trail="fade", trail_length=0)
+
+
+# ---------------------------------------------------------------------------
+# animate_competition_canvas
+# ---------------------------------------------------------------------------
+
+
+def test_animate_competition_canvas_returns_html_string():
+    with _competition_trace_2d() as trace:
+        html = sclp.animate_competition_canvas(trace, voters=VOTERS)
+        assert isinstance(html, str)
+        assert "<!DOCTYPE html>" in html
+        assert "competition-canvas" in html
+
+
+def test_animate_competition_canvas_embeds_json_payload():
+    with _competition_trace_2d() as trace:
+        html = sclp.animate_competition_canvas(
+            trace, voters=VOTERS, title="Test Title"
+        )
+        assert "Test Title" in html
+        assert "voters_x" in html
+        assert "positions" in html
+        assert "competitor_colors" in html
+
+
+def test_animate_competition_canvas_writes_file():
+    with _competition_trace_2d() as trace:
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:
+            path = f.name
+        try:
+            html = sclp.animate_competition_canvas(trace, voters=VOTERS, path=path)
+            assert os.path.exists(path)
+            assert os.path.getsize(path) > 0
+            assert Path(path).read_text(encoding="utf-8") == html
+        finally:
+            os.unlink(path)
+
+
+def test_animate_competition_canvas_competitor_names_in_payload():
+    with _competition_trace_2d() as trace:
+        html = sclp.animate_competition_canvas(
+            trace,
+            voters=VOTERS,
+            competitor_names=["Left Party", "Right Party"],
+        )
+        assert "Left Party" in html
+        assert "Right Party" in html
+
+
+def test_animate_competition_canvas_trail_options_accepted():
+    with _competition_trace_2d() as trace:
+        for trail in ("fade", "full", "none"):
+            html = sclp.animate_competition_canvas(trace, voters=VOTERS, trail=trail)
+            assert isinstance(html, str)
+
+
+def test_animate_competition_canvas_invalid_trail_raises():
+    with _competition_trace_2d() as trace:
+        with pytest.raises(ValueError, match="trail"):
+            sclp.animate_competition_canvas(trace, trail="bouncy")
+
+
+def test_animate_competition_canvas_invalid_trail_length_raises():
+    with _competition_trace_2d() as trace:
+        with pytest.raises(ValueError, match="trail_length"):
+            sclp.animate_competition_canvas(trace, trail_length="huge")
+
+
+def test_animate_competition_canvas_wrong_competitor_names_raises():
+    with _competition_trace_2d() as trace:
+        with pytest.raises(ValueError, match="competitor_names"):
+            sclp.animate_competition_canvas(
+                trace, competitor_names=["Only One Name"]
+            )
+
+
+def test_strategy_kinds_returns_correct_strategies():
+    with _competition_trace_2d() as trace:
+        kinds = trace.strategy_kinds()
+        assert kinds == ["sticker", "sticker"]
+
+
+def test_animate_competition_canvas_auto_generates_names_from_strategies():
+    with _competition_trace_2d() as trace:
+        html = sclp.animate_competition_canvas(trace, voters=VOTERS)
+        assert "Sticker A" in html
+        assert "Sticker B" in html
+
+
+def test_animate_competition_canvas_annotates_user_names_with_strategy():
+    with _competition_trace_2d() as trace:
+        html = sclp.animate_competition_canvas(
+            trace, voters=VOTERS, competitor_names=["Alice", "Bob"]
+        )
+        assert "Alice (Sticker)" in html
+        assert "Bob (Sticker)" in html
 
 
 # ---------------------------------------------------------------------------

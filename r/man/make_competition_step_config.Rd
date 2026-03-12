@@ -9,7 +9,8 @@ make_competition_step_config(
   fixed_step_size = 1,
   min_step_size = 0,
   max_step_size = 1,
-  proportionality_constant = 1
+  proportionality_constant = 1,
+  jitter = 0
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ make_competition_step_config(
 
 \item{proportionality_constant}{Numeric. Scale for share-delta-proportional
 step sizing.}
+
+\item{jitter}{Numeric. Uniform noise magnitude added to each step after
+the primary step size is computed. Default \code{0.0} (no jitter).}
 }
 \value{
 Named list accepted by competition wrappers.

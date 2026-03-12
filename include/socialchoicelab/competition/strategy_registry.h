@@ -110,14 +110,29 @@ class StrategyRegistry {
             const double current_value = detail::objective_value(
                 *competitor.current_round_metrics, context.objective_kind);
 
-            if (current_value >= previous_value &&
+            if (current_value > previous_value &&
                 current_heading.norm() != 0.0) {
               return {current_heading};
             }
 
-            // Laver (2005): reverse heading when performance drops.
+            // Fowler & Laver: pick uniformly from the backward half-space
+            // (Fowler & Laver 2008, §2; Laver 2012, ch.3). In 1D the
+            // backward half-space is a single point so no stream is needed.
+            // In nD (n >= 2) the draw is stochastic — a stream_manager is
+            // required.
             if (current_heading.norm() != 0.0) {
-              return {-current_heading};
+              if (dimension == 1) {
+                return {-current_heading};
+              }
+              if (context.stream_manager == nullptr) {
+                throw std::invalid_argument(
+                    "BuiltInStrategyService::adapt: Hunter requires a "
+                    "StreamManager when performance drops in dimensions > 1.");
+              }
+              auto& stream = context.stream_manager->get_stream(
+                  kHunterAdaptationStreamName);
+              return {detail::random_in_backward_halfspace(
+                  dimension, current_heading, stream)};
             }
 
             // Fallback: no usable heading — pick a random direction.

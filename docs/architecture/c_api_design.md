@@ -13,6 +13,7 @@ linked directly by R or Python code.
 | 29 | `distance_to_utility` has six parameters; C has no defaults | `SCS_LossConfig` POD struct with a discriminant enum and all parameters; callers fill only the fields used by their chosen loss type |
 | 30 | Stream auto-creation vs. registration | `scs_register_streams` enforces the allowlist at the C boundary; attempts to draw from an unregistered stream return `SCS_ERROR_INVALID_ARGUMENT` |
 | 31 | Do not expose `PRNG::engine()` | Not present in `scs_api.h`; the internal engine is inaccessible from C/R/Python |
+| 32 | Strategy kinds stored in `CompetitorState` but not originally exposed via C API | Added `scs_competition_trace_strategy_kinds` to copy per-competitor `CompetitorStrategyKind` enum values into an `int*` buffer. R binding returns character vector; Python binding returns `list[str]`. Used by canvas animation to auto-generate display names from strategies. |
 
 ---
 

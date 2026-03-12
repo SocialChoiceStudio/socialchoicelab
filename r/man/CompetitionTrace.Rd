@@ -26,6 +26,7 @@ Wraps the \code{SCS_CompetitionTrace} C handle. Create traces with
 \item \href{#method-CompetitionTrace-round_seat_totals}{\code{CompetitionTrace$round_seat_totals()}}
 \item \href{#method-CompetitionTrace-final_vote_shares}{\code{CompetitionTrace$final_vote_shares()}}
 \item \href{#method-CompetitionTrace-final_seat_shares}{\code{CompetitionTrace$final_seat_shares()}}
+\item \href{#method-CompetitionTrace-strategy_kinds}{\code{CompetitionTrace$strategy_kinds()}}
 \item \href{#method-CompetitionTrace-clone}{\code{CompetitionTrace$clone()}}
 }
 }
@@ -209,6 +210,19 @@ Return final seat shares.
 
 \subsection{Returns}{
 Named numeric vector of seat shares by competitor.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-CompetitionTrace-strategy_kinds"></a>}}
+\if{latex}{\out{\hypertarget{method-CompetitionTrace-strategy_kinds}{}}}
+\subsection{Method \code{strategy_kinds()}}{
+Return the strategy kind for each competitor.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{CompetitionTrace$strategy_kinds()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Character vector of strategy names (e.g. "hunter", "aggregator").
 }
 }
 \if{html}{\out{<hr>}}

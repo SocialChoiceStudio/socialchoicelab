@@ -126,6 +126,13 @@ CompetitionTrace <- R6::R6Class(
     final_seat_shares = function() {
       .Call("r_scs_competition_trace_final_seat_shares", private$ptr,
             PACKAGE = "socialchoicelab")
+    },
+
+    #' @description Return the strategy kind for each competitor.
+    #' @return Character vector of strategy names (e.g. "hunter", "aggregator").
+    strategy_kinds = function() {
+      .Call("r_scs_competition_trace_strategy_kinds", private$ptr,
+            PACKAGE = "socialchoicelab")
     }
   )
 )

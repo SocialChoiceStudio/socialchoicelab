@@ -338,6 +338,21 @@ class CompetitionTrace:
         )
         return np.frombuffer(_ffi.buffer(buf, n_competitors * 8), dtype=np.float64).copy()
 
+    _STRATEGY_LABELS = {0: "sticker", 1: "hunter", 2: "aggregator", 3: "predator"}
+
+    def strategy_kinds(self) -> list[str]:
+        """Return the strategy kind for each competitor as a list of strings."""
+        _, n_competitors, _ = self.dims()
+        buf = _ffi.new("int[]", n_competitors)
+        err = new_err_buf()
+        _check(
+            _lib.scs_competition_trace_strategy_kinds(
+                self._ptr, buf, n_competitors, err, _ERR
+            ),
+            err,
+        )
+        return [self._STRATEGY_LABELS.get(buf[i], "unknown") for i in range(n_competitors)]
+
 
 class CompetitionExperiment:
     def __init__(self, ptr) -> None:

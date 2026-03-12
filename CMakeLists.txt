@@ -215,6 +215,11 @@ target_compile_options(test_profile PRIVATE ${SocialChoiceLab_compile_options})
 target_link_libraries(test_profile PRIVATE socialchoicelab_aggregation gtest_main)
 add_test(NAME ProfileTest COMMAND test_profile)
 
+add_executable(test_voter_sampler tests/unit/test_voter_sampler.cpp)
+target_compile_options(test_voter_sampler PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_voter_sampler PRIVATE socialchoicelab_aggregation gtest_main)
+add_test(NAME VoterSamplerTest COMMAND test_voter_sampler)
+
 add_executable(test_voting_rules tests/unit/test_voting_rules.cpp)
 target_compile_options(test_voting_rules PRIVATE ${SocialChoiceLab_compile_options})
 target_link_libraries(test_voting_rules PRIVATE socialchoicelab_aggregation gtest_main)

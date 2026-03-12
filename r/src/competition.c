@@ -393,6 +393,38 @@ SEXP r_scs_competition_trace_final_seat_shares(SEXP ptr) {
     return result;
 }
 
+SEXP r_scs_competition_trace_strategy_kinds(SEXP ptr) {
+    SCS_CompetitionTrace *trace = (SCS_CompetitionTrace *)get_extptr(ptr);
+    if (!trace) {
+        Rf_error("CompetitionTrace handle is NULL or has already been destroyed.");
+    }
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    int n_rounds = 0;
+    int n_competitors = 0;
+    int n_dims = 0;
+    scs_check(scs_competition_trace_dims(trace, &n_rounds, &n_competitors,
+                                         &n_dims, err, SCS_ERR_BUF_SIZE),
+              err);
+    SEXP result = PROTECT(allocVector(INTSXP, n_competitors));
+    scs_check(scs_competition_trace_strategy_kinds(
+                  trace, INTEGER(result), n_competitors, err, SCS_ERR_BUF_SIZE),
+              err);
+
+    /* Map integer enum values to human-readable strings. */
+    static const char *STRATEGY_LABELS[] = {"sticker", "hunter", "aggregator",
+                                            "predator"};
+    SEXP str_result = PROTECT(allocVector(STRSXP, n_competitors));
+    int *raw = INTEGER(result);
+    for (int i = 0; i < n_competitors; ++i) {
+        int kind = raw[i];
+        const char *label =
+            (kind >= 0 && kind <= 3) ? STRATEGY_LABELS[kind] : "unknown";
+        SET_STRING_ELT(str_result, i, mkChar(label));
+    }
+    UNPROTECT(2);
+    return str_result;
+}
+
 SEXP r_scs_competition_run_experiment(SEXP competitor_positions,
                                       SEXP competitor_headings,
                                       SEXP strategy_kinds, SEXP voter_ideals,

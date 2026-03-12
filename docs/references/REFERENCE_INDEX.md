@@ -36,6 +36,9 @@ This directory contains reference materials for SocialChoiceLab development. **P
 - **Kamwa: Simulations in Preference Aggregation** - Computational approaches
 - **Data Simulations for Voting by Evaluation** - New evaluation methods
 
+### Software and Ecosystem Mapping
+- **Software landscape note** - See [software_landscape/README.md](software_landscape/README.md) for a working catalog of external social choice software, data libraries, community hubs, and public-facing web tools relevant to SocialChoiceLab positioning.
+
 ## Implementation Priority
 
 See [implementation_priority.md](implementation_priority.md) for the full prioritized roadmap. Summary: Foundation + core geometry (Yolk, uncovered set, distance functions) → voting rules and aggregation → advanced spatial analysis → applications.

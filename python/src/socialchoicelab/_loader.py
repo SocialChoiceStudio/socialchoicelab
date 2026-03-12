@@ -472,6 +472,27 @@ _DECLARATIONS = """
         char* err_buf, int err_buf_len);
 
     /* ---------------------------------------------------------------------------
+     * Voter sampling
+     * ------------------------------------------------------------------------- */
+    typedef enum {
+        SCS_VOTER_SAMPLER_UNIFORM  = 0,
+        SCS_VOTER_SAMPLER_GAUSSIAN = 1
+    } SCS_VoterSamplerKind;
+
+    typedef struct {
+        SCS_VoterSamplerKind kind;
+        double param1;
+        double param2;
+    } SCS_VoterSamplerConfig;
+
+    int scs_draw_voters(
+        int n_voters, int n_dims,
+        const SCS_VoterSamplerConfig* config,
+        SCS_StreamManager* mgr, const char* stream_name,
+        double* out_xy, int out_len,
+        char* err_buf, int err_buf_len);
+
+    /* ---------------------------------------------------------------------------
      * Profile lifecycle and inspection
      * ------------------------------------------------------------------------- */
     void scs_profile_destroy(SCS_Profile* p);
@@ -697,6 +718,10 @@ _DECLARATIONS = """
 
     int scs_competition_trace_final_seat_shares(
         const SCS_CompetitionTrace* trace, double* out_shares, int out_len,
+        char* err_buf, int err_buf_len);
+
+    int scs_competition_trace_strategy_kinds(
+        const SCS_CompetitionTrace* trace, int* out_kinds, int out_len,
         char* err_buf, int err_buf_len);
 
     SCS_CompetitionExperiment* scs_competition_run_experiment(

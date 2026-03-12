@@ -38,6 +38,9 @@ from socialchoicelab._profile import (  # noqa: F401
     profile_impartial_culture,
     profile_uniform_spatial,
     profile_gaussian_spatial,
+    VoterSamplerConfig,
+    make_voter_sampler,
+    draw_voters,
 )
 
 # B5.1 — Version, distance, loss, level-set, geometry

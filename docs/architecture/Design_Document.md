@@ -154,6 +154,7 @@ Reference these when designing the c_api surface; they are not implementation ta
 - Separation of **distance** and **loss** functions for maximum flexibility in utility modeling.
 - Modular boundaries so each part can be swapped or extended.
 - Exact geometry (CGAL EPEC) only where correctness is critical and performance can be sacrificed.
+- **All social-choice computation in the C++ core.** Distance calculations, cutlines, Voronoi partitions, winsets, majority comparisons, and any other geometry that depends on the distance/loss configuration must be computed in the C++ core and exposed via the C API. Visualization layers (JS canvas player, Plotly helpers, R/Python plot code) are strictly renderers: they receive pre-computed results and draw them. They must not approximate, re-derive, or short-circuit social-choice geometry, even when a Euclidean special case would appear trivial — the distance metric is configurable and the "trivial" case is not general.
 
 ---
 
@@ -163,7 +164,10 @@ Reference these when designing the c_api surface; they are not implementation ta
 ---
 
 ## Visualization Contract
-- **Plot helpers** (R and Py) consume results + optional ModelConfig.plot; produce Plotly figures; identical theme (theme_scs/style_scs).
+- **Plot helpers** (R, Python, JS canvas player) consume pre-computed results and produce visual output. They do not perform social-choice computation.
+- Any geometry that depends on the distance/loss configuration (cutlines, Voronoi cells, winsets, indifference curves, preferred-to sets) must arrive in the visualization layer as vertex lists, polygon boundaries, or other render-ready data produced by the C++ core via the C API.
+- The JS canvas player may perform purely visual computations (coordinate transforms, KDE heatmaps from raw voter positions, trail rendering, zoom/pan) but must not compute social-choice geometry.
+- R and Python plot helpers produce identical themes (`theme_scs` / `style_scs`) and share the same JS canvas player file for the animation widget.
 
 ---
 

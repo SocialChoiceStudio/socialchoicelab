@@ -89,15 +89,41 @@ TEST(CompetitionStrategies, HunterKeepsHeadingAfterImprovement) {
   EXPECT_DOUBLE_EQ(decision.next_heading[0], 1.0);
 }
 
-TEST(CompetitionStrategies, HunterRedrawIsSeededAndReproducible) {
+// Hunter: static support (equal vote share) must trigger reversal, not
+// continuation — Laver & Sergenti 2012 ch.3: "casting around for a new
+// policy direction when the previous policy move was punished with falling
+// or static support".
+TEST(CompetitionStrategies, HunterReversesOnStaticSupport1D) {
   const auto& registry = StrategyRegistry::built_in();
   const auto* hunter = registry.find(CompetitorStrategyKind::kHunter);
   ASSERT_NE(hunter, nullptr);
 
+  CompetitionBounds bounds{point({-2.0}), point({2.0})};
+  std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kHunter, point({0.0}), point({1.0}))};
+  competitors[0].previous_round_metrics = metrics(0.3);
+  competitors[0].current_round_metrics = metrics(0.3);
+
+  std::vector<std::vector<PointNd>> supporters(1);
+  AdaptationContext context{bounds, CompetitionObjectiveKind::kVoteShare,
+                            competitors, supporters, nullptr};
+
+  const auto decision = hunter->adapt(competitors[0], context);
+  EXPECT_DOUBLE_EQ(decision.next_heading[0], -1.0);
+}
+
+// Hunter: when performance drops the result must lie in the backward
+// half-space, be a unit vector, and be reproducible across identical seeds.
+TEST(CompetitionStrategies,
+     HunterLossIsInBackwardHalfspaceAndReproducibleIn2D) {
+  const auto& registry = StrategyRegistry::built_in();
+  const auto* hunter = registry.find(CompetitorStrategyKind::kHunter);
+  ASSERT_NE(hunter, nullptr);
+
+  const PointNd forward = point({1.0, 0.0});
   CompetitionBounds bounds{point({-1.0, -1.0}), point({1.0, 1.0})};
   std::vector<CompetitorState> competitors = {
-    competitor(0, CompetitorStrategyKind::kHunter, point({0.0, 0.0}),
-               point({1.0, 0.0}))};
+    competitor(0, CompetitorStrategyKind::kHunter, point({0.0, 0.0}), forward)};
   competitors[0].previous_round_metrics = metrics(0.5);
   competitors[0].current_round_metrics = metrics(0.2);
 
@@ -117,6 +143,51 @@ TEST(CompetitionStrategies, HunterRedrawIsSeededAndReproducible) {
 
   EXPECT_TRUE(decision_a.next_heading.isApprox(decision_b.next_heading));
   EXPECT_NEAR(decision_a.next_heading.norm(), 1.0, 1e-12);
+  // Must be in the backward half-space: dot product with forward heading <= 0.
+  EXPECT_LE(decision_a.next_heading.dot(forward), 0.0);
+}
+
+// Hunter 1D: performance drop → deterministic negation, no stream needed.
+TEST(CompetitionStrategies, HunterLossNegatesHeadingIn1D) {
+  const auto& registry = StrategyRegistry::built_in();
+  const auto* hunter = registry.find(CompetitorStrategyKind::kHunter);
+  ASSERT_NE(hunter, nullptr);
+
+  CompetitionBounds bounds{point({-2.0}), point({2.0})};
+  std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kHunter, point({0.5}), point({1.0}))};
+  competitors[0].previous_round_metrics = metrics(0.5);
+  competitors[0].current_round_metrics = metrics(0.2);
+
+  std::vector<std::vector<PointNd>> supporters(1);
+  // No stream_manager — 1D reversal must not require one.
+  AdaptationContext context{bounds, CompetitionObjectiveKind::kVoteShare,
+                            competitors, supporters, nullptr};
+
+  const auto decision = hunter->adapt(competitors[0], context);
+  EXPECT_DOUBLE_EQ(decision.next_heading[0], -1.0);
+}
+
+// Hunter 2D loss with no stream_manager must throw a clear error.
+TEST(CompetitionStrategies, HunterLossThrowsWithoutStreamIn2D) {
+  const auto& registry = StrategyRegistry::built_in();
+  const auto* hunter = registry.find(CompetitorStrategyKind::kHunter);
+  ASSERT_NE(hunter, nullptr);
+
+  CompetitionBounds bounds{point({-1.0, -1.0}), point({1.0, 1.0})};
+  std::vector<CompetitorState> competitors = {
+    competitor(0, CompetitorStrategyKind::kHunter, point({0.0, 0.0}),
+               point({1.0, 0.0}))};
+  competitors[0].previous_round_metrics = metrics(0.5);
+  competitors[0].current_round_metrics = metrics(0.2);
+
+  std::vector<std::vector<PointNd>> supporters(1);
+  AdaptationContext context{bounds, CompetitionObjectiveKind::kVoteShare,
+                            competitors, supporters, nullptr};
+
+  // NOLINTNEXTLINE(clang-diagnostic-unused-result)
+  EXPECT_THROW((void)hunter->adapt(competitors[0], context),
+               std::invalid_argument);
 }
 
 TEST(CompetitionStrategies, AggregatorMovesTowardSupporterMeanInOneDimension) {
