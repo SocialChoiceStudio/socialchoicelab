@@ -35,6 +35,8 @@ Wraps the `SCS_CompetitionTrace` C handle. Create traces with
 
 - [`CompetitionTrace$final_seat_shares()`](#method-CompetitionTrace-final_seat_shares)
 
+- [`CompetitionTrace$strategy_kinds()`](#method-CompetitionTrace-strategy_kinds)
+
 - [`CompetitionTrace$clone()`](#method-CompetitionTrace-clone)
 
 ------------------------------------------------------------------------
@@ -224,6 +226,20 @@ Return final seat shares.
 #### Returns
 
 Named numeric vector of seat shares by competitor.
+
+------------------------------------------------------------------------
+
+### Method `strategy_kinds()`
+
+Return the strategy kind for each competitor.
+
+#### Usage
+
+    CompetitionTrace$strategy_kinds()
+
+#### Returns
+
+Character vector of strategy names (e.g. "hunter", "aggregator").
 
 ------------------------------------------------------------------------
 

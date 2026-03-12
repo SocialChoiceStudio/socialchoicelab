@@ -67,7 +67,7 @@ Return basic experiment dimensions.
 
 #### Returns
 
-Named list with `num_runs`, `n_competitors`, and `n_dims`.
+Named list with `n_runs`, `n_competitors`, and `n_dims`.
 
 ------------------------------------------------------------------------
 

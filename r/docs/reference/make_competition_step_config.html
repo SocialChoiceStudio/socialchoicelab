@@ -43,7 +43,8 @@
 <span>  fixed_step_size <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  min_step_size <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  max_step_size <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  proportionality_constant <span class="op">=</span> <span class="fl">1</span></span>
+<span>  proportionality_constant <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  jitter <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -67,6 +68,11 @@
 <dt id="arg-proportionality-constant">proportionality_constant<a class="anchor" aria-label="anchor" href="#arg-proportionality-constant"></a></dt>
 <dd><p>Numeric. Scale for share-delta-proportional
 step sizing.</p></dd>
+
+
+<dt id="arg-jitter">jitter<a class="anchor" aria-label="anchor" href="#arg-jitter"></a></dt>
+<dd><p>Numeric. Uniform noise magnitude added to each step after
+the primary step size is computed. Default <code>0.0</code> (no jitter).</p></dd>
 
 </dl></div>
     <div class="section level2">

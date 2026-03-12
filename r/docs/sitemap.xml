@@ -7,6 +7,7 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/Profile.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/StreamManager.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/Winset.html</loc></url>
+<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_canvas.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_trajectories.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/antiplurality_all_winners.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/antiplurality_one_winner.html</loc></url>
@@ -31,6 +32,7 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/core_2d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/distance_to_utility.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/dot-PALETTE_HEX.html</loc></url>
+<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/draw_voters.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/finalize_plot.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/geometric_mean_2d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/has_condorcet_winner_2d.html</loc></url>
@@ -58,6 +60,7 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_competition_termination_config.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_dist_config.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_loss_config.html</loc></url>
+<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_voter_sampler.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/marginal_median_2d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/normalize_utility.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/pairwise_matrix_2d.html</loc></url>

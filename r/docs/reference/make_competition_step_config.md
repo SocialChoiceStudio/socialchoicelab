@@ -10,7 +10,8 @@ make_competition_step_config(
   fixed_step_size = 1,
   min_step_size = 0,
   max_step_size = 1,
-  proportionality_constant = 1
+  proportionality_constant = 1,
+  jitter = 0
 )
 ```
 
@@ -32,6 +33,11 @@ make_competition_step_config(
 - proportionality_constant:
 
   Numeric. Scale for share-delta-proportional step sizing.
+
+- jitter:
+
+  Numeric. Uniform noise magnitude added to each step after the primary
+  step size is computed. Default `0.0` (no jitter).
 
 ## Value
 

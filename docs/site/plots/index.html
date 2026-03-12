@@ -1017,7 +1017,7 @@
 <h1 id="spatial-voting-visualization">Spatial Voting Visualization<a class="headerlink" href="#spatial-voting-visualization" title="Permanent link">&para;</a></h1>
 <p>Interactive Plotly-based visualization helpers for spatial voting analysis.</p>
 <p>Import as a submodule (keeps <code>plotly</code> as an optional runtime dependency):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span> <span class="nn">socialchoicelab.plots</span> <span class="k">as</span> <span class="nn">sclp</span>
 </code></pre></div>
 <h2 id="base-plot">Base plot<a class="headerlink" href="#base-plot" title="Permanent link">&para;</a></h2>
 
@@ -1026,7 +1026,7 @@
 
 
 <h2 id="socialchoicelab.plots.plot_spatial_voting" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">alternatives</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">voter_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alt_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dim_names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Dimension 1&#39;</span><span class="p">,</span> <span class="s1">&#39;Dimension 2&#39;</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Spatial Voting Analysis&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">voter_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alt_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dim_names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Dimension 1&#39;</span><span class="p">,</span> <span class="s1">&#39;Dimension 2&#39;</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Spatial Voting Analysis&#39;</span><span class="p">,</span> <span class="n">show_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.plot_spatial_voting" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1070,11 +1070,11 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Flat array <code>[x0, y0, …]</code> of policy alternative coordinates.</p>
+                <p>Flat array of alternative coordinates, or <code>None</code>.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1115,7 +1115,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>List of alternative labels.  <code>None</code> uses <code>["Alt 1", "Alt 2", …]</code>.</p>
+                <p>List of alternative labels.  <code>None</code> uses <code>["Alt 1", …]</code>.</p>
               </div>
             </td>
             <td>
@@ -1150,6 +1150,69 @@
             </td>
             <td>
                   <code>&#39;Spatial Voting Analysis&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>show_labels</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Draw text labels directly on the graph for SQ and alternatives.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>xlim</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>[min, max]</code> for explicit axis ranges.  <code>None</code> auto-computes.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ylim</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>[min, max]</code> for explicit axis ranges.  <code>None</code> auto-computes.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>theme</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Colour theme: <code>"dark2"</code> (default, ColorBrewer Dark2, colorblind-safe),
+<code>"set2"</code>, <code>"okabe_ito"</code>, <code>"paired"</code>, or <code>"bw"</code> (black-and-white
+print).  Pass the same value to every <code>layer_*</code> call for coordinated
+colours across the whole plot.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;dark2&#39;</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1201,7 +1264,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Interactive Plotly figure.</p>
+                
               </div>
             </td>
           </tr>
@@ -1210,11 +1273,10 @@
 
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab.plots</span> <span class="k">as</span> <span class="nn">sclp</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">])</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">alts</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">])</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">alts</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]))</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]))</span>
 </code></pre></div>
 
 
@@ -1227,7 +1289,7 @@
 
 
 <h2 id="socialchoicelab.plots.layer_winset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_winset</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">winset</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;rgba(100,150,255,0.25)&#39;</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="s1">&#39;rgba(50,100,220,0.8)&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Winset&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_winset</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">winset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Winset&#39;</span><span class="p">,</span> <span class="n">voters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.layer_winset" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1235,8 +1297,8 @@
     <div class="doc doc-contents first">
 
         <p>Add a winset polygon layer.</p>
-<p>Overlays the boundary of a :class:<code>~socialchoicelab.Winset</code> object.
-If the winset is empty the figure is returned unchanged.</p>
+<p>Pass either a pre-computed :class:<code>~socialchoicelab.Winset</code> or raw
+<code>voters</code> + <code>sq</code> for auto-compute.  Empty winsets are ignored.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1273,11 +1335,11 @@ If the winset is empty the figure is returned unchanged.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A :class:<code>~socialchoicelab.Winset</code> object.</p>
+                <p>A :class:<code>~socialchoicelab.Winset</code> object, or <code>None</code> for auto-compute.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1288,11 +1350,11 @@ If the winset is empty the figure is returned unchanged.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Fill colour (CSS rgba string).  Default: light blue.</p>
+                <p>Explicit fill colour (overrides theme).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;rgba(100,150,255,0.25)&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1303,11 +1365,11 @@ If the winset is empty the figure is returned unchanged.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Outline colour (CSS rgba string).  Default: medium blue.</p>
+                <p>Explicit outline colour (overrides theme).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;rgba(50,100,220,0.8)&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1323,6 +1385,51 @@ If the winset is empty the figure is returned unchanged.</p>
             </td>
             <td>
                   <code>&#39;Winset&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>voters</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Flat voter array (required when <code>winset=None</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>sq</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Status quo <code>[x, y]</code> (required when <code>winset=None</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>theme</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;dark2&#39;</code>
             </td>
           </tr>
       </tbody>
@@ -1353,12 +1460,12 @@ If the winset is empty the figure is returned unchanged.</p>
 
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">scl</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab</span> <span class="k">as</span> <span class="nn">scl</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab.plots</span> <span class="k">as</span> <span class="nn">sclp</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">])</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span>  <span class="o">=</span> <span class="n">scl</span><span class="o">.</span><span class="n">winset_2d</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]))</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_winset</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ws</span><span class="p">)</span>
 </code></pre></div>
 
@@ -1371,7 +1478,7 @@ If the winset is empty the figure is returned unchanged.</p>
 
 
 <h2 id="socialchoicelab.plots.layer_yolk" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_yolk</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">center_x</span><span class="p">,</span> <span class="n">center_y</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;rgba(210,50,50,0.55)&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Yolk&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_yolk</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">center_x</span><span class="p">,</span> <span class="n">center_y</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Yolk&#39;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.layer_yolk" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1454,17 +1561,32 @@ If the winset is empty the figure is returned unchanged.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>color</code>
+                <code>fill_color</code>
             </td>
             <td>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Fill/outline colour (CSS rgba string).  Default: semi-transparent red.</p>
+                <p>Explicit fill colour (overrides theme).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;rgba(210,50,50,0.55)&#39;</code>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>line_color</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Explicit outline colour (overrides theme).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1480,6 +1602,21 @@ If the winset is empty the figure is returned unchanged.</p>
             </td>
             <td>
                   <code>&#39;Yolk&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>theme</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;dark2&#39;</code>
             </td>
           </tr>
       </tbody>
@@ -1510,10 +1647,10 @@ If the winset is empty the figure is returned unchanged.</p>
 
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab.plots</span> <span class="k">as</span> <span class="nn">sclp</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">])</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]))</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_yolk</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">center_x</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">center_y</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 </code></pre></div>
 
@@ -1526,7 +1663,7 @@ If the winset is empty the figure is returned unchanged.</p>
 
 
 <h2 id="socialchoicelab.plots.layer_uncovered_set" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_uncovered_set</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">boundary_xy</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="s1">&#39;rgba(50,180,80,0.20)&#39;</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="s1">&#39;rgba(30,150,60,0.85)&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Uncovered Set&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_uncovered_set</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">boundary_xy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Uncovered Set&#39;</span><span class="p">,</span> <span class="n">voters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">grid_resolution</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.layer_uncovered_set" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1534,6 +1671,8 @@ If the winset is empty the figure is returned unchanged.</p>
     <div class="doc doc-contents first">
 
         <p>Add an uncovered set boundary layer.</p>
+<p>Pass either a pre-computed boundary or raw <code>voters</code> for auto-compute.
+Empty boundaries are ignored.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1570,13 +1709,11 @@ If the winset is empty the figure is returned unchanged.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><code>ndarray</code> of shape <code>(n_pts, 2)</code> from
-:func:<code>~socialchoicelab.uncovered_set_boundary_2d</code>.
-If empty, the figure is returned unchanged.</p>
+                <p><code>ndarray</code> of shape <code>(n_pts, 2)</code>, or <code>None</code> for auto-compute.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1587,11 +1724,11 @@ If empty, the figure is returned unchanged.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Fill colour.  Default: semi-transparent green.</p>
+                <p>Explicit fill colour (overrides theme).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;rgba(50,180,80,0.20)&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1602,11 +1739,11 @@ If empty, the figure is returned unchanged.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Outline colour.  Default: medium green.</p>
+                <p>Explicit outline colour (overrides theme).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;rgba(30,150,60,0.85)&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1622,6 +1759,51 @@ If empty, the figure is returned unchanged.</p>
             </td>
             <td>
                   <code>&#39;Uncovered Set&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>voters</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Flat voter array (required when <code>boundary_xy=None</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>grid_resolution</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Grid resolution for auto-compute (default 20).</p>
+              </div>
+            </td>
+            <td>
+                  <code>20</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>theme</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;dark2&#39;</code>
             </td>
           </tr>
       </tbody>
@@ -1652,12 +1834,12 @@ If empty, the figure is returned unchanged.</p>
 
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">scl</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab</span> <span class="k">as</span> <span class="nn">scl</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab.plots</span> <span class="k">as</span> <span class="nn">sclp</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">])</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">bnd</span> <span class="o">=</span> <span class="n">scl</span><span class="o">.</span><span class="n">uncovered_set_boundary_2d</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">grid_resolution</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]))</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_uncovered_set</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">bnd</span><span class="p">)</span>
 </code></pre></div>
 
@@ -1670,7 +1852,7 @@ If empty, the figure is returned unchanged.</p>
 
 
 <h2 id="socialchoicelab.plots.layer_convex_hull" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_convex_hull</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">hull_xy</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;rgba(130,80,190,0.75)&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Convex Hull&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_convex_hull</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">hull_xy</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Convex Hull&#39;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.layer_convex_hull" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1714,9 +1896,7 @@ If empty, the figure is returned unchanged.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><code>ndarray</code> of shape <code>(n_hull, 2)</code> from
-:func:<code>~socialchoicelab.convex_hull_2d</code>.
-If empty, the figure is returned unchanged.</p>
+                <p><code>ndarray</code> of shape <code>(n_hull, 2)</code>.  Empty arrays are ignored.</p>
               </div>
             </td>
             <td>
@@ -1725,17 +1905,32 @@ If empty, the figure is returned unchanged.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>color</code>
+                <code>fill_color</code>
             </td>
             <td>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Outline colour.  Default: semi-transparent purple.</p>
+                <p>Explicit fill colour (overrides theme).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;rgba(130,80,190,0.75)&#39;</code>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>line_color</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Explicit outline colour (overrides theme).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -1751,6 +1946,21 @@ If empty, the figure is returned unchanged.</p>
             </td>
             <td>
                   <code>&#39;Convex Hull&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>theme</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;dark2&#39;</code>
             </td>
           </tr>
       </tbody>
@@ -1781,13 +1991,13 @@ If empty, the figure is returned unchanged.</p>
 
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">scl</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab</span> <span class="k">as</span> <span class="nn">scl</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">socialchoicelab.plots</span> <span class="k">as</span> <span class="nn">sclp</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">])</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">hull</span> <span class="o">=</span> <span class="n">scl</span><span class="o">.</span><span class="n">convex_hull_2d</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]))</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_convex_hull</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">hull</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span>  <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span>  <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_convex_hull</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">hull</span><span class="p">)</span>
 </code></pre></div>
 
 

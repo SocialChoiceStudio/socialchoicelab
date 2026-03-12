@@ -230,6 +230,17 @@ seat conversion; full trace recording and experiment sweeps.
   : Plot 2D competition trajectories from a CompetitionTrace
 - [`animate_competition_trajectories()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_trajectories.md)
   : Animate 2D competition trajectories from a CompetitionTrace
+- [`animate_competition_canvas()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_canvas.md)
+  : Animate 2D competition trajectories (canvas backend)
+
+## Voter Sampling
+
+Draw random voter ideal points from spatial distributions.
+
+- [`make_voter_sampler()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_voter_sampler.md)
+  : Create a voter sampler configuration
+- [`draw_voters()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/draw_voters.md)
+  : Draw voter ideal points from a spatial distribution
 
 ## Stream Manager
 
