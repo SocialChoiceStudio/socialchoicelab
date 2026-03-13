@@ -31,6 +31,8 @@ When you use the same repo on more than one computer (e.g. desktop and laptop, o
 
 ### When you land on a machine
 
+**First time on this computer?** Install prerequisites (CMake, CGAL, C++ compiler) so the build can run. See [Setup checklist (new or synced machine)](setup_checklist.md) for exact commands. On macOS with Homebrew: `brew install cmake cgal` and ensure `/opt/homebrew/bin` is in your PATH.
+
 1. **Pull** so this clone is up to date:  
    `git pull` (or `git pull --rebase` if you prefer).
 2. **Ensure the build is valid here.** The `build/` directory is not in git. CMake caches absolute paths, so a `build/` created on another machine (e.g. under `/Users/otheruser/...`) will fail here with "source directory does not exist". Run:

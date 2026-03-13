@@ -23,6 +23,7 @@ This file is the single entry point for project documentation.
 | Indifference (level-set) API spec | `docs/architecture/indifference_design.md` |
 | Visualization layer design (color system, layer stack, theme decisions) | `docs/development/visualization_design.md` |
 | Code style, build, test | `docs/development/development.md` |
+| Setup on new or synced machine | `docs/development/setup_checklist.md` |
 | Git and GitHub workflow | `docs/development/git_reference.md` |
 | Simulation terminology & example | `docs/development/sample_simulation_description.md` |
 | Academic reference library | `docs/references/README.md` |
@@ -73,6 +74,7 @@ docs/
 │   └── indifference_design.md             ← level-set API spec (Layer 2)
 ├── development/
 │   ├── development.md                     ← code style, build, lint, test instructions
+│   ├── setup_checklist.md                 ← new or synced machine: prerequisites, build, test
 │   ├── git_reference.md                   ← solo git/github workflow
 │   ├── visualization_design.md            ← color system, layer stack, theme decisions
 │   └── sample_simulation_description.md   ← illustrative walkthrough + glossary (non-governing)

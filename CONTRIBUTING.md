@@ -24,7 +24,7 @@ Thanks for your interest in contributing. This project is part of **SocialChoice
 
 ## First-time setup
 
-For a full clone-to-workflow checklist (tools, build, pre-commit, Cursor), see [docs/development/development.md](docs/development/development.md) § After cloning.
+For a full clone-to-workflow checklist (tools, build, pre-commit, Cursor), see [docs/development/development.md](docs/development/development.md) § After cloning. For a **new or synced machine** (e.g. after moving the repo via Dropbox), use [docs/development/setup_checklist.md](docs/development/setup_checklist.md) to install prerequisites and verify the build.
 
 **Pre-commit hook (optional):** Runs `./lint.sh format` before every commit and blocks if any C++ file was reformatted:
 
