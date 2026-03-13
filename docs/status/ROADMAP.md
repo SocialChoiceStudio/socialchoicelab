@@ -10,6 +10,7 @@ High-level direction for the project. This document does not duplicate detail; i
 | Layer 7 candidate-competition implementation plan | [competition_plan.md](competition_plan.md) |
 | Archived plans (consensus reviews, core completion) | [archive/](archive/README.md) |
 | Definition of done per milestone (features, tests, docs, API stability) | [milestone_gates.md](milestone_gates.md) |
+| Rendering backend consolidation analysis (Plotly vs. Canvas) | [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md) |
 
 **Dependency order** (from design): core C++ and foundation first → stable **c_api** → geometry primitives (e.g. CGAL 2D) → voting rules and outcome concepts → **then** R/Python bindings and GUI. Language bindings and advanced electoral methods depend on the C API and core geometry.
 
@@ -92,13 +93,47 @@ The Plotly frame-based approach (`animate_competition_trajectories`) has been su
 
 The Plotly implementation is retained with its tests for now because the project is not yet open to external users. It should be revisited and retired before `1.0.0`.
 
+### Rendering backend consolidation (evaluation)
+
+The project currently maintains two independent rendering backends: **Plotly** (SVG-based via D3.js, used for all static spatial voting plots in R and Python) and the **JS Canvas 2D** player (immediate-mode raster rendering, used for competition animations). Evaluate consolidating on a single JS Canvas backend for both static and animated visualizations, with the goal of eliminating Plotly as a required dependency.
+
+**Motivation:**
+
+- The canvas widget already renders most of the geometric primitives the static plots require (points, polygons, circles, axes, grid, labels). Extending it to cover the static spatial voting use case is an incremental step, not a ground-up build.
+- Removing Plotly eliminates a runtime dependency from both R (`plotly >= 4.10.0`) and Python (`plotly >= 5.0`), plus `kaleido` for static image export.
+- Reduces the R-Python parity maintenance surface: both layers would share a single canonical JS renderer with only data marshalling differing per language, instead of maintaining two parallel sets of Plotly API calls that must stay in sync.
+- Gives full control over rendering (z-ordering, styling, interaction) without working around a third-party API.
+
+**Key technical finding:** Plotly renders to SVG natively (via D3.js); its easy SVG export comes from serializing the DOM, not from a Canvas-to-vector conversion. Our canvas widget uses the HTML5 Canvas 2D API (raster/immediate-mode). For vector export from Canvas, the off-the-shelf library **[canvas2svg](https://github.com/gliffy/canvas2svg)** (MIT license) provides a mock Canvas 2D context that records standard drawing calls (`arc`, `lineTo`, `fill`, etc.) and builds an SVG scene graph. PNG export is native via `canvas.toDataURL()`.
+
+**Phase 1 — Spike / proof-of-concept:** Port `plot_spatial_voting` + `layer_ic` + `layer_winset` to a canvas-based static widget. Evaluate: output quality, interactivity (hover/tooltips), composability (layer stacking via JSON spec analogous to `overlays_static`), and export (PNG via `toDataURL`, SVG via canvas2svg). Decision gate: proceed to full migration, keep Plotly as optional secondary format, or abandon.
+
+**Phase 2 — Full migration (contingent on Phase 1):** Port all remaining `layer_*()` functions, `finalize_plot()`, and `save_plot()`. Retire Plotly imports and dependencies from both R and Python packages.
+
+**When:** Evaluation spike after `0.3.0` is stable; full migration decision before `1.0.0`.
+
+Detail and technical analysis: [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md).
+
+### Parallel processing in IC construction (investigation)
+
+Indifference curves (ICs) are computed during both static spatial voting visualizations (geometry layer) and dynamic candidate competition trace generation. Investigate whether parallel processing is currently utilized in IC construction for both paths:
+
+1. **Static ICs** (e.g. in `plot_spatial_voting` overlays): Do current implementations construct multiple ICs in parallel, or sequentially?
+2. **Candidate competition ICs** (during trace generation in the competition engine): Are ICs for multiple candidates computed in parallel during each round, or sequentially?
+
+**Goal:** Identify whether parallelization is already deployed, and if not, evaluate the potential performance gain (wallclock time, memory usage) from parallel construction of independent ICs. This is particularly relevant for large profiles (hundreds of voters) and long competition runs (many rounds × many candidates).
+
+**Scope:** Audit both Python and R code paths; check whether any parallelization occurs at the C++ core layer or is left to the language bindings.
+
+**When:** After `0.3.0` is stable; appropriate for a performance sprint before `1.0.0`.
+
 ### Release ladder
 
 | Version | Meaning |
 |---------|---------|
 | `0.2.0` | First cohesive public package release: core + c_api + geometry + aggregation + bindings + visualization. |
 | `0.3.0` | Candidate competition / Layer 7 release: adaptive candidate engine + trace/C API/bindings + experiment runner baseline. |
-| pre-`1.0.0` | **Clean up deprecated animation code:** retire `animate_competition_trajectories` (R and Python) and its tests now that the canvas player is the sole animation backend. |
+| pre-`1.0.0` | **Clean up deprecated animation code:** retire `animate_competition_trajectories` (R and Python) and its tests now that the canvas player is the sole animation backend. **Rendering backend decision:** complete the Plotly-vs-Canvas consolidation evaluation (see § Rendering backend consolidation) and act on the result — either migrate static plots to Canvas or document the decision to retain Plotly. |
 | `1.0.0` | Major components complete: `0.3.0` scope plus the next major feature track (currently "Characteristics of Voting Rules", working title). |
 
 ---
