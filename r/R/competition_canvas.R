@@ -668,3 +668,96 @@ animate_competition_canvas <- function(trace,
     )
   )
 }
+
+#' Save a competition canvas widget to a .scscanvas file
+#'
+#' Serialises the pre-computed animation payload (positions, ICs, WinSet,
+#' Cutlines, etc.) to a JSON file with metadata.  The file can be reloaded
+#' later with \code{\link{load_competition_canvas}} without recomputing
+#' anything.  R and Python packages can read each other's files.
+#'
+#' @param widget An \code{htmlwidget} returned by
+#'   \code{\link{animate_competition_canvas}}.
+#' @param path Path to the output file.  By convention use the
+#'   \code{.scscanvas} extension.
+#' @return \code{path}, invisibly.
+#' @export
+save_competition_canvas <- function(widget, path) {
+  if (!inherits(widget, "htmlwidget")) {
+    stop(
+      "save_competition_canvas: 'widget' must be an htmlwidget ",
+      "(returned by animate_competition_canvas())."
+    )
+  }
+  envelope <- list(
+    format    = "scscanvas",
+    version   = "1",
+    created   = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    generator = paste0("socialchoicelab/r/",
+                       utils::packageVersion("socialchoicelab")),
+    width     = widget$width,
+    height    = widget$height,
+    payload   = widget$x
+  )
+  jsonlite::write_json(envelope, path, auto_unbox = TRUE, digits = NA)
+  invisible(path)
+}
+
+#' Load a competition canvas from a .scscanvas file
+#'
+#' Reads a file written by \code{\link{save_competition_canvas}} (or its Python
+#' equivalent) and returns an \code{htmlwidget} that can be displayed in the
+#' RStudio Viewer, Shiny, or R Markdown, or saved to a standalone HTML file
+#' with \code{htmlwidgets::saveWidget()}.
+#'
+#' @param path Path to a \code{.scscanvas} JSON file.
+#' @param width,height Widget dimensions in pixels.  \code{NULL} uses the
+#'   values stored in the file (or package defaults when those are also
+#'   \code{NULL}).
+#' @return An \code{htmlwidget} of class \code{competition_canvas}.
+#' @export
+load_competition_canvas <- function(path, width = NULL, height = NULL) {
+  if (!file.exists(path)) {
+    stop("load_competition_canvas: file not found: ", path)
+  }
+  envelope <- jsonlite::read_json(path, simplifyVector = FALSE)
+  if (!identical(envelope$format, "scscanvas")) {
+    stop(
+      "load_competition_canvas: unexpected format '", envelope$format,
+      "' (expected 'scscanvas'). Is '", path, "' a .scscanvas file?"
+    )
+  }
+  w <- if (!is.null(width))  width  else envelope$width
+  h <- if (!is.null(height)) height else envelope$height
+  is_1d <- identical(envelope$payload$n_dims, 1L) ||
+            identical(envelope$payload$n_dims, 1)
+  sizing <- if (isTRUE(is_1d)) {
+    htmlwidgets::sizingPolicy(
+      viewer.defaultWidth  = 800L,
+      viewer.defaultHeight = 400L,
+      viewer.fill = FALSE,
+      browser.defaultWidth = 900L,
+      browser.defaultHeight = 400L,
+      browser.fill = FALSE,
+      padding = 0
+    )
+  } else {
+    htmlwidgets::sizingPolicy(
+      viewer.defaultWidth  = 800L,
+      viewer.defaultHeight = 700L,
+      viewer.fill = FALSE,
+      browser.defaultWidth = 900L,
+      browser.defaultHeight = 800L,
+      browser.fill = FALSE,
+      padding = 0
+    )
+  }
+  htmlwidgets::createWidget(
+    name         = "competition_canvas",
+    x            = envelope$payload,
+    width        = w,
+    height       = h,
+    package      = "socialchoicelab",
+    sizingPolicy = sizing
+  )
+}

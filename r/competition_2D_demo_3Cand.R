@@ -17,7 +17,7 @@ library(htmlwidgets)
 # Option B: generate voters from a Gaussian distribution
 # IC load: 20 voters × 1 seat × 201 frames = 4020 curves (80% of ic_max_curves = 5000).
 sm_voters <- stream_manager(123L, c("voters"))
-voter_cfg  <- make_voter_sampler("uniform",hi = 2,lo = -2)
+voter_cfg  <- make_voter_sampler("uniform",lo =-.75, .75)
 voters     <- draw_voters(200L, voter_cfg, sm_voters, "voters")
 
 # --------------------------------------------------------------------------
@@ -26,7 +26,7 @@ voters     <- draw_voters(200L, voter_cfg, sm_voters, "voters")
 sm <- stream_manager(42L, c("competition_adaptation_hunter", "voters", "competition_motion_step_sizes"))
 headings <- c(0.71, 0.71,  -0.71, -0.71,  0.0, -1.0)   # toward voter cluster centre
 trace <- competition_run(
-  competitor_positions = c(-1.5, -1.2,   1.5, 1.2,   0.0, 1.5),
+  competitor_positions = c(-1, -1,   1, 1,   -1, 0.5),
   competitor_headings  = headings,
   strategy_kinds       = c("aggregator", "hunter", "aggregator"),
   voter_ideals         = voters,

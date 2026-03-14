@@ -127,4 +127,7 @@ from socialchoicelab.palette import (  # noqa: F401
     scl_theme_colors,
 )
 
+# C13.C — Canvas serialisation
+from socialchoicelab.plots import load_competition_canvas  # noqa: F401
+
 __version__ = "0.2.0"

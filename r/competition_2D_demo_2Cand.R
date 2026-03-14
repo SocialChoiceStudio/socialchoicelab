@@ -55,7 +55,7 @@ trace <- competition_run(
   engine_config        = make_competition_engine_config(
     seat_count  = 1L,
     seat_rule   = "plurality_top_k",
-    max_rounds  = 500L,
+    max_rounds  = 300L,
     step_config = make_competition_step_config(kind = "random_uniform", min_step_size = 0.0, max_step_size = 0.12)
   ),
   stream_manager = sm

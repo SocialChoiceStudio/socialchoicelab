@@ -287,6 +287,24 @@ PrefLib's format is purely ordinal (rankings, not spatial coordinates), so it ma
 
 **When:** After the `0.3.0` competition milestone is stable and before `1.0.0`. The profile layer is already complete; this adds I/O and adapter utilities, not new computation.
 
+### Canvas payload compression for .scscanvas files
+
+Investigate compression strategies for `.scscanvas` files produced by
+`save_competition_canvas()`. These files grow with the number of frames,
+voters, and enabled overlays (ICs, WinSet, Cutlines); large runs can produce
+multi-MB JSON. Candidates to evaluate:
+
+- **gzip / brotli** wrapping of the JSON text — transparent to the format
+  structure; supported natively in R (`memCompress`) and Python (`gzip`).
+- **Binary payload** for the numeric arrays (positions, IC vertices, WinSet
+  boundaries) — significantly reduces size but requires a format version bump
+  and a more complex loader.
+- **Deduplicated frames** — store only per-frame deltas for data that does not
+  change between frames (e.g. voter positions, static overlays).
+
+**When:** After the initial `.scscanvas` save/load feature stabilises. Lower
+priority than the core serialisation work.
+
 ### C13.1: Load scenario from external file format
 
 Support for user-provided external scenario files (complement to the bundled scenarios in C13.A). Design decisions:

@@ -15,7 +15,19 @@ animate_competition_canvas(
   trail = c("fade", "full", "none"),
   trail_length = "medium",
   dim_names = c("Dimension 1", "Dimension 2"),
-  overlays = NULL
+  overlays = NULL,
+  compute_ic = FALSE,
+  ic_loss_config = NULL,
+  ic_dist_config = NULL,
+  ic_num_samples = 32L,
+  ic_max_curves = 5000L,
+  compute_winset = FALSE,
+  winset_dist_config = NULL,
+  winset_k = "simple",
+  winset_num_samples = 64L,
+  winset_max = 1000L,
+  compute_voronoi = FALSE,
+  voronoi_dist_config = NULL
 )
 }
 \arguments{
@@ -48,6 +60,63 @@ Requires all voter coordinates to be strictly positive.}
 \item{\code{pareto_set}}{From \code{\link{convex_hull_2d}}: matrix of hull vertices.
 Valid only under Euclidean distance with uniform salience.}
 }}
+
+\item{compute_ic}{Logical. When \code{TRUE}, compute per-frame indifference
+curves for every voter through each seat holder's position and bundle them
+into the widget payload. A toggle is then shown in the player UI. Default
+\code{FALSE}. Requires \code{voters} to be provided.}
+
+\item{ic_loss_config}{Loss configuration for IC computation (from
+\code{\link{make_loss_config}}). Default \code{NULL} uses linear loss with
+sensitivity 1, producing pure iso-distance curves that match competition
+vote logic.}
+
+\item{ic_dist_config}{Distance configuration for IC computation (from
+\code{\link{make_dist_config}}). Should match the \code{dist_config} used
+in \code{\link{competition_run}}. Default \code{NULL} uses 2D Euclidean.}
+
+\item{ic_num_samples}{Integer >= 3. Number of polygon vertices sampled per
+indifference curve for smooth shapes (circle / ellipse / superellipse).
+Exact polygons always use 4 vertices regardless of this value. Default 32.}
+
+\item{ic_max_curves}{Maximum total indifference curves allowed across all
+frames (\code{n_voters × seats_per_frame × n_frames}). Exceeding this
+raises an error. Default 2000.}
+
+\item{compute_winset}{Logical. When \code{TRUE}, compute per-frame WinSet
+boundaries for each seat holder's current position and bundle them into
+the widget payload. A toggle is then shown in the player UI. Default
+\code{FALSE}. Requires \code{voters} to be provided. The WinSet is
+computed using the configured voting rule (\code{winset_k}) and distance
+metric (\code{winset_dist_config}); no assumption is made about which
+rule is in use.}
+
+\item{winset_dist_config}{Distance configuration for WinSet computation
+(from \code{\link{make_dist_config}}). Should match the
+\code{dist_config} used in \code{\link{competition_run}}. Default
+\code{NULL} uses 2D Euclidean.}
+
+\item{winset_k}{Voting rule threshold passed to \code{\link{winset_2d}}.
+Use \code{"simple"} for simple majority, or a positive integer \code{k}.
+Default \code{"simple"}.}
+
+\item{winset_num_samples}{Integer >= 4. Boundary approximation quality
+(number of sample points on the WinSet boundary). Default \code{64L}.}
+
+\item{winset_max}{Maximum total WinSet computations allowed
+(\code{seats_per_frame × n_frames}). Exceeding this raises an error.
+Default \code{1000L}.}
+
+\item{compute_voronoi}{Logical. When \code{TRUE}, compute Euclidean Voronoi
+(candidate) regions per frame and show a "Voronoi" toggle in the canvas.
+Currently only Euclidean (L2, uniform weights) is supported; a
+non-Euclidean \code{voronoi_dist_config} raises an error. Default
+\code{FALSE}.}
+
+\item{voronoi_dist_config}{Distance configuration for Voronoi (must be
+Euclidean when \code{compute_voronoi} is \code{TRUE}). Default
+\code{NULL} uses 2D Euclidean. If provided, must be Euclidean with
+uniform salience; otherwise an error is raised.}
 }
 \value{
 An \code{htmlwidget} object of class \code{competition_canvas}.

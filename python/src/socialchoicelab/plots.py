@@ -787,6 +787,87 @@ def _serialise_overlays_static(overlays):
     return result
 
 
+def _html_from_payload(payload, width, height):
+    """Build a self-contained HTML string from a computed canvas payload dict.
+
+    The title is read from ``payload["title"]``.  Both the 1D and 2D internal
+    builders delegate here so the HTML structure is defined in exactly one place.
+    """
+    if not _CANVAS_JS_PATH.exists():
+        raise FileNotFoundError(
+            f"Canvas player JS not found at {_CANVAS_JS_PATH}. "
+            "Ensure r/inst/htmlwidgets/competition_canvas.js is present."
+        )
+    js_player = _CANVAS_JS_PATH.read_text(encoding="utf-8")
+    json_payload = json.dumps(payload)
+    title = payload.get("title", "Competition Trajectories")
+    w = str(int(width))
+    h = str(int(height))
+    return "\n".join([
+        "<!DOCTYPE html>",
+        "<html>",
+        "<head>",
+        '  <meta charset="utf-8">',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+        "  <title>" + title + "</title>",
+        "  <style>",
+        "    * { box-sizing: border-box; margin: 0; padding: 0; }",
+        "    body { background: #fff; }",
+        '    #competition-canvas { width: ' + w + 'px; height: ' + h + 'px; }',
+        "  </style>",
+        "</head>",
+        "<body>",
+        '  <div id="competition-canvas"></div>',
+        "  <script>",
+        "    window.HTMLWidgets = (function() {",
+        "      var defs = [];",
+        "      return {",
+        "        widget: function(d) { defs.push(d); },",
+        "        _init:  function(el, w, h, data) {",
+        "          defs.forEach(function(d) {",
+        '            if (d.type === "output") { d.factory(el, w, h).renderValue(data); }',
+        "          });",
+        "        }",
+        "      };",
+        "    })();",
+        "  </script>",
+        "  <script>",
+        js_player,
+        "  </script>",
+        "  <script>",
+        "    HTMLWidgets._init(",
+        '      document.getElementById("competition-canvas"),',
+        "      " + w + ", " + h + ",",
+        "      " + json_payload,
+        "    );",
+        "  </script>",
+        "</body>",
+        "</html>",
+    ])
+
+
+def _save_scscanvas(payload, width, height, payload_path):
+    """Write the canvas payload envelope to a .scscanvas JSON file."""
+    import datetime
+
+    try:
+        from importlib.metadata import version as _pkg_version
+        gen_ver = _pkg_version("socialchoicelab")
+    except Exception:
+        gen_ver = "unknown"
+    created = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    envelope = {
+        "format":    "scscanvas",
+        "version":   "1",
+        "created":   created,
+        "generator": f"socialchoicelab/python/{gen_ver}",
+        "width":     int(width),
+        "height":    int(height),
+        "payload":   payload,
+    }
+    Path(payload_path).write_text(json.dumps(envelope), encoding="utf-8")
+
+
 def _animate_competition_canvas_1d(
     trace,
     n_rounds,
@@ -808,6 +889,7 @@ def _animate_competition_canvas_1d(
     ic_num_samples,
     ic_max_curves,
     compute_winset=False,
+    payload_path=None,
 ):
     """Build the 1D canvas animation payload and HTML."""
     import warnings
@@ -979,58 +1061,10 @@ def _animate_competition_canvas_1d(
             ws_data.append(frame_ws)
         payload["winset_intervals_1d"] = ws_data
 
-    if not _CANVAS_JS_PATH.exists():
-        raise FileNotFoundError(
-            f"Canvas player JS not found at {_CANVAS_JS_PATH}. "
-            "Ensure r/inst/htmlwidgets/competition_canvas.js is present."
-        )
-    js_player = _CANVAS_JS_PATH.read_text(encoding="utf-8")
-    json_payload = json.dumps(payload)
+    if payload_path is not None:
+        _save_scscanvas(payload, width, height, payload_path)
 
-    w = str(int(width))
-    h = str(int(height))
-    html = "\n".join([
-        "<!DOCTYPE html>",
-        "<html>",
-        "<head>",
-        '  <meta charset="utf-8">',
-        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
-        "  <title>" + title + "</title>",
-        "  <style>",
-        "    * { box-sizing: border-box; margin: 0; padding: 0; }",
-        "    body { background: #fff; }",
-        '    #competition-canvas { width: ' + w + 'px; height: ' + h + 'px; }',
-        "  </style>",
-        "</head>",
-        "<body>",
-        '  <div id="competition-canvas"></div>',
-        "  <script>",
-        "    window.HTMLWidgets = (function() {",
-        "      var defs = [];",
-        "      return {",
-        "        widget: function(d) { defs.push(d); },",
-        "        _init:  function(el, w, h, data) {",
-        "          defs.forEach(function(d) {",
-        '            if (d.type === "output") { d.factory(el, w, h).renderValue(data); }',
-        "          });",
-        "        }",
-        "      };",
-        "    })();",
-        "  </script>",
-        "  <script>",
-        js_player,
-        "  </script>",
-        "  <script>",
-        "    HTMLWidgets._init(",
-        '      document.getElementById("competition-canvas"),',
-        "      " + w + ", " + h + ",",
-        "      " + json_payload,
-        "    );",
-        "  </script>",
-        "</body>",
-        "</html>",
-    ])
-
+    html = _html_from_payload(payload, width, height)
     if path is not None:
         Path(path).write_text(html, encoding="utf-8")
     return html
@@ -1061,6 +1095,7 @@ def animate_competition_canvas(
     winset_max=1000,
     compute_voronoi=False,
     voronoi_dist_config=None,
+    payload_path=None,
 ):
     """Animate 2D competition trajectories using the canvas-based player.
 
@@ -1133,6 +1168,11 @@ def animate_competition_canvas(
         Maximum total WinSet computations allowed (``seats_per_frame ×
         n_frames``). Exceeding this raises a ``ValueError``. Default 1000.
 
+    payload_path:
+        If given, write the pre-computed payload (positions, ICs, WinSet,
+        Cutlines, etc.) to this path as a ``.scscanvas`` JSON file before
+        building the HTML.  The file can be reloaded later with
+        :func:`load_competition_canvas` without recomputing anything.
     compute_voronoi:
         When ``True``, compute Euclidean Voronoi (candidate) regions per frame
         and show a "Voronoi" toggle in the canvas. Currently only Euclidean
@@ -1190,6 +1230,7 @@ def animate_competition_canvas(
             trail, trail_len_common, dim_names, overlays, path,
             compute_ic, ic_loss_config, ic_dist_config, ic_num_samples, ic_max_curves,
             compute_winset=compute_winset,
+            payload_path=payload_path,
         )
     if n_dims != 2:
         raise ValueError(
@@ -1456,64 +1497,60 @@ def animate_competition_canvas(
     if voronoi_cells_payload is not None:
         payload["voronoi_cells"] = voronoi_cells_payload
 
-    if not _CANVAS_JS_PATH.exists():
-        raise FileNotFoundError(
-            f"Canvas player JS not found at {_CANVAS_JS_PATH}. "
-            "Ensure r/inst/htmlwidgets/competition_canvas.js is present."
-        )
-    js_player = _CANVAS_JS_PATH.read_text(encoding="utf-8")
-    json_payload = json.dumps(payload)
+    if payload_path is not None:
+        _save_scscanvas(payload, width, height, payload_path)
 
-    # Build self-contained HTML. String concatenation avoids f-string/format
-    # conflicts with the curly braces that appear throughout the JS source.
-    w = str(int(width))
-    h = str(int(height))
-    html = "\n".join([
-        "<!DOCTYPE html>",
-        "<html>",
-        "<head>",
-        '  <meta charset="utf-8">',
-        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
-        "  <title>" + title + "</title>",
-        "  <style>",
-        "    * { box-sizing: border-box; margin: 0; padding: 0; }",
-        "    body { background: #fff; }",
-        '    #competition-canvas { width: ' + w + 'px; height: ' + h + 'px; }',
-        "  </style>",
-        "</head>",
-        "<body>",
-        '  <div id="competition-canvas"></div>',
-        "  <script>",
-        # Minimal HTMLWidgets polyfill — registers factory then initialises it.
-        "    window.HTMLWidgets = (function() {",
-        "      var defs = [];",
-        "      return {",
-        "        widget: function(d) { defs.push(d); },",
-        "        _init:  function(el, w, h, data) {",
-        "          defs.forEach(function(d) {",
-        '            if (d.type === "output") { d.factory(el, w, h).renderValue(data); }',
-        "          });",
-        "        }",
-        "      };",
-        "    })();",
-        "  </script>",
-        "  <script>",
-        js_player,
-        "  </script>",
-        "  <script>",
-        "    HTMLWidgets._init(",
-        '      document.getElementById("competition-canvas"),',
-        "      " + w + ", " + h + ",",
-        "      " + json_payload,
-        "    );",
-        "  </script>",
-        "</body>",
-        "</html>",
-    ])
-
+    html = _html_from_payload(payload, width, height)
     if path is not None:
         Path(path).write_text(html, encoding="utf-8")
     return html
+
+
+def load_competition_canvas(path, width=None, height=None):
+    """Load a competition canvas animation from a ``.scscanvas`` file.
+
+    Reads a file written by :func:`animate_competition_canvas` (via the
+    ``payload_path`` argument) or the R equivalent ``save_competition_canvas()``,
+    and returns the self-contained HTML string — identical to what
+    :func:`animate_competition_canvas` would return — without recomputing
+    anything.
+
+    Parameters
+    ----------
+    path:
+        Path to a ``.scscanvas`` JSON file.
+    width, height:
+        Widget dimensions in pixels.  ``None`` uses the values stored in the
+        file.
+
+    Returns
+    -------
+    str
+        Self-contained HTML string, ready to write to a ``.html`` file or
+        display in a Jupyter notebook via ``IPython.display.HTML``.
+
+    Examples
+    --------
+    >>> html = load_competition_canvas("run_200.scscanvas")
+    >>> with open("run_200.html", "w") as f:
+    ...     f.write(html)
+    """
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(
+            f"load_competition_canvas: file not found: {path}"
+        )
+    envelope = json.loads(p.read_text(encoding="utf-8"))
+    fmt = envelope.get("format")
+    if fmt != "scscanvas":
+        raise ValueError(
+            f"load_competition_canvas: unexpected format {fmt!r} "
+            f"(expected 'scscanvas'). Is '{path}' a .scscanvas file?"
+        )
+    payload = envelope["payload"]
+    w = width  if width  is not None else envelope.get("width")  or 900
+    h = height if height is not None else envelope.get("height") or 800
+    return _html_from_payload(payload, w, h)
 
 
 def layer_ic(
