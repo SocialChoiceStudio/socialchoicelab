@@ -146,6 +146,8 @@ reference:
       - plot_competition_trajectories
       - animate_competition_trajectories
       - animate_competition_canvas
+      - save_competition_canvas
+      - load_competition_canvas
 
   - title: "Voter Sampling"
     desc: "Draw random voter ideal points from spatial distributions."
