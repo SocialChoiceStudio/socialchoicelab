@@ -1,7 +1,8 @@
 # canvas_save_demo.R — Generate competition canvases and save to .scscanvas files.
 #
 # Creates a 1D and a 2D competition canvas (10 voters, 10 rounds each) and
-# saves both to /tmp/ as .scscanvas files. Run canvas_load_demo.R to reload
+# saves both to the project root as .scscanvas files. These files are listed
+# in .gitignore and will not be committed. Run canvas_load_demo.R to reload
 # them without recomputing anything.
 #
 # HOW TO RUN IN RSTUDIO:
@@ -11,11 +12,11 @@
 devtools::load_all("r/")
 
 library(socialchoicelab)
-library(htmlwidgets)
 
-# Shared output paths — also used by canvas_load_demo.R and the Python pair.
-PATH_1D <- "/tmp/canvas_1d_demo.scscanvas"
-PATH_2D <- "/tmp/canvas_2d_demo.scscanvas"
+# Output paths — written to the project root (visible in Files pane).
+# Shared with canvas_load_demo.R and the Python pair.
+PATH_1D <- "canvas_1d_demo.scscanvas"
+PATH_2D <- "canvas_2d_demo.scscanvas"
 
 # ===========================================================================
 # 1D competition — 10 voters, 10 rounds, 2 sticker candidates
@@ -51,9 +52,6 @@ w_1d <- animate_competition_canvas(
   compute_ic       = TRUE,
   compute_winset   = TRUE
 )
-
-# Preview in RStudio Viewer
-w_1d
 
 # Save payload to .scscanvas — reload later with load_competition_canvas().
 save_competition_canvas(w_1d, PATH_1D)
@@ -96,9 +94,6 @@ w_2d <- animate_competition_canvas(
   compute_winset   = TRUE,
   compute_voronoi  = TRUE
 )
-
-# Preview in RStudio Viewer
-w_2d
 
 # Save payload to .scscanvas
 save_competition_canvas(w_2d, PATH_2D)

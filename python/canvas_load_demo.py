@@ -1,8 +1,8 @@
 """canvas_load_demo.py — Reload pre-computed competition canvases from .scscanvas files.
 
 Companion to canvas_save_demo.py.  Reads the .scscanvas files saved by that
-script and opens the canvases without recomputing any geometry (ICs, WinSet,
-Cutlines, etc.).
+script (written to the project root) and opens the canvases without
+recomputing any geometry (ICs, WinSet, Cutlines, etc.).
 
 Run canvas_save_demo.py first to generate the input files, then run this:
 
@@ -21,8 +21,9 @@ from pathlib import Path
 
 import socialchoicelab.plots as sclp
 
-PATH_1D = "/tmp/canvas_1d_demo.scscanvas"
-PATH_2D = "/tmp/canvas_2d_demo.scscanvas"
+# Paths match those written by canvas_save_demo.py (project root).
+PATH_1D = "canvas_1d_demo.scscanvas"
+PATH_2D = "canvas_2d_demo.scscanvas"
 
 # ===========================================================================
 # Load and open the 1D canvas

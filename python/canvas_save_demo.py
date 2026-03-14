@@ -1,7 +1,8 @@
 """canvas_save_demo.py — Generate competition canvases and save to .scscanvas files.
 
 Creates a 1D and a 2D competition canvas (10 voters, 10 rounds each) and
-saves both to /tmp/ as .scscanvas files.  Run canvas_load_demo.py to reload
+saves both to the project root as .scscanvas files.  These files are listed
+in .gitignore and will not be committed.  Run canvas_load_demo.py to reload
 them without recomputing anything.
 
 Run from the project root:
@@ -16,9 +17,10 @@ import numpy as np
 import socialchoicelab as scl
 import socialchoicelab.plots as sclp
 
-# Shared output paths — also used by canvas_load_demo.py and the R pair.
-PATH_1D = "/tmp/canvas_1d_demo.scscanvas"
-PATH_2D = "/tmp/canvas_2d_demo.scscanvas"
+# Output paths — written to the project root (visible in the file tree).
+# Shared with canvas_load_demo.py and the R pair.
+PATH_1D = "canvas_1d_demo.scscanvas"
+PATH_2D = "canvas_2d_demo.scscanvas"
 
 # ===========================================================================
 # 1D competition — 10 voters, 10 rounds, 2 sticker candidates

@@ -49,6 +49,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Generated canvas payload files (output of save_competition_canvas / canvas_save_demo)
+*.scscanvas
+
 # LaTeX build artifacts
 docs/.texpadtmp/
 
