@@ -15,9 +15,9 @@ devtools::load_all("r/")
 library(socialchoicelab)
 library(htmlwidgets)
 
-# Paths match those written by canvas_save_demo.R (project root).
-PATH_1D <- "canvas_1d_demo.scscanvas"
-PATH_2D <- "canvas_2d_demo.scscanvas"
+# Paths match those written by canvas_save_demo.R (tmp/ in project root).
+PATH_1D <- "tmp/canvas_1d_demo.scscanvas"
+PATH_2D <- "tmp/canvas_2d_demo.scscanvas"
 
 # ===========================================================================
 # Load and display the 1D canvas

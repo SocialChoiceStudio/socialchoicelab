@@ -13,10 +13,12 @@ devtools::load_all("r/")
 
 library(socialchoicelab)
 
-# Output paths — written to the project root (visible in Files pane).
+# Output paths — written to tmp/ in the project root (visible in Files pane).
+# tmp/ is tracked in git but its contents are listed in .gitignore.
 # Shared with canvas_load_demo.R and the Python pair.
-PATH_1D <- "canvas_1d_demo.scscanvas"
-PATH_2D <- "canvas_2d_demo.scscanvas"
+dir.create("tmp", showWarnings = FALSE)
+PATH_1D <- "tmp/canvas_1d_demo.scscanvas"
+PATH_2D <- "tmp/canvas_2d_demo.scscanvas"
 
 # ===========================================================================
 # 1D competition — 10 voters, 10 rounds, 2 sticker candidates

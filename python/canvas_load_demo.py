@@ -21,9 +21,9 @@ from pathlib import Path
 
 import socialchoicelab.plots as sclp
 
-# Paths match those written by canvas_save_demo.py (project root).
-PATH_1D = "canvas_1d_demo.scscanvas"
-PATH_2D = "canvas_2d_demo.scscanvas"
+# Paths match those written by canvas_save_demo.py (tmp/ in project root).
+PATH_1D = "tmp/canvas_1d_demo.scscanvas"
+PATH_2D = "tmp/canvas_2d_demo.scscanvas"
 
 # ===========================================================================
 # Load and open the 1D canvas

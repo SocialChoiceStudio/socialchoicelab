@@ -17,10 +17,13 @@ import numpy as np
 import socialchoicelab as scl
 import socialchoicelab.plots as sclp
 
-# Output paths — written to the project root (visible in the file tree).
+# Output paths — written to tmp/ in the project root (visible in the file tree).
+# tmp/ is tracked in git but its contents are listed in .gitignore.
 # Shared with canvas_load_demo.py and the R pair.
-PATH_1D = "canvas_1d_demo.scscanvas"
-PATH_2D = "canvas_2d_demo.scscanvas"
+from pathlib import Path
+Path("tmp").mkdir(exist_ok=True)
+PATH_1D = "tmp/canvas_1d_demo.scscanvas"
+PATH_2D = "tmp/canvas_2d_demo.scscanvas"
 
 # ===========================================================================
 # 1D competition — 10 voters, 10 rounds, 2 sticker candidates
