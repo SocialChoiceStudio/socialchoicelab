@@ -1912,7 +1912,7 @@
       }
 
       var framePosns1d = data.positions[frameIdx];
-      var seatLabel1d  = seatIdxs1d.length === 1 ? "Seat winner avg" : "Seat winners avg";
+      var seatLabel1d  = seatIdxs1d.length === 1 ? "Seat winner" : "Seat winners avg";
 
       if (show1dCent) {
         var cx1d = sOvl1d["centroid"].x;
@@ -2305,7 +2305,7 @@
 
         var framePosns = data.positions[frameIdx];
         var seatIdxs   = (data.seat_holder_indices && data.seat_holder_indices[frameIdx]) || [];
-        var seatLabel  = seatIdxs.length === 1 ? "Seat winner avg" : "Seat winners avg";
+        var seatLabel  = seatIdxs.length === 1 ? "Seat winner" : "Seat winners avg";
 
         // Seat holders — always shown first in the stats panel
         drawStatHeader("Seat holders", curY); curY += stLineH;
