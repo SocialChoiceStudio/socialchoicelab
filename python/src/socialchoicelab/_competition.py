@@ -27,6 +27,7 @@ _STRATEGY_INT = {
     "hunter": 1,
     "aggregator": 2,
     "predator": 3,
+    "hunter_sticker": 4,
 }
 
 _STEP_POLICY_INT = {
@@ -338,7 +339,7 @@ class CompetitionTrace:
         )
         return np.frombuffer(_ffi.buffer(buf, n_competitors * 8), dtype=np.float64).copy()
 
-    _STRATEGY_LABELS = {0: "sticker", 1: "hunter", 2: "aggregator", 3: "predator"}
+    _STRATEGY_LABELS = {0: "sticker", 1: "hunter", 2: "aggregator", 3: "predator", 4: "hunter_sticker"}
 
     def strategy_kinds(self) -> list[str]:
         """Return the strategy kind for each competitor as a list of strings."""

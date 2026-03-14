@@ -262,9 +262,10 @@ competition_run <- function(competitor_positions,
       hunter = 1L,
       aggregator = 2L,
       predator = 3L,
+      hunter_sticker = 4L,
       stop(
         "competition_run: unknown strategy kind '", kind, "'. ",
-        "Choose from: sticker, hunter, aggregator, predator."
+        "Choose from: sticker, hunter, aggregator, predator, hunter_sticker."
       )
     )
   }, integer(1))

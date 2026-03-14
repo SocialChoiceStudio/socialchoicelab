@@ -132,7 +132,7 @@ describe geometry that depends on candidate positions at that frame.
 | Key | Description | C++ function (to be built or exists) |
 |-----|-------------|--------------------------------------|
 | `indifference_boundaries` | Equidistant boundary between each candidate pair under the actual `DistanceConfig`. Line(s) per pair. | Not yet built |
-| `candidate_regions` | Nearest-candidate partition (generalised Voronoi) under the actual `DistanceConfig`. Polygon per candidate. | Not yet built |
+| `candidate_regions` | Nearest-candidate partition (generalised Voronoi). **Euclidean** case implemented and passed as `voronoi_cells` when `compute_voronoi` is true; one polygon per competitor per frame. Non-Euclidean generalisation planned. | Euclidean: `scs_voronoi_cells_2d` |
 | `winsets` | Set of points that would defeat the candidate's current position by majority rule. | Exists: `scs_winset_2d` |
 
 ---
@@ -193,7 +193,7 @@ rendering any key that is absent from the payload or whose toggle is off.
 | `uncovered_set` | Checkbox | On / Off | Off |
 | `core` | Checkbox | On / Off | Off |
 | `indifference_boundaries` | Dropdown | None / Winner(s) / All | None |
-| `candidate_regions` | Dropdown | None / Winner(s) / All | None |
+| `candidate_regions` / `voronoi_cells` | Checkbox "Voronoi" | On / Off | Off — shown when payload includes `voronoi_cells` (Euclidean candidate regions; requires `compute_voronoi` at bindings layer). |
 | `winsets` | Dropdown | None / Winner(s) | None |
 
 Toggles for overlays that are absent from the payload are hidden (not greyed
@@ -216,7 +216,7 @@ must guard against this and raise an informative error.
 | Winset | Yes | — | Uses sampled ICs via `DistanceConfig`; passes metric through |
 | Convex Hull | Yes | — | The convex hull shape is always valid. It equals the Pareto Set only under Euclidean distance with uniform salience — under other metrics it is an outer bound, not the Pareto Set |
 | Pareto Set | Not yet built | — | The Pareto Set is a metric-independent concept. A correct general implementation does not yet exist. Until it does, the convex hull is used as a Euclidean-only proxy and must not be labelled "Pareto Set" when a non-Euclidean `DistanceConfig` is active |
-| Candidate Regions | No | Yes | Generalised Voronoi under non-Euclidean not yet built |
+| Candidate Regions (Voronoi) | No | Yes | Euclidean implemented as `voronoi_cells` behind `compute_voronoi` and "Voronoi" toggle; generalised Voronoi under non-Euclidean not yet built |
 | Yolk | Uncertain | Likely | Based on median hyperplanes; non-Euclidean behaviour needs verification |
 | Heart | Uncertain | Likely | Defined via winsets; needs verification for non-Euclidean |
 | Uncovered Set | Uncertain | Likely | Based on pairwise majority over winsets; needs verification |

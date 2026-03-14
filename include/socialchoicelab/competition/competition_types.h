@@ -17,6 +17,7 @@ enum class CompetitorStrategyKind {
   kHunter,
   kAggregator,
   kPredator,
+  kHunterSticker,
 };
 
 enum class PositionInitializationMode {
@@ -67,6 +68,8 @@ struct StepPolicyConfig {
       return "aggregator";
     case CompetitorStrategyKind::kPredator:
       return "predator";
+    case CompetitorStrategyKind::kHunterSticker:
+      return "hunter_sticker";
   }
   return "unknown";
 }
@@ -77,6 +80,8 @@ struct StepPolicyConfig {
   if (stable_id == "hunter") return CompetitorStrategyKind::kHunter;
   if (stable_id == "aggregator") return CompetitorStrategyKind::kAggregator;
   if (stable_id == "predator") return CompetitorStrategyKind::kPredator;
+  if (stable_id == "hunter_sticker")
+    return CompetitorStrategyKind::kHunterSticker;
   throw std::invalid_argument(
       "strategy_kind_from_stable_id: unknown strategy id \"" + stable_id +
       "\".");

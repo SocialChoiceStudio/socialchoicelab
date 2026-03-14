@@ -35,11 +35,11 @@
   };
 
   // Colours for static geometry overlays.
-  // Chosen to avoid clashing with the Dark2 candidate palette
-  // (teal-green, orange, purple, pink, green, yellow, brown, grey).
+  // Chosen to avoid clashing with candidate palettes (okabe_ito, dark2, competition_1d).
+  // Centroid = crimson red; Marginal median = indigo-violet (avoids the blue in okabe_ito/competition_1d).
   var OVERLAY_COLORS = {
     centroid:        { pt: "rgba(185,10,10,0.95)",   stroke: "rgba(255,255,255,0.85)" },
-    marginal_median: { pt: "rgba(0,50,200,0.90)",    stroke: "rgba(255,255,255,0.85)" },
+    marginal_median: { pt: "rgba(100,0,180,0.90)",   stroke: "rgba(255,255,255,0.85)" },
     geometric_mean:  { pt: "rgba(100,55,0,0.95)",    stroke: "rgba(255,255,255,0.85)" },
     pareto_set:      { fill: "rgba(120,0,220,0.08)", border: "rgba(120,0,220,0.50)" }
   };
@@ -141,6 +141,9 @@
     this.showVoteBar  = true;
     this.showArrows   = false;
     this.showGhost    = false;
+    this.showIC       = false;
+    this.showWinset   = false;
+    this.showVoronoi  = false;
     this.loopPlayback = false;
     this.ghostFrames  = 5;
     this.trailMode    = "none";   // overwritten by setData
@@ -640,32 +643,62 @@
   };
 
   CompetitionCanvas.prototype._initView = function() {
-    var data      = this.data;
-    this.viewXMin = data.xlim[0];
-    this.viewXMax = data.xlim[1];
-    this.viewYMin = data.ylim[0];
-    this.viewYMax = data.ylim[1];
+    var data = this.data;
+    if (this.mode1d) {
+      // 1D: only X range is used; Y is a placeholder and never rendered.
+      // Expand view by 3% on each side so markers at the data extremes don't
+      // sit flush against the clip boundary.
+      var xExpand = (data.xlim[1] - data.xlim[0]) * 0.03;
+      this.viewXMin = data.xlim[0] - xExpand;
+      this.viewXMax = data.xlim[1] + xExpand;
+      this.viewYMin = -1;
+      this.viewYMax =  1;
+    } else {
+      // 2D: enforce equal aspect ratio so Euclidean IC circles render correctly.
+      // DO NOT remove this — IC polygon data is geometrically correct and relies
+      // on equal pixel-per-unit scaling to appear undistorted.
+      var xRange = data.xlim[1] - data.xlim[0];
+      var yRange = data.ylim[1] - data.ylim[0];
+      var cx     = (data.xlim[0] + data.xlim[1]) / 2;
+      var cy     = (data.ylim[0] + data.ylim[1]) / 2;
+      var half   = Math.max(xRange, yRange) / 2;
+      this.viewXMin = cx - half;
+      this.viewXMax = cx + half;
+      this.viewYMin = cy - half;
+      this.viewYMax = cy + half;
+    }
+    // Store the full (unzoomed) view for _isZoomed comparisons.
+    this._fullViewXMin = this.viewXMin;
+    this._fullViewXMax = this.viewXMax;
+    this._fullViewYMin = this.viewYMin;
+    this._fullViewYMax = this.viewYMax;
   };
 
   CompetitionCanvas.prototype._isZoomed = function() {
-    if (!this.data) return false;
-    return Math.abs(this.viewXMax - this.viewXMin - (this.data.xlim[1] - this.data.xlim[0])) > 1e-9 ||
-           Math.abs(this.viewYMax - this.viewYMin - (this.data.ylim[1] - this.data.ylim[0])) > 1e-9 ||
-           Math.abs(this.viewXMin - this.data.xlim[0]) > 1e-9 ||
-           Math.abs(this.viewYMin - this.data.ylim[0]) > 1e-9;
+    if (!this.data || this._fullViewXMin == null) return false;
+    if (Math.abs(this.viewXMax - this.viewXMin - (this._fullViewXMax - this._fullViewXMin)) > 1e-9 ||
+        Math.abs(this.viewXMin - this._fullViewXMin) > 1e-9) return true;
+    if (this.mode1d) return false;
+    return Math.abs(this.viewYMax - this.viewYMin - (this._fullViewYMax - this._fullViewYMin)) > 1e-9 ||
+           Math.abs(this.viewYMin - this._fullViewYMin) > 1e-9;
   };
 
   // ── Data & frame control ───────────────────────────────────────────────────
 
   CompetitionCanvas.prototype.setData = function(data) {
     this.data         = data;
+    this.mode1d       = (data.n_dims === 1);
     this.slider.max   = Math.max(0, data.rounds.length - 1);
     this.slider.value = 0;
     this.currentFrame = 0;
     this.trailMode    = data.trail || "fade";
     this.trailSelect.value = this.trailMode;
 
-    // Build overlay checkboxes from overlays_static keys.
+    this.showIC = false;
+    this.showWinset = false;
+    this.showVoronoi = false;
+
+    // Build overlay checkboxes from overlays_static keys, plus IC and WinSet toggles.
     var self = this;
     var overlays = data.overlays_static;
     var overlayRow = this.overlayRow;
@@ -673,9 +706,11 @@
     this.overlayToggles = {};
     var POINT_KEYS = { centroid: 1, marginal_median: 1, geometric_mean: 1 };
     var POLY_KEYS  = { pareto_set: 1 };
+    var hasOverlayItems = false;
     if (overlays && typeof overlays === "object") {
       var keys = Object.keys(overlays);
       if (keys.length > 0) {
+        hasOverlayItems = true;
         var sep = document.createElement("span");
         sep.style.cssText = "color:#aaa;font-size:11px;padding-right:2px";
         sep.textContent = "Overlays:";
@@ -688,12 +723,38 @@
           );
           overlayRow.appendChild(cb.el);
         });
-        overlayRow.style.display = "flex";
-        this.controlsH = 124;
-      } else {
-        overlayRow.style.display = "none";
-        this.controlsH = 96;
       }
+    }
+    if (data.indifference_curves != null) {
+      hasOverlayItems = true;
+      var icCb = makeCheckbox("Indiff. Curves", false, COLORS.button, function(v) {
+        self.showIC = v;
+        self.drawBackground();
+        self.draw();
+      });
+      overlayRow.appendChild(icCb.el);
+    }
+    if (data.winsets != null || data.winset_intervals_1d != null) {
+      hasOverlayItems = true;
+      var winsetCb = makeCheckbox("Win Set", false, COLORS.button, function(v) {
+        self.showWinset = v;
+        self.drawBackground();
+        self.draw();
+      });
+      overlayRow.appendChild(winsetCb.el);
+    }
+    if (data.voronoi_cells != null) {
+      hasOverlayItems = true;
+      var voronoiCb = makeCheckbox("Cutlines", false, COLORS.button, function(v) {
+        self.showVoronoi = v;
+        self.drawBackground();
+        self.draw();
+      });
+      overlayRow.appendChild(voronoiCb.el);
+    }
+    if (hasOverlayItems) {
+      overlayRow.style.display = "flex";
+      this.controlsH = 124;
     } else {
       overlayRow.style.display = "none";
       this.controlsH = 96;
@@ -743,10 +804,9 @@
     this.width  = width  || this.el.offsetWidth  || 700;
     this.height = height || this.el.offsetHeight || 600;
     var cw = this.width;
-    var ch = Math.max(0, this.height - this.controlsH);
-    if (!this.data || cw <= 0 || ch <= 0) return;
+    if (!this.data || cw <= 0) return;
 
-    // Adaptive right padding — measure longest competitor name.
+    // Adaptive right padding — measure longest competitor name (shared by 1D and 2D).
     var tmpCtx    = document.createElement("canvas").getContext("2d");
     tmpCtx.font   = "12px " + FONT;
     var nComp     = this.data.positions[0] ? this.data.positions[0].length : 0;
@@ -756,9 +816,62 @@
                ("Candidate " + (i + 1));
       maxTextW = Math.max(maxTextW, tmpCtx.measureText(nm).width);
     }
-    // icon (8) + gap (13) + text + right margin (14)
-    var rightPad  = Math.max(120, Math.ceil(8 + 13 + maxTextW + 14));
+    var rightPad = Math.max(130, Math.ceil(8 + 13 + maxTextW + 22));
+    var dpr = this.dpr;
 
+    if (this.mode1d) {
+      // 1D: canvas height computed dynamically to fit legend + stats panel.
+      // Legend column: nComp candidates + voters row + overlay rows + IC + WinSet.
+      // Stats column: Centroid (header+2), Median (header+2), WinSet (header+nComp).
+      var d1d      = this.data;
+      var nComp1d  = (d1d && d1d.positions && d1d.positions[0]) ? d1d.positions[0].length : 1;
+      var nLeg1d   = nComp1d + 1;
+      if (d1d && d1d.overlays_static)      nLeg1d += Object.keys(d1d.overlays_static).length;
+      if (d1d && d1d.indifference_curves)  nLeg1d++;
+      if (d1d && d1d.winset_intervals_1d)  nLeg1d++;
+      var statsStart1d  = 8 + nLeg1d * 22 + 10;   // sLegY01d=8, sLh1d=22, gap=10
+      var nStat1d       = 0;
+      var sOvlInit      = d1d && d1d.overlays_static;
+      if (sOvlInit && sOvlInit["centroid"])        nStat1d += 3;  // header + 2 rows
+      if (sOvlInit && sOvlInit["marginal_median"]) nStat1d += 3;
+      if (d1d && d1d.winset_intervals_1d)          nStat1d += 1 + nComp1d;
+      // Seat holders: always shown (header + 1 row per max seat holders, min 1)
+      if (d1d && d1d.seat_holder_indices) {
+        var nMaxSh1d = 0;
+        for (var _shi = 0; _shi < d1d.seat_holder_indices.length; _shi++) {
+          nMaxSh1d = Math.max(nMaxSh1d, (d1d.seat_holder_indices[_shi] || []).length);
+        }
+        nStat1d += 1 + Math.max(nMaxSh1d, 1);
+      }
+      var ch1d = Math.max(240, statsStart1d + nStat1d * 18 + 20);  // stH1d=18, pad=20
+      var pad1d = { top: 0, right: rightPad, bottom: 0, left: 64 };
+      [this.bgCanvas, this.fgCanvas].forEach(function(c) {
+        c.width        = cw * dpr;
+        c.height       = ch1d * dpr;
+        c.style.width  = cw + "px";
+        c.style.height = ch1d + "px";
+      });
+      this.padding  = pad1d;
+      this.plotW    = cw - pad1d.left - rightPad;
+      this.plotH1d  = ch1d;
+      this.lineY    = 120;  // y-pixel of the number line within the canvas
+      var padLeft1d = pad1d.left + "px";
+      this.row0.style.paddingLeft  = padLeft1d;
+      this.row0.style.paddingRight = rightPad + "px";
+      this.row1.style.paddingLeft  = padLeft1d;
+      this.row1.style.paddingRight = rightPad + "px";
+      this.row2.style.paddingLeft        = padLeft1d;
+      this.overlayRow.style.paddingLeft  = padLeft1d;
+      this.drawBackground();
+      this.setFrame(this.currentFrame);
+      return;
+    }
+
+    // 2D path (unchanged).
+    var ch = Math.max(0, this.height - this.controlsH);
+    if (ch <= 0) return;
+
+    // icon (8) + gap (13) + text + right margin (14)
     var pad    = { top: 68, right: rightPad, bottom: 60, left: 64 };
     var availW = cw - pad.left - pad.right;
     var availH = ch - pad.top  - pad.bottom;
@@ -767,7 +880,6 @@
     pad.left += Math.floor((availW - side) / 2);
     pad.top  += Math.floor((availH - side) / 2);
 
-    var dpr = this.dpr;
     [this.bgCanvas, this.fgCanvas].forEach(function(c) {
       c.width        = cw * dpr;
       c.height       = ch * dpr;
@@ -802,6 +914,12 @@
   CompetitionCanvas.prototype.yToPx = function(y) {
     var t = (y - this.viewYMin) / (this.viewYMax - this.viewYMin);
     return this.padding.top + (1 - t) * this.plotSide;
+  };
+
+  // 1D coordinate transform: data x → CSS pixel along the number line.
+  CompetitionCanvas.prototype.xToPx1d = function(x) {
+    var t = (x - this.viewXMin) / (this.viewXMax - this.viewXMin);
+    return this.padding.left + t * this.plotW;
   };
 
   // Inverse: CSS pixel → data coordinate (used by zoom/pan).
@@ -909,19 +1027,12 @@
         var ptC = oc.pt || "rgba(100,100,100,0.9)";
         var ptS = oc.stroke || "rgba(255,255,255,0.85)";
         if (key === "centroid") {
-          // Crosshair: circle + 4 extending arms.
+          // Pure cross.
           ctx.strokeStyle = ptC;
           ctx.lineWidth   = 2;
           ctx.beginPath();
           ctx.moveTo(px - ptR * 1.3, py); ctx.lineTo(px + ptR * 1.3, py);
           ctx.moveTo(px, py - ptR * 1.3); ctx.lineTo(px, py + ptR * 1.3);
-          ctx.stroke();
-          ctx.fillStyle   = ptC;
-          ctx.strokeStyle = ptS;
-          ctx.lineWidth   = 1.5;
-          ctx.beginPath();
-          ctx.arc(px, py, ptR * 0.5, 0, Math.PI * 2);
-          ctx.fill();
           ctx.stroke();
         } else if (key === "marginal_median") {
           // Upward-pointing filled triangle.
@@ -950,9 +1061,268 @@
     ctx.restore();
   };
 
+  // ── 1D background (number line, rug, overlays, legend) ──────────────────────
+
+  CompetitionCanvas.prototype.drawBackground1d = function() {
+    var data  = this.data;
+    var dpr   = this.dpr;
+    var ctx   = this.bgCanvas.getContext("2d");
+    var pad   = this.padding;
+    var plotW = this.plotW;
+    var lineY = this.lineY;
+    var cw    = this.bgCanvas.width / dpr;
+    var ch    = this.bgCanvas.height / dpr;
+
+    ctx.clearRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    // Background strip
+    ctx.fillStyle = COLORS.background;
+    ctx.fillRect(pad.left, 0, plotW, ch);
+
+    // Strip border
+    ctx.strokeStyle = COLORS.plotBorder;
+    ctx.lineWidth   = 1;
+    ctx.strokeRect(pad.left + 0.5, 0.5, plotW - 1, ch - 1);
+
+    // Title
+    if (data.title) {
+      ctx.fillStyle    = COLORS.text;
+      ctx.font         = "bold 14px " + FONT;
+      ctx.textAlign    = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(data.title, pad.left + plotW / 2, lineY - 56);
+    }
+
+    // Number line
+    ctx.strokeStyle = COLORS.axis;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, lineY);
+    ctx.lineTo(pad.left + plotW, lineY);
+    ctx.stroke();
+
+    // X-axis ticks and labels
+    var nTicks  = 6;
+    var vxRange = this.viewXMax - this.viewXMin;
+    ctx.strokeStyle  = COLORS.axis;
+    ctx.lineWidth    = 1;
+    ctx.font         = "11px " + FONT;
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "top";
+    ctx.fillStyle    = COLORS.textLight;
+    for (var xi = 0; xi <= nTicks; xi++) {
+      var xt  = xi / nTicks;
+      var xv  = this.viewXMin + xt * vxRange;
+      var xpx = this.xToPx1d(xv);
+      ctx.beginPath();
+      ctx.moveTo(xpx, lineY);
+      ctx.lineTo(xpx, lineY + 6);
+      ctx.stroke();
+      ctx.fillText(formatTick(xv), xpx, lineY + 9);
+    }
+
+    // Axis label
+    var axisName = (data.dim_names && data.dim_names[0]) || "Dimension 1";
+    ctx.fillStyle    = COLORS.text;
+    ctx.font         = "12px " + FONT;
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(axisName, pad.left + plotW / 2, lineY + 40);
+
+    // Voters — filled circles on the number line, same style as 2D
+    var vx     = data.voters_x || [];
+    var voterC = parseRGBA(data.voter_color || "rgba(100,100,100,0.55)");
+    var voterR = 3.5 * this.pointScale;
+    for (var vi = 0; vi < vx.length; vi++) {
+      var vpx = this.xToPx1d(vx[vi]);
+      if (vpx < pad.left - 8 || vpx > pad.left + plotW + 8) continue;
+      ctx.beginPath();
+      ctx.arc(vpx, lineY, voterR, 0, Math.PI * 2);
+      ctx.fillStyle   = rgba(voterC, 0.50);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.65)";
+      ctx.lineWidth   = 0.8;
+      ctx.stroke();
+    }
+
+    // Static overlays — same symbols as 2D, no text label
+    var overlays = data.overlays_static;
+    if (overlays && typeof overlays === "object") {
+      var oKeys = Object.keys(overlays);
+      for (var oi = 0; oi < oKeys.length; oi++) {
+        var oKey = oKeys[oi];
+        if (!this.overlayToggles[oKey]) continue;
+        var ov = overlays[oKey];
+        if (ov == null || ov.x == null) continue;
+        var ovpx = this.xToPx1d(ov.x);
+        if (ovpx < pad.left - 2 || ovpx > pad.left + plotW + 2) continue;
+        var oc   = OVERLAY_COLORS[oKey] || {};
+        var ptC  = oc.pt || "rgba(100,100,100,0.9)";
+        var ptS  = oc.stroke || "rgba(255,255,255,0.85)";
+        var ptR  = oKey === "marginal_median" ? 9 * this.pointScale : 6 * this.pointScale;
+        if (oKey === "centroid") {
+          // Pure cross — matches 2D
+          ctx.strokeStyle = ptC;
+          ctx.lineWidth   = 2;
+          ctx.beginPath();
+          ctx.moveTo(ovpx - ptR * 1.3, lineY); ctx.lineTo(ovpx + ptR * 1.3, lineY);
+          ctx.moveTo(ovpx, lineY - ptR * 1.3); ctx.lineTo(ovpx, lineY + ptR * 1.3);
+          ctx.stroke();
+        } else if (oKey === "marginal_median") {
+          // Upward-pointing filled triangle — matches 2D
+          ctx.fillStyle   = ptC;
+          ctx.strokeStyle = ptS;
+          ctx.lineWidth   = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(ovpx, lineY - ptR);
+          ctx.lineTo(ovpx - ptR * 0.866, lineY + ptR * 0.5);
+          ctx.lineTo(ovpx + ptR * 0.866, lineY + ptR * 0.5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          // Fallback: bold X — matches 2D geometric_mean style
+          ctx.strokeStyle = ptC;
+          ctx.lineWidth   = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(ovpx - ptR * 0.8, lineY - ptR * 0.8); ctx.lineTo(ovpx + ptR * 0.8, lineY + ptR * 0.8);
+          ctx.moveTo(ovpx + ptR * 0.8, lineY - ptR * 0.8); ctx.lineTo(ovpx - ptR * 0.8, lineY + ptR * 0.8);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Legend — right of the plot strip
+    var nComp    = data.positions[0] ? data.positions[0].length : 0;
+    var legX     = pad.left + plotW + 18;
+    var legY0    = 8;
+    var lineH    = 22;
+    var legIconR = 5 * this.pointScale;
+    var legTextX = legX + 8 + legIconR + 8;
+
+    // Seats: N (bold, top of legend)
+    var nSeats = (data.seat_holder_indices && data.seat_holder_indices[0])
+      ? data.seat_holder_indices[0].length : 0;
+    ctx.font         = "bold 12px " + FONT;
+    ctx.fillStyle    = COLORS.text;
+    ctx.textAlign    = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Seats: " + nSeats, legTextX, legY0);
+
+    // Candidate symbols — inverted triangle (▼) to suggest 1D position marker
+    for (var lc = 0; lc < nComp; lc++) {
+      var ly   = legY0 + (lc + 1) * lineH;
+      var lcol = parseRGBA(data.competitor_colors[lc] || "rgba(0,0,0,0.9)");
+      var ts   = legIconR * 0.85;
+      ctx.beginPath();
+      ctx.moveTo(legX + 8,          ly + ts);
+      ctx.lineTo(legX + 8 - ts,     ly - ts * 0.5);
+      ctx.lineTo(legX + 8 + ts,     ly - ts * 0.5);
+      ctx.closePath();
+      ctx.fillStyle   = rgba(lcol, 0.95);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.92)";
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+      ctx.font      = "12px " + FONT;
+      ctx.fillStyle = COLORS.text;
+      ctx.textAlign    = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(
+        (data.competitor_names && data.competitor_names[lc]) || ("Candidate " + (lc + 1)),
+        legTextX, ly
+      );
+    }
+
+    // Voter circle symbol in legend — matches 2D style
+    var vlegY    = legY0 + (nComp + 1) * lineH;
+    var voterLegR = 3.5 * this.pointScale;
+    ctx.beginPath();
+    ctx.arc(legX + 8, vlegY, voterLegR, 0, Math.PI * 2);
+    ctx.fillStyle   = rgba(voterC, 0.50);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.65)";
+    ctx.lineWidth   = 0.8;
+    ctx.stroke();
+    ctx.font         = "12px " + FONT;
+    ctx.fillStyle    = COLORS.text;
+    ctx.textAlign    = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Voters", legTextX, vlegY);
+
+    // Overlay legend entries — same symbols as 2D legend
+    var legRow = legY0 + (nComp + 2) * lineH;
+    if (overlays) {
+      var olKeys = Object.keys(overlays);
+      for (var oli = 0; oli < olKeys.length; oli++) {
+        var olKey = olKeys[oli];
+        if (!this.overlayToggles[olKey]) continue;
+        var oly    = legRow;
+        legRow    += lineH;
+        var olc    = OVERLAY_COLORS[olKey] || {};
+        var legCx  = legX + 8;
+        var legR   = 5;
+        ctx.font         = "12px " + FONT;
+        ctx.textAlign    = "left";
+        ctx.textBaseline = "middle";
+        if (olKey === "centroid") {
+          var ptCC = olc.pt || "rgba(100,100,100,0.9)";
+          ctx.strokeStyle = ptCC; ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(legCx - legR, oly); ctx.lineTo(legCx + legR, oly);
+          ctx.moveTo(legCx, oly - legR); ctx.lineTo(legCx, oly + legR);
+          ctx.stroke();
+        } else if (olKey === "marginal_median") {
+          var ptCM = olc.pt || "rgba(100,100,100,0.9)";
+          ctx.fillStyle   = ptCM;
+          ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(legCx, oly - legR);
+          ctx.lineTo(legCx - legR * 0.866, oly + legR * 0.5);
+          ctx.lineTo(legCx + legR * 0.866, oly + legR * 0.5);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+        } else {
+          var ptCX = olc.pt || "rgba(100,100,100,0.9)";
+          ctx.strokeStyle = ptCX; ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(legCx - legR * 0.7, oly - legR * 0.7); ctx.lineTo(legCx + legR * 0.7, oly + legR * 0.7);
+          ctx.moveTo(legCx + legR * 0.7, oly - legR * 0.7); ctx.lineTo(legCx - legR * 0.7, oly + legR * 0.7);
+          ctx.stroke();
+        }
+        ctx.fillStyle = COLORS.text;
+        ctx.fillText(OVERLAY_LABELS[olKey] || olKey, legTextX, oly);
+      }
+    }
+
+    // IC legend entry
+    if (this.showIC && data.indifference_curves) {
+      var icLegY = legRow;
+      legRow += lineH;
+      var icLegColor = data.competitor_colors && data.competitor_colors[0]
+        ? parseRGBA(data.competitor_colors[0])
+        : { r: 128, g: 128, b: 128, a: 0.9 };
+      ctx.strokeStyle = rgba(icLegColor, 0.40);
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(legX + 8 - legIconR, icLegY);
+      ctx.lineTo(legX + 8 + legIconR, icLegY);
+      ctx.stroke();
+      ctx.fillStyle    = COLORS.text;
+      ctx.font         = "12px " + FONT;
+      ctx.textAlign    = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Indiff. Curves", legTextX, icLegY);
+    }
+
+    ctx.restore();
+  };
+
   CompetitionCanvas.prototype.drawBackground = function() {
     var data = this.data;
     if (!data || !this.padding) return;
+    if (this.mode1d) { this.drawBackground1d(); return; }
     var canvas = this.bgCanvas;
     var ctx    = canvas.getContext("2d");
     var dpr    = this.dpr;
@@ -1086,10 +1456,21 @@
 
     var legIconR = 5 * this.pointScale;
     var legTextX = legX + 8 + legIconR + 8;
+
+    // Seats count — always shown at the top of the legend, bold.
+    var nSeats = (data.seat_holder_indices && data.seat_holder_indices[0])
+      ? data.seat_holder_indices[0].length : 0;
+    ctx.font         = "bold 12px " + FONT;
+    ctx.fillStyle    = COLORS.text;
+    ctx.textAlign    = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Seats: " + nSeats, legTextX, legY0);
+
     for (var lc = 0; lc < nComp; lc++) {
-      var ly   = legY0 + lc * lineH;
+      var ly   = legY0 + (lc + 1) * lineH;
       var lcol = parseRGBA(data.competitor_colors[lc] || "rgba(0,0,0,0.9)");
       this._drawDiamond(ctx, legX + 8, ly, legIconR, rgba(lcol, 0.95), 0);
+      ctx.font      = "12px " + FONT;
       ctx.fillStyle = COLORS.text;
       ctx.fillText(
         (data.competitor_names && data.competitor_names[lc]) || ("Candidate " + (lc + 1)),
@@ -1097,7 +1478,7 @@
       );
     }
 
-    var vlegY = legY0 + nComp * lineH;
+    var vlegY = legY0 + (nComp + 1) * lineH;
     var voterLegR = 3.5 * this.pointScale;
     ctx.beginPath();
     ctx.arc(legX + 8, vlegY, voterLegR, 0, Math.PI * 2);
@@ -1106,6 +1487,7 @@
     ctx.strokeStyle = "rgba(255,255,255,0.65)";
     ctx.lineWidth   = 0.8;
     ctx.stroke();
+    ctx.font         = "12px " + FONT;
     ctx.fillStyle    = COLORS.text;
     ctx.textAlign    = "left";
     ctx.textBaseline = "middle";
@@ -1113,7 +1495,7 @@
 
     // Overlay legend entries — only for keys that are toggled on.
     var overlays    = data.overlays_static;
-    var legRow      = vlegY + lineH;
+    var legRow      = legY0 + (nComp + 2) * lineH;
     if (overlays) {
       var oKeys = Object.keys(overlays);
       for (var oi = 0; oi < oKeys.length; oi++) {
@@ -1142,9 +1524,6 @@
           ctx.moveTo(legCx - legR, oly); ctx.lineTo(legCx + legR, oly);
           ctx.moveTo(legCx, oly - legR); ctx.lineTo(legCx, oly + legR);
           ctx.stroke();
-          ctx.fillStyle   = ptC;
-          ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(legCx, oly, legR * 0.45, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         } else if (oKey === "marginal_median") {
           var ptC2 = oc.pt || "rgba(100,100,100,0.9)";
           ctx.fillStyle   = ptC2;
@@ -1167,6 +1546,418 @@
       }
     }
 
+    // IC legend entry — shown only when ICs are toggled on.
+    if (this.showIC && data.indifference_curves) {
+      var icLegY  = legRow;
+      legRow += lineH;
+      var icLegCx = legX + 8;
+      var icLegR  = 5;
+      var icLegColor = data.competitor_colors && data.competitor_colors[0]
+        ? parseRGBA(data.competitor_colors[0])
+        : {r: 128, g: 128, b: 128, a: 0.9};
+      ctx.strokeStyle = rgba(icLegColor, 0.40);
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(icLegCx, icLegY, icLegR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = COLORS.text;
+      ctx.font      = "12px " + FONT;
+      ctx.textAlign    = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Indiff. Curves", legTextX, icLegY);
+    }
+
+    // WinSet legend entry — shown only when WinSets are toggled on.
+    if (this.showWinset && data.winsets) {
+      var wsLegY  = legRow;
+      legRow += lineH;
+      var wsLegColor = data.competitor_colors && data.competitor_colors[0]
+        ? parseRGBA(data.competitor_colors[0])
+        : {r: 128, g: 128, b: 128, a: 0.9};
+      ctx.fillStyle   = rgba(wsLegColor, 0.10);
+      ctx.fillRect(legX + 1, wsLegY - 6, 14, 12);
+      ctx.strokeStyle = rgba(wsLegColor, 0.70);
+      ctx.lineWidth   = 2.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(legX + 1, wsLegY - 6, 14, 12);
+      ctx.setLineDash([]);
+      ctx.fillStyle = COLORS.text;
+      ctx.font      = "12px " + FONT;
+      ctx.textAlign    = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Win Set", legTextX, wsLegY);
+    }
+
+    // Cutlines legend entry — shown only when Cutlines (Voronoi) is toggled on.
+    if (this.showVoronoi && data.voronoi_cells) {
+      var voLegY  = legRow;
+      legRow += lineH;
+      var voLegColor = data.competitor_colors && data.competitor_colors[0]
+        ? parseRGBA(data.competitor_colors[0])
+        : {r: 128, g: 128, b: 128, a: 0.9};
+      ctx.fillStyle   = rgba(voLegColor, 0.10);
+      ctx.fillRect(legX + 1, voLegY - 6, 14, 12);
+      ctx.strokeStyle = rgba(voLegColor, 0.70);
+      ctx.lineWidth   = 2.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(legX + 1, voLegY - 6, 14, 12);
+      ctx.setLineDash([]);
+      ctx.fillStyle = COLORS.text;
+      ctx.font      = "12px " + FONT;
+      ctx.textAlign    = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Cutlines", legTextX, voLegY);
+    }
+
+    ctx.restore();
+  };
+
+  // ── 1D animated foreground layer ──────────────────────────────────────────
+
+  CompetitionCanvas.prototype.draw1d = function() {
+    var data       = this.data;
+    var dpr        = this.dpr;
+    var ctx        = this.fgCanvas.getContext("2d");
+    var frameIdx   = this.currentFrame;
+    var nComp      = data.positions[0] ? data.positions[0].length : 0;
+    var pad        = this.padding;
+    var plotW      = this.plotW;
+    var lineY      = this.lineY;
+    var candSize   = 8 * this.pointScale;
+
+    ctx.clearRect(0, 0, this.fgCanvas.width, this.fgCanvas.height);
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    // Clip to plot strip
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pad.left, 0, plotW, this.plotH1d);
+    ctx.clip();
+
+    // IC vertical lines — one pair per voter at the indifference endpoints.
+    // Each endpoint is where a voter is equidistant between their ideal point
+    // and the seat holder; drawn as a thin vertical stroke crossing the number line.
+    if (this.showIC && data.indifference_curves && data.indifference_curves[frameIdx]) {
+      var icFrame  = data.indifference_curves[frameIdx];
+      var icCidxs  = data.ic_competitor_indices[frameIdx];
+      var icTop    = lineY - 22;
+      var icBot    = lineY + 10;
+      for (var si = 0; si < icFrame.length; si++) {
+        var seatCidx     = icCidxs[si];
+        var scol         = parseRGBA(data.competitor_colors[seatCidx] || "rgba(128,128,128,0.9)");
+        var sVoterCurves = icFrame[si];
+        ctx.strokeStyle = rgba(scol, 0.30);
+        ctx.lineWidth   = 1 * this.pointScale;
+        ctx.lineCap     = "round";
+        for (var vi = 0; vi < sVoterCurves.length; vi++) {
+          var pts = sVoterCurves[vi];
+          if (!pts || pts.length === 0) continue;
+          var lx = this.xToPx1d(pts[0]);
+          ctx.beginPath();
+          ctx.moveTo(lx, icTop);
+          ctx.lineTo(lx, icBot);
+          ctx.stroke();
+          if (pts.length >= 2) {
+            var rx = this.xToPx1d(pts[1]);
+            ctx.beginPath();
+            ctx.moveTo(rx, icTop);
+            ctx.lineTo(rx, icBot);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // WinSet band — semi-transparent filled rect, same vertical span as the IC lines.
+    if (this.showWinset && data.winset_intervals_1d && data.winset_intervals_1d[frameIdx]) {
+      var wsFrame1d = data.winset_intervals_1d[frameIdx];
+      var wsBandTop = lineY - 22;   // matches icTop
+      var wsBandH   = 32;           // icBot (lineY+10) - icTop (lineY-22) = 32
+      for (var wsi = 0; wsi < wsFrame1d.length; wsi++) {
+        var wsEntry = wsFrame1d[wsi];
+        if (!wsEntry || isNaN(wsEntry.lo) || isNaN(wsEntry.hi)) continue;
+        var wcol  = parseRGBA(data.competitor_colors[wsEntry.competitor_idx] || "rgba(128,128,128,0.9)");
+        var wsX0  = this.xToPx1d(wsEntry.lo);
+        var wsX1  = this.xToPx1d(wsEntry.hi);
+        var wsW   = wsX1 - wsX0;
+        if (wsW <= 0) continue;
+        // Faint fill
+        ctx.fillStyle = rgba(wcol, 0.12);
+        ctx.fillRect(wsX0, wsBandTop, wsW, wsBandH);
+        // Endpoint strokes
+        ctx.strokeStyle = rgba(wcol, 0.40);
+        ctx.lineWidth   = 1.5 * this.pointScale;
+        ctx.lineCap     = "round";
+        ctx.beginPath();
+        ctx.moveTo(wsX0, wsBandTop - 2);
+        ctx.lineTo(wsX0, wsBandTop + wsBandH + 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(wsX1, wsBandTop - 2);
+        ctx.lineTo(wsX1, wsBandTop + wsBandH + 2);
+        ctx.stroke();
+      }
+    }
+
+    // Trails — polyline of past x positions along lineY
+    if (this.trailMode !== "none" && frameIdx > 0) {
+      for (var tc = 0; tc < nComp; tc++) {
+        var tcol     = parseRGBA(data.competitor_colors[tc] || "rgba(0,0,0,0.9)");
+        var startIdx = this.trailMode === "fade"
+          ? Math.max(0, frameIdx - data.trail_length)
+          : 0;
+        for (var tf = startIdx; tf < frameIdx; tf++) {
+          var alpha = this.trailMode === "fade"
+            ? (tf - startIdx + 1) / (frameIdx - startIdx + 1) * 0.5
+            : 0.35;
+          var tx0 = this.xToPx1d(data.positions[tf][tc][0]);
+          var tx1 = this.xToPx1d(data.positions[tf + 1][tc][0]);
+          ctx.strokeStyle = rgba(tcol, alpha);
+          ctx.lineWidth   = 1.5 * this.pointScale;
+          ctx.lineCap     = "round";
+          ctx.beginPath();
+          ctx.moveTo(tx0, lineY);
+          ctx.lineTo(tx1, lineY);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Candidate markers — filled inverted triangles sitting on the line
+    for (var cc = 0; cc < nComp; cc++) {
+      var ccolor = parseRGBA(data.competitor_colors[cc] || "rgba(0,0,0,0.9)");
+      var cx     = this.xToPx1d(data.positions[frameIdx][cc][0]);
+      var cs     = candSize;
+      ctx.beginPath();
+      ctx.moveTo(cx,      lineY + cs);
+      ctx.lineTo(cx - cs, lineY - cs * 0.5);
+      ctx.lineTo(cx + cs, lineY - cs * 0.5);
+      ctx.closePath();
+      if (cs > 3) {
+        ctx.shadowColor   = "rgba(0,0,0,0.30)";
+        ctx.shadowBlur    = 7;
+        ctx.shadowOffsetY = 1;
+      }
+      ctx.fillStyle   = rgba(ccolor, 0.95);
+      ctx.fill();
+      ctx.shadowColor   = "rgba(0,0,0,0)";
+      ctx.shadowBlur    = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle   = "rgba(255,255,255,0.92)";
+      ctx.lineWidth     = 1.5;
+      ctx.stroke();
+    }
+
+    // Movement arrows — horizontal arrows above the candidate markers
+    if (this.showArrows && frameIdx > 0) {
+      var xScale = plotW / (this.viewXMax - this.viewXMin);
+      for (var ac = 0; ac < nComp; ac++) {
+        var acol  = parseRGBA(data.competitor_colors[ac] || "rgba(0,0,0,0.9)");
+        var prevX = data.positions[frameIdx - 1][ac][0];
+        var currX = data.positions[frameIdx][ac][0];
+        var dpx   = (currX - prevX) * xScale;
+        if (Math.abs(dpx) < 0.5) continue;
+        var dir      = dpx > 0 ? 1 : -1;
+        var baseX    = this.xToPx1d(currX);
+        var arrowY   = lineY - candSize - 6 * this.pointScale;
+        var shaftLen = 10 * this.pointScale;
+        var headSize = 6  * this.pointScale;
+        var tipX     = baseX + dir * shaftLen;
+        var angle    = Math.atan2(0, dir);
+        var headAng  = Math.PI / 6;
+        ctx.strokeStyle = rgba(acol, 0.80);
+        ctx.lineWidth   = 1.5 * this.pointScale;
+        ctx.lineCap     = "round";
+        ctx.beginPath();
+        ctx.moveTo(baseX, arrowY);
+        ctx.lineTo(tipX,  arrowY);
+        ctx.stroke();
+        ctx.fillStyle = rgba(acol, 0.80);
+        ctx.beginPath();
+        ctx.moveTo(tipX, arrowY);
+        ctx.lineTo(tipX - headSize * Math.cos(angle - headAng), arrowY - headSize * Math.sin(angle - headAng));
+        ctx.lineTo(tipX - headSize * Math.cos(angle + headAng), arrowY - headSize * Math.sin(angle + headAng));
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // Vote-share bar at bottom of strip
+    if (this.showVoteBar && data.vote_shares && data.vote_shares[frameIdx]) {
+      var shares = data.vote_shares[frameIdx];
+      var barH   = 8;
+      var barY   = lineY + 54;
+      var barX   = pad.left;
+      var barW   = plotW;
+      var xOff   = 0;
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.fillRect(barX, barY, barW, barH);
+      for (var bc = 0; bc < nComp; bc++) {
+        var bcol = parseRGBA(data.competitor_colors[bc] || "rgba(0,0,0,0.9)");
+        var segW = Math.round(shares[bc] * barW);
+        ctx.fillStyle = rgba(bcol, 0.80);
+        ctx.fillRect(barX + xOff, barY, segW, barH);
+        xOff += segW;
+      }
+      ctx.strokeStyle = "rgba(255,255,255,0.6)";
+      ctx.lineWidth   = 0.5;
+      ctx.strokeRect(barX, barY, barW, barH);
+    }
+
+    ctx.restore();  // exit clip
+
+    // Round counter (above the number line, centered)
+    var last = data.rounds.length - 1;
+    ctx.font         = "12px " + FONT;
+    ctx.fillStyle    = COLORS.textLight;
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(
+      data.rounds[frameIdx] + " / " + data.rounds[last],
+      pad.left + plotW / 2, lineY - 40
+    );
+
+    // Zoom indicator (x-only in 1D)
+    if (this._isZoomed()) {
+      var zoomLevel = (data.xlim[1] - data.xlim[0]) / (this.viewXMax - this.viewXMin);
+      ctx.font         = "10px " + MONO;
+      ctx.textAlign    = "right";
+      ctx.textBaseline = "top";
+      ctx.fillStyle    = COLORS.textLight;
+      ctx.fillText(zoomLevel.toFixed(1) + "\u00D7  dbl-click to reset", pad.left + plotW - 4, 4);
+    }
+
+    // ── Per-frame summary statistics (right-side panel, below legend) ─────────
+    var sOvl1d       = data.overlays_static;
+    var show1dCent   = !!(this.overlayToggles["centroid"]        && sOvl1d && sOvl1d["centroid"]);
+    var show1dMed    = !!(this.overlayToggles["marginal_median"] && sOvl1d && sOvl1d["marginal_median"]);
+    var show1dWs     = !!(this.showWinset && data.winset_intervals_1d);
+    if (data.seat_holder_indices || show1dCent || show1dMed || show1dWs) {
+      var nComp1d    = data.positions[0] ? data.positions[0].length : 0;
+      var seatIdxs1d = (data.seat_holder_indices && data.seat_holder_indices[frameIdx]) || [];
+      var sLegX1d    = pad.left + plotW + 18;
+      // Position stats block below legend rows (candidates + voters + overlays + IC/WinSet toggles)
+      var sLegY01d   = 8;
+      var sLh1d      = 22;
+      var sRows1d    = nComp1d + 1;  // competitors + voters row
+      if (sOvl1d) sRows1d += Object.keys(sOvl1d).length;
+      if (data.indifference_curves) sRows1d++;
+      if (data.winset_intervals_1d) sRows1d++;
+      var statsY1d   = sLegY01d + sRows1d * sLh1d + 10;
+      var cw1d       = this.fgCanvas.width / dpr;
+      var sLegW1d    = Math.max(60, cw1d - sLegX1d - 4);
+      var valRX1d    = sLegX1d + sLegW1d - 4;
+      var stH1d      = 18;
+      var curY1d     = statsY1d;
+
+      // Separator
+      ctx.strokeStyle = "rgba(0,0,0,0.13)";
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(sLegX1d, curY1d - 5);
+      ctx.lineTo(sLegX1d + sLegW1d - 18, curY1d - 5);
+      ctx.stroke();
+
+      function drawStat1dHeader(txt, y) {
+        ctx.font         = "bold 11px " + FONT;
+        ctx.textAlign    = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle    = COLORS.textLight;
+        ctx.fillText(txt, sLegX1d, y);
+      }
+      function drawStat1dRow(lbl, val, y) {
+        ctx.font         = "11px " + FONT;
+        ctx.textBaseline = "middle";
+        ctx.fillStyle    = COLORS.textLight;
+        ctx.textAlign    = "left";
+        ctx.fillText(lbl, sLegX1d + 6, y);
+        ctx.fillStyle = COLORS.text;
+        ctx.textAlign = "right";
+        ctx.fillText(val, valRX1d, y);
+      }
+
+      // Seat holders — always shown first in the stats panel
+      drawStat1dHeader("Seat holders", curY1d); curY1d += stH1d;
+      if (seatIdxs1d.length > 0) {
+        for (var sh1d = 0; sh1d < seatIdxs1d.length; sh1d++) {
+          var shIdx1d = seatIdxs1d[sh1d];
+          var shCol1d = parseRGBA(data.competitor_colors[shIdx1d] || "rgba(0,0,0,0.9)");
+          var shNm1d  = (data.competitor_names && data.competitor_names[shIdx1d]) || ("Candidate " + (shIdx1d + 1));
+          var shIcX1d = sLegX1d + 7;
+          var shTs1d  = 5;
+          ctx.beginPath();
+          ctx.moveTo(shIcX1d,           curY1d + shTs1d);
+          ctx.lineTo(shIcX1d - shTs1d,  curY1d - shTs1d * 0.5);
+          ctx.lineTo(shIcX1d + shTs1d,  curY1d - shTs1d * 0.5);
+          ctx.closePath();
+          ctx.fillStyle = rgba(shCol1d, 0.95);
+          ctx.fill();
+          ctx.font         = "11px " + FONT;
+          ctx.fillStyle    = COLORS.text;
+          ctx.textAlign    = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(shNm1d, shIcX1d + shTs1d + 5, curY1d);
+          curY1d += stH1d;
+        }
+      } else {
+        ctx.font         = "11px " + FONT;
+        ctx.fillStyle    = COLORS.textLight;
+        ctx.textAlign    = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText("\u2014", sLegX1d + 6, curY1d);
+        curY1d += stH1d;
+      }
+
+      var framePosns1d = data.positions[frameIdx];
+      var seatLabel1d  = seatIdxs1d.length === 1 ? "Seat winner avg" : "Seat winners avg";
+
+      if (show1dCent) {
+        var cx1d = sOvl1d["centroid"].x;
+        var sumC1d = 0;
+        for (var ci1 = 0; ci1 < nComp1d; ci1++) sumC1d += Math.abs(framePosns1d[ci1][0] - cx1d);
+        var sumCS1d = 0;
+        for (var csj1 = 0; csj1 < seatIdxs1d.length; csj1++)
+          sumCS1d += Math.abs(framePosns1d[seatIdxs1d[csj1]][0] - cx1d);
+        drawStat1dHeader("Centroid dist.", curY1d); curY1d += stH1d;
+        drawStat1dRow("All cands avg", (sumC1d / nComp1d).toFixed(3), curY1d); curY1d += stH1d;
+        drawStat1dRow(seatLabel1d, seatIdxs1d.length > 0 ? (sumCS1d / seatIdxs1d.length).toFixed(3) : "\u2014", curY1d); curY1d += stH1d;
+      }
+
+      if (show1dMed) {
+        var mm1d = sOvl1d["marginal_median"].x;
+        var sumM1d = 0;
+        for (var mi1 = 0; mi1 < nComp1d; mi1++) sumM1d += Math.abs(framePosns1d[mi1][0] - mm1d);
+        var sumMS1d = 0;
+        for (var msj1 = 0; msj1 < seatIdxs1d.length; msj1++)
+          sumMS1d += Math.abs(framePosns1d[seatIdxs1d[msj1]][0] - mm1d);
+        drawStat1dHeader("Median dist.", curY1d); curY1d += stH1d;
+        drawStat1dRow("All cands avg", (sumM1d / nComp1d).toFixed(3), curY1d); curY1d += stH1d;
+        drawStat1dRow(seatLabel1d, seatIdxs1d.length > 0 ? (sumMS1d / seatIdxs1d.length).toFixed(3) : "\u2014", curY1d); curY1d += stH1d;
+      }
+
+      if (show1dWs) {
+        var wsf1d = data.winset_intervals_1d[frameIdx];
+        drawStat1dHeader("Win Set", curY1d); curY1d += stH1d;
+        if (wsf1d && wsf1d.length > 0) {
+          for (var wsk = 0; wsk < wsf1d.length; wsk++) {
+            var wse1d = wsf1d[wsk];
+            var wsLen = (!wse1d || isNaN(wse1d.lo) || isNaN(wse1d.hi))
+              ? null : Math.abs(wse1d.hi - wse1d.lo);
+            var wsLbl = wsf1d.length > 1
+              ? ("Cand " + (wse1d.competitor_idx + 1) + " length")
+              : "Length";
+            drawStat1dRow(wsLbl, wsLen !== null ? wsLen.toFixed(4) : "empty", curY1d);
+            curY1d += stH1d;
+          }
+        } else {
+          drawStat1dRow("Length", "empty", curY1d); curY1d += stH1d;
+        }
+      }
+    }
+
     ctx.restore();
   };
 
@@ -1175,6 +1966,7 @@
   CompetitionCanvas.prototype.draw = function() {
     var data = this.data;
     if (!data || !this.padding) return;
+    if (this.mode1d) { this.draw1d(); return; }
 
     var canvas   = this.fgCanvas;
     var ctx      = canvas.getContext("2d");
@@ -1241,7 +2033,8 @@
         ctx.lineWidth = 2;
         for (var s = start; s < frameIdx; s++) {
           var age   = frameIdx - s;
-          var alpha = Math.max(0.07, 0.80 * Math.pow(0.62, age - 1));
+          var alpha = 0.80 * Math.pow(0.62, age - 1);
+          if (alpha < 0.01) continue;
           ctx.strokeStyle = rgba(color, alpha);
           ctx.beginPath();
           var s0 = data.positions[s][c];
@@ -1250,6 +2043,99 @@
           ctx.lineTo(this.xToPx(s1[0]), this.yToPx(s1[1]));
           ctx.stroke();
         }
+      }
+    }
+
+    // Indifference curves — drawn per voter through each seat holder's position.
+    if (this.showIC && data.indifference_curves) {
+      var icFrames = data.indifference_curves[frameIdx];
+      var icIdxs   = data.ic_competitor_indices ? data.ic_competitor_indices[frameIdx] : null;
+      if (icFrames) {
+        ctx.lineWidth = 1.5;
+        ctx.lineCap   = "round";
+        ctx.lineJoin  = "round";
+        for (var si = 0; si < icFrames.length; si++) {
+          var compIdx = icIdxs ? icIdxs[si] : si;
+          var icColor = parseRGBA(data.competitor_colors[compIdx] || "rgba(128,128,128,0.9)");
+          ctx.strokeStyle = rgba(icColor, 0.20);
+          var voterCurves = icFrames[si];
+          for (var vi = 0; vi < voterCurves.length; vi++) {
+            var verts = voterCurves[vi];
+            if (!verts || verts.length < 4) continue;
+            ctx.beginPath();
+            ctx.moveTo(this.xToPx(verts[0]), this.yToPx(verts[1]));
+            for (var ki = 2; ki < verts.length; ki += 2) {
+              ctx.lineTo(this.xToPx(verts[ki]), this.yToPx(verts[ki + 1]));
+            }
+            ctx.closePath();
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Voronoi cells — drawn per competitor for the current frame (Euclidean candidate regions).
+    // Same style as WinSet: fill with competitor colour at low alpha, dashed stroke.
+    if (this.showVoronoi && data.voronoi_cells) {
+      var voFrame = data.voronoi_cells[frameIdx];
+      if (voFrame) {
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
+        ctx.lineCap  = "round";
+        ctx.lineJoin = "round";
+        for (var vci = 0; vci < voFrame.length; vci++) {
+          var vc = voFrame[vci];
+          if (!vc || !vc.paths) continue;
+          var vcColor = parseRGBA(data.competitor_colors[vc.competitor_idx] || "rgba(128,128,128,0.9)");
+          ctx.fillStyle   = rgba(vcColor, 0.10);
+          ctx.strokeStyle = rgba(vcColor, 0.70);
+          ctx.beginPath();
+          for (var vpi = 0; vpi < vc.paths.length; vpi++) {
+            var vverts = vc.paths[vpi];
+            if (!vverts || vverts.length < 4) continue;
+            ctx.moveTo(this.xToPx(vverts[0]), this.yToPx(vverts[1]));
+            for (var vki = 2; vki < vverts.length; vki += 2) {
+              ctx.lineTo(this.xToPx(vverts[vki]), this.yToPx(vverts[vki + 1]));
+            }
+            ctx.closePath();
+          }
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      }
+    }
+
+    // WinSet boundaries — drawn per seat holder for the current frame.
+    // Filled with the seat holder's colour at low alpha; dashed border at higher alpha.
+    // Holes are handled via the evenodd fill rule so multi-component winsets render correctly.
+    if (this.showWinset && data.winsets) {
+      var wsFrame = data.winsets[frameIdx];
+      if (wsFrame) {
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
+        ctx.lineCap  = "round";
+        ctx.lineJoin = "round";
+        for (var wsi = 0; wsi < wsFrame.length; wsi++) {
+          var ws = wsFrame[wsi];
+          if (!ws) continue;
+          var wsColor = parseRGBA(data.competitor_colors[ws.competitor_idx] || "rgba(128,128,128,0.9)");
+          ctx.fillStyle   = rgba(wsColor, 0.10);
+          ctx.strokeStyle = rgba(wsColor, 0.70);
+          ctx.beginPath();
+          for (var wpi = 0; wpi < ws.paths.length; wpi++) {
+            var wverts = ws.paths[wpi];
+            if (!wverts || wverts.length < 4) continue;
+            ctx.moveTo(this.xToPx(wverts[0]), this.yToPx(wverts[1]));
+            for (var wki = 2; wki < wverts.length; wki += 2) {
+              ctx.lineTo(this.xToPx(wverts[wki]), this.yToPx(wverts[wki + 1]));
+            }
+            ctx.closePath();
+          }
+          ctx.fill("evenodd");
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
       }
     }
 
@@ -1275,15 +2161,17 @@
         if (len < 0.5) continue;
         var nx      = dpx / len;
         var ny      = dpy / len;
-        var baseX   = this.xToPx(curr[0]);
-        var baseY   = this.yToPx(curr[1]);
-        var tipX    = baseX + nx * 10;
-        var tipY    = baseY + ny * 10;
-        var angle   = Math.atan2(ny, nx);
-        var headAng = Math.PI / 6;
+        var baseX    = this.xToPx(curr[0]);
+        var baseY    = this.yToPx(curr[1]);
+        var shaftLen = 10 * this.pointScale;
+        var headSize = 6  * this.pointScale;
+        var tipX     = baseX + nx * shaftLen;
+        var tipY     = baseY + ny * shaftLen;
+        var angle    = Math.atan2(ny, nx);
+        var headAng  = Math.PI / 6;
 
         ctx.strokeStyle = rgba(acol, 0.80);
-        ctx.lineWidth   = 1.5;
+        ctx.lineWidth   = 1.5 * this.pointScale;
         ctx.lineCap     = "round";
         ctx.beginPath();
         ctx.moveTo(baseX, baseY);
@@ -1293,8 +2181,8 @@
         ctx.fillStyle = rgba(acol, 0.80);
         ctx.beginPath();
         ctx.moveTo(tipX, tipY);
-        ctx.lineTo(tipX - 6 * Math.cos(angle - headAng), tipY - 6 * Math.sin(angle - headAng));
-        ctx.lineTo(tipX - 6 * Math.cos(angle + headAng), tipY - 6 * Math.sin(angle + headAng));
+        ctx.lineTo(tipX - headSize * Math.cos(angle - headAng), tipY - headSize * Math.sin(angle - headAng));
+        ctx.lineTo(tipX - headSize * Math.cos(angle + headAng), tipY - headSize * Math.sin(angle + headAng));
         ctx.closePath();
         ctx.fill();
       }
@@ -1346,6 +2234,176 @@
       ctx.textAlign    = "right";
       ctx.textBaseline = "top";
       ctx.fillText(zoomLevel.toFixed(1) + "\u00D7  dbl-click to reset", pad.left + side - 4, pad.top + 4);
+    }
+
+    // ── Per-frame summary statistics (right-side panel, below legend) ─────────
+    // Determine which stat sections are active.
+    var sOvl             = data.overlays_static;
+    var showCentStat     = !!(this.overlayToggles["centroid"]        && sOvl && sOvl["centroid"]);
+    var showMedStat      = !!(this.overlayToggles["marginal_median"] && sOvl && sOvl["marginal_median"]);
+    var showWinsetStat   = !!(this.showWinset && data.winsets);
+    var hasSeatHolders2d = !!(data.seat_holder_indices && data.seat_holder_indices.length > 0);
+    var statsHaveContent = hasSeatHolders2d || showCentStat || showMedStat || showWinsetStat;
+
+    if (statsHaveContent) {
+      // Compute statsY0 by mirroring the legend row count from drawBackground().
+      var sLegY0 = pad.top + 8;
+      var sLineH = 22;
+      var sRows  = nComp + 2;   // n competitors + voters row + seats row
+      if (sOvl) {
+        var sOvlKeys = Object.keys(sOvl);
+        for (var sk = 0; sk < sOvlKeys.length; sk++) {
+          if (this.overlayToggles[sOvlKeys[sk]]) sRows++;
+        }
+      }
+      if (this.showIC     && data.indifference_curves) sRows++;
+      if (this.showWinset && data.winsets)             sRows++;
+      if (this.showVoronoi && data.voronoi_cells)      sRows++;
+      var statsY0  = sLegY0 + sRows * sLineH + 10;
+      var canvasH  = this.fgCanvas.height / dpr;
+      if (statsY0 < canvasH - 20) {
+        var sLegX     = pad.left + side + 18;
+        var sLegW     = Math.max(60, this.width - pad.left - side - 14);
+        var valRightX = pad.left + side + sLegW - 4;
+        var stLineH   = 18;
+        var curY      = statsY0;
+
+        // Separator line
+        ctx.strokeStyle = "rgba(0,0,0,0.13)";
+        ctx.lineWidth   = 1;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(sLegX, curY - 5);
+        ctx.lineTo(sLegX + sLegW - 18, curY - 5);
+        ctx.stroke();
+
+        // Euclidean distance. Note: uses Euclidean regardless of the
+        // competition's configured metric — this is a display heuristic.
+        function stDist(ax, ay, bx, by) {
+          var dx = ax - bx, dy = ay - by;
+          return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function drawStatHeader(txt, y) {
+          ctx.font         = "bold 11px " + FONT;
+          ctx.textAlign    = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle    = COLORS.textLight;
+          ctx.fillText(txt, sLegX, y);
+        }
+
+        function drawStatRow(lbl, val, y) {
+          ctx.font         = "11px " + FONT;
+          ctx.textBaseline = "middle";
+          ctx.fillStyle    = COLORS.textLight;
+          ctx.textAlign    = "left";
+          ctx.fillText(lbl, sLegX + 6, y);
+          ctx.fillStyle = COLORS.text;
+          ctx.textAlign = "right";
+          ctx.fillText(val, valRightX, y);
+        }
+
+        var framePosns = data.positions[frameIdx];
+        var seatIdxs   = (data.seat_holder_indices && data.seat_holder_indices[frameIdx]) || [];
+        var seatLabel  = seatIdxs.length === 1 ? "Seat winner avg" : "Seat winners avg";
+
+        // Seat holders — always shown first in the stats panel
+        drawStatHeader("Seat holders", curY); curY += stLineH;
+        if (seatIdxs.length > 0) {
+          for (var sh2d = 0; sh2d < seatIdxs.length; sh2d++) {
+            var shIdx2d = seatIdxs[sh2d];
+            var shCol2d = parseRGBA(data.competitor_colors[shIdx2d] || "rgba(0,0,0,0.9)");
+            var shNm2d  = (data.competitor_names && data.competitor_names[shIdx2d]) || ("Candidate " + (shIdx2d + 1));
+            // Diamond icon (matches background legend symbol)
+            var shIcX2d = sLegX + 7;
+            var shR2d   = 5;
+            ctx.beginPath();
+            ctx.moveTo(shIcX2d,         curY - shR2d);
+            ctx.lineTo(shIcX2d + shR2d, curY);
+            ctx.lineTo(shIcX2d,         curY + shR2d);
+            ctx.lineTo(shIcX2d - shR2d, curY);
+            ctx.closePath();
+            ctx.fillStyle = rgba(shCol2d, 0.95);
+            ctx.fill();
+            ctx.font         = "11px " + FONT;
+            ctx.fillStyle    = COLORS.text;
+            ctx.textAlign    = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText(shNm2d, shIcX2d + shR2d + 5, curY);
+            curY += stLineH;
+          }
+        } else {
+          ctx.font         = "11px " + FONT;
+          ctx.fillStyle    = COLORS.textLight;
+          ctx.textAlign    = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText("\u2014", sLegX + 6, curY);
+          curY += stLineH;
+        }
+
+        // Centroid distance stats
+        if (showCentStat) {
+          var cx = sOvl["centroid"].x, cy = sOvl["centroid"].y;
+          var sumC = 0;
+          for (var csi = 0; csi < nComp; csi++) {
+            sumC += stDist(framePosns[csi][0], framePosns[csi][1], cx, cy);
+          }
+          var sumCS = 0;
+          for (var csj = 0; csj < seatIdxs.length; csj++) {
+            var csp = framePosns[seatIdxs[csj]];
+            sumCS += stDist(csp[0], csp[1], cx, cy);
+          }
+          drawStatHeader("Centroid dist.", curY); curY += stLineH;
+          drawStatRow("All cands avg", (sumC / nComp).toFixed(3), curY); curY += stLineH;
+          drawStatRow(seatLabel, seatIdxs.length > 0 ? (sumCS / seatIdxs.length).toFixed(3) : "\u2014", curY); curY += stLineH;
+        }
+
+        // Marginal median distance stats
+        if (showMedStat) {
+          var mmx = sOvl["marginal_median"].x, mmy = sOvl["marginal_median"].y;
+          var sumM = 0;
+          for (var msi = 0; msi < nComp; msi++) {
+            sumM += stDist(framePosns[msi][0], framePosns[msi][1], mmx, mmy);
+          }
+          var sumMS = 0;
+          for (var msj = 0; msj < seatIdxs.length; msj++) {
+            var msp = framePosns[seatIdxs[msj]];
+            sumMS += stDist(msp[0], msp[1], mmx, mmy);
+          }
+          drawStatHeader("Median dist.", curY); curY += stLineH;
+          drawStatRow("All cands avg", (sumM / nComp).toFixed(3), curY); curY += stLineH;
+          drawStatRow(seatLabel, seatIdxs.length > 0 ? (sumMS / seatIdxs.length).toFixed(3) : "\u2014", curY); curY += stLineH;
+        }
+
+        // WinSet area (shoelace formula; holes subtract)
+        if (showWinsetStat) {
+          var wsFrameStat = data.winsets[frameIdx];
+          var totalArea   = 0;
+          var anyNonNull  = false;
+          if (wsFrameStat) {
+            for (var wsi3 = 0; wsi3 < wsFrameStat.length; wsi3++) {
+              var wse = wsFrameStat[wsi3];
+              if (!wse) continue;
+              anyNonNull = true;
+              for (var wp3 = 0; wp3 < wse.paths.length; wp3++) {
+                var wv = wse.paths[wp3];
+                var nv = wv.length / 2;
+                var pa = 0;
+                for (var pv = 0; pv < nv; pv++) {
+                  var nxt = (pv + 1) % nv;
+                  pa += wv[pv * 2] * wv[nxt * 2 + 1];
+                  pa -= wv[nxt * 2] * wv[pv * 2 + 1];
+                }
+                pa = Math.abs(pa) * 0.5;
+                totalArea += wse.is_hole[wp3] ? -pa : pa;
+              }
+            }
+          }
+          drawStatHeader("Win Set", curY); curY += stLineH;
+          drawStatRow("Area", anyNonNull ? totalArea.toFixed(4) : "empty", curY); curY += stLineH;
+        }
+
+      }
     }
 
     ctx.restore();

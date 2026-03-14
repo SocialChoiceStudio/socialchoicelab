@@ -152,9 +152,11 @@ project is used with non-Euclidean `DistanceConfig` settings in production:
   labelled "Pareto Set" when a non-Euclidean `DistanceConfig` is active.
   See `geometry_design.md` open question.
 - **Candidate Regions (generalised Voronoi) under non-Euclidean metrics:** The
-  nearest-candidate partition is not yet implemented for non-Euclidean distance.
-  Under uniform Euclidean the partition boundary coincides with the indifference
-  boundaries (perpendicular bisectors). Under other metrics it curves.
+  **Euclidean** Voronoi (candidate regions) is implemented for the 2D competition
+  canvas behind a `compute_voronoi` flag and a "Voronoi" toggle in the player UI.
+  Generalisation to non-Euclidean metrics remains planned. Under uniform
+  Euclidean the partition boundary coincides with the indifference boundaries
+  (perpendicular bisectors). Under other metrics it curves.
 - **Yolk, Heart, Uncovered Set, Core under non-Euclidean metrics:** These are
   defined via median hyperplanes and pairwise majority over winsets. Their
   behaviour under non-Euclidean `DistanceConfig` has not been verified. Until

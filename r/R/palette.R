@@ -105,6 +105,27 @@
   if (n <= 7L) "okabe_ito" else if (n <= 8L) "dark2" else "paired"
 }
 
+# Green-free candidate colour sequence for 1D competition canvases.
+# Voter dots are lime green (#66A61E); overlay centroid is crimson; overlay
+# marginal median is indigo-violet.  All three are excluded from this list.
+# Blue (#0072B2) is demoted to slot 4 so the most common 2- or 3-candidate
+# demos never put a blue candidate next to the indigo-violet median overlay.
+.COMPETITION_1D_HEX <- c(
+  "#D55E00",  # vermilion
+  "#CC79A7",  # reddish purple / mauve
+  "#E69F00",  # amber / orange
+  "#56B4E9",  # sky blue  (clearly lighter than indigo-violet overlay)
+  "#F0E442",  # yellow
+  "#000000",  # black
+  "#A6761D"   # brown
+)
+
+.candidate_colors_1d <- function(n, alpha = 0.95) {
+  hex <- .COMPETITION_1D_HEX
+  if (n > length(hex)) hex <- rep(hex, length.out = n)
+  vapply(seq_len(n), function(i) .rgba(hex[i], alpha), character(1L))
+}
+
 .resolve_palette <- function(name, n) {
   resolved <- if (name == "auto") .best_palette_for_n(n) else name
   pal <- .PALETTE_HEX[[resolved]]

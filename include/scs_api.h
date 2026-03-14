@@ -691,6 +691,29 @@ SCS_API int scs_winset_bbox_2d(const SCS_Winset* ws, int* out_found,
                                char* err_buf, int err_buf_len);
 
 // ---------------------------------------------------------------------------
+// Geometry — Euclidean WinSet interval 1D  (C2.9)
+// ---------------------------------------------------------------------------
+// Exact O(n^2) computation. Euclidean (L2) metric only.
+// Returns the interval [out_lo, out_hi] of positions that beat seat_x by
+// strict majority. If the WinSet is empty (e.g. seat_x is at the median),
+// both *out_lo and *out_hi are set to NaN.
+
+/**
+ * @brief Compute the Euclidean WinSet interval in 1D.
+ *
+ * @param voter_x      Array of n_voters voter ideal points.
+ * @param n_voters     Number of voters (>= 1).
+ * @param seat_x       Current seat holder position.
+ * @param[out] out_lo  Lower bound of WinSet interval (NaN if empty).
+ * @param[out] out_hi  Upper bound of WinSet interval (NaN if empty).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_winset_interval_1d(const double* voter_x, int n_voters,
+                                   double seat_x, double* out_lo,
+                                   double* out_hi, char* err_buf,
+                                   int err_buf_len);
+
+// ---------------------------------------------------------------------------
 // Geometry — winset approximate boundary export  (C2.6)
 // ---------------------------------------------------------------------------
 
@@ -737,6 +760,55 @@ SCS_API int scs_winset_sample_boundary_2d(
     const SCS_Winset* ws, double* out_xy, int out_xy_capacity, int* out_xy_n,
     int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
     int* out_n_paths, char* err_buf, int err_buf_len);
+
+// ---------------------------------------------------------------------------
+// Geometry — Euclidean Voronoi cells 2D  (C2.8)
+// ---------------------------------------------------------------------------
+// Euclidean (L2) Voronoi only. Generalisation to non-Euclidean metrics is
+// planned; see ROADMAP.md and docs/architecture/c_api_design.md.
+
+/**
+ * @brief Query buffer sizes required for scs_voronoi_cells_2d.
+ *
+ * @param sites_xy    Interleaved [x0,y0,x1,y1,...] site coordinates.
+ * @param n_sites     Number of sites (>= 1).
+ * @param bbox_min_x @param bbox_min_y @param bbox_max_x @param bbox_max_y
+ *                   Axis-aligned clip box (min < max both dimensions).
+ * @param[out] out_total_xy_pairs  Total (x,y) pairs across all cells.
+ * @param[out] out_n_cells         Number of cells (equals n_sites).
+ * @return SCS_OK or error code.
+ */
+SCS_API int scs_voronoi_cells_2d_size(const double* sites_xy, int n_sites,
+                                      double bbox_min_x, double bbox_min_y,
+                                      double bbox_max_x, double bbox_max_y,
+                                      int* out_total_xy_pairs, int* out_n_cells,
+                                      char* err_buf, int err_buf_len);
+
+/**
+ * @brief Export Euclidean Voronoi cells for 2D sites, clipped to a bbox.
+ *
+ * Each cell is a single closed polygon (no holes). Empty cells have
+ * out_cell_start[i] == out_cell_start[i+1].
+ *
+ * **Size-query mode:** pass out_xy = NULL or out_xy_capacity = 0 to get
+ * *out_xy_n only; pass out_cell_start = NULL or out_cell_start_capacity = 0
+ * to get required cell_start length (n_sites + 1).
+ *
+ * @param out_xy              Interleaved [x0,y0,x1,y1,...] for all cells.
+ * @param out_xy_capacity     Capacity in (x,y) pairs.
+ * @param[out] out_xy_n       Pairs required / written.
+ * @param out_cell_start      Length n_sites+1: cell i is pairs from
+ *                            out_cell_start[i] to out_cell_start[i+1]-1.
+ * @param out_cell_start_capacity  Must be >= n_sites + 1.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
+                                 double bbox_min_x, double bbox_min_y,
+                                 double bbox_max_x, double bbox_max_y,
+                                 double* out_xy, int out_xy_capacity,
+                                 int* out_xy_n, int* out_cell_start,
+                                 int out_cell_start_capacity, char* err_buf,
+                                 int err_buf_len);
 
 // ---------------------------------------------------------------------------
 // Geometry — winset boolean set operations  (C2.7)
@@ -1031,7 +1103,8 @@ typedef enum {
   SCS_COMPETITION_STRATEGY_STICKER = 0,
   SCS_COMPETITION_STRATEGY_HUNTER = 1,
   SCS_COMPETITION_STRATEGY_AGGREGATOR = 2,
-  SCS_COMPETITION_STRATEGY_PREDATOR = 3
+  SCS_COMPETITION_STRATEGY_PREDATOR = 3,
+  SCS_COMPETITION_STRATEGY_HUNTER_STICKER = 4
 } SCS_CompetitionStrategyKind;
 
 typedef enum {

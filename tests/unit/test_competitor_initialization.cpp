@@ -80,7 +80,8 @@ TEST(CompetitionTypes, StableStrategyIdsRoundTrip) {
 
 TEST(StrategyRegistry, BuiltInRegistryContainsBaselineStrategies) {
   const auto& registry = StrategyRegistry::built_in();
-  EXPECT_EQ(registry.size(), 4u);
+  EXPECT_EQ(registry.size(),
+            5u);  // sticker, hunter, aggregator, predator, hunter_sticker
 
   const auto* hunter = registry.find("hunter");
   ASSERT_NE(hunter, nullptr);

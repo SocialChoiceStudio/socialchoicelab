@@ -1309,6 +1309,104 @@ TEST(CApi_Winset, BoundarySampleNullBufferSizeQuery) {
   scs_winset_destroy(ws);
 }
 
+// ---------------------------------------------------------------------------
+// Voronoi cells 2D (C2.8)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_Voronoi2d, SizeQuery) {
+  char err[256] = {};
+  double sites[] = {0.0, 0.0, 2.0, 0.0};
+  int total_pairs = -1, n_cells = -1;
+  int rc = scs_voronoi_cells_2d_size(sites, 2, -0.5, -0.5, 2.5, 0.5,
+                                     &total_pairs, &n_cells, err, 256);
+  ASSERT_EQ(rc, SCS_OK) << err;
+  EXPECT_EQ(n_cells, 2);
+  EXPECT_GT(total_pairs, 0);
+}
+
+TEST(CApi_Voronoi2d, ExportTwoSites) {
+  char err[256] = {};
+  double sites[] = {0.0, 0.0, 2.0, 0.0};
+  int total_pairs = 0, n_cells = 0;
+  ASSERT_EQ(scs_voronoi_cells_2d_size(sites, 2, -0.5, -0.5, 2.5, 0.5,
+                                      &total_pairs, &n_cells, err, 256),
+            SCS_OK)
+      << err;
+  std::vector<double> xy(static_cast<std::size_t>(2 * total_pairs), 0.0);
+  std::vector<int> cell_start(static_cast<std::size_t>(n_cells + 1), -1);
+  int out_xy_n = 0;
+  int rc = scs_voronoi_cells_2d(sites, 2, -0.5, -0.5, 2.5, 0.5, xy.data(),
+                                total_pairs, &out_xy_n, cell_start.data(),
+                                n_cells + 1, err, 256);
+  EXPECT_EQ(rc, SCS_OK) << err;
+  EXPECT_EQ(out_xy_n, total_pairs);
+  EXPECT_EQ(cell_start[0], 0);
+  EXPECT_EQ(cell_start[2], out_xy_n);
+  EXPECT_GT(cell_start[1] - cell_start[0], 0);
+  EXPECT_GT(cell_start[2] - cell_start[1], 0);
+}
+
+TEST(CApi_Voronoi2d, InvalidNSites) {
+  char err[256] = {};
+  double sites[] = {0.0, 0.0};
+  int total_pairs = -1, n_cells = -1;
+  int rc = scs_voronoi_cells_2d_size(sites, 0, 0, 0, 1, 1, &total_pairs,
+                                     &n_cells, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_NE(err[0], '\0');
+}
+
+TEST(CApi_Voronoi2d, InvalidBbox) {
+  char err[256] = {};
+  double sites[] = {0.0, 0.0};
+  int total_pairs = -1, n_cells = -1;
+  int rc = scs_voronoi_cells_2d_size(sites, 1, 1.0, 0, 0.5, 1, &total_pairs,
+                                     &n_cells, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+}
+
+// ---------------------------------------------------------------------------
+// WinSet interval 1D (C2.9)
+// ---------------------------------------------------------------------------
+
+TEST(CApi_WinsetInterval1d, NonEmptyResult) {
+  char err[256] = {};
+  double voters[] = {-1.0, 0.0, 1.0};
+  double lo = 0.0, hi = 0.0;
+  int rc = scs_winset_interval_1d(voters, 3, 2.0, &lo, &hi, err, 256);
+  EXPECT_EQ(rc, SCS_OK);
+  EXPECT_FALSE(std::isnan(lo));
+  EXPECT_FALSE(std::isnan(hi));
+  // voters {-1,0,1}, seat 2: WinSet = (-2, 2)
+  EXPECT_NEAR(lo, -2.0, 1e-9);
+  EXPECT_NEAR(hi, 2.0, 1e-9);
+}
+
+TEST(CApi_WinsetInterval1d, MedianSeatIsEmpty) {
+  char err[256] = {};
+  double voters[] = {-1.0, 0.0, 1.0};
+  double lo = 99.0, hi = 99.0;
+  int rc = scs_winset_interval_1d(voters, 3, 0.0, &lo, &hi, err, 256);
+  EXPECT_EQ(rc, SCS_OK);
+  EXPECT_TRUE(std::isnan(lo));
+  EXPECT_TRUE(std::isnan(hi));
+}
+
+TEST(CApi_WinsetInterval1d, NullArgError) {
+  char err[256] = {};
+  double lo, hi;
+  int rc = scs_winset_interval_1d(nullptr, 3, 0.0, &lo, &hi, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+}
+
+TEST(CApi_WinsetInterval1d, ZeroVotersError) {
+  char err[256] = {};
+  double voters[] = {0.0};
+  double lo, hi;
+  int rc = scs_winset_interval_1d(voters, 0, 0.0, &lo, &hi, err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
+}
+
 TEST(CApi_Winset, Clone) {
   char err[256] = {};
   SCS_Winset* ws = nullptr;

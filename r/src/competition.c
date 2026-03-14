@@ -412,13 +412,13 @@ SEXP r_scs_competition_trace_strategy_kinds(SEXP ptr) {
 
     /* Map integer enum values to human-readable strings. */
     static const char *STRATEGY_LABELS[] = {"sticker", "hunter", "aggregator",
-                                            "predator"};
+                                            "predator", "hunter_sticker"};
     SEXP str_result = PROTECT(allocVector(STRSXP, n_competitors));
     int *raw = INTEGER(result);
     for (int i = 0; i < n_competitors; ++i) {
         int kind = raw[i];
         const char *label =
-            (kind >= 0 && kind <= 3) ? STRATEGY_LABELS[kind] : "unknown";
+            (kind >= 0 && kind <= 4) ? STRATEGY_LABELS[kind] : "unknown";
         SET_STRING_ELT(str_result, i, mkChar(label));
     }
     UNPROTECT(2);

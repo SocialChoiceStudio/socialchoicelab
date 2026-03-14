@@ -198,6 +198,16 @@ target_compile_options(test_geometry_integration PRIVATE ${SocialChoiceLab_compi
 target_link_libraries(test_geometry_integration PRIVATE socialchoicelab_geometry gtest_main)
 add_test(NAME GeometryIntegrationTest COMMAND test_geometry_integration)
 
+add_executable(test_voronoi_2d tests/unit/test_voronoi_2d.cpp)
+target_compile_options(test_voronoi_2d PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_voronoi_2d PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME Voronoi2dTest COMMAND test_voronoi_2d)
+
+add_executable(test_winset_1d tests/unit/test_winset_1d.cpp)
+target_compile_options(test_winset_1d PRIVATE ${SocialChoiceLab_compile_options})
+target_link_libraries(test_winset_1d PRIVATE socialchoicelab_geometry gtest_main)
+add_test(NAME WinSet1dTest COMMAND test_winset_1d)
+
 # ---------------------------------------------------------------------------
 # socialchoicelab_aggregation: header-only profiles & voting rules layer
 # Depends on socialchoicelab_geometry (for DistConfig, voter_distance,

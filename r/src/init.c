@@ -97,8 +97,10 @@ extern SEXP r_scs_normalize_utility(SEXP, SEXP, SEXP);
 extern SEXP r_scs_pairwise_matrix_2d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_weighted_majority_prefers_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
-/* B3.5 (geometry.c) */
+/* B3.5 (geometry.c, voronoi.c, winset_1d.c) */
 extern SEXP r_scs_condorcet_winner_2d(SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_voronoi_cells_2d(SEXP, SEXP, SEXP);
+extern SEXP r_scs_winset_interval_1d(SEXP, SEXP);
 extern SEXP r_scs_copeland_scores_2d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_copeland_winner_2d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_core_2d(SEXP, SEXP, SEXP);
@@ -236,6 +238,8 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_has_condorcet_winner_2d",        (DL_FUNC)&r_scs_has_condorcet_winner_2d,        4},
     {"r_scs_uncovered_set_2d",               (DL_FUNC)&r_scs_uncovered_set_2d,               4},
     {"r_scs_uncovered_set_boundary_2d",      (DL_FUNC)&r_scs_uncovered_set_boundary_2d,      4},
+    {"r_scs_voronoi_cells_2d",               (DL_FUNC)&r_scs_voronoi_cells_2d,               3},
+    {"r_scs_winset_interval_1d",             (DL_FUNC)&r_scs_winset_interval_1d,             2},
     /* --- B3: Centrality --- */
     {"r_scs_centroid_2d",                    (DL_FUNC)&r_scs_centroid_2d,                    1},
     {"r_scs_geometric_mean_2d",              (DL_FUNC)&r_scs_geometric_mean_2d,              1},

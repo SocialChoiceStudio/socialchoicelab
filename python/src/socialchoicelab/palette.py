@@ -122,6 +122,28 @@ def _rgba(hex_color: str, alpha: float) -> str:
     return f"rgba({r},{g},{b},{alpha:.3g})"
 
 
+# Green-free candidate colour sequence for 1D competition canvases.
+# Voter dots are lime green (#66A61E); overlay centroid is crimson; overlay
+# marginal median is indigo-violet.  All three are excluded from this list.
+# Blue (#0072B2) is demoted to slot 4 so the most common 2- or 3-candidate
+# demos never put a blue candidate next to the indigo-violet median overlay.
+_COMPETITION_1D_HEX: list[str] = [
+    "#D55E00",  # vermilion
+    "#CC79A7",  # reddish purple / mauve
+    "#E69F00",  # amber / orange
+    "#56B4E9",  # sky blue  (clearly lighter than indigo-violet overlay)
+    "#F0E442",  # yellow
+    "#000000",  # black
+    "#A6761D",  # brown
+]
+
+
+def _candidate_colors_1d(n: int, alpha: float = 0.95) -> list[str]:
+    """Return n green-free RGBA colour strings for 1D competition candidates."""
+    hex_list = _COMPETITION_1D_HEX
+    return [_rgba(hex_list[i % len(hex_list)], alpha) for i in range(n)]
+
+
 def _best_palette_for_n(n: int) -> str:
     if n <= 7:
         return "okabe_ito"

@@ -34,7 +34,9 @@
 #include <socialchoicelab/geometry/heart.h>
 #include <socialchoicelab/geometry/majority.h>
 #include <socialchoicelab/geometry/uncovered_set.h>
+#include <socialchoicelab/geometry/voronoi_2d.h>
 #include <socialchoicelab/geometry/winset.h>
+#include <socialchoicelab/geometry/winset_1d.h>
 #include <socialchoicelab/geometry/winset_ops.h>
 #include <socialchoicelab/geometry/yolk.h>
 
@@ -329,6 +331,8 @@ socialchoicelab::competition::CompetitorStrategyKind to_cpp_comp_strategy(
       return K::kAggregator;
     case SCS_COMPETITION_STRATEGY_PREDATOR:
       return K::kPredator;
+    case SCS_COMPETITION_STRATEGY_HUNTER_STICKER:
+      return K::kHunterSticker;
     default:
       throw std::invalid_argument("unknown SCS_CompetitionStrategyKind value");
   }
@@ -1517,6 +1521,131 @@ extern "C" int scs_winset_sample_boundary_2d(
         write_ring(*h, 1);
     }
     return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Euclidean WinSet interval 1D  (C2.9)
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_winset_interval_1d(const double* voter_x, int n_voters,
+                                      double seat_x, double* out_lo,
+                                      double* out_hi, char* err_buf,
+                                      int err_buf_len) {
+  if (!voter_x || !out_lo || !out_hi) {
+    set_error(err_buf, err_buf_len,
+              "scs_winset_interval_1d: null required argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (n_voters < 1) {
+    set_error(err_buf, err_buf_len,
+              "scs_winset_interval_1d: n_voters must be >= 1");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto result = socialchoicelab::geometry::winset_interval_1d(
+        voter_x, n_voters, seat_x);
+    *out_lo = result.lo;
+    *out_hi = result.hi;
+    return SCS_OK;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Voronoi cells 2D  (C2.8)
+// ---------------------------------------------------------------------------
+
+extern "C" int scs_voronoi_cells_2d_size(const double* sites_xy, int n_sites,
+                                         double bbox_min_x, double bbox_min_y,
+                                         double bbox_max_x, double bbox_max_y,
+                                         int* out_total_xy_pairs,
+                                         int* out_n_cells, char* err_buf,
+                                         int err_buf_len) {
+  if (!sites_xy || !out_total_xy_pairs || !out_n_cells) {
+    set_error(err_buf, err_buf_len, "scs_voronoi_cells_2d_size: null argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto cells = socialchoicelab::geometry::voronoi_cells_2d(
+        sites_xy, n_sites, bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y);
+    int total = 0;
+    for (const auto& cell : cells) total += static_cast<int>(cell.size());
+    *out_total_xy_pairs = total;
+    *out_n_cells = static_cast<int>(cells.size());
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
+                                    double bbox_min_x, double bbox_min_y,
+                                    double bbox_max_x, double bbox_max_y,
+                                    double* out_xy, int out_xy_capacity,
+                                    int* out_xy_n, int* out_cell_start,
+                                    int out_cell_start_capacity, char* err_buf,
+                                    int err_buf_len) {
+  if (!sites_xy || !out_xy_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_voronoi_cells_2d: null required argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    auto cells = socialchoicelab::geometry::voronoi_cells_2d(
+        sites_xy, n_sites, bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y);
+    const int n_cells = static_cast<int>(cells.size());
+    const int required_cell_start = n_sites + 1;
+    int total_pairs = 0;
+    for (const auto& cell : cells) total_pairs += static_cast<int>(cell.size());
+
+    *out_xy_n = total_pairs;
+
+    const bool size_query_xy = (out_xy == nullptr || out_xy_capacity == 0);
+    const bool size_query_cells =
+        (out_cell_start == nullptr || out_cell_start_capacity == 0);
+    if (size_query_xy && size_query_cells) return SCS_OK;
+
+    if (!size_query_xy && out_xy_capacity < total_pairs) {
+      set_error(err_buf, err_buf_len,
+                "scs_voronoi_cells_2d: out_xy buffer too small");
+      return SCS_ERROR_BUFFER_TOO_SMALL;
+    }
+    if (!size_query_cells && out_cell_start_capacity < required_cell_start) {
+      set_error(err_buf, err_buf_len,
+                "scs_voronoi_cells_2d: out_cell_start buffer too small");
+      return SCS_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    int xy_pos = 0;
+    for (int c = 0; c < n_cells; ++c) {
+      if (!size_query_cells) out_cell_start[c] = xy_pos;
+      const auto& cell = cells[static_cast<size_t>(c)];
+      if (!size_query_xy) {
+        for (const auto& p : cell) {
+          out_xy[2 * xy_pos] = p.x();
+          out_xy[2 * xy_pos + 1] = p.y();
+          ++xy_pos;
+        }
+      } else {
+        xy_pos += static_cast<int>(cell.size());
+      }
+    }
+    if (!size_query_cells) out_cell_start[n_cells] = xy_pos;
+
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
   } catch (const std::exception& e) {
     set_error(err_buf, err_buf_len, e.what());
     return SCS_ERROR_INTERNAL;

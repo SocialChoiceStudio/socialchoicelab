@@ -88,3 +88,61 @@ test_that("competition_run_experiment returns summary statistics", {
                array(c(0, 3, 0, 3, 0, 3), dim = c(3, 2, 1)),
                tolerance = 1e-12)
 })
+
+# ---------------------------------------------------------------------------
+# hunter_sticker tests
+# ---------------------------------------------------------------------------
+
+skip_without_lib <- function() {
+  if (!requireNamespace("socialchoicelab", quietly = TRUE)) {
+    skip("socialchoicelab not available")
+  }
+}
+
+test_that("hunter_sticker strategy kind round-trips through trace", {
+  sm <- stream_manager(42L, c("competition_adaptation_hunter"))
+  trace <- competition_run(
+    c(-1.0, 1.0),
+    c("hunter_sticker", "hunter_sticker"),
+    c(-0.5, 0.0, 0.5),
+    dist_config   = make_dist_config(n_dims = 1L),
+    engine_config = make_competition_engine_config(
+      seat_count  = 1L,
+      seat_rule   = "plurality_top_k",
+      max_rounds  = 3L,
+      step_config = make_competition_step_config(kind = "fixed", fixed_step_size = 0.1)
+    ),
+    stream_manager = sm
+  )
+  expect_equal(trace$strategy_kinds(), c("hunter_sticker", "hunter_sticker"))
+})
+
+test_that("hunter_sticker seat winner freezes in subsequent rounds", {
+  sm <- stream_manager(42L, c("competition_adaptation_hunter"))
+  # Competitor 0 near centre wins round 1; competitor 1 far right loses.
+  trace <- competition_run(
+    c(-0.1, 1.5),
+    c("hunter_sticker", "hunter_sticker"),
+    c(-0.3, 0.0, 0.3),
+    dist_config   = make_dist_config(n_dims = 1L),
+    engine_config = make_competition_engine_config(
+      seat_count  = 1L,
+      seat_rule   = "plurality_top_k",
+      max_rounds  = 5L,
+      step_config = make_competition_step_config(kind = "fixed", fixed_step_size = 0.1)
+    ),
+    stream_manager = sm
+  )
+  seats_r1 <- unname(trace$round_seat_totals(1L))
+  expect_equal(seats_r1[1], 1L,
+    label = "competitor 0 should win seat in round 1")
+
+  pos_r1 <- trace$round_positions(1L)[1, 1]
+  n_rounds <- trace$dims()$n_rounds
+  for (r in seq(2L, n_rounds)) {
+    pos_r <- trace$round_positions(r)[1, 1]
+    expect_equal(pos_r, pos_r1, tolerance = 1e-12,
+      label = paste0("hunter_sticker C0 must not move after winning seat (round ", r, ")")
+    )
+  }
+})

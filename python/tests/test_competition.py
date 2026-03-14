@@ -82,3 +82,66 @@ def test_competition_run_experiment_exports_summary():
             experiment.run_final_positions(),
             np.array([[[0.0], [3.0]]] * 3),
         )
+
+
+# ---------------------------------------------------------------------------
+# hunter_sticker tests
+# ---------------------------------------------------------------------------
+
+def test_hunter_sticker_strategy_kind_roundtrips():
+    """strategy_kinds() on the trace returns 'hunter_sticker'."""
+    sm = scl.StreamManager(42, ["competition_adaptation_hunter"])
+    with scl.competition_run(
+        np.array([[-1.0], [1.0]]),
+        ["hunter_sticker", "hunter_sticker"],
+        np.array([[-0.5], [0.0], [0.5]]),
+        dist_config=scl.DistanceConfig(salience_weights=[1.0]),
+        engine_config=scl.CompetitionEngineConfig(
+            seat_count=1,
+            seat_rule="plurality_top_k",
+            max_rounds=3,
+            step_config=scl.CompetitionStepConfig(kind="fixed", fixed_step_size=0.1),
+        ),
+        stream_manager=sm,
+    ) as trace:
+        assert trace.strategy_kinds() == ["hunter_sticker", "hunter_sticker"]
+
+
+def test_hunter_sticker_seat_winner_freezes():
+    """Once a hunter_sticker wins a seat it must not move in subsequent rounds.
+
+    Setup: voters at -0.3, 0.0, 0.3.  Competitor 0 starts at -0.5 heading
+    right toward the mass of voters; competitor 1 starts at 1.5 (far right,
+    loses every round with 0 voters initially close to it).  Competitor 0
+    wins a seat in round 1 and must stay put from round 2 onward.
+    """
+    sm = scl.StreamManager(42, ["competition_adaptation_hunter"])
+    voters = np.array([[-0.3], [0.0], [0.3]])
+    # Competitor 0 near centre wins round 1; competitor 1 far right loses.
+    with scl.competition_run(
+        np.array([[-0.1], [1.5]]),
+        ["hunter_sticker", "hunter_sticker"],
+        voters,
+        dist_config=scl.DistanceConfig(salience_weights=[1.0]),
+        engine_config=scl.CompetitionEngineConfig(
+            seat_count=1,
+            seat_rule="plurality_top_k",
+            max_rounds=5,
+            step_config=scl.CompetitionStepConfig(kind="fixed", fixed_step_size=0.1),
+        ),
+        stream_manager=sm,
+    ) as trace:
+        seats_r1 = trace.round_seat_totals(0)
+        # Competitor 0 should hold the seat in round 1.
+        assert seats_r1[0] == 1, f"expected C0 to win in round 1, got {seats_r1}"
+
+        pos_r1 = trace.round_positions(0)[:, 0]
+        # Subsequent rounds: competitor 0 must not move.
+        for r in range(1, trace.dims()[0]):
+            pos_r = trace.round_positions(r)[:, 0]
+            assert np.isclose(pos_r[0], pos_r1[0]), (
+                f"hunter_sticker C0 moved after winning seat: "
+                f"round 1 pos={pos_r1[0]:.6f}, round {r+1} pos={pos_r[0]:.6f}"
+            )
+
+

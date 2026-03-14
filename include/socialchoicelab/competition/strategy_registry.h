@@ -160,6 +160,71 @@ class StrategyRegistry {
             return {detail::normalize_or_zero(leader_competitor.position -
                                               competitor.position)};
           }
+
+          case CompetitorStrategyKind::kHunterSticker: {
+            // If the competitor currently holds a seat, freeze (sticker).
+            const bool has_seat =
+                competitor.current_round_metrics.has_value() &&
+                competitor.current_round_metrics->seats_won > 0;
+            if (has_seat) {
+              return {PointNd::Zero(dimension)};
+            }
+            // Otherwise: hunt exactly as kHunter.
+            const bool has_previous =
+                competitor.previous_round_metrics.has_value();
+            const bool has_current =
+                competitor.current_round_metrics.has_value();
+            const PointNd current_heading =
+                detail::normalize_or_zero(competitor.heading);
+
+            if (!has_previous || !has_current) {
+              if (current_heading.norm() != 0.0) {
+                return {current_heading};
+              }
+              if (context.stream_manager == nullptr) {
+                throw std::invalid_argument(
+                    "BuiltInStrategyService::adapt: HunterSticker requires a "
+                    "StreamManager when no usable current heading exists.");
+              }
+              auto& stream = context.stream_manager->get_stream(
+                  kHunterAdaptationStreamName);
+              return {detail::random_unit_heading(dimension, stream)};
+            }
+
+            const double previous_value = detail::objective_value(
+                *competitor.previous_round_metrics, context.objective_kind);
+            const double current_value = detail::objective_value(
+                *competitor.current_round_metrics, context.objective_kind);
+
+            if (current_value > previous_value &&
+                current_heading.norm() != 0.0) {
+              return {current_heading};
+            }
+
+            if (current_heading.norm() != 0.0) {
+              if (dimension == 1) {
+                return {-current_heading};
+              }
+              if (context.stream_manager == nullptr) {
+                throw std::invalid_argument(
+                    "BuiltInStrategyService::adapt: HunterSticker requires a "
+                    "StreamManager when performance drops in dimensions > 1.");
+              }
+              auto& stream = context.stream_manager->get_stream(
+                  kHunterAdaptationStreamName);
+              return {detail::random_in_backward_halfspace(
+                  dimension, current_heading, stream)};
+            }
+
+            if (context.stream_manager == nullptr) {
+              throw std::invalid_argument(
+                  "BuiltInStrategyService::adapt: HunterSticker requires a "
+                  "StreamManager when no usable heading exists.");
+            }
+            auto& stream =
+                context.stream_manager->get_stream(kHunterAdaptationStreamName);
+            return {detail::random_unit_heading(dimension, stream)};
+          }
         }
 
         return {PointNd::Zero(dimension)};
@@ -178,6 +243,8 @@ class StrategyRegistry {
         CompetitorStrategyKind::kAggregator);
     static const BuiltInStrategyService kPredator(
         CompetitorStrategyKind::kPredator);
+    static const BuiltInStrategyService kHunterSticker(
+        CompetitorStrategyKind::kHunterSticker);
 
     static const StrategyRegistry registry = [] {
       StrategyRegistry built_in_registry;
@@ -185,6 +252,7 @@ class StrategyRegistry {
       built_in_registry.register_strategy(kHunter);
       built_in_registry.register_strategy(kAggregator);
       built_in_registry.register_strategy(kPredator);
+      built_in_registry.register_strategy(kHunterSticker);
       return built_in_registry;
     }();
 

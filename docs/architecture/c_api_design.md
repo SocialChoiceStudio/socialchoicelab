@@ -303,6 +303,32 @@ int scs_winset_bbox_2d(const SCS_Winset* ws, int* out_found,
 When the winset is empty, `*out_found = 0` and the min/max outputs are left
 untouched.
 
+### Euclidean Voronoi cells 2D (C2.8)
+
+**Scope:** Euclidean (L2) Voronoi only. Generalisation to non-Euclidean
+metrics is planned (see ROADMAP.md).
+
+- `scs_voronoi_cells_2d_size`: pass sites (interleaved x,y), `n_sites`, and
+  bbox; get `out_total_xy_pairs` and `out_n_cells` (equals `n_sites`).
+- `scs_voronoi_cells_2d`: export interleaved `(x,y)` for all cells concatenated;
+  `out_cell_start` has length `n_sites + 1`; cell `i` is pairs from
+  `out_cell_start[i]` to `out_cell_start[i+1] - 1`. Empty cells have
+  `out_cell_start[i] == out_cell_start[i+1]`. Each cell is a single closed
+  polygon (no holes). Same size-query pattern as winset: pass NULL or capacity
+  0 for buffers to query required sizes only.
+
+```c
+int scs_voronoi_cells_2d_size(const double* sites_xy, int n_sites,
+    double bbox_min_x, double bbox_min_y, double bbox_max_x, double bbox_max_y,
+    int* out_total_xy_pairs, int* out_n_cells, char* err_buf, int err_buf_len);
+
+int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
+    double bbox_min_x, double bbox_min_y, double bbox_max_x, double bbox_max_y,
+    double* out_xy, int out_xy_capacity, int* out_xy_n,
+    int* out_cell_start, int out_cell_start_capacity,
+    char* err_buf, int err_buf_len);
+```
+
 ### SCS_TieBreak and randomness (C5, C6, C7)
 
 Voting rules that break ties (`*_one_winner`, `*_ranking`, `scs_rank_by_scores`,

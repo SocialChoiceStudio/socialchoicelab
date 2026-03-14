@@ -198,7 +198,7 @@ test_that("animate_competition_canvas returns an htmlwidget with expected payloa
   expect_equal(names(w$x), c(
     "voters_x", "voters_y", "voter_color", "xlim", "ylim", "dim_names",
     "rounds", "positions", "competitor_names", "competitor_colors",
-    "vote_shares", "trail", "trail_length", "title"
+    "vote_shares", "trail", "trail_length", "title", "seat_holder_indices"
   ))
   d <- trace$dims()
   expect_length(w$x$rounds, d$n_rounds + 1L)
@@ -223,18 +223,8 @@ test_that("animate_competition_canvas rejects non-CompetitionTrace", {
   )
 })
 
-test_that("animate_competition_canvas rejects 1D trace", {
-  skip_without_lib()
-  trace <- competition_run(
-    c(0.0, 3.0), c("sticker", "sticker"), c(0.1, 0.2, 2.9),
-    dist_config = make_dist_config(n_dims = 1L),
-    engine_config = make_competition_engine_config(
-      seat_count = 1L, seat_rule = "plurality_top_k", max_rounds = 2L,
-      step_config = make_competition_step_config(kind = "fixed", fixed_step_size = 1.0)
-    )
-  )
-  expect_error(animate_competition_canvas(trace), "only 2D")
-})
+# 1D trace support was added; the old "rejects 1D trace" test is replaced by
+# comprehensive tests in test_competition_canvas_1d.R.
 
 test_that("strategy_kinds returns correct strategies from trace", {
   skip_without_lib()

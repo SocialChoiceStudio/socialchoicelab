@@ -442,6 +442,29 @@ _DECLARATIONS = """
                                  char* err_buf, int err_buf_len);
 
     /* ---------------------------------------------------------------------------
+     * WinSet interval 1D (Euclidean only, C2.9)
+     * ------------------------------------------------------------------------- */
+    int scs_winset_interval_1d(const double* voter_x, int n_voters,
+                               double seat_x, double* out_lo, double* out_hi,
+                               char* err_buf, int err_buf_len);
+
+    /* ---------------------------------------------------------------------------
+     * Voronoi cells 2D (Euclidean only)
+     * ------------------------------------------------------------------------- */
+    int scs_voronoi_cells_2d_size(const double* sites_xy, int n_sites,
+                                 double bbox_min_x, double bbox_min_y,
+                                 double bbox_max_x, double bbox_max_y,
+                                 int* out_total_xy_pairs, int* out_n_cells,
+                                 char* err_buf, int err_buf_len);
+
+    int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
+                            double bbox_min_x, double bbox_min_y,
+                            double bbox_max_x, double bbox_max_y,
+                            double* out_xy, int out_xy_capacity, int* out_xy_n,
+                            int* out_cell_start, int out_cell_start_capacity,
+                            char* err_buf, int err_buf_len);
+
+    /* ---------------------------------------------------------------------------
      * Profile factory functions
      * ------------------------------------------------------------------------- */
     SCS_Profile* scs_profile_build_spatial(
