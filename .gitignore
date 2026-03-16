@@ -28,7 +28,6 @@ _deps
 # IDE files
 .vscode/
 .idea/
-.cursor/
 *.swp
 *.swo
 *~
@@ -122,3 +121,4 @@ scratch/
 r/.Renviron
 r/*.Rproj
 # CI test trigger
+.cursor/
