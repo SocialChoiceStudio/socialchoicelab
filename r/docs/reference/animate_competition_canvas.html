@@ -58,7 +58,19 @@ large HTML and slow load of the Plotly frame-based approach.</p>
 <span>  trail <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fade"</span>, <span class="st">"full"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
 <span>  trail_length <span class="op">=</span> <span class="st">"medium"</span>,</span>
 <span>  dim_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Dimension 1"</span>, <span class="st">"Dimension 2"</span><span class="op">)</span>,</span>
-<span>  overlays <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  overlays <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  compute_ic <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  ic_loss_config <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ic_dist_config <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ic_num_samples <span class="op">=</span> <span class="fl">32L</span>,</span>
+<span>  ic_max_curves <span class="op">=</span> <span class="fl">5000L</span>,</span>
+<span>  compute_winset <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  winset_dist_config <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  winset_k <span class="op">=</span> <span class="st">"simple"</span>,</span>
+<span>  winset_num_samples <span class="op">=</span> <span class="fl">64L</span>,</span>
+<span>  winset_max <span class="op">=</span> <span class="fl">1000L</span>,</span>
+<span>  compute_voronoi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  voronoi_dist_config <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -121,6 +133,87 @@ Valid only under Euclidean distance with uniform salience.</p></dd>
 
 
 </dl></dd>
+
+
+<dt id="arg-compute-ic">compute_ic<a class="anchor" aria-label="anchor" href="#arg-compute-ic"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, compute per-frame indifference
+curves for every voter through each seat holder's position and bundle them
+into the widget payload. A toggle is then shown in the player UI. Default
+<code>FALSE</code>. Requires <code>voters</code> to be provided.</p></dd>
+
+
+<dt id="arg-ic-loss-config">ic_loss_config<a class="anchor" aria-label="anchor" href="#arg-ic-loss-config"></a></dt>
+<dd><p>Loss configuration for IC computation (from
+<code><a href="make_loss_config.html">make_loss_config</a></code>). Default <code>NULL</code> uses linear loss with
+sensitivity 1, producing pure iso-distance curves that match competition
+vote logic.</p></dd>
+
+
+<dt id="arg-ic-dist-config">ic_dist_config<a class="anchor" aria-label="anchor" href="#arg-ic-dist-config"></a></dt>
+<dd><p>Distance configuration for IC computation (from
+<code><a href="make_dist_config.html">make_dist_config</a></code>). Should match the <code>dist_config</code> used
+in <code><a href="competition_run.html">competition_run</a></code>. Default <code>NULL</code> uses 2D Euclidean.</p></dd>
+
+
+<dt id="arg-ic-num-samples">ic_num_samples<a class="anchor" aria-label="anchor" href="#arg-ic-num-samples"></a></dt>
+<dd><p>Integer &gt;= 3. Number of polygon vertices sampled per
+indifference curve for smooth shapes (circle / ellipse / superellipse).
+Exact polygons always use 4 vertices regardless of this value. Default 32.</p></dd>
+
+
+<dt id="arg-ic-max-curves">ic_max_curves<a class="anchor" aria-label="anchor" href="#arg-ic-max-curves"></a></dt>
+<dd><p>Maximum total indifference curves allowed across all
+frames (<code>n_voters × seats_per_frame × n_frames</code>). Exceeding this
+raises an error. Default 2000.</p></dd>
+
+
+<dt id="arg-compute-winset">compute_winset<a class="anchor" aria-label="anchor" href="#arg-compute-winset"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, compute per-frame WinSet
+boundaries for each seat holder's current position and bundle them into
+the widget payload. A toggle is then shown in the player UI. Default
+<code>FALSE</code>. Requires <code>voters</code> to be provided. The WinSet is
+computed using the configured voting rule (<code>winset_k</code>) and distance
+metric (<code>winset_dist_config</code>); no assumption is made about which
+rule is in use.</p></dd>
+
+
+<dt id="arg-winset-dist-config">winset_dist_config<a class="anchor" aria-label="anchor" href="#arg-winset-dist-config"></a></dt>
+<dd><p>Distance configuration for WinSet computation
+(from <code><a href="make_dist_config.html">make_dist_config</a></code>). Should match the
+<code>dist_config</code> used in <code><a href="competition_run.html">competition_run</a></code>. Default
+<code>NULL</code> uses 2D Euclidean.</p></dd>
+
+
+<dt id="arg-winset-k">winset_k<a class="anchor" aria-label="anchor" href="#arg-winset-k"></a></dt>
+<dd><p>Voting rule threshold passed to <code><a href="winset_2d.html">winset_2d</a></code>.
+Use <code>"simple"</code> for simple majority, or a positive integer <code>k</code>.
+Default <code>"simple"</code>.</p></dd>
+
+
+<dt id="arg-winset-num-samples">winset_num_samples<a class="anchor" aria-label="anchor" href="#arg-winset-num-samples"></a></dt>
+<dd><p>Integer &gt;= 4. Boundary approximation quality
+(number of sample points on the WinSet boundary). Default <code>64L</code>.</p></dd>
+
+
+<dt id="arg-winset-max">winset_max<a class="anchor" aria-label="anchor" href="#arg-winset-max"></a></dt>
+<dd><p>Maximum total WinSet computations allowed
+(<code>seats_per_frame × n_frames</code>). Exceeding this raises an error.
+Default <code>1000L</code>.</p></dd>
+
+
+<dt id="arg-compute-voronoi">compute_voronoi<a class="anchor" aria-label="anchor" href="#arg-compute-voronoi"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, compute Euclidean Voronoi
+(candidate) regions per frame and show a "Voronoi" toggle in the canvas.
+Currently only Euclidean (L2, uniform weights) is supported; a
+non-Euclidean <code>voronoi_dist_config</code> raises an error. Default
+<code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-voronoi-dist-config">voronoi_dist_config<a class="anchor" aria-label="anchor" href="#arg-voronoi-dist-config"></a></dt>
+<dd><p>Distance configuration for Voronoi (must be
+Euclidean when <code>compute_voronoi</code> is <code>TRUE</code>). Default
+<code>NULL</code> uses 2D Euclidean. If provided, must be Euclidean with
+uniform salience; otherwise an error is raised.</p></dd>
 
 </dl></div>
     <div class="section level2">

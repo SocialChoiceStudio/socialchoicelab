@@ -327,6 +327,10 @@ seat conversion; full trace recording and experiment sweeps.
   : Animate 2D competition trajectories from a CompetitionTrace
 - [`animate_competition_canvas()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_canvas.md)
   : Animate 2D competition trajectories (canvas backend)
+- [`save_competition_canvas()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/save_competition_canvas.md)
+  : Save a competition canvas widget to a .scscanvas file
+- [`load_competition_canvas()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/load_competition_canvas.md)
+  : Load a competition canvas from a .scscanvas file
 
 ## Voter Sampling
 

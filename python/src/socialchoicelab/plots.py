@@ -1560,6 +1560,7 @@ def layer_ic(
     color_by_voter=False,
     fill_color=None,
     line_color=None,
+    line_width=1,
     palette="auto",
     voter_names=None,
     name="Indifference Curves",
@@ -1587,6 +1588,8 @@ def layer_ic(
         ``color_by_voter=False``; faint per-voter colour when ``True``.
     line_color:
         Explicit uniform line colour (overrides theme for non-voter-colour mode).
+    line_width:
+        Stroke width of the IC circles in pixels.  Default ``1``.
     palette:
         Palette name for ``color_by_voter`` mode.  ``"auto"`` (default) uses
         the ``theme``'s palette.
@@ -1642,7 +1645,7 @@ def layer_ic(
             mode="lines",
             fill="toself" if use_fill else "none",
             fillcolor=fill_colors[i],
-            line=dict(color=line_colors[i], width=1, dash="dot"),
+            line=dict(color=line_colors[i], width=line_width, dash="dot"),
             name=lname,
             legendgroup=lgroup,
             showlegend=show_lg,

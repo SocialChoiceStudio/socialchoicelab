@@ -1,0 +1,22 @@
+{
+  "name": "Laing-Olmsted Skewed Star",
+  "description": "5-player spatial voting scenario arranged in a skewed star pattern. Variant of the Laing-Olmsted configuration with status quo at the origin.",
+  "source": "Laing, J.D. & Olmsted, R.J.",
+  "n_voters": 5,
+  "n_dimensions": 2,
+  "space": {
+    "x_range": [0, 200],
+    "y_range": [0, 200]
+  },
+  "decision_rule": 0.5,
+  "dim_names": ["Dimension 1", "Dimension 2"],
+  "voters": [
+    [ 20.4,  76.4],
+    [ 80.4, 100.8],
+    [127.2, 109.6],
+    [100.0,   6.4],
+    [ 10.0,  19.6]
+  ],
+  "voter_names": ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5"],
+  "status_quo": [0.0, 0.0]
+}

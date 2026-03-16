@@ -791,6 +791,7 @@ animate_competition_trajectories <- function(trace,
 #'   (default). Overrides theme when not \code{NULL}.
 #' @param line_color Uniform line colour used when \code{color_by_voter = FALSE}.
 #'   \code{NULL} uses the theme default.
+#' @param line_width Stroke width of the IC circles in pixels. Default \code{1}.
 #' @param palette Palette name for \code{color_by_voter} mode. \code{"auto"}
 #'   (default) uses the \code{theme}'s palette.
 #' @param voter_names Character vector of voter labels.
@@ -812,6 +813,7 @@ layer_ic <- function(fig,
                      color_by_voter = FALSE,
                      fill_color     = NULL,
                      line_color     = NULL,
+                     line_width     = 1,
                      palette        = "auto",
                      voter_names    = NULL,
                      name           = "Indifference Curves",
@@ -846,7 +848,7 @@ layer_ic <- function(fig,
       role = "region",
       fill          = if (use_fill) "toself" else "none",
       fillcolor     = fill_colors[i],
-      line          = list(color = line_colors[i], width = 1, dash = "dot"),
+      line          = list(color = line_colors[i], width = line_width, dash = "dot"),
       name          = lname,
       legendgroup   = lgroup,
       showlegend    = show_lg,
