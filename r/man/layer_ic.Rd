@@ -11,6 +11,7 @@ layer_ic(
   color_by_voter = FALSE,
   fill_color = NULL,
   line_color = NULL,
+  line_width = 1,
   palette = "auto",
   voter_names = NULL,
   name = "Indifference Curves",
@@ -33,6 +34,8 @@ a unique colour from \code{palette} shown individually in the legend.}
 
 \item{line_color}{Uniform line colour used when \code{color_by_voter = FALSE}.
 \code{NULL} uses the theme default.}
+
+\item{line_width}{Stroke width of the IC circles in pixels. Default \code{1}.}
 
 \item{palette}{Palette name for \code{color_by_voter} mode. \code{"auto"}
 (default) uses the \code{theme}'s palette.}
