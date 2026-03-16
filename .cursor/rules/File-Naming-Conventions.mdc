@@ -1,0 +1,18 @@
+---
+description: File naming conventions for all file types in this project
+alwaysApply: true
+---
+
+# File Naming Conventions
+
+| File type | Convention | Examples |
+|-----------|------------|---------|
+| C++ headers | `snake_case.h` | `stream_manager.h`, `distance_functions.h` |
+| C++ sources | `snake_case.cpp` | `stream_manager.cpp` |
+| C++ tests | `test_snake_case.cpp` | `test_distance_functions.cpp` |
+| Shell scripts | `kebab-case.sh` | `end-of-milestone.sh`, `pre-commit.sh` |
+| Root open-source docs | `ALL_CAPS.md` | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` |
+| `README.md` files | Always `README.md` | `docs/README.md`, `docs/references/README.md` |
+| All other docs in `docs/` | `snake_case.md` | `development.md`, `design_document.md`, `where_we_are.md` |
+
+When creating a new file, apply the rule for its type. Do not propose or create files that violate these conventions.

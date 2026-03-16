@@ -121,4 +121,3 @@ scratch/
 r/.Renviron
 r/*.Rproj
 # CI test trigger
-.cursor/

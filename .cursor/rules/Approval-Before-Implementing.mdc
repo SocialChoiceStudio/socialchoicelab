@@ -1,0 +1,15 @@
+---
+description: Do not enact changes without explicit user approval. Propose first.
+alwaysApply: true
+---
+
+# Approval Before Implementing
+
+**Do not implement or enact code or doc changes without explicit user approval. Ever.**
+
+- **Propose** solutions, steps, or edits clearly.
+- **Ask for permission** before implementing (e.g. "Should I add X?" / "I can do Y next if you approve.").
+- **Do not** write, edit, or delete files, or run commands that change state, until the user has approved.
+- If you believe a change is clearly implied, still state what you would do and confirm (e.g. "I can add this rule now unless you prefer to review the wording first.").
+
+Exception: you may fix clear linter/syntax errors in files you just created or edited in the same turn, if the user asked you to implement something and that fix is obviously part of the same change.

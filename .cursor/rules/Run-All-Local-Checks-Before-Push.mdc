@@ -1,0 +1,32 @@
+# Run All Local Checks Before Push
+
+**Before pushing to the remote repository, run `./scripts/check-all.sh` and only push when it exits 0.**
+
+```bash
+export SCS_LIB_PATH=$(pwd)/build
+export SCS_INCLUDE_PATH=$(pwd)/include
+./scripts/check-all.sh
+```
+
+`check-all.sh` runs all 7 checks in order and exits immediately on the first failure:
+
+1. Format check (`./lint.sh format` + `git diff --exit-code`)
+2. C++ build
+3. C++ tests (`ctest -LE benchmark`)
+4. Strict lint (`cpplint`)
+5. Binding checks (`R CMD check` + `pytest`)
+6. R pkgdown site build
+7. Python mkdocs site build
+
+## Rules
+
+- Do not push until `./scripts/check-all.sh` exits 0. No exceptions.
+- Do not selectively skip steps — all 7 must pass, not just the ones that seem relevant.
+- Do not use `git push --no-verify` as a workaround for failing checks.
+- If a tool is not installed (e.g., mkdocs or Rscript), install it and re-run rather than skipping.
+
+## Reference
+
+- See `.github/workflows/ci.yml` for the exact CI steps these checks mirror.
+- Pre-push hook (`scripts/pre-push.sh` → `.git/hooks/pre-push`) calls `check-all.sh` automatically when `r/` or `python/` files change.
+- To reinstall the pre-push hook after a fresh clone: `cp scripts/pre-push.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push`

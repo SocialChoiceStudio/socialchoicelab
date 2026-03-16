@@ -1,0 +1,39 @@
+---
+description: Maintain 1-to-1 parity between R and Python implementations—changes in either layer must be reflected in the other
+alwaysApply: true
+---
+
+# R-Python Layer Parity
+
+Changes to functionality, algorithms, data structures, or behavior in the R layer **must** be reflected identically in the Python layer, and vice versa.
+
+## Intent
+
+R and Python were chosen to be implemented in parallel, with equivalent capabilities and behavior across both. Maintaining strict parity ensures:
+
+- Users experience consistent behavior regardless of language choice
+- Algorithm implementations remain canonical and verifiable in both layers
+- The codebase avoids divergence that creates maintenance burden and user confusion
+
+## What Requires Synchronization
+
+- **New functions or methods** added to either layer must be implemented in the other
+- **Algorithm changes or fixes** must be applied identically to both layers
+- **Data structure additions or modifications** must be mirrored
+- **Behavioral changes** (e.g., parameter semantics, return values, error handling) must match exactly
+- **Bug fixes** apply to both layers
+
+## What Does NOT Require Synchronization
+
+- Language-specific optimizations, idioms, or performance tweaks (as long as external behavior is identical)
+- Documentation, examples, and tests (though these should be updated for both where practical)
+- Internal refactoring that does not change the public API or behavior
+
+## How to Implement
+
+1. **Implement the change** in either layer
+2. **Port the implementation** to the other layer using that language's native patterns and idioms
+3. **Verify both** implementations produce identical behavior (same inputs → same outputs, error conditions, edge cases)
+4. **Do not merge** until both layers are updated and tested
+
+If porting a change feels impossible or would fundamentally diverge between layers, **stop and discuss**—this signals a design issue that may require revisiting the original change.
