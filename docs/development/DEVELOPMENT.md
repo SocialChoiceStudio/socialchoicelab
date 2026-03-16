@@ -121,7 +121,7 @@ We follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppgu
 | C++ tests | `test_snake_case.cpp` | `test_distance_functions.cpp`, `test_prng.cpp` |
 | Shell scripts | `kebab-case.sh` | `end-of-milestone.sh`, `pre-commit.sh` |
 | Root open-source docs | `ALL_CAPS.md` | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` |
-| `README.md` (anywhere) | Always `README.md` | `docs/README.md`, `docs/references/README.md` |
+| `README.md` (anywhere) | Always `README.md` | `docs/README.md`, `docs/architecture/README.md` |
 | All other docs in `docs/` | `snake_case.md` | `development.md`, `design_document.md`, `where_we_are.md` |
 
 ### Numeric tolerance

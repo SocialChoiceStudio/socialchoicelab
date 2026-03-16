@@ -64,7 +64,6 @@ debug/
 scratch/
 
 # Old codebases (reference only, not canonical)
-old_codebases/
 
 # Agent review conversations (local only, not tracked)
 agent_conversations/

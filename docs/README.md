@@ -26,7 +26,7 @@ This file is the single entry point for project documentation.
 | Setup on new or synced machine | `docs/development/setup_checklist.md` |
 | Git and GitHub workflow | `docs/development/git_reference.md` |
 | Simulation terminology & example | `docs/development/sample_simulation_description.md` |
-| Academic reference library | `docs/references/README.md` |
+| Academic reference library | `../references/README.md` (outside repo, in `SocialChoiceStudioDev/`) |
 | How to contribute | `CONTRIBUTING.md` (project root) |
 | Security and vulnerability reporting | `SECURITY.md` (project root) |
 | Release history | `CHANGELOG.md` (project root) |
@@ -78,11 +78,11 @@ docs/
 │   ├── git_reference.md                   ← solo git/github workflow
 │   ├── visualization_design.md            ← color system, layer stack, theme decisions
 │   └── sample_simulation_description.md   ← illustrative walkthrough + glossary (non-governing)
-└── references/
-    ├── README.md                          ← reference library index
-    ├── reference_index.md                 ← annotated list of all papers and books
-    └── implementation_priority.md         ← prioritized roadmap for social-choice features
 ```
+
+> **Academic reference library** (papers, PDFs, annotated bibliography) lives at
+> `../references/` relative to this repo — i.e. `SocialChoiceStudioDev/references/` in Dropbox.
+> It is not tracked in git.
 
 ## Where to Put a New Doc
 
@@ -93,7 +93,7 @@ Choose the subdirectory by the doc's purpose:
 | `status/` | The doc tracks *current state* — what is done, what is next, time horizons, or history. Agents read these every session. | `where_we_are.md`, `roadmap.md` |
 | `architecture/` | The doc records a *design decision* that governs how code is written going forward. Should be stable once adopted. | `design_document.md`, `stream_manager_design.md` |
 | `development/` | The doc is a *how-to* for working on the project — style guide, workflow, tools, illustrative examples. | `development.md`, `git_reference.md` |
-| `references/` | The doc is a *bibliography or priority list* for academic/algorithmic sources. Not governing; just reference. | `reference_index.md`, `implementation_priority.md` |
+| `SocialChoiceStudioDev/references/` | Academic bibliography and priority lists — outside the repo in Dropbox; not tracked in git. | `reference_index.md`, `implementation_priority.md` |
 | project root | Standard open-source hygiene files that GitHub renders prominently. | `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` |
 
 **Naming:** All docs in `docs/` use `snake_case.md` (except `README.md` files). Root hygiene docs use `ALL_CAPS.md`. See the full convention in [`docs/development/development.md`](development/development.md) § File Naming Conventions.
