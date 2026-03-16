@@ -80,31 +80,31 @@ enable_testing()
 # Add unit tests (gtest_main pulls in gtest)
 add_executable(test_distance_functions tests/unit/test_distance_functions.cpp)
 target_compile_options(test_distance_functions PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_distance_functions PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_distance_functions PRIVATE gtest_main socialchoicelab_core)
 
 add_executable(test_prng tests/unit/test_prng.cpp)
 target_compile_options(test_prng PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_prng PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_prng PRIVATE gtest_main socialchoicelab_core)
 
 add_executable(test_distance_comparison tests/unit/test_distance_comparison.cpp)
 target_compile_options(test_distance_comparison PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_distance_comparison PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_distance_comparison PRIVATE gtest_main socialchoicelab_core)
 
 add_executable(test_distance_speed tests/unit/test_distance_speed.cpp)
 target_compile_options(test_distance_speed PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_distance_speed PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_distance_speed PRIVATE gtest_main socialchoicelab_core)
 
 add_executable(test_performance_comparison tests/unit/test_performance_comparison.cpp)
 target_compile_options(test_performance_comparison PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_performance_comparison PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_performance_comparison PRIVATE gtest_main socialchoicelab_core)
 
 add_executable(test_loss_functions tests/unit/test_loss_functions.cpp)
 target_compile_options(test_loss_functions PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_loss_functions PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_loss_functions PRIVATE gtest_main socialchoicelab_core)
 
 add_executable(test_core_types tests/unit/test_core_types.cpp)
 target_compile_options(test_core_types PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_core_types PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_core_types PRIVATE gtest_main socialchoicelab_core)
 
 # Register tests with CTest
 add_test(NAME DistanceFunctionsTest COMMAND test_distance_functions)
@@ -117,7 +117,7 @@ add_test(NAME CoreTypesTest COMMAND test_core_types)
 
 add_executable(test_level_set tests/unit/test_level_set.cpp)
 target_compile_options(test_level_set PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_level_set PRIVATE socialchoicelab_core gtest_main)
+target_link_libraries(test_level_set PRIVATE gtest_main socialchoicelab_core)
 
 add_test(NAME LevelSetTest COMMAND test_level_set)
 
@@ -139,73 +139,73 @@ target_compile_features(socialchoicelab_geometry INTERFACE cxx_std_20)
 
 add_executable(test_geom2d tests/unit/test_geom2d.cpp)
 target_compile_options(test_geom2d PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_geom2d PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_geom2d PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME Geom2dTest COMMAND test_geom2d)
 
 add_executable(test_convex_hull tests/unit/test_convex_hull.cpp)
 target_compile_options(test_convex_hull PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_convex_hull PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_convex_hull PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME ConvexHullTest COMMAND test_convex_hull)
 
 add_executable(test_majority tests/unit/test_majority.cpp)
 target_compile_options(test_majority PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_majority PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_majority PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME MajorityTest COMMAND test_majority)
 
 add_executable(test_winset tests/unit/test_winset.cpp)
 target_compile_options(test_winset PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_winset PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_winset PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME WinsetTest COMMAND test_winset)
 
 add_executable(test_yolk tests/unit/test_yolk.cpp)
 target_compile_options(test_yolk PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_yolk PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_yolk PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME YolkTest COMMAND test_yolk)
 
 add_executable(test_uncovered_set tests/unit/test_uncovered_set.cpp)
 target_compile_options(test_uncovered_set PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_uncovered_set PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_uncovered_set PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME UncoveredSetTest COMMAND test_uncovered_set)
 
 # Phase F — Extended winset services
 add_executable(test_winset_ops tests/unit/test_winset_ops.cpp)
 target_compile_options(test_winset_ops PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_winset_ops PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_winset_ops PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME WinsetOpsTest COMMAND test_winset_ops)
 
 add_executable(test_core tests/unit/test_core.cpp)
 target_compile_options(test_core PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_core PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_core PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME CoreTest COMMAND test_core)
 
 add_executable(test_copeland tests/unit/test_copeland.cpp)
 target_compile_options(test_copeland PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_copeland PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_copeland PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME CopelandTest COMMAND test_copeland)
 
 add_executable(test_heart tests/unit/test_heart.cpp)
 target_compile_options(test_heart PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_heart PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_heart PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME HeartTest COMMAND test_heart)
 
 add_executable(test_centrality tests/unit/test_centrality.cpp)
 target_compile_options(test_centrality PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_centrality PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_centrality PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME CentralityTest COMMAND test_centrality)
 
 add_executable(test_geometry_integration tests/unit/test_geometry_integration.cpp)
 target_compile_options(test_geometry_integration PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_geometry_integration PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_geometry_integration PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME GeometryIntegrationTest COMMAND test_geometry_integration)
 
 add_executable(test_voronoi_2d tests/unit/test_voronoi_2d.cpp)
 target_compile_options(test_voronoi_2d PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_voronoi_2d PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_voronoi_2d PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME Voronoi2dTest COMMAND test_voronoi_2d)
 
 add_executable(test_winset_1d tests/unit/test_winset_1d.cpp)
 target_compile_options(test_winset_1d PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_winset_1d PRIVATE socialchoicelab_geometry gtest_main)
+target_link_libraries(test_winset_1d PRIVATE gtest_main socialchoicelab_geometry)
 add_test(NAME WinSet1dTest COMMAND test_winset_1d)
 
 # ---------------------------------------------------------------------------
@@ -222,27 +222,27 @@ target_compile_features(socialchoicelab_aggregation INTERFACE cxx_std_20)
 
 add_executable(test_profile tests/unit/test_profile.cpp)
 target_compile_options(test_profile PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_profile PRIVATE socialchoicelab_aggregation gtest_main)
+target_link_libraries(test_profile PRIVATE gtest_main socialchoicelab_aggregation)
 add_test(NAME ProfileTest COMMAND test_profile)
 
 add_executable(test_voter_sampler tests/unit/test_voter_sampler.cpp)
 target_compile_options(test_voter_sampler PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_voter_sampler PRIVATE socialchoicelab_aggregation gtest_main)
+target_link_libraries(test_voter_sampler PRIVATE gtest_main socialchoicelab_aggregation)
 add_test(NAME VoterSamplerTest COMMAND test_voter_sampler)
 
 add_executable(test_voting_rules tests/unit/test_voting_rules.cpp)
 target_compile_options(test_voting_rules PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_voting_rules PRIVATE socialchoicelab_aggregation gtest_main)
+target_link_libraries(test_voting_rules PRIVATE gtest_main socialchoicelab_aggregation)
 add_test(NAME VotingRulesTest COMMAND test_voting_rules)
 
 add_executable(test_aggregation_properties tests/unit/test_aggregation_properties.cpp)
 target_compile_options(test_aggregation_properties PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_aggregation_properties PRIVATE socialchoicelab_aggregation gtest_main)
+target_link_libraries(test_aggregation_properties PRIVATE gtest_main socialchoicelab_aggregation)
 add_test(NAME AggregationPropertiesTest COMMAND test_aggregation_properties)
 
 add_executable(test_aggregation_integration tests/unit/test_aggregation_integration.cpp)
 target_compile_options(test_aggregation_integration PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_aggregation_integration PRIVATE socialchoicelab_aggregation gtest_main)
+target_link_libraries(test_aggregation_integration PRIVATE gtest_main socialchoicelab_aggregation)
 add_test(NAME AggregationIntegrationTest COMMAND test_aggregation_integration)
 
 # ---------------------------------------------------------------------------
@@ -261,7 +261,7 @@ add_executable(test_competitor_initialization
 target_compile_options(test_competitor_initialization PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_competitor_initialization PRIVATE
-    socialchoicelab_competition gtest_main)
+    gtest_main socialchoicelab_competition)
 add_test(NAME CompetitorInitializationTest COMMAND test_competitor_initialization)
 
 add_executable(test_competition_strategies
@@ -269,7 +269,7 @@ add_executable(test_competition_strategies
 target_compile_options(test_competition_strategies PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_competition_strategies PRIVATE
-    socialchoicelab_competition gtest_main)
+    gtest_main socialchoicelab_competition)
 add_test(NAME CompetitionStrategiesTest COMMAND test_competition_strategies)
 
 add_executable(test_competition_motion
@@ -277,7 +277,7 @@ add_executable(test_competition_motion
 target_compile_options(test_competition_motion PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_competition_motion PRIVATE
-    socialchoicelab_competition gtest_main)
+    gtest_main socialchoicelab_competition)
 add_test(NAME CompetitionMotionTest COMMAND test_competition_motion)
 
 add_executable(test_seat_allocation
@@ -285,7 +285,7 @@ add_executable(test_seat_allocation
 target_compile_options(test_seat_allocation PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_seat_allocation PRIVATE
-    socialchoicelab_aggregation gtest_main)
+    gtest_main socialchoicelab_aggregation)
 add_test(NAME SeatAllocationTest COMMAND test_seat_allocation)
 
 add_executable(test_competition_election_feedback
@@ -293,7 +293,7 @@ add_executable(test_competition_election_feedback
 target_compile_options(test_competition_election_feedback PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_competition_election_feedback PRIVATE
-    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+    gtest_main socialchoicelab_competition socialchoicelab_aggregation)
 add_test(NAME CompetitionElectionFeedbackTest COMMAND test_competition_election_feedback)
 
 add_executable(test_competition_engine
@@ -301,7 +301,7 @@ add_executable(test_competition_engine
 target_compile_options(test_competition_engine PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_competition_engine PRIVATE
-    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+    gtest_main socialchoicelab_competition socialchoicelab_aggregation)
 add_test(NAME CompetitionEngineTest COMMAND test_competition_engine)
 
 add_executable(test_competition_termination
@@ -309,7 +309,7 @@ add_executable(test_competition_termination
 target_compile_options(test_competition_termination PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_competition_termination PRIVATE
-    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+    gtest_main socialchoicelab_competition socialchoicelab_aggregation)
 add_test(NAME CompetitionTerminationTest COMMAND test_competition_termination)
 
 add_executable(test_competition_experiment_runner
@@ -317,7 +317,7 @@ add_executable(test_competition_experiment_runner
 target_compile_options(test_competition_experiment_runner PRIVATE
     ${SocialChoiceLab_compile_options})
 target_link_libraries(test_competition_experiment_runner PRIVATE
-    socialchoicelab_competition socialchoicelab_aggregation gtest_main)
+    gtest_main socialchoicelab_competition socialchoicelab_aggregation)
 add_test(NAME CompetitionExperimentRunnerTest COMMAND test_competition_experiment_runner)
 
 # ---------------------------------------------------------------------------
@@ -337,7 +337,7 @@ target_link_libraries(scs_api PRIVATE socialchoicelab_core socialchoicelab_geome
 
 add_executable(test_c_api tests/unit/test_c_api.cpp)
 target_compile_options(test_c_api PRIVATE ${SocialChoiceLab_compile_options})
-target_link_libraries(test_c_api PRIVATE scs_api gtest_main)
+target_link_libraries(test_c_api PRIVATE gtest_main scs_api)
 add_test(NAME CApiTest COMMAND test_c_api)
 
 # ---------------------------------------------------------------------------
