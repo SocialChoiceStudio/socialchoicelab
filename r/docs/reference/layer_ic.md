@@ -14,6 +14,7 @@ layer_ic(
   color_by_voter = FALSE,
   fill_color = NULL,
   line_color = NULL,
+  line_width = 1,
   palette = "auto",
   voter_names = NULL,
   name = "Indifference Curves",
@@ -51,6 +52,10 @@ layer_ic(
 
   Uniform line colour used when `color_by_voter = FALSE`. `NULL` uses
   the theme default.
+
+- line_width:
+
+  Stroke width of the IC circles in pixels. Default `1`.
 
 - palette:
 
