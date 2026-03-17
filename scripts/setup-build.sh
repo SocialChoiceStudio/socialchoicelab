@@ -103,7 +103,10 @@ fi
 step "3/5  R package install"
 
 if command -v Rscript &>/dev/null; then
-  (cd r && R CMD INSTALL .)
+  R_LIB_USER="$(Rscript -e 'cat(.libPaths()[1])')"
+  export SCS_LIB_PATH="$REQUIRED_LIB_PATH" SCS_INCLUDE_PATH="$REQUIRED_INC_PATH"
+  rm -f r/src/*.o r/src/socialchoicelab.so r/src/*.dylib 2>/dev/null || true
+  (cd r && R CMD INSTALL -l "$R_LIB_USER" .)
   echo "  ✓  R package installed."
 else
   echo "  Rscript not found — skipping R package install."

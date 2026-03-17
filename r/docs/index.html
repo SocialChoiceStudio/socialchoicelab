@@ -81,7 +81,7 @@ DYLD_LIBRARY_PATH=/path/to/socialchoicelab/build</code></pre>
 </h3>
 <p>Run at the RStudio console:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>You should see <code>* DONE (socialchoicelab)</code> at the end.</p>
 </div>
 <div class="section level3">
@@ -101,24 +101,24 @@ DYLD_LIBRARY_PATH=/path/to/socialchoicelab/build</code></pre>
 <h2 id="running-tests">Running tests<a class="anchor" aria-label="anchor" href="#running-tests"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="after-c-library-changes">After C library changes<a class="anchor" aria-label="anchor" href="#after-c-library-changes"></a>
 </h2>
 <p>Rebuild <code>libscs_api</code> first, then reinstall the R package:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>A full session restart (Cmd+Shift+F10) is recommended to unload the old DLL before reinstalling.</p>
 </div>
 <div class="section level2">
 <h2 id="after-r-source-changes-only-no-c-changes">After R source changes only (no C changes)<a class="anchor" aria-label="anchor" href="#after-r-source-changes-only-no-c-changes"></a>
 </h2>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Or for a faster iteration loop without rebuilding:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">load_all</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">load_all</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
