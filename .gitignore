@@ -62,7 +62,13 @@ temp/
 debug/
 scratch/
 
-# Old codebases (reference only, not canonical)
+# Old codebases (reference only, not canonical; often a symlink)
+old_codebases
+old_codebases/
+
+# References (Dropbox symlink, local only)
+references
+references/
 
 # Agent review conversations (local only, not tracked)
 agent_conversations/
