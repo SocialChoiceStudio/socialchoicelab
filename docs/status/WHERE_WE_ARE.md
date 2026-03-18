@@ -3,10 +3,10 @@
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
 - **Current phase:** Layer 7 candidate competition is complete: core engine, experiment runner, C API, R/Python bindings, static and animated plotting, animation refinement (trail modes, fade, layout polish), and R/Python binding parity all done.
-- **Next:** Tag `v0.2.0` (the formal first-release tag, never yet applied), then complete the `0.3.0` milestone gate (citation verification in `competition_design.md`, CI green check, API stability declaration), and tag `v0.3.0`.
-- **Release context:** The `0.2.0` base stack (core + C API + geometry + aggregation + bindings + visualization) is complete but not yet tagged. `0.3.0` (candidate competition) is feature-complete and pending release-gate sign-off. Authoritative plan: [competition_plan.md](competition_plan.md).
+- **Next:** Tag `v0.3.0` — all gate criteria satisfied (citations added to `competition_design.md`, stream map added, CI green, API stability declared). Then begin **Characteristics of Voting Rules** (working title), the next major feature track toward `1.0.0`.
+- **Release context:** `v0.2.0` is tagged. `v0.3.0` (candidate competition) is feature-complete, docs hardened, and ready to tag. Authoritative plan: [competition_plan.md](competition_plan.md).
 - **After `0.3.0`:** Begin the next major feature track, currently described as **Characteristics of Voting Rules** (working title), then iterate to `1.0.0` once all major components are in place.
-- **Last updated:** 2026-03-10
+- **Last updated:** 2026-03-17
 
 **Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
 

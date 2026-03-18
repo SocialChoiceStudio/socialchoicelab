@@ -8,6 +8,34 @@ _(nothing yet)_
 
 ---
 
+## [0.3.0] — 2026-03-17
+
+### Added
+
+#### Candidate competition engine (Layer 7)
+- Multi-candidate spatial competition engine with synchronous round updates and full trace recording.
+- Competitor strategies: Sticker, Hunter, Aggregator, Predator — as introduced by Laver (2005) and extended by Laver & Sergenti (2011).
+- Step-size and boundary policies: fixed step, random step, project-to-bounds, stay-put, reflect.
+- Electoral evaluation: plurality support assignment with distance-tie breaking; plurality top-k and Hare largest remainder seat conversion.
+- Convergence and cycle diagnostics: position-epsilon convergence, rounded-signature cycle detection, no-improvement windows.
+- Experiment runner: serial, per-run deterministic via `StreamManager::reset_for_run`; per-run summaries and optional full traces; labeled scenario sweeps.
+
+#### Competition C API (stable at `v0.3.0`)
+- Full `scs_competition_*` surface: handle lifecycle, experiment config, voter setup, single-run execution, trace export (positions, seats, votes, strategy kinds).
+- Experiment runner C API: batch runs with per-run summaries and optional trace export.
+
+#### R and Python bindings — competition layer
+- `CompetitionExperiment`, `CompetitionTrace`, `make_competition_step_config` in both R and Python with full API parity.
+- `animate_competition_canvas`: canvas-based animated player with trail modes, fade control, and layout polish. Supersedes frame-based Plotly animation for competition visualization.
+- `animate_competition_trajectories`: Plotly frame-based animation (retained; to be retired before `v1.0.0`).
+- Voter sampling: `make_voter_sampler` and `draw_voters` in R and Python.
+
+#### Documentation
+- `docs/architecture/competition_design.md`: verified citations (Laver 2005, Laver & Sergenti 2011), stream map, and updated status.
+- Competition C API declared stable in `docs/architecture/c_api_design.md`.
+
+---
+
 ## [0.2.0] — 2026-03-08
 
 ### Added

@@ -97,7 +97,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ---
 
-## Competition Layer 7 / `0.3.0` (tag: `v0.3.0`) 🟨 In progress
+## Competition Layer 7 / `0.3.0` (tag: `v0.3.0`) ✅ Ready to tag
 
 **Scope:** Multi-candidate spatial competition engine (adaptive candidates + trace export) with stable C API and R/Python access. Detailed phase plan: [competition_plan.md](competition_plan.md).
 
@@ -108,10 +108,9 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 | **Docs** | `docs/architecture/competition_design.md` complete with verified citations and stream map; `docs/status/competition_plan.md` updated to reflect delivered scope; ROADMAP and where_we_are updated. Remaining visual-polish blocker explicitly recorded, including the current R animation jump issue and the follow-on animation-refinement work. |
 | **API stability** | Competition C API surface declared stable for the tag; binding APIs for competition runs/trace access stable behind that boundary. |
 
-**Current status note (2026-03-09):**
+**Current status note (2026-03-17):**
 
-- Most of the planned Layer 7 scope is present locally: core engine, experiment runner, C API, bindings, and first plotting/animation helpers.
-- The milestone is not yet ready to declare complete because the visualization layer still has an active R animation bug (oversized first jumps) and the next immediate work item after that bug is further animation refinement.
+All Layer 7 scope is complete: core engine, experiment runner, C API, R/Python bindings with full parity, static and canvas-based animation, animation refinement (trail modes, fade, layout polish). CI is green. The R animation jump bug is resolved. All gate criteria are satisfied; pending tag.
 
 ---
 
@@ -139,7 +138,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 | c_api extensions | Full c_api for geometry + aggregation | CI + extended c_api tests | c_api_design.md updated | Extended c_api frozen | ✅ 2026-03-07 |
 | Visualization layer | Plotly layers, theme system, built-in scenarios | R + Python test suites | visualization_design.md | Plotting API stable | ✅ 2026-03-08 |
 | First public release / `0.2.0` | Core + c_api + bindings + visualization | CI + binding tests | User docs | Pre-1.0 stability in `0.x` line | 🔲 Next |
-| Competition Layer 7 / `0.3.0` | Adaptive candidate engine + stable trace/C API/bindings | CI + engine/C API/binding tests | competition_design.md + roadmap updates | Competition API frozen for tag | 🟨 In progress |
+| Competition Layer 7 / `0.3.0` | Adaptive candidate engine + stable trace/C API/bindings | CI + engine/C API/binding tests | competition_design.md + roadmap updates | Competition API frozen for tag | ✅ Ready to tag |
 | Major components complete / `1.0.0` | All major feature families complete | Full-stack CI + end-to-end workflows | Full 1.0 docs | Semver 1.0 promise | 🔲 Future |
 
 When in doubt, tighten the gate rather than ship: "done" means the criteria above are satisfied, not "we moved on".

@@ -40,6 +40,13 @@ Versioning policy for the stable surface:
 - Patch versions change behavior, tests, or documentation without changing
   signatures or public struct layout.
 
+## API stability declarations
+
+| Surface | Declared stable at | Notes |
+|---|---|---|
+| Core, geometry, aggregation C API | `v0.2.0` (2026-03-08) | All functions in `scs_api.h` covering core, geometry, profiles, voting rules, aggregation properties, and centrality. |
+| Competition C API | `v0.3.0` (2026-03-17) | All `scs_competition_*` functions: handle lifecycle, config/voter setup, run execution, trace export (positions, seats, votes, strategy kinds), and experiment runner. |
+
 ---
 
 ## Error handling contract

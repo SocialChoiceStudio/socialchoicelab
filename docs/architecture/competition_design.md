@@ -2,29 +2,38 @@
 
 Design notes for Layer 7 multi-candidate electoral competition.
 
-## Current status (2026-03-09)
+## References
 
-The baseline Layer 7 stack is now substantially implemented locally:
+- Laver, Michael. 2005. "Policy and the Dynamics of Political Competition." *American Political Science Review* 99(2): 263–281. DOI: 10.1017/S0003055405051646.
+- Laver, Michael, and Ernest Sergenti. 2011. *Party Competition: An Agent-Based Model*. Princeton University Press. (Princeton Studies in Complexity.)
+
+## Current status (2026-03-17)
+
+Layer 7 is complete. All planned scope for `v0.3.0` is implemented and CI is green:
 
 - competition core engine
-- strategy layer
+- strategy layer (Sticker, Hunter, Aggregator, Predator — per Laver 2005 and Laver & Sergenti 2011)
 - step and boundary policies
-- election feedback and seat conversion
-- experiment runner
-- competition C API
-- R and Python bindings
-- first static and animated trajectory plots
+- election feedback and seat conversion (plurality, proportional / Hare largest remainder)
+- convergence and cycle diagnostics
+- experiment runner (serial, per-run deterministic)
+- competition C API (stable for `v0.3.0`)
+- R and Python bindings with full parity
+- static trajectory plots and canvas-based animation (`animate_competition_canvas`)
+- animation refinement complete (trail modes, fade, layout polish)
+- R/Python parity audited and confirmed
 
-The main open problem is now in the **R animation layer**, not in the
-competition engine:
+## Stream map
 
-- the underlying round positions are correct;
-- Python animation behaves correctly;
-- R animation can still show oversized first jumps in some runs.
+All named `StreamManager` streams used by Layer 7, in registration order:
 
-Once that bug is resolved, the next work item is **further animation
-refinement**: trail toggles, fade tuning, layout polish, and remaining
-R/Python parity cleanup.
+| Stream name | Purpose |
+|---|---|
+| `competition_init_positions` | Initial competitor positions |
+| `competition_init_headings` | Initial competitor headings |
+| `competition_init_step_sizes` | Initial competitor step sizes |
+| `competition_motion_step_sizes` | Per-round random step sizes (random step-size policy) |
+| `competition_adaptation_hunter` | Hunter strategy directional sampling |
 
 This document starts with the **Phase 0 audit**: what the existing codebase
 already supports that Layer 7 can safely build on, and where competition code
