@@ -1,10 +1,15 @@
-# static_scenarios_demo.R — Static spatial voting plots for three canonical scenarios
+# static_scenarios_demo.R — Static spatial voting plots for canonical scenarios
 #
 # Scenarios:
 #   1. Dougherty & Edward (PUCH 2012, Fig 3)    — 5 voters, SQ at (0.5, 0.5)
 #   2. DPMR (PUCH 2014)                         — 7 voters, SQ at (0.5, 0.5)
 #   3. Laing-Olmsted-Bear                        — 5 voters, SQ at (100, 100)
 #   4. Laing-Olmsted Skewed Star                 — 5 voters, SQ at (0, 0)
+#
+#   Non-Euclidean ICs (all using Dougherty & Edward voters):
+#   5. Manhattan  (L1  / p=1) — diamond-shaped indifference contours
+#   6. Chebyshev  (L∞  / p→∞) — square-shaped  indifference contours
+#   7. Minkowski  (Lp  / p=3) — intermediate squircle contours
 #
 # Each plot is built in layers. Toggle any layer on or off by
 # commenting / uncommenting the corresponding line.
@@ -61,7 +66,7 @@ fig1 <- layer_ic(fig1, sc1$voters, sq = sq1, line_width = 3L, theme = THEME)
 fig1 <- layer_centroid(fig1, sc1$voters, theme = THEME)
 fig1 <- layer_marginal_median(fig1, sc1$voters, theme = THEME)
 
-#fig1
+fig1
 
 # ===========================================================================
 # 2. DPMR (PUCH 2014)
@@ -92,7 +97,7 @@ fig2 <- layer_ic(fig2, sc2$voters, sq = sq2, line_width = 3L, theme = THEME)
 fig2 <- layer_centroid(fig2, sc2$voters, theme = THEME)
 fig2 <- layer_marginal_median(fig2, sc2$voters, theme = THEME)
 
-#fig2
+fig2
 
 # ===========================================================================
 # 3. Laing-Olmsted-Bear
@@ -130,7 +135,7 @@ fig3 <- layer_ic(fig3, sc3$voters, sq = sq3, line_width = 3L, theme = THEME)
 fig3 <- layer_centroid(fig3, sc3$voters, theme = THEME)
 fig3 <- layer_marginal_median(fig3, sc3$voters, theme = THEME)
 
-#fig3
+fig3
 
 # ===========================================================================
 # 4. Laing-Olmsted Skewed Star
@@ -168,7 +173,103 @@ fig4 <- layer_ic(fig4, sc4$voters, sq = sq4, line_width = 3L, theme = THEME)
 fig4 <- layer_centroid(fig4, sc4$voters, theme = THEME)
 fig4 <- layer_marginal_median(fig4, sc4$voters, theme = THEME)
 
-#fig4
+fig4
+
+# ===========================================================================
+# 5–7. Non-Euclidean indifference contours
+#      All three reuse the Dougherty & Edward voters so the shape change is
+#      easy to see.  Compare with fig1 (Euclidean circles).
+# ===========================================================================
+
+# Reuse sc1 / hull1 / sq1 already computed above.
+# Each plot shows ICs, preferred regions, AND the winset — all under the
+# same non-Euclidean metric, so all three layers are self-consistent.
+
+
+
+
+# ===========================================================================
+# 5. Manhattan (L1 / p=1) — diamond-shaped ICs and winset
+# ===========================================================================
+dist_l1 <- make_dist_config("manhattan")
+
+fig5 <- plot_spatial_voting(
+  voters      = sc1$voters,
+  sq          = sq1,
+  voter_names = sc1$voter_names,
+  dim_names   = sc1$dim_names,
+  title       = "Dougherty & Edward — Manhattan (L1) indifference contours",
+  show_labels = SHOW_LABELS,
+  theme       = THEME,
+  width       = WIDTH,
+  height      = HEIGHT
+)
+fig5 <- layer_convex_hull(fig5, hull1, theme = THEME)
+fig5 <- layer_winset(fig5, voters = sc1$voters, sq = sq1,
+                     dist_config = dist_l1, theme = THEME)
+fig5 <- layer_ic(fig5, sc1$voters, sq = sq1, dist_config = dist_l1,
+                 line_width = 3L, theme = THEME)
+fig5 <- layer_preferred_regions(fig5, sc1$voters, sq = sq1,
+                                dist_config = dist_l1, theme = THEME)
+fig5 <- layer_centroid(fig5, sc1$voters, theme = THEME)
+fig5 <- layer_marginal_median(fig5, sc1$voters, theme = THEME)
+
+
+
+# ===========================================================================
+# 6. Chebyshev (L∞ / p→∞) — square-shaped ICs and winset
+# ===========================================================================
+dist_linf <- make_dist_config("chebyshev")
+
+fig6 <- plot_spatial_voting(
+  voters      = sc1$voters,
+  sq          = sq1,
+  voter_names = sc1$voter_names,
+  dim_names   = sc1$dim_names,
+  title       = "Dougherty & Edward — Chebyshev (L\u221e) indifference contours",
+  show_labels = SHOW_LABELS,
+  theme       = THEME,
+  width       = WIDTH,
+  height      = HEIGHT
+)
+fig6 <- layer_convex_hull(fig6, hull1, theme = THEME)
+fig6 <- layer_winset(fig6, voters = sc1$voters, sq = sq1,
+                     dist_config = dist_linf, theme = THEME)
+fig6 <- layer_ic(fig6, sc1$voters, sq = sq1, dist_config = dist_linf,
+                 line_width = 3L, theme = THEME)
+fig6 <- layer_preferred_regions(fig6, sc1$voters, sq = sq1,
+                                dist_config = dist_linf, theme = THEME)
+fig6 <- layer_centroid(fig6, sc1$voters, theme = THEME)
+fig6 <- layer_marginal_median(fig6, sc1$voters, theme = THEME)
+
+
+# ===========================================================================
+# 7. Minkowski p=3 — intermediate squircle ICs and winset
+# ===========================================================================
+dist_l3 <- make_dist_config("minkowski", order_p = 3.0)
+
+fig7 <- plot_spatial_voting(
+  voters      = sc1$voters,
+  sq          = sq1,
+  voter_names = sc1$voter_names,
+  dim_names   = sc1$dim_names,
+  title       = "Dougherty & Edward — Minkowski (p=3) indifference contours",
+  show_labels = SHOW_LABELS,
+  theme       = THEME,
+  width       = WIDTH,
+  height      = HEIGHT
+)
+fig7 <- layer_convex_hull(fig7, hull1, theme = THEME)
+fig7 <- layer_winset(fig7, voters = sc1$voters, sq = sq1,
+                     dist_config = dist_l3, theme = THEME)
+fig7 <- layer_ic(fig7, sc1$voters, sq = sq1, dist_config = dist_l3,
+                 line_width = 3L, theme = THEME)
+fig7 <- layer_preferred_regions(fig7, sc1$voters, sq = sq1,
+                                dist_config = dist_l3, theme = THEME)
+fig7 <- layer_centroid(fig7, sc1$voters, theme = THEME)
+fig7 <- layer_marginal_median(fig7, sc1$voters, theme = THEME)
+
+
 
 # ===========================================================================
 # Optional: save any plot to HTML (self-contained, no server needed)
@@ -178,9 +279,13 @@ fig4 <- layer_marginal_median(fig4, sc4$voters, theme = THEME)
 # save_plot(fig2, "tmp/dpmr_2014.html")
 # save_plot(fig3, "tmp/laing_olmsted_bear.html")
 # save_plot(fig4, "tmp/laing_olmsted_skewed_star.html")
+# save_plot(fig5, "tmp/dougherty_edward_manhattan.html")
+# save_plot(fig6, "tmp/dougherty_edward_chebyshev.html")
+# save_plot(fig7, "tmp/dougherty_edward_minkowski_p3.html")
 
-
-
+fig7
+fig6
+fig5
 fig4
 fig3
 fig2

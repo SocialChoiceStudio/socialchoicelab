@@ -992,6 +992,10 @@ layer_preferred_regions <- function(fig,
 #' @param name Legend entry label.
 #' @param voters Flat voter vector (required when \code{winset = NULL}).
 #' @param sq Status quo \code{c(x, y)} (required when \code{winset = NULL}).
+#' @param dist_config Distance metric configuration from
+#'   \code{\link{make_dist_config}}. \code{NULL} (default) uses Euclidean
+#'   distance. Only used in the auto-compute path (\code{winset = NULL});
+#'   ignored when a pre-computed \code{winset} is supplied.
 #' @param theme Colour theme — see \code{\link{plot_spatial_voting}}.
 #' @return The updated plotly figure.
 #' @examples
@@ -1005,13 +1009,14 @@ layer_preferred_regions <- function(fig,
 #' }
 #' @export
 layer_winset <- function(fig,
-                          winset     = NULL,
-                          fill_color = NULL,
-                          line_color = NULL,
-                          name       = "Winset",
-                          voters     = NULL,
-                          sq         = NULL,
-                          theme      = "dark2") {
+                          winset      = NULL,
+                          fill_color  = NULL,
+                          line_color  = NULL,
+                          name        = "Winset",
+                          voters      = NULL,
+                          sq          = NULL,
+                          dist_config = NULL,
+                          theme       = "dark2") {
   if (is.null(winset)) {
     if (is.null(voters) || is.null(sq)) {
       stop(
@@ -1019,7 +1024,8 @@ layer_winset <- function(fig,
         "or both 'voters' and 'sq' to compute the winset automatically."
       )
     }
-    winset <- winset_2d(sq, voters)
+    dc <- dist_config %||% make_dist_config()
+    winset <- winset_2d(sq, voters, dist_config = dc)
   }
 
   fill_color <- fill_color %||% .layer_fill_color("winset", theme)

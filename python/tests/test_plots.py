@@ -414,6 +414,27 @@ def test_layer_winset_error_no_args():
         sclp.layer_winset(fig)
 
 
+def test_layer_winset_auto_compute_manhattan():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    dc = scl.make_dist_config("manhattan")
+    fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ, dist_config=dc)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_winset_auto_compute_chebyshev():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    dc = scl.make_dist_config("chebyshev")
+    fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ, dist_config=dc)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_winset_auto_compute_minkowski_p3():
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    dc = scl.make_dist_config("minkowski", order_p=3.0)
+    fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ, dist_config=dc)
+    assert isinstance(fig, go.Figure)
+
+
 # ---------------------------------------------------------------------------
 # layer_ic
 # ---------------------------------------------------------------------------

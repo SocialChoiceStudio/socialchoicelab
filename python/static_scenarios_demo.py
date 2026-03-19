@@ -1,10 +1,15 @@
-"""static_scenarios_demo.py — Static spatial voting plots for three canonical scenarios
+"""static_scenarios_demo.py — Static spatial voting plots for canonical scenarios
 
 Scenarios:
   1. Dougherty & Edward (PUCH 2012, Fig 3)    — 5 voters, SQ at (0.5, 0.5)
   2. DPMR (PUCH 2014)                         — 7 voters, SQ at (0.5, 0.5)
   3. Laing-Olmsted-Bear                        — 5 voters, SQ at (100, 100)
   4. Laing-Olmsted Skewed Star                 — 5 voters, SQ at (0, 0)
+
+  Non-Euclidean ICs (all using Dougherty & Edward voters):
+  5. Manhattan  (L1  / p=1) — diamond-shaped indifference contours
+  6. Chebyshev  (L∞  / p→∞) — square-shaped  indifference contours
+  7. Minkowski  (Lp  / p=3) — intermediate squircle contours
 
 Each plot is built in layers. Toggle any layer on or off by
 commenting / uncommenting the corresponding line.
@@ -199,3 +204,106 @@ out4 = "/tmp/laing_olmsted_skewed_star_py.html"
 sclp.save_plot(fig4, out4)
 print(f"Saved: {out4}")
 subprocess.Popen(["open", out4])
+
+# ===========================================================================
+# 5–7. Non-Euclidean indifference contours + winsets
+#      All three reuse the Dougherty & Edward voters so the shape change is
+#      easy to see.  Compare with plot 1 (Euclidean circles and winset).
+# ===========================================================================
+
+# Reuse voters / hull already computed for scenario 1.
+# Each plot shows ICs, preferred regions, AND the winset — all under the
+# same non-Euclidean metric, so all three layers are self-consistent.
+
+# ===========================================================================
+# 5. Manhattan (L1 / p=1) — diamond-shaped ICs and winset
+# ===========================================================================
+dist_l1 = scl.make_dist_config("manhattan")
+
+fig5 = sclp.plot_spatial_voting(
+    voters=voters1,
+    sq=sq1,
+    voter_names=sc1["voter_names"],
+    dim_names=sc1["dim_names"],
+    title="Dougherty & Edward — Manhattan (L1) indifference contours",
+    show_labels=SHOW_LABELS,
+    theme=THEME,
+    width=WIDTH,
+    height=HEIGHT,
+)
+fig5 = sclp.layer_convex_hull(fig5, hull1, theme=THEME)
+fig5 = sclp.layer_winset(fig5, voters=voters1, sq=sq1,
+                          dist_config=dist_l1, theme=THEME)
+fig5 = sclp.layer_ic(fig5, voters1, sq=sq1, dist_config=dist_l1,
+                     line_width=3, theme=THEME)
+fig5 = sclp.layer_preferred_regions(fig5, voters1, sq=sq1,
+                                     dist_config=dist_l1, theme=THEME)
+fig5 = sclp.layer_centroid(fig5, voters1, theme=THEME)
+fig5 = sclp.layer_marginal_median(fig5, voters1, theme=THEME)
+
+out5 = "/tmp/dougherty_edward_manhattan_py.html"
+sclp.save_plot(fig5, out5)
+print(f"Saved: {out5}")
+subprocess.Popen(["open", out5])
+
+# ===========================================================================
+# 6. Chebyshev (L∞ / p→∞) — square-shaped ICs and winset
+# ===========================================================================
+dist_linf = scl.make_dist_config("chebyshev")
+
+fig6 = sclp.plot_spatial_voting(
+    voters=voters1,
+    sq=sq1,
+    voter_names=sc1["voter_names"],
+    dim_names=sc1["dim_names"],
+    title="Dougherty & Edward — Chebyshev (L\u221e) indifference contours",
+    show_labels=SHOW_LABELS,
+    theme=THEME,
+    width=WIDTH,
+    height=HEIGHT,
+)
+fig6 = sclp.layer_convex_hull(fig6, hull1, theme=THEME)
+fig6 = sclp.layer_winset(fig6, voters=voters1, sq=sq1,
+                          dist_config=dist_linf, theme=THEME)
+fig6 = sclp.layer_ic(fig6, voters1, sq=sq1, dist_config=dist_linf,
+                     line_width=3, theme=THEME)
+fig6 = sclp.layer_preferred_regions(fig6, voters1, sq=sq1,
+                                     dist_config=dist_linf, theme=THEME)
+fig6 = sclp.layer_centroid(fig6, voters1, theme=THEME)
+fig6 = sclp.layer_marginal_median(fig6, voters1, theme=THEME)
+
+out6 = "/tmp/dougherty_edward_chebyshev_py.html"
+sclp.save_plot(fig6, out6)
+print(f"Saved: {out6}")
+subprocess.Popen(["open", out6])
+
+# ===========================================================================
+# 7. Minkowski p=3 — intermediate squircle ICs and winset
+# ===========================================================================
+dist_l3 = scl.make_dist_config("minkowski", order_p=3.0)
+
+fig7 = sclp.plot_spatial_voting(
+    voters=voters1,
+    sq=sq1,
+    voter_names=sc1["voter_names"],
+    dim_names=sc1["dim_names"],
+    title="Dougherty & Edward — Minkowski (p=3) indifference contours",
+    show_labels=SHOW_LABELS,
+    theme=THEME,
+    width=WIDTH,
+    height=HEIGHT,
+)
+fig7 = sclp.layer_convex_hull(fig7, hull1, theme=THEME)
+fig7 = sclp.layer_winset(fig7, voters=voters1, sq=sq1,
+                          dist_config=dist_l3, theme=THEME)
+fig7 = sclp.layer_ic(fig7, voters1, sq=sq1, dist_config=dist_l3,
+                     line_width=3, theme=THEME)
+fig7 = sclp.layer_preferred_regions(fig7, voters1, sq=sq1,
+                                     dist_config=dist_l3, theme=THEME)
+fig7 = sclp.layer_centroid(fig7, voters1, theme=THEME)
+fig7 = sclp.layer_marginal_median(fig7, voters1, theme=THEME)
+
+out7 = "/tmp/dougherty_edward_minkowski_p3_py.html"
+sclp.save_plot(fig7, out7)
+print(f"Saved: {out7}")
+subprocess.Popen(["open", out7])

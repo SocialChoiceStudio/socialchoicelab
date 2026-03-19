@@ -12,6 +12,7 @@ layer_winset(
   name = "Winset",
   voters = NULL,
   sq = NULL,
+  dist_config = NULL,
   theme = "dark2"
 )
 }
@@ -29,6 +30,11 @@ layer_winset(
 \item{voters}{Flat voter vector (required when \code{winset = NULL}).}
 
 \item{sq}{Status quo \code{c(x, y)} (required when \code{winset = NULL}).}
+
+\item{dist_config}{Distance metric configuration from
+\code{\link{make_dist_config}}. \code{NULL} (default) uses Euclidean
+distance. Only used in the auto-compute path (\code{winset = NULL});
+ignored when a pre-computed \code{winset} is supplied.}
 
 \item{theme}{Colour theme — see \code{\link{plot_spatial_voting}}.}
 }

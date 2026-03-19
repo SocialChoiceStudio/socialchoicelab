@@ -1791,6 +1791,7 @@ def layer_winset(
     name="Winset",
     voters=None,
     sq=None,
+    dist_config=None,
     theme="dark2",
 ):
     """Add a winset polygon layer.
@@ -1814,6 +1815,11 @@ def layer_winset(
         Flat voter array (required when ``winset=None``).
     sq:
         Status quo ``[x, y]`` (required when ``winset=None``).
+    dist_config:
+        Distance metric configuration (:class:`~socialchoicelab.DistanceConfig`).
+        ``None`` (default) uses Euclidean distance.  Only used in the
+        auto-compute path (``winset=None``); ignored when a pre-computed
+        ``winset`` is supplied.
     theme:
         Colour theme — same options as :func:`plot_spatial_voting`.
 
@@ -1842,7 +1848,8 @@ def layer_winset(
         import socialchoicelab as scl
         sqv = np.asarray(sq, dtype=float).ravel()
         winset = scl.winset_2d(float(sqv[0]), float(sqv[1]),
-                               np.asarray(voters, dtype=float))
+                               np.asarray(voters, dtype=float),
+                               dist_config=dist_config)
 
     fill_color = fill_color if fill_color is not None else _layer_fill_color("winset", theme)
     line_color = line_color if line_color is not None else _layer_line_color("winset", theme)

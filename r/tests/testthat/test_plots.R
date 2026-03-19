@@ -387,6 +387,30 @@ test_that("layer_winset errors without winset or voters+sq", {
   expect_error(layer_winset(fig), "voters")
 })
 
+test_that("layer_winset auto-computes with Manhattan dist_config", {
+  skip_without_lib()
+  fig  <- plot_spatial_voting(VOTERS, sq = SQ)
+  dc   <- make_dist_config("manhattan")
+  fig2 <- layer_winset(fig, voters = VOTERS, sq = SQ, dist_config = dc)
+  expect_s3_class(fig2, "plotly")
+})
+
+test_that("layer_winset auto-computes with Chebyshev dist_config", {
+  skip_without_lib()
+  fig  <- plot_spatial_voting(VOTERS, sq = SQ)
+  dc   <- make_dist_config("chebyshev")
+  fig2 <- layer_winset(fig, voters = VOTERS, sq = SQ, dist_config = dc)
+  expect_s3_class(fig2, "plotly")
+})
+
+test_that("layer_winset auto-computes with Minkowski p=3 dist_config", {
+  skip_without_lib()
+  fig  <- plot_spatial_voting(VOTERS, sq = SQ)
+  dc   <- make_dist_config("minkowski", order_p = 3.0)
+  fig2 <- layer_winset(fig, voters = VOTERS, sq = SQ, dist_config = dc)
+  expect_s3_class(fig2, "plotly")
+})
+
 # ---------------------------------------------------------------------------
 # layer_ic
 # ---------------------------------------------------------------------------
