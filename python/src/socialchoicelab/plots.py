@@ -1557,6 +1557,7 @@ def layer_ic(
     fig,
     voters,
     sq,
+    dist_config=None,
     color_by_voter=False,
     fill_color=None,
     line_color=None,
@@ -1568,8 +1569,10 @@ def layer_ic(
 ):
     """Add voter indifference curves.
 
-    Draws a circle for each voter centred at their ideal point with radius
-    equal to the Euclidean distance to the status quo.
+    Draws an indifference contour for each voter centred at their ideal point,
+    passing through the status quo.  Under Euclidean distance (the default)
+    each contour is a circle; other metrics (Manhattan, Chebyshev, Minkowski)
+    produce their respective iso-distance shapes.
 
     Parameters
     ----------
@@ -1579,6 +1582,10 @@ def layer_ic(
         Flat array of voter ideal points.
     sq:
         Length-2 array for the status quo.
+    dist_config:
+        Distance metric configuration (:class:`~socialchoicelab.DistanceConfig`).
+        ``None`` (default) uses Euclidean distance and draws an efficient circle.
+        Pass :func:`~socialchoicelab.make_dist_config` for other metrics.
     color_by_voter:
         ``False`` (default): all curves share a single neutral colour with
         one legend entry.  ``True``: each voter gets a unique colour from
@@ -1589,7 +1596,7 @@ def layer_ic(
     line_color:
         Explicit uniform line colour (overrides theme for non-voter-colour mode).
     line_width:
-        Stroke width of the IC circles in pixels.  Default ``1``.
+        Stroke width of the IC contours in pixels.  Default ``1``.
     palette:
         Palette name for ``color_by_voter`` mode.  ``"auto"`` (default) uses
         the ``theme``'s palette.
@@ -1633,9 +1640,20 @@ def layer_ic(
         line_colors = [lc] * n_v
         fill_colors = [fill_color if fill_color is not None else "rgba(0,0,0,0)"] * n_v
 
+    _linear_loss = LossConfig(loss_type="linear")
+
     for i in range(n_v):
-        r = math.sqrt((vx[i] - sqv[0]) ** 2 + (vy[i] - sqv[1]) ** 2)
-        cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
+        if dist_config is None:
+            r = math.sqrt((vx[i] - sqv[0]) ** 2 + (vy[i] - sqv[1]) ** 2)
+            cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
+            hover_d = r
+        else:
+            d = calculate_distance([float(vx[i]), float(vy[i])], sqv.tolist(), dist_config)
+            ul = distance_to_utility(d, _linear_loss)
+            ls = level_set_2d(float(vx[i]), float(vy[i]), ul, _linear_loss, dist_config)
+            poly = level_set_to_polygon(ls, 64)
+            cx, cy = poly[:, 0].tolist(), poly[:, 1].tolist()
+            hover_d = d
         lname = voter_names[i] if color_by_voter else name
         lgroup = voter_names[i] if color_by_voter else name
         show_lg = True if color_by_voter else (i == 0)
@@ -1649,7 +1667,7 @@ def layer_ic(
             name=lname,
             legendgroup=lgroup,
             showlegend=show_lg,
-            hovertemplate=f"{voter_names[i]} IC (r={r:.3f})<extra></extra>",
+            hovertemplate=f"{voter_names[i]} IC (d={hover_d:.3f})<extra></extra>",
         ), "region")
     return fig
 
@@ -1658,6 +1676,7 @@ def layer_preferred_regions(
     fig,
     voters,
     sq,
+    dist_config=None,
     color_by_voter=False,
     fill_color=None,
     line_color=None,
@@ -1668,9 +1687,11 @@ def layer_preferred_regions(
 ):
     """Add voter preferred-to regions.
 
-    Draws a filled circle for each voter centred at their ideal point with
-    radius equal to the Euclidean distance to the status quo.  The interior
-    is the set of policies the voter strictly prefers to the SQ.
+    Draws a filled region for each voter centred at their ideal point bounded
+    by the indifference contour through the status quo.  The interior is the
+    set of policies the voter strictly prefers to the SQ.  Under Euclidean
+    distance (the default) each region is a circle; other metrics produce
+    their respective iso-distance shapes.
 
     Parameters
     ----------
@@ -1680,8 +1701,12 @@ def layer_preferred_regions(
         Flat array of voter ideal points.
     sq:
         Length-2 array for the status quo.
+    dist_config:
+        Distance metric configuration (:class:`~socialchoicelab.DistanceConfig`).
+        ``None`` (default) uses Euclidean distance and draws an efficient circle.
+        Pass :func:`~socialchoicelab.make_dist_config` for other metrics.
     color_by_voter:
-        ``False``: all circles share one neutral colour.  ``True``: each voter
+        ``False``: all regions share one neutral colour.  ``True``: each voter
         gets a unique colour from ``palette``.
     fill_color:
         Explicit fill colour (overrides theme).
@@ -1727,9 +1752,20 @@ def layer_preferred_regions(
         line_colors = [line_color if line_color is not None
                        else _preferred_uniform_line(theme)] * n_v
 
+    _linear_loss = LossConfig(loss_type="linear")
+
     for i in range(n_v):
-        r = math.sqrt((vx[i] - sqv[0]) ** 2 + (vy[i] - sqv[1]) ** 2)
-        cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
+        if dist_config is None:
+            r = math.sqrt((vx[i] - sqv[0]) ** 2 + (vy[i] - sqv[1]) ** 2)
+            cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
+            hover_d = r
+        else:
+            d = calculate_distance([float(vx[i]), float(vy[i])], sqv.tolist(), dist_config)
+            ul = distance_to_utility(d, _linear_loss)
+            ls = level_set_2d(float(vx[i]), float(vy[i]), ul, _linear_loss, dist_config)
+            poly = level_set_to_polygon(ls, 64)
+            cx, cy = poly[:, 0].tolist(), poly[:, 1].tolist()
+            hover_d = d
         lname = voter_names[i] if color_by_voter else name
         lgroup = voter_names[i] if color_by_voter else name
         show_lg = True if color_by_voter else (i == 0)
@@ -1742,7 +1778,7 @@ def layer_preferred_regions(
             name=lname,
             legendgroup=lgroup,
             showlegend=show_lg,
-            hovertemplate=f"{voter_names[i]} preferred region (r={r:.3f})<extra></extra>",
+            hovertemplate=f"{voter_names[i]} preferred region (d={hover_d:.3f})<extra></extra>",
         ), "region")
     return fig
 

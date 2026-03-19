@@ -454,6 +454,24 @@ def test_layer_ic_custom_voter_names():
     assert isinstance(fig, go.Figure)
 
 
+def test_layer_ic_non_euclidean_manhattan():
+    voters = VOTERS[:6]  # 3 voters
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    n_before = len(fig.data)
+    dc = scl.make_dist_config("manhattan")
+    fig = sclp.layer_ic(fig, voters, SQ, dist_config=dc)
+    assert isinstance(fig, go.Figure)
+    assert len(fig.data) == n_before + 3
+
+
+def test_layer_ic_non_euclidean_chebyshev():
+    voters = VOTERS[:4]  # 2 voters
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    dc = scl.make_dist_config("chebyshev")
+    fig = sclp.layer_ic(fig, voters, SQ, dist_config=dc)
+    assert isinstance(fig, go.Figure)
+
+
 # ---------------------------------------------------------------------------
 # layer_preferred_regions
 # ---------------------------------------------------------------------------
@@ -477,6 +495,24 @@ def test_layer_preferred_regions_adds_traces():
 def test_layer_preferred_regions_color_by_voter():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_preferred_regions(fig, VOTERS, SQ, color_by_voter=True)
+    assert isinstance(fig, go.Figure)
+
+
+def test_layer_preferred_regions_non_euclidean_manhattan():
+    voters = VOTERS[:6]  # 3 voters
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    n_before = len(fig.data)
+    dc = scl.make_dist_config("manhattan")
+    fig = sclp.layer_preferred_regions(fig, voters, SQ, dist_config=dc)
+    assert isinstance(fig, go.Figure)
+    assert len(fig.data) == n_before + 3
+
+
+def test_layer_preferred_regions_non_euclidean_chebyshev():
+    voters = VOTERS[:4]  # 2 voters
+    fig = sclp.plot_spatial_voting(voters, sq=SQ)
+    dc = scl.make_dist_config("chebyshev")
+    fig = sclp.layer_preferred_regions(fig, voters, SQ, dist_config=dc)
     assert isinstance(fig, go.Figure)
 
 

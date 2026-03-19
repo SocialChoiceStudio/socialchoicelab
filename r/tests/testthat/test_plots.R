@@ -426,6 +426,23 @@ test_that("layer_ic with custom voter_names works", {
   expect_s3_class(fig2, "plotly")
 })
 
+test_that("layer_ic non-Euclidean Manhattan adds one trace per voter", {
+  voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
+  fig  <- plot_spatial_voting(voters, sq = SQ)
+  dc   <- make_dist_config("manhattan")
+  fig2 <- layer_ic(fig, voters, SQ, dist_config = dc)
+  expect_s3_class(fig2, "plotly")
+  expect_equal(length(fig2$x$attrs), length(fig$x$attrs) + 3L)
+})
+
+test_that("layer_ic non-Euclidean Chebyshev works", {
+  voters <- c(-1.0, -0.5, 0.0, 0.0)
+  fig  <- plot_spatial_voting(voters, sq = SQ)
+  dc   <- make_dist_config("chebyshev")
+  fig2 <- layer_ic(fig, voters, SQ, dist_config = dc)
+  expect_s3_class(fig2, "plotly")
+})
+
 # ---------------------------------------------------------------------------
 # layer_preferred_regions
 # ---------------------------------------------------------------------------
@@ -447,6 +464,23 @@ test_that("layer_preferred_regions adds one trace per voter", {
 test_that("layer_preferred_regions with color_by_voter = TRUE works", {
   fig  <- plot_spatial_voting(VOTERS, sq = SQ)
   fig2 <- layer_preferred_regions(fig, VOTERS, SQ, color_by_voter = TRUE)
+  expect_s3_class(fig2, "plotly")
+})
+
+test_that("layer_preferred_regions non-Euclidean Manhattan adds one trace per voter", {
+  voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
+  fig  <- plot_spatial_voting(voters, sq = SQ)
+  dc   <- make_dist_config("manhattan")
+  fig2 <- layer_preferred_regions(fig, voters, SQ, dist_config = dc)
+  expect_s3_class(fig2, "plotly")
+  expect_equal(length(fig2$x$attrs), length(fig$x$attrs) + 3L)
+})
+
+test_that("layer_preferred_regions non-Euclidean Chebyshev works", {
+  voters <- c(-1.0, -0.5, 0.0, 0.0)
+  fig  <- plot_spatial_voting(voters, sq = SQ)
+  dc   <- make_dist_config("chebyshev")
+  fig2 <- layer_preferred_regions(fig, voters, SQ, dist_config = dc)
   expect_s3_class(fig2, "plotly")
 })
 

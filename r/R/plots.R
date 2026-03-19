@@ -777,13 +777,17 @@ animate_competition_trajectories <- function(trace,
 
 #' Add voter indifference curves
 #'
-#' Draws a circle for each voter centred at their ideal point with radius
-#' equal to the Euclidean distance to the status quo. The circle is the
-#' voter's indifference curve through the SQ.
+#' Draws an indifference contour for each voter centred at their ideal point,
+#' passing through the status quo.  Under Euclidean distance (the default)
+#' each contour is a circle; other metrics (Manhattan, Chebyshev, Minkowski)
+#' produce their respective iso-distance shapes.
 #'
 #' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
 #' @param voters Flat numeric vector of voter ideal points.
 #' @param sq Numeric vector \code{c(x, y)} for the status quo.
+#' @param dist_config Distance metric configuration from
+#'   \code{\link{make_dist_config}}. \code{NULL} (default) uses Euclidean
+#'   distance and draws an efficient circle.
 #' @param color_by_voter Logical. \code{FALSE} (default): all curves share a
 #'   single neutral colour with one legend entry. \code{TRUE}: each voter gets
 #'   a unique colour from \code{palette} shown individually in the legend.
@@ -791,7 +795,7 @@ animate_competition_trajectories <- function(trace,
 #'   (default). Overrides theme when not \code{NULL}.
 #' @param line_color Uniform line colour used when \code{color_by_voter = FALSE}.
 #'   \code{NULL} uses the theme default.
-#' @param line_width Stroke width of the IC circles in pixels. Default \code{1}.
+#' @param line_width Stroke width of the IC contours in pixels. Default \code{1}.
 #' @param palette Palette name for \code{color_by_voter} mode. \code{"auto"}
 #'   (default) uses the \code{theme}'s palette.
 #' @param voter_names Character vector of voter labels.
@@ -810,6 +814,7 @@ animate_competition_trajectories <- function(trace,
 layer_ic <- function(fig,
                      voters,
                      sq,
+                     dist_config    = NULL,
                      color_by_voter = FALSE,
                      fill_color     = NULL,
                      line_color     = NULL,
@@ -835,16 +840,29 @@ layer_ic <- function(fig,
     fill_colors <- rep(fill_color %||% "rgba(0,0,0,0)", n_v)
   }
 
+  linear_loss <- make_loss_config("linear")
+
   for (i in seq_len(n_v)) {
     vx <- vxy$x[i]; vy <- vxy$y[i]
-    r  <- sqrt((vx - sq[1L])^2 + (vy - sq[2L])^2)
-    circ    <- .circle_pts(vx, vy, r)
+    if (is.null(dist_config)) {
+      r    <- sqrt((vx - sq[1L])^2 + (vy - sq[2L])^2)
+      pts  <- .circle_pts(vx, vy, r)
+      px   <- pts$x; py <- pts$y
+      hover_d <- r
+    } else {
+      d    <- calculate_distance(c(vx, vy), sq, dist_config)
+      ul   <- distance_to_utility(d, linear_loss)
+      ls   <- level_set_2d(vx, vy, ul, linear_loss, dist_config)
+      poly <- level_set_to_polygon(ls, 64L)
+      px   <- poly[, 1L]; py <- poly[, 2L]
+      hover_d <- d
+    }
     lname   <- if (color_by_voter) voter_names[i] else name
     lgroup  <- if (color_by_voter) voter_names[i] else name
     show_lg <- if (color_by_voter) TRUE else (i == 1L)
     use_fill <- !is.null(fill_color) || color_by_voter
     fig <- .add_role_trace(
-      fig, x = circ$x, y = circ$y, type = "scatter", mode = "lines",
+      fig, x = px, y = py, type = "scatter", mode = "lines",
       role = "region",
       fill          = if (use_fill) "toself" else "none",
       fillcolor     = fill_colors[i],
@@ -852,7 +870,7 @@ layer_ic <- function(fig,
       name          = lname,
       legendgroup   = lgroup,
       showlegend    = show_lg,
-      hovertemplate = paste0(voter_names[i], " IC (r=", round(r, 3L),
+      hovertemplate = paste0(voter_names[i], " IC (d=", round(hover_d, 3L),
                              ")<extra></extra>")
     )
   }
@@ -865,14 +883,19 @@ layer_ic <- function(fig,
 
 #' Add voter preferred-to regions
 #'
-#' Draws a filled circle for each voter centred at their ideal point with
-#' radius equal to the Euclidean distance to the status quo. The interior
-#' is the set of policies that voter strictly prefers to the SQ.
+#' Draws a filled region for each voter centred at their ideal point bounded
+#' by the indifference contour through the status quo.  The interior is the
+#' set of policies the voter strictly prefers to the SQ.  Under Euclidean
+#' distance (the default) each region is a circle; other metrics produce
+#' their respective iso-distance shapes.
 #'
 #' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
 #' @param voters Flat numeric vector of voter ideal points.
 #' @param sq Numeric vector \code{c(x, y)} for the status quo.
-#' @param color_by_voter Logical. \code{FALSE} (default): all circles share
+#' @param dist_config Distance metric configuration from
+#'   \code{\link{make_dist_config}}. \code{NULL} (default) uses Euclidean
+#'   distance and draws an efficient circle.
+#' @param color_by_voter Logical. \code{FALSE} (default): all regions share
 #'   one neutral colour. \code{TRUE}: each voter gets a unique colour from
 #'   \code{palette} shown individually in the legend.
 #' @param fill_color Default fill colour. \code{NULL} uses the theme default.
@@ -894,6 +917,7 @@ layer_ic <- function(fig,
 layer_preferred_regions <- function(fig,
                                      voters,
                                      sq,
+                                     dist_config    = NULL,
                                      color_by_voter = FALSE,
                                      fill_color     = NULL,
                                      line_color     = NULL,
@@ -915,15 +939,28 @@ layer_preferred_regions <- function(fig,
     line_colors <- rep(line_color %||% .preferred_uniform_line(theme), n_v)
   }
 
+  linear_loss <- make_loss_config("linear")
+
   for (i in seq_len(n_v)) {
     vx <- vxy$x[i]; vy <- vxy$y[i]
-    r  <- sqrt((vx - sq[1L])^2 + (vy - sq[2L])^2)
-    circ    <- .circle_pts(vx, vy, r)
+    if (is.null(dist_config)) {
+      r    <- sqrt((vx - sq[1L])^2 + (vy - sq[2L])^2)
+      pts  <- .circle_pts(vx, vy, r)
+      px   <- pts$x; py <- pts$y
+      hover_d <- r
+    } else {
+      d    <- calculate_distance(c(vx, vy), sq, dist_config)
+      ul   <- distance_to_utility(d, linear_loss)
+      ls   <- level_set_2d(vx, vy, ul, linear_loss, dist_config)
+      poly <- level_set_to_polygon(ls, 64L)
+      px   <- poly[, 1L]; py <- poly[, 2L]
+      hover_d <- d
+    }
     lname   <- if (color_by_voter) voter_names[i] else name
     lgroup  <- if (color_by_voter) voter_names[i] else name
     show_lg <- if (color_by_voter) TRUE else (i == 1L)
     fig <- .add_role_trace(
-      fig, x = circ$x, y = circ$y, type = "scatter", mode = "lines",
+      fig, x = px, y = py, type = "scatter", mode = "lines",
       role = "region",
       fill          = "toself",
       fillcolor     = fill_colors[i],
@@ -931,8 +968,8 @@ layer_preferred_regions <- function(fig,
       name          = lname,
       legendgroup   = lgroup,
       showlegend    = show_lg,
-      hovertemplate = paste0(voter_names[i], " preferred region (r=",
-                             round(r, 3L), ")<extra></extra>")
+      hovertemplate = paste0(voter_names[i], " preferred region (d=",
+                             round(hover_d, 3L), ")<extra></extra>")
     )
   }
   fig
