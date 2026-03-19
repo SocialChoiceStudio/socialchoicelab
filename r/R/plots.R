@@ -854,7 +854,8 @@ layer_ic <- function(fig,
       ul   <- distance_to_utility(d, linear_loss)
       ls   <- level_set_2d(vx, vy, ul, linear_loss, dist_config)
       poly <- level_set_to_polygon(ls, 64L)
-      px   <- poly[, 1L]; py <- poly[, 2L]
+      px   <- c(poly[, 1L], poly[1L, 1L])
+      py   <- c(poly[, 2L], poly[1L, 2L])
       hover_d <- d
     }
     lname   <- if (color_by_voter) voter_names[i] else name
@@ -953,7 +954,8 @@ layer_preferred_regions <- function(fig,
       ul   <- distance_to_utility(d, linear_loss)
       ls   <- level_set_2d(vx, vy, ul, linear_loss, dist_config)
       poly <- level_set_to_polygon(ls, 64L)
-      px   <- poly[, 1L]; py <- poly[, 2L]
+      px   <- c(poly[, 1L], poly[1L, 1L])
+      py   <- c(poly[, 2L], poly[1L, 2L])
       hover_d <- d
     }
     lname   <- if (color_by_voter) voter_names[i] else name

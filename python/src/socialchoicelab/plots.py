@@ -1652,7 +1652,8 @@ def layer_ic(
             ul = distance_to_utility(d, _linear_loss)
             ls = level_set_2d(float(vx[i]), float(vy[i]), ul, _linear_loss, dist_config)
             poly = level_set_to_polygon(ls, 64)
-            cx, cy = poly[:, 0].tolist(), poly[:, 1].tolist()
+            cx = poly[:, 0].tolist() + [float(poly[0, 0])]
+            cy = poly[:, 1].tolist() + [float(poly[0, 1])]
             hover_d = d
         lname = voter_names[i] if color_by_voter else name
         lgroup = voter_names[i] if color_by_voter else name
@@ -1764,7 +1765,8 @@ def layer_preferred_regions(
             ul = distance_to_utility(d, _linear_loss)
             ls = level_set_2d(float(vx[i]), float(vy[i]), ul, _linear_loss, dist_config)
             poly = level_set_to_polygon(ls, 64)
-            cx, cy = poly[:, 0].tolist(), poly[:, 1].tolist()
+            cx = poly[:, 0].tolist() + [float(poly[0, 0])]
+            cy = poly[:, 1].tolist() + [float(poly[0, 1])]
             hover_d = d
         lname = voter_names[i] if color_by_voter else name
         lgroup = voter_names[i] if color_by_voter else name
