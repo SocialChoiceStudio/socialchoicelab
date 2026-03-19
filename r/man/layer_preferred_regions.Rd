@@ -8,6 +8,7 @@ layer_preferred_regions(
   fig,
   voters,
   sq,
+  dist_config = NULL,
   color_by_voter = FALSE,
   fill_color = NULL,
   line_color = NULL,
@@ -24,7 +25,11 @@ layer_preferred_regions(
 
 \item{sq}{Numeric vector \code{c(x, y)} for the status quo.}
 
-\item{color_by_voter}{Logical. \code{FALSE} (default): all circles share
+\item{dist_config}{Distance metric configuration from
+\code{\link{make_dist_config}}. \code{NULL} (default) uses Euclidean
+distance and draws an efficient circle.}
+
+\item{color_by_voter}{Logical. \code{FALSE} (default): all regions share
 one neutral colour. \code{TRUE}: each voter gets a unique colour from
 \code{palette} shown individually in the legend.}
 
@@ -44,9 +49,11 @@ one neutral colour. \code{TRUE}: each voter gets a unique colour from
 The updated plotly figure.
 }
 \description{
-Draws a filled circle for each voter centred at their ideal point with
-radius equal to the Euclidean distance to the status quo. The interior
-is the set of policies that voter strictly prefers to the SQ.
+Draws a filled region for each voter centred at their ideal point bounded
+by the indifference contour through the status quo.  The interior is the
+set of policies the voter strictly prefers to the SQ.  Under Euclidean
+distance (the default) each region is a circle; other metrics produce
+their respective iso-distance shapes.
 }
 \examples{
 \dontrun{

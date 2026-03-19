@@ -8,6 +8,7 @@ layer_ic(
   fig,
   voters,
   sq,
+  dist_config = NULL,
   color_by_voter = FALSE,
   fill_color = NULL,
   line_color = NULL,
@@ -25,6 +26,10 @@ layer_ic(
 
 \item{sq}{Numeric vector \code{c(x, y)} for the status quo.}
 
+\item{dist_config}{Distance metric configuration from
+\code{\link{make_dist_config}}. \code{NULL} (default) uses Euclidean
+distance and draws an efficient circle.}
+
 \item{color_by_voter}{Logical. \code{FALSE} (default): all curves share a
 single neutral colour with one legend entry. \code{TRUE}: each voter gets
 a unique colour from \code{palette} shown individually in the legend.}
@@ -35,7 +40,7 @@ a unique colour from \code{palette} shown individually in the legend.}
 \item{line_color}{Uniform line colour used when \code{color_by_voter = FALSE}.
 \code{NULL} uses the theme default.}
 
-\item{line_width}{Stroke width of the IC circles in pixels. Default \code{1}.}
+\item{line_width}{Stroke width of the IC contours in pixels. Default \code{1}.}
 
 \item{palette}{Palette name for \code{color_by_voter} mode. \code{"auto"}
 (default) uses the \code{theme}'s palette.}
@@ -50,9 +55,10 @@ a unique colour from \code{palette} shown individually in the legend.}
 The updated plotly figure.
 }
 \description{
-Draws a circle for each voter centred at their ideal point with radius
-equal to the Euclidean distance to the status quo. The circle is the
-voter's indifference curve through the SQ.
+Draws an indifference contour for each voter centred at their ideal point,
+passing through the status quo.  Under Euclidean distance (the default)
+each contour is a circle; other metrics (Manhattan, Chebyshev, Minkowski)
+produce their respective iso-distance shapes.
 }
 \examples{
 \dontrun{
