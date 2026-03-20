@@ -1,7 +1,8 @@
 # Add a centroid (mean voter position) marker layer
 
 Displays the coordinate-wise arithmetic mean of voter ideal points as a
-labelled marker. Computed via
+labelled cross (`+`) marker, matching the competition-canvas overlay.
+Computed via
 [`centroid_2d`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/centroid_2d.md).
 
 ## Usage
@@ -23,8 +24,8 @@ layer_centroid(fig, voters, color = NULL, name = "Centroid", theme = "dark2")
 
 - color:
 
-  Marker and text colour. `NULL` uses the theme slot for alternative
-  points.
+  Marker colour. `NULL` uses the canvas-matched crimson (or grayscale
+  when `theme = "bw"`).
 
 - name:
 

@@ -12,8 +12,8 @@ layer_centroid(fig, voters, color = NULL, name = "Centroid", theme = "dark2")
 \item{voters}{Flat numeric vector \code{[x0, y0, ...]} of voter ideal
 coordinates.}
 
-\item{color}{Marker and text colour. \code{NULL} uses the theme slot for
-alternative points.}
+\item{color}{Marker colour. \code{NULL} uses the canvas-matched crimson
+(or grayscale when \code{theme = "bw"}).}
 
 \item{name}{Legend entry label.}
 
@@ -24,7 +24,8 @@ The updated plotly figure.
 }
 \description{
 Displays the coordinate-wise arithmetic mean of voter ideal points as a
-labelled marker. Computed via \code{\link{centroid_2d}}.
+labelled cross (\code{+}) marker, matching the competition-canvas overlay.
+Computed via \code{\link{centroid_2d}}.
 }
 \examples{
 \dontrun{

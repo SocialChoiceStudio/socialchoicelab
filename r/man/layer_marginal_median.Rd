@@ -18,8 +18,9 @@ layer_marginal_median(
 \item{voters}{Flat numeric vector \code{[x0, y0, ...]} of voter ideal
 coordinates.}
 
-\item{color}{Marker and text colour. \code{NULL} uses the theme slot for
-alternative points.}
+\item{color}{Marker fill colour. \code{NULL} uses the canvas-matched
+indigo-violet (or grayscale when \code{theme = "bw"}). Outline uses a
+light stroke for contrast, as on the canvas.}
 
 \item{name}{Legend entry label.}
 
@@ -30,7 +31,8 @@ The updated plotly figure.
 }
 \description{
 Displays the coordinate-wise median of voter ideal points as a labelled
-marker (issue-by-issue median voter; Black 1948). Computed via
+upward-pointing filled triangle, matching the competition-canvas overlay
+(issue-by-issue median voter; Black 1948). Computed via
 \code{\link{marginal_median_2d}}.
 }
 \examples{

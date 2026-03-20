@@ -1,8 +1,9 @@
 # Add voter indifference curves
 
-Draws a circle for each voter centred at their ideal point with radius
-equal to the Euclidean distance to the status quo. The circle is the
-voter's indifference curve through the SQ.
+Draws an indifference contour for each voter centred at their ideal
+point, passing through the status quo. Under Euclidean distance (the
+default) each contour is a circle; other metrics (Manhattan, Chebyshev,
+Minkowski) produce their respective iso-distance shapes.
 
 ## Usage
 
@@ -11,6 +12,7 @@ layer_ic(
   fig,
   voters,
   sq,
+  dist_config = NULL,
   color_by_voter = FALSE,
   fill_color = NULL,
   line_color = NULL,
@@ -37,6 +39,13 @@ layer_ic(
 
   Numeric vector `c(x, y)` for the status quo.
 
+- dist_config:
+
+  Distance metric configuration from
+  [`make_dist_config`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_dist_config.md).
+  `NULL` (default) uses Euclidean distance and draws an efficient
+  circle.
+
 - color_by_voter:
 
   Logical. `FALSE` (default): all curves share a single neutral colour
@@ -55,7 +64,7 @@ layer_ic(
 
 - line_width:
 
-  Stroke width of the IC circles in pixels. Default `1`.
+  Stroke width of the IC contours in pixels. Default `1`.
 
 - palette:
 

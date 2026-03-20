@@ -1311,13 +1311,14 @@ finalize_plot <- function(fig) {
 #' Add a centroid (mean voter position) marker layer
 #'
 #' Displays the coordinate-wise arithmetic mean of voter ideal points as a
-#' labelled marker. Computed via \code{\link{centroid_2d}}.
+#' labelled cross (\code{+}) marker, matching the competition-canvas overlay.
+#' Computed via \code{\link{centroid_2d}}.
 #'
 #' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
 #' @param voters Flat numeric vector \code{[x0, y0, ...]} of voter ideal
 #'   coordinates.
-#' @param color Marker and text colour. \code{NULL} uses the theme slot for
-#'   alternative points.
+#' @param color Marker colour. \code{NULL} uses the canvas-matched crimson
+#'   (or grayscale when \code{theme = "bw"}).
 #' @param name Legend entry label.
 #' @param theme Colour theme — see \code{\link{plot_spatial_voting}}.
 #' @return The updated plotly figure.
@@ -1331,12 +1332,12 @@ finalize_plot <- function(fig) {
 #' @export
 layer_centroid <- function(fig, voters, color = NULL, name = "Centroid",
                             theme = "dark2") {
-  color <- color %||% .alt_point_color(theme)
+  color <- color %||% .centroid_overlay_color(theme)
   pt <- centroid_2d(as.double(voters))
   .add_role_trace(
     fig, x = pt$x, y = pt$y, type = "scatter", mode = "markers+text",
     role = "point",
-    marker        = list(symbol = "diamond", size = 12, color = color,
+    marker        = list(symbol = "cross", size = 11, color = color,
                          line = list(color = color, width = 2)),
     text          = name,
     textposition  = "top center",
@@ -1353,14 +1354,16 @@ layer_centroid <- function(fig, voters, color = NULL, name = "Centroid",
 #' Add a marginal median marker layer
 #'
 #' Displays the coordinate-wise median of voter ideal points as a labelled
-#' marker (issue-by-issue median voter; Black 1948). Computed via
+#' upward-pointing filled triangle, matching the competition-canvas overlay
+#' (issue-by-issue median voter; Black 1948). Computed via
 #' \code{\link{marginal_median_2d}}.
 #'
 #' @param fig A plotly figure from \code{\link{plot_spatial_voting}}.
 #' @param voters Flat numeric vector \code{[x0, y0, ...]} of voter ideal
 #'   coordinates.
-#' @param color Marker and text colour. \code{NULL} uses the theme slot for
-#'   alternative points.
+#' @param color Marker fill colour. \code{NULL} uses the canvas-matched
+#'   indigo-violet (or grayscale when \code{theme = "bw"}). Outline uses a
+#'   light stroke for contrast, as on the canvas.
 #' @param name Legend entry label.
 #' @param theme Colour theme — see \code{\link{plot_spatial_voting}}.
 #' @return The updated plotly figure.
@@ -1374,13 +1377,14 @@ layer_centroid <- function(fig, voters, color = NULL, name = "Centroid",
 #' @export
 layer_marginal_median <- function(fig, voters, color = NULL,
                                    name = "Marginal Median", theme = "dark2") {
-  color <- color %||% .alt_point_color(theme)
+  fill_c   <- color %||% .marginal_median_overlay_color(theme)
+  stroke_c <- .overlay_triangle_stroke(theme)
   pt <- marginal_median_2d(as.double(voters))
   .add_role_trace(
     fig, x = pt$x, y = pt$y, type = "scatter", mode = "markers+text",
     role = "point",
-    marker        = list(symbol = "cross", size = 14, color = color,
-                         line = list(color = color, width = 2)),
+    marker        = list(symbol = "triangle-up", size = 14, color = fill_c,
+                         line = list(color = stroke_c, width = 2)),
     text          = name,
     textposition  = "top center",
     name          = name,

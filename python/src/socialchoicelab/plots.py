@@ -51,6 +51,9 @@ from socialchoicelab.palette import (
     _voter_point_color,
     _alt_point_color,
     _candidate_colors_1d,
+    _centroid_overlay_color,
+    _marginal_median_overlay_color,
+    _overlay_triangle_outline_color,
     _ic_uniform_line,
     _preferred_uniform_fill,
     _preferred_uniform_line,
@@ -2169,7 +2172,7 @@ def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
     """Add a centroid (mean voter position) marker layer.
 
     Displays the coordinate-wise arithmetic mean of voter ideal points as a
-    labelled diamond marker.
+    labelled cross (+) marker, matching the competition-canvas overlay style.
 
     Parameters
     ----------
@@ -2178,7 +2181,8 @@ def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
     voters:
         Flat ``[x0, y0, …]`` voter ideal points.
     color:
-        Marker colour string (CSS rgba).  ``None`` uses the theme default.
+        Marker colour string (CSS rgba).  ``None`` uses the canvas-matched
+        crimson (or grayscale when ``theme="bw"``).
     name:
         Legend entry label.
     theme:
@@ -2198,14 +2202,14 @@ def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
     """
     if not _PLOTLY_AVAILABLE:
         raise ImportError("plotly is required: pip install plotly")
-    color = color or _alt_point_color(theme)
+    color = color or _centroid_overlay_color(theme)
     x, y = centroid_2d(voters)
     fig = _add_role_trace(
         fig,
         go.Scatter(
             x=[x], y=[y],
             mode="markers+text",
-            marker=dict(symbol="diamond", size=12, color=color,
+            marker=dict(symbol="cross", size=11, color=color,
                         line=dict(color=color, width=2)),
             text=[name],
             textposition="top center",
@@ -2223,7 +2227,8 @@ def layer_marginal_median(fig, voters, color=None, name="Marginal Median",
     """Add a marginal median marker layer.
 
     Displays the coordinate-wise median of voter ideal points as a labelled
-    cross marker (issue-by-issue median voter; Black 1948).
+    upward-pointing filled triangle, matching the competition-canvas overlay
+    (issue-by-issue median voter; Black 1948).
 
     Parameters
     ----------
@@ -2232,7 +2237,9 @@ def layer_marginal_median(fig, voters, color=None, name="Marginal Median",
     voters:
         Flat ``[x0, y0, …]`` voter ideal points.
     color:
-        Marker colour string (CSS rgba).  ``None`` uses the theme default.
+        Marker fill colour (CSS rgba).  ``None`` uses the canvas-matched
+        indigo-violet (or grayscale when ``theme="bw"``).  Outline always uses
+        a light stroke for contrast, as on the canvas.
     name:
         Legend entry label.
     theme:
@@ -2252,15 +2259,16 @@ def layer_marginal_median(fig, voters, color=None, name="Marginal Median",
     """
     if not _PLOTLY_AVAILABLE:
         raise ImportError("plotly is required: pip install plotly")
-    color = color or _alt_point_color(theme)
+    fill_c = color or _marginal_median_overlay_color(theme)
+    stroke_c = _overlay_triangle_outline_color(theme)
     x, y = marginal_median_2d(voters)
     fig = _add_role_trace(
         fig,
         go.Scatter(
             x=[x], y=[y],
             mode="markers+text",
-            marker=dict(symbol="cross", size=14, color=color,
-                        line=dict(color=color, width=2)),
+            marker=dict(symbol="triangle-up", size=14, color=fill_c,
+                        line=dict(color=stroke_c, width=2)),
             text=[name],
             textposition="top center",
             name=name,

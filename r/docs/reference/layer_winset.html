@@ -52,6 +52,7 @@ auto-compute. If the winset is empty the figure is returned unchanged.</p>
 <span>  name <span class="op">=</span> <span class="st">"Winset"</span>,</span>
 <span>  voters <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sq <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  dist_config <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theme <span class="op">=</span> <span class="st">"dark2"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -86,6 +87,13 @@ auto-compute. If the winset is empty the figure is returned unchanged.</p>
 
 <dt id="arg-sq">sq<a class="anchor" aria-label="anchor" href="#arg-sq"></a></dt>
 <dd><p>Status quo <code>c(x, y)</code> (required when <code>winset = NULL</code>).</p></dd>
+
+
+<dt id="arg-dist-config">dist_config<a class="anchor" aria-label="anchor" href="#arg-dist-config"></a></dt>
+<dd><p>Distance metric configuration from
+<code><a href="make_dist_config.html">make_dist_config</a></code>. <code>NULL</code> (default) uses Euclidean
+distance. Only used in the auto-compute path (<code>winset = NULL</code>);
+ignored when a pre-computed <code>winset</code> is supplied.</p></dd>
 
 
 <dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>

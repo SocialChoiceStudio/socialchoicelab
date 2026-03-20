@@ -200,6 +200,34 @@ def _alt_point_color(theme: str) -> str:
     return _rgba(pal[slot % len(pal)], 0.90)
 
 
+# Centroid / marginal-median overlay colours — keep in sync with
+# r/inst/htmlwidgets/competition_canvas.js COLORS.overlay.
+_OVERLAY_CENTROID_FILL = "rgba(185,10,10,0.95)"
+_OVERLAY_MARGINAL_MEDIAN_FILL = "rgba(100,0,180,0.90)"
+_OVERLAY_POINT_STROKE = "rgba(255,255,255,0.85)"
+
+
+def _centroid_overlay_color(theme: str) -> str:
+    """Fill/stroke colour for static centroid marker (matches canvas cross)."""
+    if theme == "bw":
+        return "rgba(25,25,25,0.95)"
+    return _OVERLAY_CENTROID_FILL
+
+
+def _marginal_median_overlay_color(theme: str) -> str:
+    """Fill colour for static marginal-median marker (matches canvas triangle)."""
+    if theme == "bw":
+        return "rgba(45,45,45,0.95)"
+    return _OVERLAY_MARGINAL_MEDIAN_FILL
+
+
+def _overlay_triangle_outline_color(theme: str) -> str:
+    """Outline for marginal-median triangle (matches canvas white stroke)."""
+    if theme == "bw":
+        return "rgba(240,240,240,0.95)"
+    return _OVERLAY_POINT_STROKE
+
+
 def _ic_uniform_line(theme: str) -> str:
     """Neutral line colour for indifference curves (uniform / non-voter colour mode)."""
     if theme == "bw":

@@ -1,8 +1,10 @@
 # Add voter preferred-to regions
 
-Draws a filled circle for each voter centred at their ideal point with
-radius equal to the Euclidean distance to the status quo. The interior
-is the set of policies that voter strictly prefers to the SQ.
+Draws a filled region for each voter centred at their ideal point
+bounded by the indifference contour through the status quo. The interior
+is the set of policies the voter strictly prefers to the SQ. Under
+Euclidean distance (the default) each region is a circle; other metrics
+produce their respective iso-distance shapes.
 
 ## Usage
 
@@ -11,6 +13,7 @@ layer_preferred_regions(
   fig,
   voters,
   sq,
+  dist_config = NULL,
   color_by_voter = FALSE,
   fill_color = NULL,
   line_color = NULL,
@@ -36,9 +39,16 @@ layer_preferred_regions(
 
   Numeric vector `c(x, y)` for the status quo.
 
+- dist_config:
+
+  Distance metric configuration from
+  [`make_dist_config`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_dist_config.md).
+  `NULL` (default) uses Euclidean distance and draws an efficient
+  circle.
+
 - color_by_voter:
 
-  Logical. `FALSE` (default): all circles share one neutral colour.
+  Logical. `FALSE` (default): all regions share one neutral colour.
   `TRUE`: each voter gets a unique colour from `palette` shown
   individually in the legend.
 

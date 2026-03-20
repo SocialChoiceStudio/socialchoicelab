@@ -16,6 +16,7 @@ layer_winset(
   name = "Winset",
   voters = NULL,
   sq = NULL,
+  dist_config = NULL,
   theme = "dark2"
 )
 ```
@@ -52,6 +53,14 @@ layer_winset(
 - sq:
 
   Status quo `c(x, y)` (required when `winset = NULL`).
+
+- dist_config:
+
+  Distance metric configuration from
+  [`make_dist_config`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_dist_config.md).
+  `NULL` (default) uses Euclidean distance. Only used in the
+  auto-compute path (`winset = NULL`); ignored when a pre-computed
+  `winset` is supplied.
 
 - theme:
 

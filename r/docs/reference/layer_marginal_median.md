@@ -1,7 +1,8 @@
 # Add a marginal median marker layer
 
 Displays the coordinate-wise median of voter ideal points as a labelled
-marker (issue-by-issue median voter; Black 1948). Computed via
+upward-pointing filled triangle, matching the competition-canvas overlay
+(issue-by-issue median voter; Black 1948). Computed via
 [`marginal_median_2d`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/marginal_median_2d.md).
 
 ## Usage
@@ -29,8 +30,9 @@ layer_marginal_median(
 
 - color:
 
-  Marker and text colour. `NULL` uses the theme slot for alternative
-  points.
+  Marker fill colour. `NULL` uses the canvas-matched indigo-violet (or
+  grayscale when `theme = "bw"`). Outline uses a light stroke for
+  contrast, as on the canvas.
 
 - name:
 

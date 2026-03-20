@@ -602,10 +602,10 @@ def test_layer_centroid_adds_one_trace():
     assert len(fig2.data) == n_before + 1
 
 
-def test_layer_centroid_marker_is_diamond():
+def test_layer_centroid_marker_is_cross():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_centroid(fig, VOTERS)
-    assert fig.data[-1].marker.symbol == "diamond"
+    assert fig.data[-1].marker.symbol == "cross"
 
 
 def test_layer_centroid_position_matches_mean():
@@ -635,10 +635,10 @@ def test_layer_marginal_median_adds_one_trace():
     assert len(fig2.data) == n_before + 1
 
 
-def test_layer_marginal_median_marker_is_cross():
+def test_layer_marginal_median_marker_is_triangle_up():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_marginal_median(fig, VOTERS)
-    assert fig.data[-1].marker.symbol == "cross"
+    assert fig.data[-1].marker.symbol == "triangle-up"
 
 
 def test_layer_marginal_median_position_matches_median():

@@ -1289,7 +1289,7 @@ colours across the whole plot.</p>
 
 
 <h2 id="socialchoicelab.plots.layer_winset" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_winset</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">winset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Winset&#39;</span><span class="p">,</span> <span class="n">voters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_winset</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">winset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Winset&#39;</span><span class="p">,</span> <span class="n">voters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dist_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.layer_winset" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1411,6 +1411,24 @@ colours across the whole plot.</p>
             <td>
               <div class="doc-md-description">
                 <p>Status quo <code>[x, y]</code> (required when <code>winset=None</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dist_config</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Distance metric configuration (:class:<code>~socialchoicelab.DistanceConfig</code>).
+<code>None</code> (default) uses Euclidean distance.  Only used in the
+auto-compute path (<code>winset=None</code>); ignored when a pre-computed
+<code>winset</code> is supplied.</p>
               </div>
             </td>
             <td>

@@ -168,6 +168,24 @@
   .rgba(pal[((slot - 1L) %% length(pal)) + 1L], 0.90)
 }
 
+# Centroid / marginal-median overlay colours — keep in sync with
+# inst/htmlwidgets/competition_canvas.js COLORS.overlay.
+.overlay_centroid_fill         <- "rgba(185,10,10,0.95)"
+.overlay_marginal_median_fill  <- "rgba(100,0,180,0.90)"
+.overlay_point_stroke          <- "rgba(255,255,255,0.85)"
+
+.centroid_overlay_color <- function(theme) {
+  if (theme == "bw") "rgba(25,25,25,0.95)" else .overlay_centroid_fill
+}
+
+.marginal_median_overlay_color <- function(theme) {
+  if (theme == "bw") "rgba(45,45,45,0.95)" else .overlay_marginal_median_fill
+}
+
+.overlay_triangle_stroke <- function(theme) {
+  if (theme == "bw") "rgba(240,240,240,0.95)" else .overlay_point_stroke
+}
+
 .ic_uniform_line <- function(theme) {
   if (theme == "bw") "rgba(80,80,80,0.40)" else "rgba(120,120,160,0.40)"
 }
