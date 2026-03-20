@@ -225,12 +225,10 @@ plot_spatial_voting <- function(voters,
     fig <- .add_role_trace(
       fig, x = sq[1L], y = sq[2L], type = "scatter",
       role = "point",
-      mode   = if (show_labels) "markers+text" else "markers",
+      mode   = "markers",
       name   = "Status Quo",
       marker = list(symbol = "star", size = 18, color = sq_col,
                     line = list(color = "white", width = 1.5)),
-      text          = if (show_labels) "SQ" else NULL,
-      textposition  = if (show_labels) "top center" else NULL,
       hovertemplate = "Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>"
     )
   }

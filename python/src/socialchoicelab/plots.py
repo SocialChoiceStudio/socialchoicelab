@@ -304,12 +304,10 @@ def plot_spatial_voting(
     if sq is not None:
         fig = _add_role_trace(fig, go.Scatter(
             x=[sqv[0]], y=[sqv[1]],
-            mode="markers+text" if show_labels else "markers",
+            mode="markers",
             name="Status Quo",
             marker=dict(symbol="star", size=18, color=sq_col,
                         line=dict(color="white", width=1.5)),
-            text=["SQ"] if show_labels else None,
-            textposition="top center" if show_labels else None,
             hovertemplate="Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
         ), "point")
 
