@@ -144,6 +144,14 @@ Indifference curves (ICs) are computed during both static spatial voting visuali
 
 **When:** After `0.3.0` is stable; appropriate for a performance sprint before `1.0.0`.
 
+### Exploratory: [The Math of Politics](https://www.mathofpolitics.com/by-theme/) — “By Theme” vocabulary
+
+**External reference:** [By Theme – The Math Of Politics](https://www.mathofpolitics.com/by-theme/) groups posts under recurring **structural patterns** (e.g. conservation of impossibility, the setter model, signaling, the measurement problem, adverse selection, flipping the conditional, institutional patches, etc.) — described there as vocabulary for how institutions fail, not mere topic labels.
+
+**Exploration (no build commitment yet):** Audit whether and how each theme could be **illustrated, probed, or discussed** using SocialChoiceLab’s current or plausibly extended stack (spatial preferences, voting rules, winsets and cores, competition dynamics, synthetic profiles, visualization). For many themes the honest answer may be **partial analogy only** or **out of scope** (e.g. rational addiction, penalty ceilings) until entirely different model families exist.
+
+**Deliverable when pursued:** A short internal mapping (e.g. a section in `docs/references/` or a dedicated note under `docs/architecture/`) with columns: theme → relevant today / analogy via existing object / gap → possible demo or paper pointer. Use it to steer teaching examples and future features, not to imply the software already “covers” every pattern on the blog.
+
 ### Release ladder
 
 | Version | Meaning |
