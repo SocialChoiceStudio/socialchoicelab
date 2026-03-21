@@ -4,7 +4,14 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 
 ## [Unreleased]
 
-_(nothing yet)_
+### Changed
+
+#### Static spatial plots (R and Python)
+
+- **`dist_config`:** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` (auto-compute) accept `DistanceConfig` / `dist_config` so static Plotly overlays match non-Euclidean metrics where the core supports them.
+- **Polygon stroke:** non-Euclidean indifference and preferred-region polygons explicitly repeat the first vertex so Plotly line strokes close correctly.
+- **Centroid / marginal median:** marker symbols and colours aligned with the competition canvas (centroid: cross; marginal median: filled triangle-up with outline).
+- **Status quo:** no on-plot `"SQ"` text; legend and hover only (R and Python `plot_spatial_voting()`).
 
 ---
 

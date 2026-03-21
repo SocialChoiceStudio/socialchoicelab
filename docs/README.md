@@ -6,13 +6,13 @@ This file is the single entry point for project documentation.
 
 | What you need | Where to look |
 |---------------|---------------|
-| What's next / current position | `docs/status/where_we_are.md` |
-| Near-/mid-/long-term roadmap | `docs/status/roadmap.md` |
+| What's next / current position | `docs/status/WHERE_WE_ARE.md` |
+| Near-/mid-/long-term roadmap | `docs/status/ROADMAP.md` |
 | Layer 7 competition implementation plan | `docs/status/competition_plan.md` |
 | Visualization layer implementation plan (archived) | `docs/status/archive/visualization_plan.md` |
-| Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/milestone_gates.md` |
+| Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/MILESTONE_GATES.md` |
 | Archived plans (geometry, C API, bindings, aggregation, consensus reviews) | `docs/status/archive/` |
-| Revisit before release or before opening to others | `docs/status/milestone_gates.md` § Revisit before release |
+| Revisit before release or before opening to others | `docs/status/MILESTONE_GATES.md` § Revisit before release |
 | Chronological project history | `docs/status/project_log.md` |
 | Architecture intent | `docs/architecture/design_document.md` |
 | Geometry services design (CGAL 2D, winsets, Yolk, Heart, etc.) | `docs/architecture/geometry_design.md` |
@@ -34,9 +34,9 @@ This file is the single entry point for project documentation.
 
 If two docs disagree for execution decisions, use this precedence:
 
-1. `docs/status/where_we_are.md`
+1. `docs/status/WHERE_WE_ARE.md`
 2. `docs/architecture/` (relevant design doc)
-3. `docs/status/roadmap.md` (near-/mid-/long-term)
+3. `docs/status/ROADMAP.md` (near-/mid-/long-term)
 4. `docs/status/project_log.md` (history only)
 
 ## Documentation Layout
@@ -47,11 +47,11 @@ Project root: `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` (standard open-so
 docs/
 ├── README.md                              ← you are here (master index)
 ├── status/
-│   ├── where_we_are.md                    ← current position + recent work log
-│   ├── roadmap.md                         ← near-term, mid-term, long-term plans
+│   ├── WHERE_WE_ARE.md                    ← current position + recent work log
+│   ├── ROADMAP.md                         ← near-term, mid-term, long-term plans
 │   ├── competition_plan.md                ← Layer 7 competition implementation plan
 │   │   ├── visualization_plan.md          ← visualization layer plan (complete, archived)
-│   ├── milestone_gates.md                 ← definition of done per milestone
+│   ├── MILESTONE_GATES.md                 ← definition of done per milestone
 │   ├── project_log.md                     ← chronological narrative history
 │   └── archive/                           ← completed short-term plans (for reference)
 │       ├── README.md
@@ -90,7 +90,7 @@ Choose the subdirectory by the doc's purpose:
 
 | Subdirectory | Put docs here when … | Examples |
 |---|---|---|
-| `status/` | The doc tracks *current state* — what is done, what is next, time horizons, or history. Agents read these every session. | `where_we_are.md`, `roadmap.md` |
+| `status/` | The doc tracks *current state* — what is done, what is next, time horizons, or history. Agents read these every session. | `WHERE_WE_ARE.md`, `ROADMAP.md` |
 | `architecture/` | The doc records a *design decision* that governs how code is written going forward. Should be stable once adopted. | `design_document.md`, `stream_manager_design.md` |
 | `development/` | The doc is a *how-to* for working on the project — style guide, workflow, tools, illustrative examples. | `development.md`, `git_reference.md` |
 | `SocialChoiceStudioDev/references/` | Academic bibliography and priority lists — outside the repo in Dropbox; not tracked in git. | `reference_index.md`, `implementation_priority.md` |
@@ -104,10 +104,10 @@ Choose the subdirectory by the doc's purpose:
 
 For each completed development item:
 
-1. Update `docs/status/where_we_are.md` (next item, last updated date, add to Recent Work).
+1. Update `docs/status/WHERE_WE_ARE.md` (next item, last updated date, add to Recent Work).
 2. If the work came from a plan, mark it ✅ Done in that plan (completed plans are in `docs/status/archive/`).
 3. Add a dated milestone note to `docs/status/project_log.md` when materially relevant.
 
-At **end-of-milestone** (when running `scripts/end-of-milestone.sh`), the script prompts to confirm `docs/status/roadmap.md` is still accurate for near/mid/long-term; update it if horizons have shifted.
+At **end-of-milestone** (when running `scripts/end-of-milestone.sh`), the script prompts to confirm `docs/status/ROADMAP.md` is still accurate for near/mid/long-term; update it if horizons have shifted.
 
 When **adding new docs**, add them to this index. Prefer a single source of truth (especially in `status/` and `architecture/`); avoid duplicating the same list or content in multiple files.

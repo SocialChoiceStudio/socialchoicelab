@@ -6,15 +6,15 @@ High-level direction for the project. This document does not duplicate detail; i
 |----------------------|-----|
 | Architecture, layers, and integration pattern | [Design Document](../architecture/design_document.md) |
 | Feature and algorithm prioritization (Yolk, voting rules, etc.) | [Implementation Priority Guide](../references/implementation_priority.md) |
-| Current position and recent work | [where_we_are.md](where_we_are.md) |
+| Current position and recent work | [WHERE_WE_ARE.md](WHERE_WE_ARE.md) |
 | Layer 7 candidate-competition implementation plan | [competition_plan.md](competition_plan.md) |
 | Archived plans (consensus reviews, core completion) | [archive/](archive/README.md) |
-| Definition of done per milestone (features, tests, docs, API stability) | [milestone_gates.md](milestone_gates.md) |
+| Definition of done per milestone (features, tests, docs, API stability) | [MILESTONE_GATES.md](MILESTONE_GATES.md) |
 | Rendering backend consolidation analysis (Plotly vs. Canvas) | [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md) |
 
 **Dependency order** (from design): core C++ and foundation first → stable **c_api** → geometry primitives (e.g. CGAL 2D) → voting rules and outcome concepts → **then** R/Python bindings and GUI. Language bindings and advanced electoral methods depend on the C API and core geometry.
 
-**Release numbering plan:** the next public release is `0.2.0`, reflecting that the core library, C API, bindings, and visualization layer exist but the major planned feature tracks are not complete. `0.3.0` is reserved for the candidate-competition / Layer 7 milestone, which is now substantially implemented locally and in active refinement. `1.0.0` is reserved for the point at which the remaining major feature track after candidate competition — currently described as *Characteristics of Voting Rules* (working title; rename later) — is also complete.
+**Release numbering plan:** `v0.2.0` and `v0.3.0` are tagged. The next semver bump may be a patch/minor release to ship post-`v0.3.0` static visualization improvements on `main`, or the next feature-led release after **Characteristics of Voting Rules** (working title) progresses. `1.0.0` is reserved for the point at which that major feature track (post-competition) is also complete.
 
 ### Dependency sequencing (what must come first)
 
@@ -28,10 +28,10 @@ High-level direction for the project. This document does not duplicate detail; i
 ## Near-term (1–2 months)
 
 - **Core and c_api:** Complete ✅. C++ core (distance, loss, PRNG, indifference) and stable C API (`scs_api`) are done and CI green.
-- **Geometry Layer 3:** Complete ✅ *(Yolk and Heart need revisiting — see below)*. CGAL EPEC integration, exact 2D types, convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, veto players, weighted voting. See [archive/geometry_plan.md](archive/geometry_plan.md). **⚠️ Note:** `yolk_2d` is currently an LP-yolk approximation (subgradient over sampled directions), not the exact yolk — Stone & Tovey (1992) showed limiting median lines alone do not determine the yolk. `heart_boundary_2d` is a coarse grid approximation. Both must be addressed before the `geometry-complete` milestone is considered fully valid. See [where_we_are.md § Known Issues](where_we_are.md) and [milestone_gates.md § Revisit before release](milestone_gates.md).
+- **Geometry Layer 3:** Complete ✅ *(Yolk and Heart need revisiting — see below)*. CGAL EPEC integration, exact 2D types, convex hull, majority preference, winsets, Yolk, uncovered set, Heart, Copeland, veto players, weighted voting. See [archive/geometry_plan.md](archive/geometry_plan.md). **⚠️ Note:** `yolk_2d` is currently an LP-yolk approximation (subgradient over sampled directions), not the exact yolk — Stone & Tovey (1992) showed limiting median lines alone do not determine the yolk. `heart_boundary_2d` is a coarse grid approximation. Both must be addressed before the `geometry-complete` milestone is considered fully valid. See [WHERE_WE_ARE.md § Known Issues](WHERE_WE_ARE.md) and [MILESTONE_GATES.md § Revisit before release](MILESTONE_GATES.md).
 - **Profiles & Aggregation Layers 4–5:** Complete ✅. Profile struct, spatial/utility/synthetic profile construction, plurality/Borda/approval/anti-plurality/scoring rules, social rankings, Pareto, Condorcet/majority consistency. See [archive/profiles_and_aggregation_plan.md](archive/profiles_and_aggregation_plan.md).
 - **c_api geometry + aggregation extensions:** Complete ✅. All geometry and aggregation services exposed through the stable C API. See [archive/c_api_extensions_plan.md](archive/c_api_extensions_plan.md).
-- **Preparing for `0.2.0` (active):** Work through "Revisit before release" items and final release-doc checks before tagging `0.2.0`.
+- **`0.2.0` / `0.3.0` releases:** Tagged; see [MILESTONE_GATES.md](MILESTONE_GATES.md).
 
 ---
 
@@ -39,7 +39,7 @@ High-level direction for the project. This document does not duplicate detail; i
 
 - **First R and Python bindings:** Complete ✅. `socialchoicelab` R (`.Call()`) and Python (cffi) packages calling the pre-built `libscs_api` via the C ABI. See [archive/binding_plan_completed.md](archive/binding_plan_completed.md).
 - **Visualization layer:** Complete ✅. Plotly-based spatial voting plot helpers in R and Python. Composable layers, colorblind-safe theme system, built-in scenario datasets, indifference curves, preferred-region overlays, `save_plot()`. See [archive/visualization_plan.md](archive/visualization_plan.md).
-- **`0.2.0` tag:** Pending final release-gate confirmation; see [milestone_gates.md](milestone_gates.md).
+- **`0.2.0` / `0.3.0` tags:** Complete ✅. See [MILESTONE_GATES.md](MILESTONE_GATES.md).
 
 ---
 
@@ -47,10 +47,10 @@ High-level direction for the project. This document does not duplicate detail; i
 
 - **R and Python packages:** Full-featured `socialchoicelab` packages with ModelConfig-driven repro, `export_script(config, lang="R|python")`, and documentation.
 - **GUI and web:** "GUI-lite" (R Shiny / Shiny for Python) and optional web app (Shiny for Python deployment) as in the [Design Document](../architecture/design_document.md).
-- **Layer 7 simulation engines (`0.3.0` track, now in active implementation/refinement):**
-  - **Adaptive candidate / party competition:** multi-candidate spatial competition with Sticker, Hunter, Aggregator, and Predator heuristics; plurality and PR seat conversion; deterministic trace recording; convergence/cycle diagnostics; C API wrappers; R/Python bindings; Plotly trajectory animation. Authoritative plan: [competition_plan.md](competition_plan.md).
+- **Layer 7 simulation engines (`0.3.0` track):** ✅ Shipped in `v0.3.0`.
+  - **Adaptive candidate / party competition:** multi-candidate spatial competition with Sticker, Hunter, Aggregator, and Predator heuristics; plurality and PR seat conversion; deterministic trace recording; convergence/cycle diagnostics; C API wrappers; R/Python bindings; canvas-based animation (`animate_competition_canvas`). Authoritative plan: [competition_plan.md](competition_plan.md).
   - **Experiment runner:** reproducible parameter sweeps and parallel replications built on top of the stable competition engine, using named streams and per-run seeds.
-  - **Remaining near-term Layer 7 blocker:** R animated competition plots still show oversized first jumps in some runs; once solved, the next work item is further animation refinement (trail toggles, fade tuning, layout polish, R/Python parity).
+  - **Follow-on (post-tag):** optional engine extensions (e.g. per-run position re-randomization in [competition_plan.md](competition_plan.md)); retire Plotly frame animation before `1.0.0` per release ladder below.
 - **Next major feature track after candidate competition:** working title **Characteristics of Voting Rules**. This will be renamed when its scope is formalized, but it is currently the feature family intended to take the project from `0.3.0` to `1.0.0`.
 - **Advanced features beyond Layer 7:** 3D/N-D geometry, empirical profiles, preference estimation — per [implementation priority](../references/implementation_priority.md) Phases 3–4.
 - **Contributor C API wrapper tooling:** When the project opens to external contributors, any new C++ functionality (preference generation, voting rules, candidate/party strategy, etc.) will require a corresponding C API wrapper. Provide either: (a) documented wrapper templates so contributors know the expected pattern, (b) a template generator script, or (c) a PR-triggered agent that drafts wrapper boilerplate for review. Without this, C API coverage will fall behind the C++ surface. See expanded note at the bottom of this file.
@@ -70,22 +70,18 @@ This sequencing mirrors how the geometry and aggregation layers were delivered: 
 
 ### Current Layer 7 status snapshot
 
-Substantial Layer 7 work has landed locally:
+Layer 7 is complete and tagged as `v0.3.0`. Ongoing work is **extensions and maintenance** (experiment-runner options, docs, visualization consistency), not greenfield engine build.
 
-- competition core engine
-- strategy layer
-- step and boundary policies
-- election feedback and seat conversion
-- experiment runner
-- competition C API
-- R and Python wrappers
-- first static and animated trajectory plots
+### Post-`v0.3.0` static visualization (on `main`, not yet in a tagged release)
 
-The remaining work is no longer "build Layer 7 from scratch." It is now:
+These changes landed after the `v0.3.0` tag; they tighten parity between **static Plotly** spatial plots and the **competition canvas** player:
 
-1. Resolve the remaining R animation jump issue.
-2. Refine the competition animation UX.
-3. Finish docs/polish/release-gate decisions for the `0.3.0` line.
+- **`dist_config` on static layers:** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` (auto-compute path) accept `DistanceConfig` so indifference boundaries, preferred regions, and winsets match non-Euclidean metrics (e.g. Manhattan, Chebyshev, Minkowski \(p\neq 2\)) where the core already supports them.
+- **Polygon closure:** level-set polygons are explicitly closed in Plotly coordinate arrays so stroke outlines match fills for non-Euclidean ICs and preferred regions.
+- **Centroid / marginal median markers:** Plotly symbols and theme colours aligned with the canvas (centroid: crimson cross; marginal median: filled triangle-up with outline).
+- **Status quo:** no on-plot `"SQ"` text label; identification is via legend (`Status Quo`) and hover only (even when `show_labels=TRUE` for alternatives).
+
+**Release:** Cut `0.3.1` (or next appropriate semver) when you want these on a tagged line; until then they are `[Unreleased]` in [CHANGELOG.md](../../CHANGELOG.md).
 
 ### Animation implementation
 
@@ -139,6 +135,8 @@ Indifference curves (ICs) are computed during both static spatial voting visuali
 ---
 
 ## Non-Euclidean geometry (deferred)
+
+**Static Plotly overlays (partially addressed on `main`, post-`v0.3.0`):** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` auto-compute accept `dist_config` and use core level-set / winset machinery for non-Euclidean metrics. This does **not** resolve the deferred items below (Pareto proxy, Voronoi, Yolk/Heart/etc. under alternate metrics).
 
 Several geometry services are currently valid only under Euclidean distance (or
 have not been verified for other metrics). These must be addressed before the

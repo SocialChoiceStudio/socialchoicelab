@@ -4,10 +4,9 @@ Roadmap for adding Layer 7 multi-candidate electoral competition to SocialChoice
 
 This plan is based on the current project architecture, milestone-gate style, the deprecated `voteR` implementation, and the main competition references: Laver and Sergenti's party-competition ABM baseline, Fowler and Laver's tournament framework, and related work on convergence, centrifugal/centripetal incentives, and multicandidate equilibrium.
 
-## Implementation status (2026-03-09)
+## Implementation status (2026-03-11)
 
-This roadmap began as a forward plan. It now also needs to reflect the fact
-that most of the baseline Layer 7 stack is already implemented locally.
+This roadmap began as a forward plan. The baseline Layer 7 stack is implemented and **`v0.3.0` is tagged** (2026-03-18). Post-tag visualization refinements on `main` are documented in [ROADMAP.md](ROADMAP.md) § Post-`v0.3.0` and CHANGELOG `[Unreleased]`.
 
 ### Largely implemented
 
@@ -31,9 +30,11 @@ that most of the baseline Layer 7 stack is already implemented locally.
 
 ### Practical next step
 
-All Layer 7 implementation work is done. The remaining work is the **`0.3.0`
-release gate**: citation verification in `competition_design.md`, CI green
-check, and API stability declaration.
+Layer 7 implementation and the **`v0.3.0` release** are complete. Next priorities:
+
+1. **Product:** begin the **Characteristics of Voting Rules** track (see [ROADMAP.md](ROADMAP.md)).
+2. **Optional release:** tag a patch/minor version to publish post-`v0.3.0` static-plot improvements on `main` (see ROADMAP § Post-`v0.3.0`).
+3. **Engine extension (below):** per-run position re-randomization when you are ready to schedule it.
 
 ### Planned engine extension: per-run position re-randomization
 
@@ -49,11 +50,7 @@ run, using the run's RNG stream for the random draws. When absent, the existing
 `initial_competitors` field governs as today — so the change is fully backward
 compatible.
 
-**Sequencing:** Implement after the R animation bug and animation UX
-refinements are resolved. This is an engine feature, so it touches
-`experiment_runner.h`, the C API (`scs_api.h` / `scs_api.cpp`), and the
-R/Python experiment wrappers. Do not implement until the animation layer is
-stable.
+**Sequencing:** Implement when scheduled; Layer 7 animation is stable (canvas player, R jump issue resolved). This is an engine feature: `experiment_runner.h`, the C API (`scs_api.h` / `scs_api.cpp`), and the R/Python experiment wrappers.
 
 ## Scope and sequencing
 
@@ -627,9 +624,9 @@ Finish the competition layer to the same standard as earlier milestones: complet
 
 - `docs/architecture/competition_design.md`
   - finalized with citations and extension notes.
-- `docs/status/milestone_gates.md`
+- `docs/status/MILESTONE_GATES.md`
   - add a new competition milestone entry.
-- `docs/status/where_we_are.md`
+- `docs/status/WHERE_WE_ARE.md`
   - update current/next state after implementation.
 - Reference validation pass for:
   - Laver and Sergenti (2012)

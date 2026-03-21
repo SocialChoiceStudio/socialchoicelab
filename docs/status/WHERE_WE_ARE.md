@@ -2,13 +2,13 @@
 
 **Single source for "what's next" so any agent on any machine can answer correctly.**
 
-- **Current phase:** Layer 7 candidate competition is complete: core engine, experiment runner, C API, R/Python bindings, static and animated plotting, animation refinement (trail modes, fade, layout polish), and R/Python binding parity all done.
-- **Next:** Tag `v0.3.0` — all gate criteria satisfied (citations added to `competition_design.md`, stream map added, CI green, API stability declared). Then begin **Characteristics of Voting Rules** (working title), the next major feature track toward `1.0.0`.
-- **Release context:** `v0.2.0` is tagged. `v0.3.0` (candidate competition) is feature-complete, docs hardened, and ready to tag. Authoritative plan: [competition_plan.md](competition_plan.md).
-- **After `0.3.0`:** Begin the next major feature track, currently described as **Characteristics of Voting Rules** (working title), then iterate to `1.0.0` once all major components are in place.
-- **Last updated:** 2026-03-17
+- **Current phase:** `v0.3.0` is tagged. Layer 7 candidate competition is complete. Additional static-plot improvements have landed on `main` after the tag (non-Euclidean overlays, canvas-aligned centrality markers, SQ legend-only). See [CHANGELOG.md](../../CHANGELOG.md) `[Unreleased]` and [ROADMAP.md](ROADMAP.md) § Post-`v0.3.0`.
+- **Next:** Begin **Characteristics of Voting Rules** (working title), the next major feature track toward `1.0.0`. Optionally cut a patch/minor release (`0.3.1` or similar) to publish the post-tag visualization changes.
+- **Release context:** `v0.2.0` and `v0.3.0` are tagged. Authoritative Layer 7 plan: [competition_plan.md](competition_plan.md).
+- **After the next release line:** Iterate to `1.0.0` once all major components — including Characteristics of Voting Rules — are in place.
+- **Last updated:** 2026-03-11
 
-**Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference.
+**Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference. Milestone definitions: [MILESTONE_GATES.md](MILESTONE_GATES.md).
 
 ---
 
@@ -40,10 +40,17 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 
 **Action (deferred post-`0.2.0`):** Approximation status is documented in `geometry_design.md` and `c_api_design.md`. Not shown in example scripts. Tracked in `milestone_gates.md § Deferred known issues`. Revisit only when theoretical progress is made on the continuous Heart.
 
-**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/ROADMAP.md`.
+**Rule for agents:** When the user asks "where are we" or "what's next", read this file and `docs/status/ROADMAP.md` (and [MILESTONE_GATES.md](MILESTONE_GATES.md) for tag history).
 ---
 
 ## Recent Work
+
+### Session: 2026-03-11 — Docs sync: `v0.3.0` tagged, post-tag static visualization
+
+- **Tagging:** `v0.3.0` was already on `origin`; status docs still said “ready to tag” in places — updated WHERE_WE_ARE, ROADMAP, MILESTONE_GATES, `competition_plan.md`, `project_log.md`, `docs/README.md`, CONTRIBUTING.
+- **Roadmap:** New § **Post-`v0.3.0` static visualization** in ROADMAP (non-Euclidean `dist_config` on static layers, polygon closure, canvas-aligned centroid/marginal-median markers, SQ legend-only).
+- **CHANGELOG:** `[Unreleased]` entries for the commits on `main` after `v0.3.0`.
+- **Design:** `docs/development/visualization_design.md` updated for the above.
 
 ### Session: 2026-03-10 — R/Python parity fixes; environment setup on new machine
 
@@ -60,18 +67,18 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 - **C API:** competition trace and experiment handles added to `scs_api.h` / `scs_api.cpp`, including round/final exports for positions, vote totals/shares, and seat totals/shares.
 - **Bindings:** R and Python wrappers for competition runs and experiments landed, including `CompetitionTrace` / `CompetitionExperiment` user-facing objects.
 - **Visualization:** static and animated competition trajectory plots added in both bindings. The default no-trail animation path is now parallel across R and Python at the conceptual level.
-- **Remaining blocker:** R animated competition plots can still show two oversized initial jumps in some runs even though the underlying engine positions are correct. This is now the main open Layer 7 problem.
-- **Next after the blocker:** further animation refinement — trail toggles, fade tuning, layout polish, and remaining R/Python parity work.
+- **Remaining blocker** *(historical; resolved before `v0.3.0`)*: R animated competition plots could show oversized initial jumps in some runs; fixed prior to tag.
+- **Next after the blocker** *(done for `v0.3.0`)*: animation refinement — trail toggles, fade tuning, layout polish, R/Python parity.
 
 ### Sessions: 2026-03-07/08 — Visualization layer (C10–C13) COMPLETE
 
 - **C10–C12 (core):** `plot_spatial_voting()`, `layer_winset()`, `layer_yolk()`, `layer_uncovered_set()`, `layer_convex_hull()` implemented in R (`r/R/plots.R`) and Python (`python/src/socialchoicelab/plots.py`). Identical API across both languages (Plotly output, composable layers, `zorder` for correct stacking). CI green on both R and Python jobs.
 - **C13.A (built-in scenarios):** 33 scenarios in JSON format bundled in R `inst/extdata/scenarios/` and Python `src/socialchoicelab/data/scenarios/`. `load_scenario(name)` and `list_scenarios()` in both languages. Full unit test coverage.
-- **C13.2 (`layer_ic`):** Individual voter indifference curves (circles centred at ideal points, radius = distance to SQ). `color_by_voter` flag; dotted dash style.
+- **C13.2 (`layer_ic`):** Individual voter indifference curves (default: Euclidean circles; extended post-`v0.3.0` with `dist_config` for non-Euclidean boundaries). `color_by_voter` flag; dotted dash style.
 - **C13.3 (auto-compute):** `layer_winset()` and `layer_uncovered_set()` accept `voters` + `sq` and compute geometry internally.
 - **C13.4 (theme system):** `scl_palette(name, n, alpha)` and `scl_theme_colors(layer_type, theme)` in R (`r/R/palette.R`) and Python (`python/src/socialchoicelab/palette.py`). Five themes: `dark2`, `set2`, `okabe_ito`, `paired`, `bw`. All `layer_*()` functions accept `theme=` (default `"dark2"`).
 - **C13.5 (axis auto-range):** `plot_spatial_voting()` auto-computes 12%-padded axis range; `xlim`/`ylim` override.
-- **C13.6 (`layer_preferred_regions`):** Filled voter-preferred-to-SQ circles; `color_by_voter` flag.
+- **C13.6 (`layer_preferred_regions`):** Filled voter-preferred-to-SQ regions (default: Euclidean disks; extended post-`v0.3.0` with `dist_config`); `color_by_voter` flag.
 - **C13.8 (`save_plot`):** HTML export via `htmlwidgets::saveWidget()` / `fig.write_html()`; image export via `plotly::save_image()` / `fig.write_image()`.
 - **Deferred:** C13.1 (external file format → ROADMAP), C13.7 (Shapley-Owen → blocked on C API), C13.9 (gallery notebook → docs milestone).
 - **Tests:** Full unit test coverage added for all new functions in R (`test_palette.R`, `test_plots.R`) and Python (`test_palette.py`, `test_plots.py`).

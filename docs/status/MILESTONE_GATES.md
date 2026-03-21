@@ -84,7 +84,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ---
 
-## First public release / `0.2.0` (tag: `v0.2.0`) 🔲 Next
+## First public release / `0.2.0` (tag: `v0.2.0`) ✅ Tagged 2026-03-08
 
 **Scope:** First cohesive public release with the C++ core, stable C API, at least one language binding, and the visualization layer. This is a feature-complete pre-1.0 release, not the final semver-major boundary.
 
@@ -97,7 +97,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ---
 
-## Competition Layer 7 / `0.3.0` (tag: `v0.3.0`) ✅ Ready to tag
+## Competition Layer 7 / `0.3.0` (tag: `v0.3.0`) ✅ Tagged 2026-03-18
 
 **Scope:** Multi-candidate spatial competition engine (adaptive candidates + trace export) with stable C API and R/Python access. Detailed phase plan: [competition_plan.md](competition_plan.md).
 
@@ -105,12 +105,12 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 |------|----------|
 | **Features** | Baseline Layer 7 scope complete: typed competitor/config/state model; fixed and generated voters; Sticker/Hunter/Aggregator/Predator strategies; plurality and proportional seat conversion; synchronous round engine; step-size and boundary policies; convergence/cycle diagnostics; full trace recording/export. |
 | **Tests** | CI green. C++ unit/integration tests cover strategy behavior, one-run engine correctness, reproducibility by seed/stream map, and termination diagnostics. C API tests cover handle lifecycle, size-query trace export, and failure paths. R/Python tests cover at least one end-to-end competition run and trace inspection. |
-| **Docs** | `docs/architecture/competition_design.md` complete with verified citations and stream map; `docs/status/competition_plan.md` updated to reflect delivered scope; ROADMAP and where_we_are updated. Remaining visual-polish blocker explicitly recorded, including the current R animation jump issue and the follow-on animation-refinement work. |
+| **Docs** | `docs/architecture/competition_design.md` complete with verified citations and stream map; `docs/status/competition_plan.md` updated to reflect delivered scope; ROADMAP and WHERE_WE_ARE updated. (At tag time: R animation jump resolved; animation UX refinement complete.) |
 | **API stability** | Competition C API surface declared stable for the tag; binding APIs for competition runs/trace access stable behind that boundary. |
 
-**Current status note (2026-03-17):**
+**Current status note (2026-03-11):**
 
-All Layer 7 scope is complete: core engine, experiment runner, C API, R/Python bindings with full parity, static and canvas-based animation, animation refinement (trail modes, fade, layout polish). CI is green. The R animation jump bug is resolved. All gate criteria are satisfied; pending tag.
+Tag `v0.3.0` is on `main` (annotated). Post-tag visualization-only improvements (non-Euclidean static overlays, symbol/colour alignment with the competition canvas, SQ legend-only) are on `main` but not part of the `v0.3.0` tag; see CHANGELOG `[Unreleased]` and ROADMAP § Post-`v0.3.0`.
 
 ---
 
@@ -137,8 +137,8 @@ All Layer 7 scope is complete: core engine, experiment runner, C API, R/Python b
 | Profiles & Aggregation | Profile, voting rules, Pareto, Condorcet | CI + 100 tests | aggregation_design.md | C++ API stable | ✅ 2026-03-06 |
 | c_api extensions | Full c_api for geometry + aggregation | CI + extended c_api tests | c_api_design.md updated | Extended c_api frozen | ✅ 2026-03-07 |
 | Visualization layer | Plotly layers, theme system, built-in scenarios | R + Python test suites | visualization_design.md | Plotting API stable | ✅ 2026-03-08 |
-| First public release / `0.2.0` | Core + c_api + bindings + visualization | CI + binding tests | User docs | Pre-1.0 stability in `0.x` line | 🔲 Next |
-| Competition Layer 7 / `0.3.0` | Adaptive candidate engine + stable trace/C API/bindings | CI + engine/C API/binding tests | competition_design.md + roadmap updates | Competition API frozen for tag | ✅ Ready to tag |
+| First public release / `0.2.0` | Core + c_api + bindings + visualization | CI + binding tests | User docs | Pre-1.0 stability in `0.x` line | ✅ Tagged 2026-03-08 |
+| Competition Layer 7 / `0.3.0` | Adaptive candidate engine + stable trace/C API/bindings | CI + engine/C API/binding tests | competition_design.md + roadmap updates | Competition API frozen for tag | ✅ Tagged 2026-03-18 |
 | Major components complete / `1.0.0` | All major feature families complete | Full-stack CI + end-to-end workflows | Full 1.0 docs | Semver 1.0 promise | 🔲 Future |
 
 When in doubt, tighten the gate rather than ship: "done" means the criteria above are satisfied, not "we moved on".

@@ -85,8 +85,36 @@ in BW mode) — it is not drawn from the palette.
 Points are always solid and differentiated by shape so they read clearly in
 black-and-white.
 
-On-graph text labels for points are **off by default** (`show_labels = FALSE`).
-The legend entry and hover tooltip are the primary identification mechanism.
+On-graph text labels for voter/alternative points are **off by default**
+(`show_labels = FALSE` in R, `show_labels=False` in Python). The legend entry
+and hover tooltip are the primary identification mechanism.
+
+**Status quo:** the SQ marker never receives an on-plot text label (no `"SQ"`
+string), even when `show_labels` is `TRUE` for alternatives — use the legend
+(`Status Quo`) and hover.
+
+### Centrality overlays (`layer_centroid`, `layer_marginal_median`)
+
+Symbols and colours are aligned with the **competition canvas** player:
+
+| Measure | Plotly marker | Notes |
+|---------|---------------|--------|
+| Centroid | `cross` | Fill/stroke from theme helpers (`_centroid_overlay_color` / R equivalent); reads as a plus/cross on the plot. |
+| Marginal median | `triangle-up` | Filled triangle, outline colour for contrast on dark themes. |
+
+### Non-Euclidean distance (`dist_config`)
+
+When `dist_config` / `DistanceConfig` is **omitted**, `layer_ic()` and
+`layer_preferred_regions()` use the historical Euclidean circle construction.
+When **provided**, boundaries come from the core level-set pipeline
+(`level_set_2d` → polygon) with linear loss, so Manhattan, Chebyshev, Minkowski
+\(p\), etc. match the geometry layer.
+
+`layer_winset()` auto-compute (`voters` + `sq`, no precomputed winset) passes
+`dist_config` through to `winset_2d` so the plotted region matches the metric.
+
+**Plotly detail:** for polygons from level sets, the first vertex is repeated at
+the end of the `x`/`y` arrays so `fill="toself"` and the line stroke both close.
 
 ### Utility functions
 
@@ -155,6 +183,6 @@ voter points).
 
 | Layer | Key design notes |
 |---|---|
-| `layer_ic(fig, voters, sq)` | One circle per voter, radius = d(voter, sq). Default: uniform colour. With `color_by_voter=TRUE`: unique colour per voter shown in legend. Dash: `"dot"`. |
+| `layer_ic(fig, voters, sq, dist_config=…)` | One indifference curve per voter through SQ. **Euclidean (default):** circle, radius = d(voter, sq). **Non-Euclidean:** boundary from `level_set_2d` for the active `DistanceConfig`. Default: uniform colour. With `color_by_voter=TRUE`: unique colour per voter. Dash: `"dot"`. |
 | `layer_heart(fig, ...)` | Filled region. Dash: `"dashdot"`. Fill/line colours TBD at implementation. |
 | `layer_cut_lines(fig, ...)` | Line objects (no fill). Dash: `"dot"`. Includes perpendicular bisectors and Voronoi edges. |

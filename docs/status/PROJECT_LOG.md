@@ -162,8 +162,14 @@ Entries are in chronological order (oldest first, newest last).
 
 **Competition engine (Layer 7, toward `0.3.0`)**: Typed competitor/config/state model; deterministic initialization; Sticker/Hunter/Aggregator/Predator strategies; step-size and boundary policies; synchronous competition engine; convergence/cycle diagnostics; plurality feedback + Hare largest remainder seat conversion; experiment runner for replicated sweeps. C API competition handles added to `scs_api.h` / `scs_api.cpp`. R and Python bindings (`competition_run`, `CompetitionTrace`, `CompetitionExperiment`) and static + animated trajectory plots shipped in both packages. Phases 0–J of `competition_plan.md` largely complete.
 
-**Remaining blocker**: R animated competition plots still show oversized initial jumps in some runs. This is the primary open Layer 7 work item before `0.3.0` can be declared complete.
+**Remaining blocker** *(superseded 2026-03-17/18)*: R animation jump issue was resolved; `v0.3.0` tagged 2026-03-18.
 
 **Tooling**: Added `scripts/check-all.sh` to unify all local checks (format, C++ build, C++ tests, lint, R/Python bindings, pkgdown, mkdocs). Updated `scripts/pre-push.sh` to call `check-all.sh`. Cursor rule `Run-All-Local-Checks-Before-Push.mdc` rewritten to reference `check-all.sh` unconditionally.
 
 **Doc maintenance**: Renamed `competition_roadmap.md` → `competition_plan.md` to follow project naming convention; updated all cross-references.
+
+## 2026-03-11 — Status docs sync after `v0.3.0` tag
+
+**Reality check:** `v0.2.0` and `v0.3.0` are tagged on `main`; WHERE_WE_ARE, ROADMAP, MILESTONE_GATES, and `competition_plan.md` were still describing “ready to tag” / R animation blocker in places — corrected.
+
+**Post-tag `main`:** Static Plotly layers gained `dist_config` for ICs, preferred regions, and winset auto-compute; polygon closure for strokes; centroid/marginal-median markers aligned with competition canvas; SQ legend-only. Documented in CHANGELOG `[Unreleased]`, ROADMAP § Post-`v0.3.0`, and `docs/development/visualization_design.md`.
