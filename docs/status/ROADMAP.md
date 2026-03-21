@@ -55,6 +55,27 @@ High-level direction for the project. This document does not duplicate detail; i
 - **Advanced features beyond Layer 7:** 3D/N-D geometry, empirical profiles, preference estimation — per [implementation priority](../references/implementation_priority.md) Phases 3–4.
 - **Contributor C API wrapper tooling:** When the project opens to external contributors, any new C++ functionality (preference generation, voting rules, candidate/party strategy, etc.) will require a corresponding C API wrapper. Provide either: (a) documented wrapper templates so contributors know the expected pattern, (b) a template generator script, or (c) a PR-triggered agent that drafts wrapper boilerplate for review. Without this, C API coverage will fall behind the C++ surface. See expanded note at the bottom of this file.
 
+### Tiered convenience entry points (static analysis & competition) — future
+
+**Intent:** Add **user-facing, one-stop helpers** in R and Python that produce common workflows (figures, profiles, competition runs, experiment batches) without forcing new users to assemble every low-level struct and stream name on day one. Each helper must still map cleanly onto the real parameter model: sensible defaults, optional “common variants,” and an escape hatch to the full surface.
+
+**Scope (two families, parallel design):**
+
+1. **Static / analytical spatial workflows** — e.g. voter ideals and alternatives, distance and loss, indifference and winsets, profiles and voting rules, centrality and scenario loading; bundles that reflect **traditional textbook defaults** where applicable (e.g. Euclidean / circular indifference in the spatial story, standard spatial profile construction, familiar culture assumptions such as IC / IAC where we expose them, single-peaked or other canonical structures only when the core supports them clearly).
+2. **Candidate competition workflows** — e.g. one-call setup for a competition run or a small experiment matrix, still backed by the existing engine, C API, and trace format.
+
+**Tiering (illustrative — final count and names TBD):**
+
+- **Tier A — “Traditional defaults”:** One function (or small family) per major workflow with **high-opinion defaults** aligned with common teaching and papers (Euclidean metric, standard tie-breaking, default strategies/policies where relevant, etc.).
+- **Tier B — “Common variants”:** A companion entry point (or overloaded/prefixed variant) that surfaces **frequently changed options** (e.g. non-Euclidean `DistanceConfig`, alternative loss, seat rules, key competition policies) without exposing the entire config graph.
+- **Tier C — “Advanced / full control”:** Thin wrapper or documented pattern that **exposes all underlying parameters** (existing constructors + `StreamManager` + C API–faithful objects), for reproducibility and extensions.
+
+We may ship **two or three** tiers per major functionality, or merge/split tiers once usage and maintenance cost are clear. **R and Python stay in parity:** same public behavior, options, and defaults across both packages unless explicitly documented otherwise.
+
+**Timing:** **Defer implementation** until the relevant cores (static geometry/aggregation pipeline, competition engine and experiment runner, and the post-`0.3.0` feature track) are **further built out and stable enough** that these helpers are not churning every sprint. When scoped, add a short design note (e.g. under `docs/architecture/` or `docs/development/`) listing function names, default tables, and parity tests.
+
+**Relation to other roadmap items:** Complements the long-term goal of **ModelConfig-driven repro** and scripted export; convenience functions may later **emit or consume** that config story rather than duplicating it.
+
 ### Long-term sequencing for candidate competition
 
 The broad order for Layer 7 work is:
