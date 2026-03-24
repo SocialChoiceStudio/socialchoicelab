@@ -199,5 +199,5 @@ jobs:
 
       - name: Build mkdocs site (verify only, no deploy)
         run: |
-          pip install mkdocs mkdocstrings[python] mkdocs-material mkdocs-jupyter
+          pip install "mkdocs==1.6.1" "mkdocstrings[python]==1.0.3" "mkdocs-material==9.7.5" "mkdocs-jupyter==0.25.1" "nbconvert==7.17.0"
           mkdocs build --config-file docs/mkdocs.yml --strict
