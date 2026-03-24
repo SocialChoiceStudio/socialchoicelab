@@ -569,8 +569,9 @@ TEST(CApi_IcPolygon2d, ResultMatchesFourCallPath) {
   // Four-call path.
   double dist = 0.0;
   char err[256] = {};
-  ASSERT_EQ(scs_calculate_distance((double[]){1.0, 2.0}, (double[]){4.0, 6.0},
-                                   2, &dc, &dist, err, 256),
+  const double voter_xy[2] = {1.0, 2.0};
+  const double alt_xy[2] = {4.0, 6.0};
+  ASSERT_EQ(scs_calculate_distance(voter_xy, alt_xy, 2, &dc, &dist, err, 256),
             SCS_OK)
       << err;
   double ul = 0.0;
