@@ -237,6 +237,10 @@ int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
 For circle/ellipse/superellipse, `num_samples` must be ≥ 3. For polygon, the
 four vertices are copied and `num_samples` is ignored.
 
+`scs_ic_polygon_2d` uses the same size-query, fill, and buffer contract as
+`scs_level_set_to_polygon` (see declaration under **Indifference / level sets**
+below).
+
 ### Opaque handles (C2, C5)
 
 The stable surface uses opaque handles for C++ types that cannot be represented
@@ -404,7 +408,19 @@ int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
     double* out_xy,   // interleaved [x0,y0,x1,y1,...]; caller-provided
     int* out_n,       // number of (x,y) pairs written
     char* err_buf, int err_buf_len);
+
+int scs_ic_polygon_2d(double ideal_x, double ideal_y, double sq_x, double sq_y,
+    const SCS_LossConfig* loss_cfg, const SCS_DistanceConfig* dist_cfg,
+    int num_samples, double* out_xy, int out_capacity, int* out_n,
+    char* err_buf, int err_buf_len);
 ```
+
+`scs_ic_polygon_2d`: compound call that runs `scs_calculate_distance`,
+`scs_distance_to_utility`, `scs_level_set_2d`, and `scs_level_set_to_polygon`
+internally (same numerics as the four-call sequence). Uses the same size-query /
+fill / `SCS_ERROR_BUFFER_TOO_SMALL` contract as `scs_level_set_to_polygon`
+(`out_xy == NULL` queries `*out_n`). Output vertex count is `num_samples` for
+smooth shapes or 4 for polygon level sets (Manhattan / Chebyshev).
 
 `scs_level_set_to_polygon`:
 - For `CIRCLE / ELLIPSE / SUPERELLIPSE`: samples `num_samples` points uniformly
@@ -544,7 +560,7 @@ scs_profile_destroy(p);
 
 | Context | Rule |
 |---------|------|
-| **Stateless functions** | All pure-computation functions (`scs_calculate_distance`, `scs_distance_to_utility`, `scs_normalize_utility`, `scs_level_set_1d`, `scs_level_set_2d`, `scs_level_set_to_polygon`, `scs_convex_hull_2d`, and all geometry functions added in Phase C1–C4) are **thread-safe** — they take no global mutable state. Callers may invoke them concurrently from multiple threads without synchronisation. |
+| **Stateless functions** | All pure-computation functions (`scs_calculate_distance`, `scs_distance_to_utility`, `scs_normalize_utility`, `scs_level_set_1d`, `scs_level_set_2d`, `scs_level_set_to_polygon`, `scs_ic_polygon_2d`, `scs_convex_hull_2d`, and all geometry functions added in Phase C1–C4) are **thread-safe** — they take no global mutable state. Callers may invoke them concurrently from multiple threads without synchronisation. |
 | **SCS_StreamManager** | A `SCS_StreamManager` handle is **not thread-safe**. Concurrent calls on the same handle produce undefined behaviour. The caller is responsible for serialising access (e.g. one manager per thread, or an external mutex). |
 | **scs_api_version** | Thread-safe — reads compile-time constants only. |
 | **Error buffers** | `err_buf` is caller-owned per-call storage. Concurrent calls with distinct buffers are safe. Never share an `err_buf` between concurrent calls. |

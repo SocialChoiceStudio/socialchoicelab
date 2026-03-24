@@ -32,6 +32,7 @@ reference:
       - level_set_1d
       - level_set_2d
       - level_set_to_polygon
+      - ic_polygon_2d
 
   - title: "Convex Hull and Majority Preference"
     desc: "Geometry utilities and pairwise majority tests."

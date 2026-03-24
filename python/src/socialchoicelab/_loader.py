@@ -259,6 +259,14 @@ _DECLARATIONS = """
                                  int out_capacity, int* out_n,
                                  char* err_buf, int err_buf_len);
 
+    int scs_ic_polygon_2d(double ideal_x, double ideal_y,
+                          double sq_x, double sq_y,
+                          const SCS_LossConfig* loss_cfg,
+                          const SCS_DistanceConfig* dist_cfg,
+                          int num_samples, double* out_xy,
+                          int out_capacity, int* out_n,
+                          char* err_buf, int err_buf_len);
+
     /* ---------------------------------------------------------------------------
      * Geometry — stateless functions
      * ------------------------------------------------------------------------- */

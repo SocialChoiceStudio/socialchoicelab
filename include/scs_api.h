@@ -333,6 +333,37 @@ SCS_API int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
                                      int out_capacity, int* out_n,
                                      char* err_buf, int err_buf_len);
 
+/**
+ * @brief Compound: compute the IC boundary polygon for a voter through a
+ * reference point in a single C API call.
+ *
+ * Equivalent to calling scs_calculate_distance, scs_distance_to_utility,
+ * scs_level_set_2d, and scs_level_set_to_polygon in sequence, but without
+ * intermediate round-trips across the C API boundary.
+ *
+ * Output size: num_samples (x,y) pairs for smooth shapes (Euclidean /
+ * Minkowski), 4 (x,y) pairs for polygon shapes (Manhattan / Chebyshev).
+ * Pass out_xy = NULL to query the required number of pairs via *out_n.
+ *
+ * @param ideal_x, ideal_y  Voter's ideal point.
+ * @param sq_x, sq_y        Reference point (status quo or seat position).
+ * @param loss_cfg          Loss configuration.
+ * @param dist_cfg          Distance configuration (n_weights must be 2).
+ * @param num_samples       Boundary samples for smooth shapes (>= 3).
+ * @param[out] out_xy       Caller buffer for interleaved [x0,y0,x1,y1,...],
+ *                          or NULL for size-query.
+ * @param out_capacity      Capacity of out_xy in (x,y) pairs.
+ * @param[out] out_n        Number of (x,y) pairs required / written.
+ * @param err_buf           Optional error message buffer.
+ * @param err_buf_len       Length of err_buf.
+ * @return SCS_OK, SCS_ERROR_BUFFER_TOO_SMALL, or other error code.
+ */
+SCS_API int scs_ic_polygon_2d(double ideal_x, double ideal_y, double sq_x,
+                              double sq_y, const SCS_LossConfig* loss_cfg,
+                              const SCS_DistanceConfig* dist_cfg,
+                              int num_samples, double* out_xy, int out_capacity,
+                              int* out_n, char* err_buf, int err_buf_len);
+
 // ---------------------------------------------------------------------------
 // Geometry functions
 // ---------------------------------------------------------------------------

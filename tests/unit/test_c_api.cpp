@@ -465,6 +465,139 @@ TEST(CApi_ToPolygon, BufferTooSmallReturnsError) {
 }
 
 // ---------------------------------------------------------------------------
+// scs_ic_polygon_2d tests
+// ---------------------------------------------------------------------------
+
+static SCS_DistanceConfig make_euclidean_2d() {
+  static double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc{};
+  dc.distance_type = SCS_DIST_EUCLIDEAN;
+  dc.order_p = 2.0;
+  dc.salience_weights = w;
+  dc.n_weights = 2;
+  return dc;
+}
+
+TEST(CApi_IcPolygon2d, EuclideanCircleMatchesLevelSetPath) {
+  // Voter at (0,0), SQ at (3,4) → distance = 5 (3-4-5 triangle).
+  // The IC polygon should be a circle of radius 5 centred at (0,0).
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  constexpr int N = 64;
+  double xy[2 * N] = {};
+  int out_n = 0;
+  char err[256] = {};
+  int rc = scs_ic_polygon_2d(0.0, 0.0, 3.0, 4.0, &lc, &dc, N, xy, N, &out_n,
+                             err, 256);
+  ASSERT_EQ(rc, SCS_OK) << err;
+  EXPECT_EQ(out_n, N);
+  // Every vertex should be at radius ~5 from (0,0).
+  for (int i = 0; i < out_n; ++i) {
+    double r = std::sqrt(xy[2 * i] * xy[2 * i] + xy[2 * i + 1] * xy[2 * i + 1]);
+    EXPECT_NEAR(r, 5.0, 1e-9) << "vertex " << i;
+  }
+}
+
+TEST(CApi_IcPolygon2d, ManhattanPolygon4Vertices) {
+  static double w[2] = {1.0, 1.0};
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc{};
+  dc.distance_type = SCS_DIST_MANHATTAN;
+  dc.order_p = 1.0;
+  dc.salience_weights = w;
+  dc.n_weights = 2;
+  // Voter at (0,0), SQ at (1,0) → Manhattan distance = 1.
+  // IC should be a diamond (4 vertices) with semi-axes 1.
+  constexpr int N = 32;
+  double xy[2 * N] = {};
+  int out_n = 0;
+  char err[256] = {};
+  int rc = scs_ic_polygon_2d(0.0, 0.0, 1.0, 0.0, &lc, &dc, N, xy, N, &out_n,
+                             err, 256);
+  ASSERT_EQ(rc, SCS_OK) << err;
+  EXPECT_EQ(out_n, 4);
+}
+
+TEST(CApi_IcPolygon2d, SizeQueryNullBuffer) {
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  int out_n = 0;
+  char err[256] = {};
+  int rc = scs_ic_polygon_2d(0.0, 0.0, 1.0, 0.0, &lc, &dc, 48, nullptr, 0,
+                             &out_n, err, 256);
+  ASSERT_EQ(rc, SCS_OK) << err;
+  EXPECT_EQ(out_n, 48);
+}
+
+TEST(CApi_IcPolygon2d, BufferTooSmallReturnsError) {
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  double xy[2 * 4] = {};
+  int out_n = 0;
+  char err[256] = {};
+  int rc = scs_ic_polygon_2d(0.0, 0.0, 1.0, 0.0, &lc, &dc, 64, xy, 4, &out_n,
+                             err, 256);
+  EXPECT_EQ(rc, SCS_ERROR_BUFFER_TOO_SMALL);
+  EXPECT_EQ(out_n, 64);
+}
+
+TEST(CApi_IcPolygon2d, ErrorOnNullPointer) {
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  int out_n = 0;
+  char err[256] = {};
+  // Null loss_cfg.
+  EXPECT_NE(scs_ic_polygon_2d(0.0, 0.0, 1.0, 0.0, nullptr, &dc, 32, nullptr, 0,
+                              &out_n, err, 256),
+            SCS_OK);
+  // Null dist_cfg.
+  EXPECT_NE(scs_ic_polygon_2d(0.0, 0.0, 1.0, 0.0, &lc, nullptr, 32, nullptr, 0,
+                              &out_n, err, 256),
+            SCS_OK);
+  // Null out_n.
+  EXPECT_NE(scs_ic_polygon_2d(0.0, 0.0, 1.0, 0.0, &lc, &dc, 32, nullptr, 0,
+                              nullptr, err, 256),
+            SCS_OK);
+}
+
+TEST(CApi_IcPolygon2d, ResultMatchesFourCallPath) {
+  // Verify compound function produces identical output to the 4-call sequence.
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  constexpr int N = 32;
+
+  // Four-call path.
+  double dist = 0.0;
+  char err[256] = {};
+  ASSERT_EQ(scs_calculate_distance((double[]){1.0, 2.0}, (double[]){4.0, 6.0},
+                                   2, &dc, &dist, err, 256),
+            SCS_OK)
+      << err;
+  double ul = 0.0;
+  ASSERT_EQ(scs_distance_to_utility(dist, &lc, &ul, err, 256), SCS_OK) << err;
+  SCS_LevelSet2d ls{};
+  ASSERT_EQ(scs_level_set_2d(1.0, 2.0, ul, &lc, &dc, &ls, err, 256), SCS_OK)
+      << err;
+  double xy4[2 * N] = {};
+  int n4 = 0;
+  ASSERT_EQ(scs_level_set_to_polygon(&ls, N, xy4, N, &n4, err, 256), SCS_OK)
+      << err;
+
+  // Compound path.
+  double xy1[2 * N] = {};
+  int n1 = 0;
+  ASSERT_EQ(
+      scs_ic_polygon_2d(1.0, 2.0, 4.0, 6.0, &lc, &dc, N, xy1, N, &n1, err, 256),
+      SCS_OK)
+      << err;
+
+  ASSERT_EQ(n1, n4);
+  for (int i = 0; i < n1 * 2; ++i) {
+    EXPECT_NEAR(xy1[i], xy4[i], 1e-12) << "index " << i;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // StreamManager tests
 // ---------------------------------------------------------------------------
 

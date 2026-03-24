@@ -26,6 +26,7 @@ __all__ = [
     "level_set_1d",
     "level_set_2d",
     "level_set_to_polygon",
+    "ic_polygon_2d",
     "convex_hull_2d",
     "majority_prefers_2d",
     "weighted_majority_prefers_2d",
@@ -318,6 +319,70 @@ def level_set_to_polygon(level_set: dict, num_samples: int = 64) -> np.ndarray:
     err = new_err_buf()
     _check(
         _lib.scs_level_set_to_polygon(ls, int(num_samples), buf, n_pts, out_n, err, _ERR), err
+    )
+    return np.frombuffer(_ffi.buffer(buf, n_pts * 2 * 8), dtype=np.float64).reshape(n_pts, 2).copy()
+
+
+def ic_polygon_2d(
+    ideal_x: float,
+    ideal_y: float,
+    sq_x: float,
+    sq_y: float,
+    loss_config: LossConfig | None = None,
+    dist_config: DistanceConfig | None = None,
+    num_samples: int = 64,
+) -> np.ndarray:
+    """Compute the IC boundary polygon in a single C API call.
+
+    Compound convenience function equivalent to calling
+    :func:`calculate_distance`, :func:`distance_to_utility`,
+    :func:`level_set_2d`, and :func:`level_set_to_polygon` in sequence,
+    but without intermediate round-trips across the C API boundary.
+
+    Parameters
+    ----------
+    ideal_x, ideal_y:
+        Voter's ideal point coordinates.
+    sq_x, sq_y:
+        Reference point coordinates (status quo or seat position).
+    loss_config:
+        Loss configuration. ``None`` defaults to quadratic.
+    dist_config:
+        Distance configuration. ``None`` defaults to Euclidean.
+    num_samples:
+        Number of boundary samples for smooth shapes (>= 3).
+        Ignored for polygon shapes (exact 4 vertices are returned).
+
+    Returns
+    -------
+    numpy.ndarray of shape ``(n_pts, 2)``.
+    """
+    if loss_config is None:
+        loss_config = LossConfig()
+    if dist_config is None:
+        dist_config = DistanceConfig()
+    loss_cfg = _to_cffi_loss(loss_config)
+    dist_cfg, ka = _to_cffi_dist(dist_config, n_dims=2)
+    out_n = _ffi.new("int *")
+    err = new_err_buf()
+    _check(
+        _lib.scs_ic_polygon_2d(
+            float(ideal_x), float(ideal_y), float(sq_x), float(sq_y),
+            loss_cfg, dist_cfg, int(num_samples),
+            _ffi.NULL, 0, out_n, err, _ERR,
+        ),
+        err,
+    )
+    n_pts = int(out_n[0])
+    buf = _ffi.new("double[]", n_pts * 2)
+    err = new_err_buf()
+    _check(
+        _lib.scs_ic_polygon_2d(
+            float(ideal_x), float(ideal_y), float(sq_x), float(sq_y),
+            loss_cfg, dist_cfg, int(num_samples),
+            buf, n_pts, out_n, err, _ERR,
+        ),
+        err,
     )
     return np.frombuffer(_ffi.buffer(buf, n_pts * 2 * 8), dtype=np.float64).reshape(n_pts, 2).copy()
 

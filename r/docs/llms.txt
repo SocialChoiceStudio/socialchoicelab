@@ -128,6 +128,9 @@ Compute distances, convert to utility, and compute level sets.
 - [`level_set_to_polygon()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_to_polygon.md)
   : Sample a 2D level set as a closed polygon
 
+- [`ic_polygon_2d()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/ic_polygon_2d.md)
+  : Compute the IC boundary polygon in a single call
+
 ## Convex Hull and Majority Preference
 
 Geometry utilities and pairwise majority tests.

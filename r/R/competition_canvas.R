@@ -490,13 +490,10 @@ animate_competition_canvas <- function(trace,
         frame_cidxs[s_i] <- s - 1L
         voter_curves <- vector("list", n_voters)
         for (v in seq_len(n_voters)) {
-          voter_ideal <- c(vxy$x[v], vxy$y[v])
-          dist_val    <- calculate_distance(voter_ideal, seat_pos, ic_dist_config)
-          util_level  <- distance_to_utility(dist_val, ic_loss_config)
-          ls          <- level_set_2d(
-            vxy$x[v], vxy$y[v], util_level, ic_loss_config, ic_dist_config
+          poly_mat <- ic_polygon_2d(
+            vxy$x[v], vxy$y[v], seat_pos[1L], seat_pos[2L],
+            ic_loss_config, ic_dist_config, ic_num_samples
           )
-          poly_mat        <- level_set_to_polygon(ls, ic_num_samples)
           voter_curves[[v]] <- as.list(as.vector(t(poly_mat)))
         }
         frame_curves[[s_i]] <- voter_curves

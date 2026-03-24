@@ -118,6 +118,23 @@ test_that("level_set_to_polygon returns a n×2 numeric matrix", {
 })
 
 # ---------------------------------------------------------------------------
+# ic_polygon_2d
+# ---------------------------------------------------------------------------
+
+test_that("ic_polygon_2d matches four-call path", {
+  skip_without_lib()
+  lc <- make_loss_config(loss_type = "linear", sensitivity = 1)
+  dc <- make_dist_config(distance_type = "euclidean", weights = c(1, 1))
+  n  <- 32L
+  p1 <- ic_polygon_2d(1, 2, 4, 6, lc, dc, n)
+  d  <- calculate_distance(c(1, 2), c(4, 6), dc)
+  ul <- distance_to_utility(d, lc)
+  ls <- level_set_2d(1, 2, ul, lc, dc)
+  p4 <- level_set_to_polygon(ls, n)
+  expect_equal(as.numeric(p1), as.numeric(p4), tolerance = 1e-12)
+})
+
+# ---------------------------------------------------------------------------
 # convex_hull_2d
 # ---------------------------------------------------------------------------
 

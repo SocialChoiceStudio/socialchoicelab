@@ -946,6 +946,73 @@ extern "C" int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
   }
 }
 
+extern "C" int scs_ic_polygon_2d(double ideal_x, double ideal_y, double sq_x,
+                                 double sq_y, const SCS_LossConfig* loss_cfg,
+                                 const SCS_DistanceConfig* dist_cfg,
+                                 int num_samples, double* out_xy,
+                                 int out_capacity, int* out_n, char* err_buf,
+                                 int err_buf_len) {
+  if (!loss_cfg || !dist_cfg || !out_n) {
+    set_error(err_buf, err_buf_len, "scs_ic_polygon_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (dist_cfg->n_weights != 2 || !dist_cfg->salience_weights) {
+    set_error(err_buf, err_buf_len,
+              "scs_ic_polygon_2d: dist_cfg must have n_weights == 2");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(ideal_x) || !std::isfinite(ideal_y) ||
+      !std::isfinite(sq_x) || !std::isfinite(sq_y)) {
+    set_error(err_buf, err_buf_len,
+              "scs_ic_polygon_2d: coordinates must be finite");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(dist_cfg->salience_weights, 2,
+                               "scs_ic_polygon_2d dist_cfg->salience_weights",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (num_samples < 3) {
+    set_error(err_buf, err_buf_len,
+              "scs_ic_polygon_2d: num_samples must be >= 3");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  try {
+    using socialchoicelab::preference::indifference::DistanceConfig;
+    using socialchoicelab::preference::indifference::ic_polygon_2d;
+    using socialchoicelab::preference::indifference::LossConfig;
+    using socialchoicelab::preference::indifference::Polygon2d;
+    LossConfig lcfg = to_cpp_loss_config(*loss_cfg);
+    DistanceConfig dcfg = to_cpp_dist_config(*dist_cfg);
+    Eigen::Vector2d ideal(ideal_x, ideal_y);
+    Eigen::Vector2d sq(sq_x, sq_y);
+    Polygon2d poly = ic_polygon_2d(ideal, sq, lcfg, dcfg,
+                                   static_cast<std::size_t>(num_samples));
+    const int required = static_cast<int>(poly.vertices.size());
+    *out_n = required;
+    if (out_xy == nullptr) {
+      return SCS_OK;
+    }
+    if (out_capacity < required) {
+      set_error(err_buf, err_buf_len,
+                "scs_ic_polygon_2d: out_xy buffer too small; check *out_n "
+                "for the required number of (x,y) pairs");
+      return SCS_ERROR_BUFFER_TOO_SMALL;
+    }
+    for (int i = 0; i < required; ++i) {
+      out_xy[2 * i] = poly.vertices[static_cast<size_t>(i)](0);
+      out_xy[2 * i + 1] = poly.vertices[static_cast<size_t>(i)](1);
+    }
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Geometry
 // ---------------------------------------------------------------------------

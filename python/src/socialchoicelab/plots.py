@@ -34,8 +34,8 @@ _CANVAS_JS_PATH = Path(__file__).parent / "competition_canvas.js"
 from socialchoicelab._functions import (
     calculate_distance,
     distance_to_utility,
+    ic_polygon_2d,
     level_set_1d,
-    level_set_2d,
     level_set_to_polygon,
 )
 from socialchoicelab._geometry import centroid_2d, marginal_median_2d
@@ -1321,14 +1321,12 @@ def animate_competition_canvas(
                 frame_cidxs.append(s)
                 voter_curves = []
                 for v in range(n_voters):
-                    voter_ideal = [voters_x[v], voters_y[v]]
-                    dist_val = calculate_distance(voter_ideal, seat_pos, ic_dist_config)
-                    util_level = distance_to_utility(dist_val, ic_loss_config)
-                    ls = level_set_2d(
-                        voters_x[v], voters_y[v], util_level,
+                    poly = ic_polygon_2d(
+                        voters_x[v], voters_y[v],
+                        seat_pos[0], seat_pos[1],
                         ic_loss_config, ic_dist_config,
+                        ic_num_samples,
                     )
-                    poly = level_set_to_polygon(ls, ic_num_samples)
                     voter_curves.append(poly.ravel().tolist())
                 frame_curves.append(voter_curves)
             ic_data_payload.append(frame_curves)
@@ -1649,13 +1647,16 @@ def layer_ic(
             cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
             hover_d = r
         else:
-            d = calculate_distance([float(vx[i]), float(vy[i])], sqv.tolist(), dist_config)
-            ul = distance_to_utility(d, _linear_loss)
-            ls = level_set_2d(float(vx[i]), float(vy[i]), ul, _linear_loss, dist_config)
-            poly = level_set_to_polygon(ls, 64)
+            hover_d = calculate_distance(
+                [float(vx[i]), float(vy[i])], sqv.tolist(), dist_config
+            )
+            poly = ic_polygon_2d(
+                float(vx[i]), float(vy[i]),
+                float(sqv[0]), float(sqv[1]),
+                _linear_loss, dist_config, 64,
+            )
             cx = poly[:, 0].tolist() + [float(poly[0, 0])]
             cy = poly[:, 1].tolist() + [float(poly[0, 1])]
-            hover_d = d
         lname = voter_names[i] if color_by_voter else name
         lgroup = voter_names[i] if color_by_voter else name
         show_lg = True if color_by_voter else (i == 0)
@@ -1762,13 +1763,16 @@ def layer_preferred_regions(
             cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
             hover_d = r
         else:
-            d = calculate_distance([float(vx[i]), float(vy[i])], sqv.tolist(), dist_config)
-            ul = distance_to_utility(d, _linear_loss)
-            ls = level_set_2d(float(vx[i]), float(vy[i]), ul, _linear_loss, dist_config)
-            poly = level_set_to_polygon(ls, 64)
+            hover_d = calculate_distance(
+                [float(vx[i]), float(vy[i])], sqv.tolist(), dist_config
+            )
+            poly = ic_polygon_2d(
+                float(vx[i]), float(vy[i]),
+                float(sqv[0]), float(sqv[1]),
+                _linear_loss, dist_config, 64,
+            )
             cx = poly[:, 0].tolist() + [float(poly[0, 0])]
             cy = poly[:, 1].tolist() + [float(poly[0, 1])]
-            hover_d = d
         lname = voter_names[i] if color_by_voter else name
         lgroup = voter_names[i] if color_by_voter else name
         show_lg = True if color_by_voter else (i == 0)

@@ -180,6 +180,32 @@ level_set_to_polygon <- function(level_set, n_samples = 64L) {
       PACKAGE = "socialchoicelab")
 }
 
+#' Compute the IC boundary polygon in a single call
+#'
+#' Compound convenience function equivalent to calling
+#' \code{\link{calculate_distance}}, \code{\link{distance_to_utility}},
+#' \code{\link{level_set_2d}}, and \code{\link{level_set_to_polygon}} in
+#' sequence, but without intermediate round-trips across the C API boundary.
+#'
+#' @param ideal_x,ideal_y Voter's ideal point coordinates.
+#' @param sq_x,sq_y Reference point coordinates (status quo or seat position).
+#' @param loss_config Loss configuration from \code{\link{make_loss_config}}.
+#' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
+#' @param n_samples Integer >= 3. Boundary samples for smooth shapes.
+#'   Ignored for polygon shapes (exact 4 vertices). Default: 64.
+#' @return Numeric matrix (n_pts x 2) with columns \code{x} and \code{y}.
+#' @export
+ic_polygon_2d <- function(ideal_x, ideal_y, sq_x, sq_y,
+                           loss_config = make_loss_config(),
+                           dist_config = make_dist_config(),
+                           n_samples = 64L) {
+  .Call("r_scs_ic_polygon_2d",
+        as.double(ideal_x), as.double(ideal_y),
+        as.double(sq_x), as.double(sq_y),
+        loss_config, dist_config, as.integer(n_samples),
+        PACKAGE = "socialchoicelab")
+}
+
 # ---------------------------------------------------------------------------
 # B3.3 — Convex hull
 # ---------------------------------------------------------------------------

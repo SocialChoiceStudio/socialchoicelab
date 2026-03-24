@@ -92,6 +92,7 @@ extern SEXP r_scs_distance_to_utility(SEXP, SEXP);
 extern SEXP r_scs_level_set_1d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_level_set_2d(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_level_set_to_polygon(SEXP, SEXP);
+extern SEXP r_scs_ic_polygon_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_majority_prefers_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_normalize_utility(SEXP, SEXP, SEXP);
 extern SEXP r_scs_pairwise_matrix_2d(SEXP, SEXP, SEXP, SEXP);
@@ -226,6 +227,7 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_level_set_1d",                   (DL_FUNC)&r_scs_level_set_1d,                   4},
     {"r_scs_level_set_2d",                   (DL_FUNC)&r_scs_level_set_2d,                   5},
     {"r_scs_level_set_to_polygon",           (DL_FUNC)&r_scs_level_set_to_polygon,           2},
+    {"r_scs_ic_polygon_2d",                  (DL_FUNC)&r_scs_ic_polygon_2d,                  7},
     {"r_scs_majority_prefers_2d",            (DL_FUNC)&r_scs_majority_prefers_2d,            7},
     {"r_scs_normalize_utility",              (DL_FUNC)&r_scs_normalize_utility,              3},
     {"r_scs_pairwise_matrix_2d",             (DL_FUNC)&r_scs_pairwise_matrix_2d,             4},

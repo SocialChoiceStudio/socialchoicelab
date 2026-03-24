@@ -52,6 +52,7 @@ from socialchoicelab._functions import (  # noqa: F401
     level_set_1d,
     level_set_2d,
     level_set_to_polygon,
+    ic_polygon_2d,
     convex_hull_2d,
     majority_prefers_2d,
     weighted_majority_prefers_2d,

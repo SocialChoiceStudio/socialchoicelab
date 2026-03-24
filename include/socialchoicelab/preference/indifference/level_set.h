@@ -347,4 +347,64 @@ inline bool equal_weights_2d(const std::vector<double>& w) {
       level_set);
 }
 
+/**
+ * @brief Compound: compute the IC boundary polygon for a voter through a
+ * reference point (e.g. status quo or seat position) in a single pass.
+ *
+ * Equivalent to calling calculate_distance → distance_to_utility →
+ * level_set_2d → to_polygon in sequence, but entirely within C++ without
+ * any intermediate boundary crossings.
+ *
+ * @param ideal_point     Voter's ideal point (2D).
+ * @param sq_point        Reference point (status quo / seat position) (2D).
+ * @param loss_config     Loss function configuration.
+ * @param distance_config Distance metric configuration
+ *                        (salience_weights.size() must be 2).
+ * @param num_samples     Boundary samples for smooth shapes (>= 3).
+ *                        Ignored for polygon shapes (exact 4 vertices).
+ * @return Polygon2d with the sampled boundary vertices.
+ */
+[[nodiscard]] inline Polygon2d ic_polygon_2d(
+    const Point2d& ideal_point, const Point2d& sq_point,
+    const LossConfig& loss_config, const DistanceConfig& distance_config,
+    std::size_t num_samples = 64) {
+  using socialchoicelab::preference::distance::chebyshev_distance;
+  using socialchoicelab::preference::distance::euclidean_distance;
+  using socialchoicelab::preference::distance::manhattan_distance;
+  using socialchoicelab::preference::distance::minkowski_distance;
+  if (distance_config.salience_weights.size() != 2u) {
+    throw std::invalid_argument(
+        "ic_polygon_2d: salience_weights must have size 2");
+  }
+  if (num_samples < 3) {
+    throw std::invalid_argument("ic_polygon_2d: num_samples must be >= 3");
+  }
+  double d;
+  switch (distance_config.distance_type) {
+    case distance::DistanceType::EUCLIDEAN:
+      d = euclidean_distance(ideal_point, sq_point,
+                             distance_config.salience_weights);
+      break;
+    case distance::DistanceType::MANHATTAN:
+      d = manhattan_distance(ideal_point, sq_point,
+                             distance_config.salience_weights);
+      break;
+    case distance::DistanceType::CHEBYSHEV:
+      d = chebyshev_distance(ideal_point, sq_point,
+                             distance_config.salience_weights);
+      break;
+    case distance::DistanceType::MINKOWSKI:
+      d = minkowski_distance(ideal_point, sq_point, distance_config.order_p,
+                             distance_config.salience_weights);
+      break;
+    default:
+      throw std::invalid_argument("ic_polygon_2d: unknown DistanceType");
+  }
+  double ul = loss::distance_to_utility(
+      d, loss_config.loss_type, loss_config.sensitivity, loss_config.max_loss,
+      loss_config.steepness, loss_config.threshold);
+  LevelSet2d ls = level_set_2d(ideal_point, ul, loss_config, distance_config);
+  return to_polygon(ls, num_samples);
+}
+
 }  // namespace socialchoicelab::preference::indifference

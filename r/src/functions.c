@@ -201,6 +201,46 @@ SEXP r_scs_level_set_to_polygon(SEXP ls_list, SEXP n_samples_s) {
     return mat;
 }
 
+/* r_scs_ic_polygon_2d — compound: distance → utility → level set → polygon.
+ * Arguments: ideal_x, ideal_y, sq_x, sq_y, loss_cfg, dist_cfg, n_samples.
+ * Returns an n×2 column-major matrix (x, y columns). */
+SEXP r_scs_ic_polygon_2d(SEXP ideal_x, SEXP ideal_y, SEXP sq_x, SEXP sq_y,
+                          SEXP loss_cfg, SEXP dist_cfg, SEXP n_samples_s) {
+    SCS_LossConfig lc = build_loss_config(loss_cfg);
+    SCS_DistanceConfig dc = build_dist_config(dist_cfg);
+    int ns = asInteger(n_samples_s);
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    /* Size query. */
+    int out_n;
+    scs_check(scs_ic_polygon_2d(asReal(ideal_x), asReal(ideal_y),
+                                asReal(sq_x), asReal(sq_y),
+                                &lc, &dc, ns, NULL, 0, &out_n,
+                                err, SCS_ERR_BUF_SIZE),
+              err);
+    /* Fill into temporary buffer, then de-interleave into column-major matrix. */
+    double *tmp = (double *)R_alloc((size_t)out_n * 2, sizeof(double));
+    scs_check(scs_ic_polygon_2d(asReal(ideal_x), asReal(ideal_y),
+                                asReal(sq_x), asReal(sq_y),
+                                &lc, &dc, ns, tmp, out_n, &out_n,
+                                err, SCS_ERR_BUF_SIZE),
+              err);
+    SEXP mat = PROTECT(allocMatrix(REALSXP, out_n, 2));
+    double *dst = REAL(mat);
+    for (int i = 0; i < out_n; i++) {
+        dst[i]         = tmp[2 * i];
+        dst[out_n + i] = tmp[2 * i + 1];
+    }
+    SEXP cn = PROTECT(allocVector(STRSXP, 2));
+    SET_STRING_ELT(cn, 0, mkChar("x"));
+    SET_STRING_ELT(cn, 1, mkChar("y"));
+    SEXP dn = PROTECT(allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(dn, 0, R_NilValue);
+    SET_VECTOR_ELT(dn, 1, cn);
+    setAttrib(mat, R_DimNamesSymbol, dn);
+    UNPROTECT(3);
+    return mat;
+}
+
 /* ---------------------------------------------------------------------------
  * B3.3 — Convex hull
  * --------------------------------------------------------------------------- */

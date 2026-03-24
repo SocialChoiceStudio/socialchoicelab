@@ -849,9 +849,7 @@ layer_ic <- function(fig,
       hover_d <- r
     } else {
       d    <- calculate_distance(c(vx, vy), sq, dist_config)
-      ul   <- distance_to_utility(d, linear_loss)
-      ls   <- level_set_2d(vx, vy, ul, linear_loss, dist_config)
-      poly <- level_set_to_polygon(ls, 64L)
+      poly <- ic_polygon_2d(vx, vy, sq[1L], sq[2L], linear_loss, dist_config, 64L)
       px   <- c(poly[, 1L], poly[1L, 1L])
       py   <- c(poly[, 2L], poly[1L, 2L])
       hover_d <- d
@@ -949,9 +947,7 @@ layer_preferred_regions <- function(fig,
       hover_d <- r
     } else {
       d    <- calculate_distance(c(vx, vy), sq, dist_config)
-      ul   <- distance_to_utility(d, linear_loss)
-      ls   <- level_set_2d(vx, vy, ul, linear_loss, dist_config)
-      poly <- level_set_to_polygon(ls, 64L)
+      poly <- ic_polygon_2d(vx, vy, sq[1L], sq[2L], linear_loss, dist_config, 64L)
       px   <- c(poly[, 1L], poly[1L, 1L])
       py   <- c(poly[, 2L], poly[1L, 2L])
       hover_d <- d
