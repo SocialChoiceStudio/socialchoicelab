@@ -43,6 +43,11 @@ layer_uncovered_set(
 
   Ignored (canvas legend uses fixed labels); retained for parity.
 
+- voters:
+
+  Flat numeric vector `[x0, y0, ...]`; required when `boundary_xy` is
+  `NULL` for auto-compute.
+
 - grid_resolution:
 
   Grid resolution when auto-computing.
