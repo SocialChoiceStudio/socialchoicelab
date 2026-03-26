@@ -1,8 +1,8 @@
 # Spatial Voting Visualization
 
-Interactive Plotly-based visualization helpers for spatial voting analysis.
-
-Import as a submodule (keeps `plotly` as an optional runtime dependency):
+Static spatial plots use an **HTML5 canvas** payload (`dict`) built by
+`plot_spatial_voting()` and `layer_*()`; `save_plot()` writes self-contained HTML.
+Competition animation uses `animate_competition_canvas()`.
 
 ```python
 import socialchoicelab.plots as sclp

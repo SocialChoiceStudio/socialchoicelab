@@ -156,7 +156,7 @@ Entries are in chronological order (oldest first, newest last).
 
 ## 2026-03-07/08 — Visualization layer complete
 
-**Visualization layer** (tag: `visualization-complete`): Plotly-based spatial voting plot helpers in R and Python. `plot_spatial_voting()`, all `layer_*()` functions, `save_plot()`, `load_scenario()` / `list_scenarios()` with 33 built-in JSON scenarios, `scl_palette()` / `scl_theme_colors()` with 5 named themes, `layer_ic()`, `layer_preferred_regions()`, auto-axis range, composable layer API with `zorder` support. Full R and Python unit test suites pass in CI. `visualization_plan.md` all phases C10–C13 complete. Archived in `docs/status/archive/visualization_plan.md`.
+**Visualization layer** (tag: `visualization-complete`): Spatial voting plot helpers in R and Python (originally Plotly; **now canvas** htmlwidgets / payload + shared JS — see CHANGELOG `[Unreleased]`). `plot_spatial_voting()`, all `layer_*()` functions, `save_plot()`, `load_scenario()` / `list_scenarios()` with 33 built-in JSON scenarios, `scl_palette()` / `scl_theme_colors()` with 5 named themes, `layer_ic()`, `layer_preferred_regions()`, auto-axis range, composable layer API. Full R and Python unit test suites pass in CI. `visualization_plan.md` all phases C10–C13 complete. Archived in `docs/status/archive/visualization_plan.md`.
 
 ## 2026-03-09 — Layer 7 candidate competition substantially implemented
 
@@ -172,4 +172,4 @@ Entries are in chronological order (oldest first, newest last).
 
 **Reality check:** `v0.2.0` and `v0.3.0` are tagged on `main`; WHERE_WE_ARE, ROADMAP, MILESTONE_GATES, and `competition_plan.md` were still describing “ready to tag” / R animation blocker in places — corrected.
 
-**Post-tag `main`:** Static Plotly layers gained `dist_config` for ICs, preferred regions, and winset auto-compute; polygon closure for strokes; centroid/marginal-median markers aligned with competition canvas; SQ legend-only. Documented in CHANGELOG `[Unreleased]`, ROADMAP § Post-`v0.3.0`, and `docs/development/visualization_design.md`.
+**Post-tag `main`:** Static spatial layers gained `dist_config` for ICs, preferred regions, and winset auto-compute; polygon closure for strokes; centroid/marginal-median markers aligned with competition canvas; SQ legend-only; later **canvas migration** (Plotly removed). Documented in CHANGELOG `[Unreleased]`, ROADMAP § Post-`v0.3.0`, and `docs/development/visualization_design.md`.

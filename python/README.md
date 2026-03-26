@@ -2,7 +2,7 @@
 
 Spatial and general social choice analysis: distance and loss functions, majority
 preference, winsets, uncovered set, Copeland scores, preference profiles, positional
-voting rules, centrality measures, and Plotly-based visualization.
+voting rules, centrality measures, and **canvas-based** interactive visualization (self-contained HTML via `save_plot`).
 
 Calls the pre-built `libscs_api` shared library via the C ABI; no C++ compilation
 is required at install time.
@@ -63,9 +63,7 @@ fig = sclp.layer_winset(fig, ws)
 fig = sclp.layer_ic(fig, voters, sq, color_by_voter=True)
 fig = sclp.layer_centroid(fig, voters)
 fig = sclp.layer_marginal_median(fig, voters)
-fig = sclp.finalize_plot(fig)
-fig.show()                               # opens in browser
-sclp.save_plot(fig, "analysis.html")    # self-contained HTML
+sclp.save_plot(fig, "analysis.html")    # self-contained HTML (open in a browser)
 ```
 
 ---
@@ -131,5 +129,5 @@ restart your Python kernel/session so the new `.dylib` is reloaded.
 | Module | Contents |
 |--------|----------|
 | `socialchoicelab` | Distance, loss, level sets, majority, winsets, geometry, profiles, voting rules, scenarios |
-| `socialchoicelab.plots` | Plotly-based visualization layers (`plot_spatial_voting`, `layer_*`, `save_plot`) |
+| `socialchoicelab.plots` | Canvas-backed spatial plots (`plot_spatial_voting`, `layer_*`, `save_plot` → standalone HTML) |
 | `socialchoicelab.palette` | Colorblind-safe palette and theme utilities (`scl_palette`, `scl_theme_colors`) |

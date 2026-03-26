@@ -19,6 +19,11 @@ The SCS_LIB_PATH environment variable must point to the compiled library:
     export SCS_LIB_PATH=/path/to/socialchoicelab/build
 """
 
+import os
+import tempfile
+import webbrowser
+from pathlib import Path
+
 import numpy as np
 import socialchoicelab as scl
 
@@ -251,7 +256,7 @@ version = scl.scs_version()
 print(f"C API version: {version['major']}.{version['minor']}.{version['patch']}")
 
 # ===========================================================================
-# 11. VISUALIZATION (requires plotly — pip install plotly)
+# 11. VISUALIZATION (canvas HTML — no plotly)
 # ===========================================================================
 
 print("\n=== 11. VISUALIZATION ===")
@@ -273,9 +278,12 @@ fig = sclp.plot_spatial_voting(
 fig = sclp.layer_winset(fig, ws)
 fig = sclp.layer_convex_hull(fig, hull)
 fig = sclp.layer_uncovered_set(fig, bnd)
-fig = sclp.finalize_plot(fig)
 
-fig.show()
+_fd, _p = tempfile.mkstemp(suffix=".html")
+os.close(_fd)
+_tmp = Path(_p)
+sclp.save_plot(fig, str(_tmp))
+webbrowser.open(_tmp.as_uri())
 print("Plot opened in browser. Hover over points for details.")
 
 # ===========================================================================

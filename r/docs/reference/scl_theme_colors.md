@@ -2,7 +2,7 @@
 
 Returns the `(fill_color, line_color)` pair that `layer_*` functions
 will use for a given layer type and theme. Useful when adding custom
-Plotly traces that should match the rest of the plot.
+drawing that should match the rest of the plot.
 
 ## Usage
 

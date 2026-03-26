@@ -122,8 +122,7 @@ uniform salience; otherwise an error is raised.}
 An \code{htmlwidget} object of class \code{competition_canvas}.
 }
 \description{
-Renders the same competition animation as \code{\link{animate_competition_trajectories}}
-using a canvas-based widget. Data is sent once; the browser draws frames on
-demand. This scales to long runs (hundreds or thousands of rounds) without the
-large HTML and slow load of the Plotly frame-based approach.
+Renders competition trajectories using a canvas-based \code{htmlwidget}.
+Data is sent once; the browser draws frames on demand. This scales to long
+runs (hundreds or thousands of rounds) without large HTML payloads.
 }

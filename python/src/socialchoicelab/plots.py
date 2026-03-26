@@ -1,35 +1,35 @@
 """Spatial voting visualization helpers (C10/C13).
 
-All functions return :class:`plotly.graph_objects.Figure` objects so they
-can be displayed in Jupyter, saved to HTML, or embedded in reports.
+Static 2D spatial plots use a canvas payload dict from :func:`plot_spatial_voting`
+and :func:`layer_*` functions; :func:`save_plot` writes standalone HTML.
 
-Layers compose by passing the figure returned by one function into the next::
+Competition animations use :func:`animate_competition_canvas` (self-contained HTML).
 
-    import socialchoicelab as scl
+Layers compose by passing the dict from one function into the next::
+
     import socialchoicelab.plots as sclp
     import numpy as np
 
-    voters = np.array([-1.0, -0.5,  0.0, 0.0,  0.8, 0.6, -0.4,  0.8,  0.5, -0.7])
-    sq     = np.array([0.0, 0.0])
-
+    voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6, -0.4, 0.8, 0.5, -0.7])
+    sq = np.array([0.0, 0.0])
     fig = sclp.plot_spatial_voting(voters, sq=sq, theme="dark2")
     fig = sclp.layer_ic(fig, voters, sq, theme="dark2")
-    fig = sclp.layer_winset(fig, voters=voters, sq=sq, theme="dark2")
-    fig.show()
+    _ = sclp.save_plot(fig, "/tmp/p.html")  # writes HTML
 """
 
 from __future__ import annotations
 
 import json
 import math
+import warnings
 from pathlib import Path
 
 import numpy as np
 
-# Path to the canvas player JS bundled with the Python package.
-# The canonical source lives in r/inst/htmlwidgets/competition_canvas.js;
-# a copy is kept here so it is available after pip install.
-_CANVAS_JS_PATH = Path(__file__).parent / "competition_canvas.js"
+_PACKAGE_DIR = Path(__file__).parent
+_CORE_JS_PATH = _PACKAGE_DIR / "scs_canvas_core.js"
+_COMPETITION_JS_PATH = _PACKAGE_DIR / "competition_canvas.js"
+_SPATIAL_JS_PATH = _PACKAGE_DIR / "spatial_voting_canvas.js"
 
 from socialchoicelab._functions import (
     calculate_distance,
@@ -59,17 +59,10 @@ from socialchoicelab.palette import (
     _preferred_uniform_line,
 )
 
-try:
-    import plotly.graph_objects as go
-    _PLOTLY_AVAILABLE = True
-except ImportError:
-    _PLOTLY_AVAILABLE = False
-
 __all__ = [
     "plot_spatial_voting",
-    "plot_competition_trajectories",
-    "animate_competition_trajectories",
     "animate_competition_canvas",
+    "load_competition_canvas",
     "layer_ic",
     "layer_preferred_regions",
     "layer_winset",
@@ -79,26 +72,9 @@ __all__ = [
     "layer_centroid",
     "layer_marginal_median",
     "save_plot",
-    "finalize_plot",
-    # Re-exported for convenience so users can do `sclp.scl_palette(...)`
     "scl_palette",
     "scl_theme_colors",
 ]
-
-_TRACE_ROLE_PRIORITY = {
-    "region": 1,
-    "line": 2,
-    "point": 3,
-    "overlay": 4,
-}
-
-
-def _require_plotly() -> None:
-    if not _PLOTLY_AVAILABLE:
-        raise ImportError(
-            "plotly is required for visualization. "
-            "Install it with: pip install plotly"
-        )
 
 
 def _flat_to_xy(v) -> tuple[np.ndarray, np.ndarray]:
@@ -148,50 +124,48 @@ def _annotate_names_with_strategies(names: list[str], kinds: list[str]) -> list[
     return [f"{name} ({kind.title()})" for name, kind in zip(names, kinds)]
 
 
-def _trace_role(trace) -> str:
-    meta = getattr(trace, "meta", None)
-    if isinstance(meta, dict):
-        return str(meta.get("scl_role", "point"))
-    return "point"
-
-
-def _set_trace_role(trace, role: str):
-    meta = getattr(trace, "meta", None)
-    trace.meta = dict(meta) if isinstance(meta, dict) else {}
-    trace.meta["scl_role"] = role
-    return trace
-
-
-def _normalize_trace_roles(fig):
-    ordered = sorted(
-        enumerate(fig.data),
-        key=lambda item: (_TRACE_ROLE_PRIORITY.get(_trace_role(item[1]), 99), item[0]),
-    )
-    fig.data = tuple(trace for _, trace in ordered)
-    return fig
-
-
-def _add_role_trace(fig, trace, role: str):
-    fig.add_trace(_set_trace_role(trace, role))
-    return _normalize_trace_roles(fig)
-
-
-def _set_rgba_alpha(color: str, alpha: float) -> str:
-    if color.startswith("rgba(") and color.endswith(")"):
-        parts = [p.strip() for p in color[5:-1].split(",")]
-        if len(parts) == 4:
-            parts[3] = f"{alpha:.3f}"
-            return f"rgba({', '.join(parts)})"
-    return color
-
-
-def _apply_plot_config(fig):
-    fig.update_layout(modebar=dict(remove=["select2d", "lasso2d", "autoScale2d"]))
-    fig._config = {
-        "displaylogo": False,
-        "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"],
+def _spatial_canvas_theme_colors(theme: str) -> dict[str, str]:
+    """Mirror R .spatial_canvas_theme_colors for JSON theme_colors."""
+    ws_fill, ws_line = scl_theme_colors("winset", theme=theme)
+    hull_fill, hull_line = scl_theme_colors("convex_hull", theme=theme)
+    yolk_fill, yolk_line = scl_theme_colors("yolk", theme=theme)
+    unc_fill, unc_line = scl_theme_colors("uncovered_set", theme=theme)
+    return {
+        "plot_bg": "#ffffff" if theme == "bw" else "#fafafa",
+        "grid": "rgba(60,60,60,0.15)" if theme == "bw" else "rgba(140,140,140,0.18)",
+        "axis": "rgba(40,40,40,0.5)" if theme == "bw" else "rgba(100,100,100,0.45)",
+        "text": "#111111" if theme == "bw" else "#2d2d2d",
+        "text_light": "#555555" if theme == "bw" else "#888888",
+        "border": "#bbbbbb" if theme == "bw" else "#d4d4d4",
+        "voter_fill": _voter_point_color(theme),
+        "voter_stroke": "rgba(255,255,255,0.7)" if theme == "bw" else "rgba(255,255,255,0.65)",
+        "alt_fill": _alt_point_color(theme),
+        "sq_fill": "rgba(40,40,40,0.92)" if theme == "bw" else "rgba(255,200,0,0.95)",
+        "winset_fill": ws_fill,
+        "winset_line": ws_line,
+        "hull_fill": hull_fill,
+        "hull_line": hull_line,
+        "ic_line": _ic_uniform_line(theme),
+        "pref_fill": _preferred_uniform_fill(theme),
+        "pref_line": _preferred_uniform_line(theme),
+        "yolk_fill": yolk_fill,
+        "yolk_line": yolk_line,
+        "uncovered_fill": unc_fill,
+        "uncovered_line": unc_line,
     }
+
+
+def _assert_spatial_payload(fig: object) -> dict:
+    if not isinstance(fig, dict):
+        raise TypeError(f"Expected dict from plot_spatial_voting(), got {type(fig).__name__}.")
+    if not fig.get("_scs_spatial_canvas"):
+        raise TypeError("Expected canvas payload dict from plot_spatial_voting() and layer_*().")
     return fig
+
+
+def _poly_to_flat_xy(px: list[float], py: list[float]) -> list[float]:
+    arr = np.column_stack((px, py)).astype(float)
+    return arr.ravel(order="C").tolist()
 
 
 def plot_spatial_voting(
@@ -203,6 +177,7 @@ def plot_spatial_voting(
     dim_names=("Dimension 1", "Dimension 2"),
     title="Spatial Voting Analysis",
     show_labels=False,
+    layer_toggles=True,
     xlim=None,
     ylim=None,
     theme="dark2",
@@ -229,6 +204,11 @@ def plot_spatial_voting(
         Plot title.
     show_labels:
         Draw text labels directly on the graph for SQ and alternatives.
+    layer_toggles:
+        If ``True`` (default), show a bottom checkbox bar to toggle visibility
+        (like the competition canvas; crop below the plot for slides). The legend
+        with symbols stays on the right of the plot on the canvas. If ``False``,
+        omit the bottom bar for publication figures; all layers remain visible.
     xlim, ylim:
         ``[min, max]`` for explicit axis ranges.  ``None`` auto-computes.
     theme:
@@ -237,11 +217,12 @@ def plot_spatial_voting(
         print).  Pass the same value to every ``layer_*`` call for coordinated
         colours across the whole plot.
     width, height:
-        Figure dimensions in pixels.
+        Widget dimensions in pixels (used when saving HTML).
 
     Returns
     -------
-    plotly.graph_objects.Figure
+    dict
+        Canvas payload for :func:`layer_*` and :func:`save_plot`.
 
     Examples
     --------
@@ -250,512 +231,58 @@ def plot_spatial_voting(
     >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
     >>> fig = sclp.plot_spatial_voting(voters, sq=np.array([0.0, 0.0]))
     """
-    _require_plotly()
     vx, vy = _flat_to_xy(voters)
     n_v = len(vx)
     if voter_names is None:
         voter_names = [f"V{i + 1}" for i in range(n_v)]
 
-    voter_col = _voter_point_color(theme)
-    alt_col   = _alt_point_color(theme)
-    sq_col    = "rgba(0,0,0,0.90)" if theme == "bw" else "rgba(20,20,20,0.90)"
-
     all_x = list(vx)
     all_y = list(vy)
+    sqv = None
     if sq is not None:
         sqv = np.asarray(sq, dtype=float).ravel()
         all_x.append(float(sqv[0]))
         all_y.append(float(sqv[1]))
-    if xlim is None and len(all_x) > 0:
-        xlim = _range_with_origin(np.array(all_x))
-    if ylim is None and len(all_y) > 0:
-        ylim = _range_with_origin(np.array(all_y))
-
-    fig = go.Figure()
-
-    fig = _add_role_trace(fig, go.Scatter(
-        x=vx, y=vy,
-        mode="markers",
-        name="Voters",
-        marker=dict(symbol="circle", size=8, color=voter_col,
-                    line=dict(color="white", width=1.5)),
-        text=voter_names,
-        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-    ), "point")
-
+    alts_flat: list[float] = []
+    alt_names_out: list[str] = []
     if alternatives is not None:
         ax, ay = _flat_to_xy(np.asarray(alternatives, dtype=float).ravel())
         n_a = len(ax)
         if alt_names is None:
             alt_names = [f"Alt {i + 1}" for i in range(n_a)]
-        all_x.extend(list(ax))
-        all_y.extend(list(ay))
-        fig = _add_role_trace(fig, go.Scatter(
-            x=ax, y=ay,
-            mode="markers+text" if show_labels else "markers",
-            name="Alternatives",
-            marker=dict(symbol="diamond", size=14, color=alt_col,
-                        line=dict(color="white", width=1.5)),
-            text=alt_names,
-            textposition="top center",
-            hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-        ), "point")
+        all_x.extend(ax.tolist())
+        all_y.extend(ay.tolist())
+        alts_flat = np.ravel(np.column_stack((ax, ay)), order="C").tolist()
+        alt_names_out = list(alt_names)
 
-    if sq is not None:
-        fig = _add_role_trace(fig, go.Scatter(
-            x=[sqv[0]], y=[sqv[1]],
-            mode="markers",
-            name="Status Quo",
-            marker=dict(symbol="star", size=18, color=sq_col,
-                        line=dict(color="white", width=1.5)),
-            hovertemplate="Status Quo<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-        ), "point")
+    if xlim is None and len(all_x) > 0:
+        xlim = _range_with_origin(np.array(all_x))
+    if ylim is None and len(all_y) > 0:
+        ylim = _range_with_origin(np.array(all_y))
 
-    fig.update_layout(
-        title=dict(text=title, x=0.5, xanchor="center"),
-        xaxis=dict(title=dim_names[0], zeroline=True,
-                   zerolinecolor="rgba(140,140,140,0.45)", zerolinewidth=1,
-                   showgrid=True, gridcolor="rgba(140,140,140,0.25)",
-                   gridwidth=1, range=xlim),
-        yaxis=dict(title=dim_names[1], zeroline=True,
-                   zerolinecolor="rgba(140,140,140,0.45)", zerolinewidth=1,
-                   showgrid=True, gridcolor="rgba(140,140,140,0.25)",
-                   gridwidth=1, scaleanchor="x", scaleratio=1, range=ylim),
-        legend=dict(x=1.02, y=1, xanchor="left"),
-        hovermode="closest",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        width=width,
-        height=height,
-    )
-    return _apply_plot_config(fig)
+    payload = {
+        "voters_x": vx.astype(float).tolist(),
+        "voters_y": vy.astype(float).tolist(),
+        "voter_names": list(voter_names),
+        "alternatives": alts_flat,
+        "alternative_names": alt_names_out,
+        "sq": None if sq is None else [float(sqv[0]), float(sqv[1])],
+        "xlim": [float(xlim[0]), float(xlim[1])],
+        "ylim": [float(ylim[0]), float(ylim[1])],
+        "dim_names": [str(dim_names[0]), str(dim_names[1])],
+        "title": str(title),
+        "theme": str(theme),
+        "theme_colors": _spatial_canvas_theme_colors(theme),
+        "show_labels": bool(show_labels),
+        "layer_toggles": bool(layer_toggles),
+        "layers": {},
+    }
+    out = dict(payload)
+    out["_scs_spatial_canvas"] = True
+    out["_width"] = int(width)
+    out["_height"] = int(height)
+    return out
 
-
-def plot_competition_trajectories(
-    trace,
-    voters=None,
-    competitor_names=None,
-    title="Competition Trajectories",
-    theme="dark2",
-    width=700,
-    height=600,
-):
-    """Plot 2D competition trajectories from a CompetitionTrace.
-
-    Parameters
-    ----------
-    trace:
-        A :class:`socialchoicelab.CompetitionTrace`.
-    voters:
-        Optional flat or ``(n, 2)`` voter array for background points.
-    competitor_names:
-        Optional labels for competitors.
-    title, theme, width, height:
-        Standard plotting options.
-    """
-    _require_plotly()
-    n_rounds, n_competitors, n_dims = trace.dims()
-    if n_dims != 2:
-        raise ValueError(
-            f"plot_competition_trajectories currently supports only 2D traces, got n_dims={n_dims}."
-        )
-    if competitor_names is None:
-        competitor_names = [f"Competitor {i + 1}" for i in range(n_competitors)]
-    if len(competitor_names) != n_competitors:
-        raise ValueError("competitor_names length must match n_competitors.")
-
-    voter_flat = np.asarray(voters if voters is not None else [], dtype=float).ravel()
-    fig = plot_spatial_voting(
-        voter_flat,
-        alternatives=None,
-        sq=None,
-        title=title,
-        theme=theme,
-        width=width,
-        height=height,
-    )
-
-    round_positions = [trace.round_positions(r) for r in range(n_rounds)]
-    round_positions.append(trace.final_positions())
-    colors = scl_palette(theme, n_competitors, alpha=0.95)
-
-    for idx in range(n_competitors):
-        path = np.vstack([pos[idx, :] for pos in round_positions])
-        fig = _add_role_trace(
-            fig,
-            go.Scatter(
-                x=path[:, 0],
-                y=path[:, 1],
-                mode="lines+markers",
-                name=competitor_names[idx],
-                marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                line=dict(color=colors[idx], width=3),
-                text=[f"Round {r}" for r in range(n_rounds)] + ["Final"],
-                hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-            )
-            ,
-            "overlay",
-        )
-
-    return _apply_plot_config(fig)
-
-
-def animate_competition_trajectories(
-    trace,
-    voters=None,
-    competitor_names=None,
-    title="Competition Trajectories",
-    theme="dark2",
-    width=700,
-    height=600,
-    trail="fade",
-    trail_length="medium",
-):
-    """Animate 2D competition trajectories from a CompetitionTrace.
-
-    Parameters
-    ----------
-    trace:
-        A ``CompetitionTrace`` object from ``competition_run``. Must be 2D.
-    voters:
-        Flat array or array-like of voter ideal points (row-major, 2 columns).
-        Passed directly to ``plot_spatial_voting``.
-    competitor_names:
-        List of display names for each competitor. Defaults to
-        ``["Competitor 1", "Competitor 2", ...]``.
-    title:
-        Plot title string.
-    theme:
-        Colour theme name (see ``scl_palette``).
-    width, height:
-        Figure dimensions in pixels.
-    trail:
-        Trail style for animated paths. Three modes are supported:
-
-        ``"fade"`` *(default)*
-            Each animation step shows a short fading trail of recent segments
-            behind each competitor. Opacity decays exponentially from the
-            current position outward; segments older than ``trail_length`` are
-            hidden. Conveys direction and recent history without cluttering
-            the plot.
-
-        ``"full"``
-            The complete path from round 1 to the current step is drawn as a
-            continuous line. Useful for inspecting the entire trajectory, but
-            can become visually busy in long competitions.
-
-        ``"none"``
-            Markers only; no path segments are drawn. Cleanest output,
-            suitable when only final positions matter or the animation is
-            embedded in a space-constrained layout.
-
-    trail_length:
-        Controls how many past segments are shown when ``trail="fade"``.
-        Accepts a string shorthand or a positive integer:
-
-        ``"short"``
-            The most recent 1/3 of all rounds. Good for dense or fast-moving
-            competitions.
-
-        ``"medium"`` *(default)*
-            The most recent 1/2 of all rounds. Balances recency and context
-            for most competition lengths.
-
-        ``"long"``
-            The most recent 3/4 of all rounds. Useful when the full trajectory
-            arc matters but ``"full"`` would be too cluttered.
-
-        *positive integer*
-            Exact number of segments to retain, independent of total round
-            count.
-
-        Ignored when ``trail`` is ``"none"`` or ``"full"``.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-        A Plotly figure with animation frames, a slider, and Play/Pause
-        controls. The slider starts paused (``active=-1``); press Play or
-        drag the slider to animate.
-    """
-    _require_plotly()
-    n_rounds, n_competitors, n_dims = trace.dims()
-    if n_dims != 2:
-        raise ValueError(
-            f"animate_competition_trajectories currently supports only 2D traces, got n_dims={n_dims}."
-        )
-    if competitor_names is None:
-        competitor_names = [f"Competitor {i + 1}" for i in range(n_competitors)]
-    if len(competitor_names) != n_competitors:
-        raise ValueError("competitor_names length must match n_competitors.")
-    if trail not in {"none", "full", "fade"}:
-        raise ValueError("trail must be one of: 'none', 'full', 'fade'.")
-    _TRAIL_LENGTH_SHORTHANDS = {"short", "medium", "long"}
-    if isinstance(trail_length, str) and trail_length not in _TRAIL_LENGTH_SHORTHANDS:
-        raise ValueError(
-            f"trail_length {trail_length!r} is not recognised. "
-            "Use 'short' (1/3 rounds), 'medium' (1/2 rounds), 'long' (3/4 rounds), "
-            "or a positive integer."
-        )
-    if not isinstance(trail_length, (str, int)):
-        raise ValueError("trail_length must be a positive integer or one of 'short', 'medium', 'long'.")
-
-    voter_flat = np.asarray(voters if voters is not None else [], dtype=float).ravel()
-    fig = plot_spatial_voting(
-        voter_flat,
-        alternatives=None,
-        sq=None,
-        title=title,
-        theme=theme,
-        width=width,
-        height=height,
-    )
-    positions = [trace.round_positions(r) for r in range(n_rounds)]
-    positions.append(trace.final_positions())
-    frame_names = [f"Round {r + 1}" for r in range(n_rounds)] + ["Final"]
-    colors = scl_palette(theme, n_competitors, alpha=0.95)
-    n_segments_max = max(len(frame_names) - 1, 0)
-    if isinstance(trail_length, str):
-        trail_length = max(1, {
-            "short":  n_segments_max // 3,
-            "medium": n_segments_max // 2,
-            "long":   (n_segments_max * 3) // 4,
-        }[trail_length])
-    else:
-        trail_length = int(trail_length)
-        if trail_length < 1:
-            raise ValueError(f"trail_length must be >= 1, got {trail_length}.")
-
-    initial = positions[0]
-    if trail == "none":
-        static_count = len(fig.data)
-        anim_records = []
-        for frame_idx, frame_name in enumerate(frame_names):
-            for idx in range(n_competitors):
-                anim_records.append(
-                    {
-                        "frame": frame_name,
-                        "competitor": competitor_names[idx],
-                        "x": float(positions[frame_idx][idx, 0]),
-                        "y": float(positions[frame_idx][idx, 1]),
-                        "hover_text": frame_name,
-                        "color": colors[idx],
-                    }
-                )
-        for idx in range(n_competitors):
-            fig = _add_role_trace(
-                fig,
-                go.Scatter(
-                    x=[initial[idx, 0]],
-                    y=[initial[idx, 1]],
-                    mode="markers",
-                    name=competitor_names[idx],
-                    marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                    text=[frame_names[0]],
-                    hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                ),
-                "overlay",
-            )
-
-        frames = []
-        for frame_name in frame_names:
-            frame_rows = [row for row in anim_records if row["frame"] == frame_name]
-            frame_data = []
-            for idx in range(n_competitors):
-                row = frame_rows[idx]
-                frame_data.append(
-                    go.Scatter(
-                        x=[row["x"]],
-                        y=[row["y"]],
-                        mode="markers",
-                        name=row["competitor"],
-                        marker=dict(
-                            symbol="diamond",
-                            size=12,
-                            color=row["color"],
-                            line=dict(color="white", width=1.0),
-                        ),
-                        text=[row["hover_text"]],
-                        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                    )
-                )
-            frames.append(
-                go.Frame(
-                    data=frame_data,
-                    name=frame_name,
-                    traces=list(range(static_count, static_count + n_competitors)),
-                )
-            )
-        fig.frames = frames
-    elif trail == "fade":
-        overlay_start = len(fig.data)
-        for idx in range(n_competitors):
-            for _ in range(n_segments_max):
-                fig = _add_role_trace(
-                    fig,
-                    go.Scatter(
-                        x=[],
-                        y=[],
-                        mode="lines",
-                        name=competitor_names[idx],
-                        showlegend=False,
-                        hoverinfo="skip",
-                        line=dict(color=colors[idx], width=3),
-                    ),
-                    "overlay",
-                )
-            fig = _add_role_trace(
-                fig,
-                go.Scatter(
-                    x=[initial[idx, 0]],
-                    y=[initial[idx, 1]],
-                    mode="markers",
-                    name=competitor_names[idx],
-                    marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                    text=[frame_names[0]],
-                    hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                ),
-                "overlay",
-            )
-        frames = []
-        for frame_idx, frame_name in enumerate(frame_names):
-            frame_data = []
-            for idx in range(n_competitors):
-                actual_segments = frame_idx
-                for age in range(1, n_segments_max + 1):
-                    if age <= actual_segments and age <= trail_length:
-                        seg_idx = actual_segments - age
-                        p0 = positions[seg_idx][idx, :]
-                        p1 = positions[seg_idx + 1][idx, :]
-                        alpha = max(0.12, 0.88 * (0.55 ** (age - 1)))
-                        frame_data.append(
-                            go.Scatter(
-                                x=[p0[0], p1[0]],
-                                y=[p0[1], p1[1]],
-                                mode="lines",
-                                name=competitor_names[idx],
-                                showlegend=False,
-                                hoverinfo="skip",
-                                line=dict(color=_set_rgba_alpha(colors[idx], alpha), width=3),
-                            )
-                        )
-                    else:
-                        frame_data.append(
-                            go.Scatter(x=[], y=[], mode="lines", showlegend=False, hoverinfo="skip")
-                        )
-                current = positions[frame_idx][idx, :]
-                frame_data.append(
-                    go.Scatter(
-                        x=[current[0]],
-                        y=[current[1]],
-                        mode="markers",
-                        name=competitor_names[idx],
-                        marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                        text=[frame_name],
-                        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                    )
-                )
-            traces = list(range(overlay_start, overlay_start + n_competitors * (n_segments_max + 1)))
-            frames.append(go.Frame(data=frame_data, name=frame_name, traces=traces))
-        fig.frames = frames
-    else:
-        # trail == "full": one lines+markers trace per competitor, accumulating positions.
-        overlay_start = len(fig.data)
-        for idx in range(n_competitors):
-            fig = _add_role_trace(
-                fig,
-                go.Scatter(
-                    x=[initial[idx, 0]],
-                    y=[initial[idx, 1]],
-                    mode="lines+markers",
-                    name=competitor_names[idx],
-                    marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                    line=dict(color=colors[idx], width=3),
-                    text=[frame_names[0]],
-                    hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                ),
-                "overlay",
-            )
-        frames = []
-        for frame_idx, frame_name in enumerate(frame_names):
-            frame_data = []
-            for idx in range(n_competitors):
-                current_path = [pos[idx, :] for pos in positions[: frame_idx + 1]]
-                path = np.vstack(current_path)
-                frame_data.append(
-                    go.Scatter(
-                        x=path[:, 0],
-                        y=path[:, 1],
-                        mode="lines+markers",
-                        name=competitor_names[idx],
-                        marker=dict(symbol="diamond", size=12, color=colors[idx], line=dict(color="white", width=1.0)),
-                        line=dict(color=colors[idx], width=3),
-                        text=[f"Round {r + 1}" for r in range(min(frame_idx + 1, n_rounds))]
-                        + (["Final"] if frame_idx == len(frame_names) - 1 else []),
-                        hovertemplate="%{text}<br>(%{x:.3f}, %{y:.3f})<extra></extra>",
-                    )
-                )
-            traces = list(range(overlay_start, overlay_start + n_competitors))
-            frames.append(go.Frame(data=frame_data, name=frame_name, traces=traces))
-        fig.frames = frames
-    fig.update_layout(
-        margin=dict(t=95, r=20, b=220, l=65),
-        updatemenus=[
-            dict(
-                type="buttons",
-                showactive=False,
-                x=0.5,
-                y=-0.36,
-                xanchor="center",
-                yanchor="top",
-                pad={"t": 0, "r": 8},
-                direction="right",
-                buttons=[
-                    dict(
-                        label="Play",
-                        method="animate",
-                        args=[frame_names, {"frame": {"duration": 700, "redraw": True},
-                                     "transition": {"duration": 0},
-                                     "fromcurrent": False,
-                                     "mode": "next"}],
-                    ),
-                    dict(
-                        label="Pause",
-                        method="animate",
-                        args=[[None], {"frame": {"duration": 0, "redraw": True},
-                                       "transition": {"duration": 0},
-                                       "mode": "immediate"}],
-                    ),
-                ],
-            )
-        ],
-        sliders=[
-            dict(
-                active=0,
-                x=0.08,
-                y=-0.17,
-                len=0.84,
-                currentvalue={"visible": False},
-                pad={"t": 0, "b": 0},
-                steps=[
-                    dict(
-                        label="",
-                        method="animate",
-                        args=[[frame_name], {"frame": {"duration": 0, "redraw": True},
-                                             "transition": {"duration": 0},
-                                             "mode": "immediate"}],
-                    )
-                    for frame_name in frame_names
-                ],
-            )
-        ],
-    )
-    # Plotly.js accepts active=-1 (no step executed on initial render, preventing
-    # autoplay on load), but the Python wrapper validates active >= 0. Patch the
-    # internal props dict directly so the correct value reaches the browser.
-    if fig.layout.sliders:
-        fig.layout.sliders[0]._props["active"] = -1
-    return fig
 
 
 def _serialise_overlays_static(overlays):
@@ -788,18 +315,31 @@ def _serialise_overlays_static(overlays):
     return result
 
 
-def _html_from_payload(payload, width, height):
-    """Build a self-contained HTML string from a computed canvas payload dict.
+def _htmlwidgets_stub_script() -> str:
+    return (
+        "    window.HTMLWidgets = (function() {\n"
+        "      var defs = [];\n"
+        "      return {\n"
+        "        widget: function(d) { defs.push(d); },\n"
+        "        _init:  function(el, w, h, data) {\n"
+        "          defs.forEach(function(d) {\n"
+        '            if (d.type === "output") { d.factory(el, w, h).renderValue(data); }\n'
+        "          });\n"
+        "        }\n"
+        "      };\n"
+        "    })();\n"
+    )
 
-    The title is read from ``payload["title"]``.  Both the 1D and 2D internal
-    builders delegate here so the HTML structure is defined in exactly one place.
-    """
-    if not _CANVAS_JS_PATH.exists():
+
+def _html_from_payload(payload, width, height):
+    """Build self-contained HTML for the competition canvas widget."""
+    if not _CORE_JS_PATH.exists() or not _COMPETITION_JS_PATH.exists():
         raise FileNotFoundError(
-            f"Canvas player JS not found at {_CANVAS_JS_PATH}. "
-            "Ensure r/inst/htmlwidgets/competition_canvas.js is present."
+            "Competition canvas JS missing: expected "
+            f"{_CORE_JS_PATH} and {_COMPETITION_JS_PATH} (copy from r/inst/htmlwidgets/)."
         )
-    js_player = _CANVAS_JS_PATH.read_text(encoding="utf-8")
+    js_core = _CORE_JS_PATH.read_text(encoding="utf-8")
+    js_player = _COMPETITION_JS_PATH.read_text(encoding="utf-8")
     json_payload = json.dumps(payload)
     title = payload.get("title", "Competition Trajectories")
     w = str(int(width))
@@ -820,17 +360,10 @@ def _html_from_payload(payload, width, height):
         "<body>",
         '  <div id="competition-canvas"></div>',
         "  <script>",
-        "    window.HTMLWidgets = (function() {",
-        "      var defs = [];",
-        "      return {",
-        "        widget: function(d) { defs.push(d); },",
-        "        _init:  function(el, w, h, data) {",
-        "          defs.forEach(function(d) {",
-        '            if (d.type === "output") { d.factory(el, w, h).renderValue(data); }',
-        "          });",
-        "        }",
-        "      };",
-        "    })();",
+        _htmlwidgets_stub_script(),
+        "  </script>",
+        "  <script>",
+        js_core,
         "  </script>",
         "  <script>",
         js_player,
@@ -838,6 +371,55 @@ def _html_from_payload(payload, width, height):
         "  <script>",
         "    HTMLWidgets._init(",
         '      document.getElementById("competition-canvas"),',
+        "      " + w + ", " + h + ",",
+        "      " + json_payload,
+        "    );",
+        "  </script>",
+        "</body>",
+        "</html>",
+    ])
+
+
+def _html_from_spatial_payload(payload: dict, width: int, height: int) -> str:
+    """Build self-contained HTML for the static spatial voting canvas widget."""
+    if not _CORE_JS_PATH.exists() or not _SPATIAL_JS_PATH.exists():
+        raise FileNotFoundError(
+            "Spatial canvas JS missing: expected "
+            f"{_CORE_JS_PATH} and {_SPATIAL_JS_PATH} (copy from r/inst/htmlwidgets/)."
+        )
+    js_core = _CORE_JS_PATH.read_text(encoding="utf-8")
+    js_spatial = _SPATIAL_JS_PATH.read_text(encoding="utf-8")
+    json_payload = json.dumps(payload)
+    title = str(payload.get("title", "Spatial Voting Analysis"))
+    w = str(int(width))
+    h = str(int(height))
+    return "\n".join([
+        "<!DOCTYPE html>",
+        "<html>",
+        "<head>",
+        '  <meta charset="utf-8">',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+        "  <title>" + title + "</title>",
+        "  <style>",
+        "    * { box-sizing: border-box; margin: 0; padding: 0; }",
+        "    body { background: #fff; }",
+        '    #spatial-voting-canvas { width: ' + w + 'px; height: ' + h + 'px; }',
+        "  </style>",
+        "</head>",
+        "<body>",
+        '  <div id="spatial-voting-canvas"></div>',
+        "  <script>",
+        _htmlwidgets_stub_script(),
+        "  </script>",
+        "  <script>",
+        js_core,
+        "  </script>",
+        "  <script>",
+        js_spatial,
+        "  </script>",
+        "  <script>",
+        "    HTMLWidgets._init(",
+        '      document.getElementById("spatial-voting-canvas"),',
         "      " + w + ", " + h + ",",
         "      " + json_payload,
         "    );",
@@ -1098,12 +680,11 @@ def animate_competition_canvas(
     voronoi_dist_config=None,
     payload_path=None,
 ):
-    """Animate 2D competition trajectories using the canvas-based player.
+    """Animate competition trajectories using the canvas-based HTML player.
 
-    Produces the same animation as :func:`animate_competition_trajectories` but
-    delivers it as a self-contained HTML file using the shared Canvas 2D player.
-    Data is stored once and frames are drawn on demand, so it scales to long
-    runs without the large payload that Plotly frame-based animations require.
+    Returns a self-contained HTML string (and optionally writes it to ``path``).
+    Data is sent once; the browser draws frames on demand, so long runs stay
+    lightweight compared to frame-heavy animation formats.
 
     Parameters
     ----------
@@ -1566,60 +1147,8 @@ def layer_ic(
     name="Indifference Curves",
     theme="dark2",
 ):
-    """Add voter indifference curves.
-
-    Draws an indifference contour for each voter centred at their ideal point,
-    passing through the status quo.  Under Euclidean distance (the default)
-    each contour is a circle; other metrics (Manhattan, Chebyshev, Minkowski)
-    produce their respective iso-distance shapes.
-
-    Parameters
-    ----------
-    fig:
-        Figure from :func:`plot_spatial_voting`.
-    voters:
-        Flat array of voter ideal points.
-    sq:
-        Length-2 array for the status quo.
-    dist_config:
-        Distance metric configuration (:class:`~socialchoicelab.DistanceConfig`).
-        ``None`` (default) uses Euclidean distance and draws an efficient circle.
-        Pass :func:`~socialchoicelab.make_dist_config` for other metrics.
-    color_by_voter:
-        ``False`` (default): all curves share a single neutral colour with
-        one legend entry.  ``True``: each voter gets a unique colour from
-        ``palette`` shown individually in the legend.
-    fill_color:
-        Explicit fill colour (overrides theme).  ``None``: no fill when
-        ``color_by_voter=False``; faint per-voter colour when ``True``.
-    line_color:
-        Explicit uniform line colour (overrides theme for non-voter-colour mode).
-    line_width:
-        Stroke width of the IC contours in pixels.  Default ``1``.
-    palette:
-        Palette name for ``color_by_voter`` mode.  ``"auto"`` (default) uses
-        the ``theme``'s palette.
-    voter_names:
-        Labels used in the legend when ``color_by_voter=True``.
-    name:
-        Legend group label (when ``color_by_voter=False``).
-    theme:
-        Colour theme — same options as :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> sq = np.array([0.1, 0.1])
-    >>> fig = sclp.plot_spatial_voting(voters, sq=sq)
-    >>> fig = sclp.layer_ic(fig, voters, sq)
-    """
-    _require_plotly()
+    """Add voter indifference curves to a canvas payload dict."""
+    _assert_spatial_payload(fig)
     vx, vy = _flat_to_xy(voters)
     sqv = np.asarray(sq, dtype=float).ravel()
     n_v = len(vx)
@@ -1639,39 +1168,30 @@ def layer_ic(
         line_colors = [lc] * n_v
         fill_colors = [fill_color if fill_color is not None else "rgba(0,0,0,0)"] * n_v
 
-    _linear_loss = LossConfig(loss_type="linear")
+    linear_loss = LossConfig(loss_type="linear")
+    curves = list(fig["layers"].get("ic_curves") or [])
 
     for i in range(n_v):
         if dist_config is None:
             r = math.sqrt((vx[i] - sqv[0]) ** 2 + (vy[i] - sqv[1]) ** 2)
             cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
-            hover_d = r
+            px, py = cx.tolist(), cy.tolist()
         else:
-            hover_d = calculate_distance(
-                [float(vx[i]), float(vy[i])], sqv.tolist(), dist_config
-            )
             poly = ic_polygon_2d(
                 float(vx[i]), float(vy[i]),
                 float(sqv[0]), float(sqv[1]),
-                _linear_loss, dist_config, 64,
+                linear_loss, dist_config, 64,
             )
-            cx = poly[:, 0].tolist() + [float(poly[0, 0])]
-            cy = poly[:, 1].tolist() + [float(poly[0, 1])]
-        lname = voter_names[i] if color_by_voter else name
-        lgroup = voter_names[i] if color_by_voter else name
-        show_lg = True if color_by_voter else (i == 0)
-        use_fill = fill_color is not None or color_by_voter
-        fig = _add_role_trace(fig, go.Scatter(
-            x=cx, y=cy,
-            mode="lines",
-            fill="toself" if use_fill else "none",
-            fillcolor=fill_colors[i],
-            line=dict(color=line_colors[i], width=line_width, dash="dot"),
-            name=lname,
-            legendgroup=lgroup,
-            showlegend=show_lg,
-            hovertemplate=f"{voter_names[i]} IC (d={hover_d:.3f})<extra></extra>",
-        ), "region")
+            px = poly[:, 0].tolist() + [float(poly[0, 0])]
+            py = poly[:, 1].tolist() + [float(poly[0, 1])]
+        flat = _poly_to_flat_xy(px, py)
+        entry = {
+            "xy": flat,
+            "line": line_colors[i],
+            "fill": fill_colors[i] if (color_by_voter or fill_color is not None) else None,
+        }
+        curves.append(entry)
+    fig["layers"]["ic_curves"] = curves
     return fig
 
 
@@ -1688,56 +1208,8 @@ def layer_preferred_regions(
     name="Preferred Region",
     theme="dark2",
 ):
-    """Add voter preferred-to regions.
-
-    Draws a filled region for each voter centred at their ideal point bounded
-    by the indifference contour through the status quo.  The interior is the
-    set of policies the voter strictly prefers to the SQ.  Under Euclidean
-    distance (the default) each region is a circle; other metrics produce
-    their respective iso-distance shapes.
-
-    Parameters
-    ----------
-    fig:
-        Figure from :func:`plot_spatial_voting`.
-    voters:
-        Flat array of voter ideal points.
-    sq:
-        Length-2 array for the status quo.
-    dist_config:
-        Distance metric configuration (:class:`~socialchoicelab.DistanceConfig`).
-        ``None`` (default) uses Euclidean distance and draws an efficient circle.
-        Pass :func:`~socialchoicelab.make_dist_config` for other metrics.
-    color_by_voter:
-        ``False``: all regions share one neutral colour.  ``True``: each voter
-        gets a unique colour from ``palette``.
-    fill_color:
-        Explicit fill colour (overrides theme).
-    line_color:
-        Explicit outline colour (overrides theme).
-    palette:
-        Palette name for ``color_by_voter`` mode.
-    voter_names:
-        Labels used in the legend when ``color_by_voter=True``.
-    name:
-        Legend group label (when ``color_by_voter=False``).
-    theme:
-        Colour theme — same options as :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> sq = np.array([0.1, 0.1])
-    >>> fig = sclp.plot_spatial_voting(voters, sq=sq)
-    >>> fig = sclp.layer_preferred_regions(fig, voters, sq)
-    """
-    _require_plotly()
+    """Add voter preferred-to regions to a canvas payload dict."""
+    _assert_spatial_payload(fig)
     vx, vy = _flat_to_xy(voters)
     sqv = np.asarray(sq, dtype=float).ravel()
     n_v = len(vx)
@@ -1755,38 +1227,25 @@ def layer_preferred_regions(
         line_colors = [line_color if line_color is not None
                        else _preferred_uniform_line(theme)] * n_v
 
-    _linear_loss = LossConfig(loss_type="linear")
+    linear_loss = LossConfig(loss_type="linear")
+    regs = list(fig["layers"].get("preferred_regions") or [])
 
     for i in range(n_v):
         if dist_config is None:
             r = math.sqrt((vx[i] - sqv[0]) ** 2 + (vy[i] - sqv[1]) ** 2)
             cx, cy = _circle_pts(float(vx[i]), float(vy[i]), r)
-            hover_d = r
+            px, py = cx.tolist(), cy.tolist()
         else:
-            hover_d = calculate_distance(
-                [float(vx[i]), float(vy[i])], sqv.tolist(), dist_config
-            )
             poly = ic_polygon_2d(
                 float(vx[i]), float(vy[i]),
                 float(sqv[0]), float(sqv[1]),
-                _linear_loss, dist_config, 64,
+                linear_loss, dist_config, 64,
             )
-            cx = poly[:, 0].tolist() + [float(poly[0, 0])]
-            cy = poly[:, 1].tolist() + [float(poly[0, 1])]
-        lname = voter_names[i] if color_by_voter else name
-        lgroup = voter_names[i] if color_by_voter else name
-        show_lg = True if color_by_voter else (i == 0)
-        fig = _add_role_trace(fig, go.Scatter(
-            x=cx, y=cy,
-            mode="lines",
-            fill="toself",
-            fillcolor=fill_colors[i],
-            line=dict(color=line_colors[i], width=1, dash="dot"),
-            name=lname,
-            legendgroup=lgroup,
-            showlegend=show_lg,
-            hovertemplate=f"{voter_names[i]} preferred region (d={hover_d:.3f})<extra></extra>",
-        ), "region")
+            px = poly[:, 0].tolist() + [float(poly[0, 0])]
+            py = poly[:, 1].tolist() + [float(poly[0, 1])]
+        flat = _poly_to_flat_xy(px, py)
+        regs.append({"xy": flat, "fill": fill_colors[i], "line": line_colors[i]})
+    fig["layers"]["preferred_regions"] = regs
     return fig
 
 
@@ -1801,50 +1260,8 @@ def layer_winset(
     dist_config=None,
     theme="dark2",
 ):
-    """Add a winset polygon layer.
-
-    Pass either a pre-computed :class:`~socialchoicelab.Winset` or raw
-    ``voters`` + ``sq`` for auto-compute.  Empty winsets are ignored.
-
-    Parameters
-    ----------
-    fig:
-        Figure from :func:`plot_spatial_voting`.
-    winset:
-        A :class:`~socialchoicelab.Winset` object, or ``None`` for auto-compute.
-    fill_color:
-        Explicit fill colour (overrides theme).
-    line_color:
-        Explicit outline colour (overrides theme).
-    name:
-        Legend entry label.
-    voters:
-        Flat voter array (required when ``winset=None``).
-    sq:
-        Status quo ``[x, y]`` (required when ``winset=None``).
-    dist_config:
-        Distance metric configuration (:class:`~socialchoicelab.DistanceConfig`).
-        ``None`` (default) uses Euclidean distance.  Only used in the
-        auto-compute path (``winset=None``); ignored when a pre-computed
-        ``winset`` is supplied.
-    theme:
-        Colour theme — same options as :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import socialchoicelab as scl
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6, -0.4, 0.8, 0.5, -0.7])
-    >>> ws  = scl.winset_2d(0.0, 0.0, voters)
-    >>> fig = sclp.plot_spatial_voting(voters)
-    >>> fig = sclp.layer_winset(fig, ws)
-    """
-    _require_plotly()
+    """Add a winset polygon layer to a canvas payload dict."""
+    _assert_spatial_payload(fig)
 
     if winset is None:
         if voters is None or sq is None:
@@ -1858,8 +1275,8 @@ def layer_winset(
                                np.asarray(voters, dtype=float),
                                dist_config=dist_config)
 
-    fill_color = fill_color if fill_color is not None else _layer_fill_color("winset", theme)
-    line_color = line_color if line_color is not None else _layer_line_color("winset", theme)
+    fill_c = fill_color if fill_color is not None else _layer_fill_color("winset", theme)
+    line_c = line_color if line_color is not None else _layer_line_color("winset", theme)
 
     if winset.is_empty():
         return fig
@@ -1871,24 +1288,17 @@ def layer_winset(
     n_paths = len(starts)
     ends = list(starts[1:]) + [len(xy)]
 
-    show_legend = True
+    paths = list(fig["layers"].get("winset_paths") or [])
+    hole_fill = "rgba(248,249,250,0.95)"
+
     for i in range(n_paths):
-        fc = "rgba(248,249,250,0.95)" if is_hole[i] else fill_color
+        fc_i = hole_fill if is_hole[i] else fill_c
         s, e = int(starts[i]), int(ends[i])
         px = list(xy[s:e, 0]) + [xy[s, 0]]
         py = list(xy[s:e, 1]) + [xy[s, 1]]
-        fig = _add_role_trace(fig, go.Scatter(
-            x=px, y=py,
-            mode="lines",
-            fill="toself",
-            fillcolor=fc,
-            line=dict(color=line_color, width=2, dash="solid"),
-            name=name,
-            showlegend=show_legend,
-            legendgroup=name,
-            hoverinfo="skip",
-        ), "region")
-        show_legend = False
+        flat = _poly_to_flat_xy(px, py)
+        paths.append({"xy": flat, "fill": fc_i, "line": line_c})
+    fig["layers"]["winset_paths"] = paths
     return fig
 
 
@@ -1902,50 +1312,17 @@ def layer_yolk(
     name="Yolk",
     theme="dark2",
 ):
-    """Add a yolk circle layer.
-
-    Parameters
-    ----------
-    fig:
-        Figure from :func:`plot_spatial_voting`.
-    center_x, center_y:
-        Yolk center coordinates.
-    radius:
-        Yolk radius (same units as plot axes).
-    fill_color:
-        Explicit fill colour (overrides theme).
-    line_color:
-        Explicit outline colour (overrides theme).
-    name:
-        Legend entry label.
-    theme:
-        Colour theme — same options as :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> fig = sclp.plot_spatial_voting(voters)
-    >>> fig = sclp.layer_yolk(fig, center_x=0.1, center_y=0.05, radius=0.3)
-    """
-    _require_plotly()
-    fill_color = fill_color if fill_color is not None else _layer_fill_color("yolk", theme)
-    line_color = line_color if line_color is not None else _layer_line_color("yolk", theme)
-    cx, cy = _circle_pts(float(center_x), float(center_y), float(radius))
-    fig = _add_role_trace(fig, go.Scatter(
-        x=cx, y=cy,
-        mode="lines",
-        fill="toself",
-        fillcolor=fill_color,
-        line=dict(color=line_color, width=2, dash="longdashdot"),
-        name=name,
-        hovertemplate=f"{name} (r={radius:.4f})<extra></extra>",
-    ), "region")
+    """Add a yolk circle layer to a canvas payload dict."""
+    _assert_spatial_payload(fig)
+    fill_c = fill_color if fill_color is not None else _layer_fill_color("yolk", theme)
+    line_c = line_color if line_color is not None else _layer_line_color("yolk", theme)
+    fig["layers"]["yolk"] = {
+        "cx": float(center_x),
+        "cy": float(center_y),
+        "r": float(radius),
+        "fill": fill_c,
+        "line": line_c,
+    }
     return fig
 
 
@@ -1959,45 +1336,8 @@ def layer_uncovered_set(
     grid_resolution=20,
     theme="dark2",
 ):
-    """Add an uncovered set boundary layer.
-
-    Pass either a pre-computed boundary or raw ``voters`` for auto-compute.
-    Empty boundaries are ignored.
-
-    Parameters
-    ----------
-    fig:
-        Figure from :func:`plot_spatial_voting`.
-    boundary_xy:
-        ``ndarray`` of shape ``(n_pts, 2)``, or ``None`` for auto-compute.
-    fill_color:
-        Explicit fill colour (overrides theme).
-    line_color:
-        Explicit outline colour (overrides theme).
-    name:
-        Legend entry label.
-    voters:
-        Flat voter array (required when ``boundary_xy=None``).
-    grid_resolution:
-        Grid resolution for auto-compute (default 20).
-    theme:
-        Colour theme — same options as :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import socialchoicelab as scl
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6, -0.4, 0.8, 0.5, -0.7])
-    >>> bnd = scl.uncovered_set_boundary_2d(voters, grid_resolution=8)
-    >>> fig = sclp.plot_spatial_voting(voters)
-    >>> fig = sclp.layer_uncovered_set(fig, bnd)
-    """
-    _require_plotly()
+    """Add an uncovered set boundary layer to a canvas payload dict."""
+    _assert_spatial_payload(fig)
 
     if boundary_xy is None:
         if voters is None:
@@ -2010,23 +1350,19 @@ def layer_uncovered_set(
             np.asarray(voters, dtype=float), grid_resolution=int(grid_resolution)
         )
 
-    fill_color = fill_color if fill_color is not None else _layer_fill_color("uncovered_set", theme)
-    line_color = line_color if line_color is not None else _layer_line_color("uncovered_set", theme)
+    fill_c = fill_color if fill_color is not None else _layer_fill_color("uncovered_set", theme)
+    line_c = line_color if line_color is not None else _layer_line_color("uncovered_set", theme)
 
     bxy = np.asarray(boundary_xy, dtype=float)
     if len(bxy) == 0:
         return fig
     px = list(bxy[:, 0]) + [bxy[0, 0]]
     py = list(bxy[:, 1]) + [bxy[0, 1]]
-    fig = _add_role_trace(fig, go.Scatter(
-        x=px, y=py,
-        mode="lines",
-        fill="toself",
-        fillcolor=fill_color,
-        line=dict(color=line_color, width=1.5, dash="longdash"),
-        name=name,
-        hovertemplate=f"{name}<extra></extra>",
-    ), "region")
+    fig["layers"]["uncovered_xy"] = {
+        "xy": _poly_to_flat_xy(px, py),
+        "fill": fill_c,
+        "line": line_c,
+    }
     return fig
 
 
@@ -2035,248 +1371,69 @@ def layer_convex_hull(
     hull_xy,
     fill_color=None,
     line_color=None,
-    name="Convex Hull",
+    name="Pareto Set",
     theme="dark2",
 ):
-    """Add a convex hull layer.
+    """Add a Pareto set layer (convex hull of ideals for Euclidean preferences).
 
-    Parameters
-    ----------
-    fig:
-        Figure from :func:`plot_spatial_voting`.
-    hull_xy:
-        ``ndarray`` of shape ``(n_hull, 2)``.  Empty arrays are ignored.
-    fill_color:
-        Explicit fill colour (overrides theme).
-    line_color:
-        Explicit outline colour (overrides theme).
-    name:
-        Legend entry label.
-    theme:
-        Colour theme — same options as :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import socialchoicelab as scl
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6, -0.4, 0.8, 0.5, -0.7])
-    >>> hull = scl.convex_hull_2d(voters)
-    >>> fig  = sclp.plot_spatial_voting(voters)
-    >>> fig  = sclp.layer_convex_hull(fig, hull)
+    The canvas labels this layer "Pareto Set". Payload key remains ``convex_hull_xy``.
     """
-    _require_plotly()
-    fill_color = fill_color if fill_color is not None else _layer_fill_color("convex_hull", theme)
-    line_color = line_color if line_color is not None else _layer_line_color("convex_hull", theme)
+    _assert_spatial_payload(fig)
+    fill_c = fill_color if fill_color is not None else _layer_fill_color("convex_hull", theme)
+    line_c = line_color if line_color is not None else _layer_line_color("convex_hull", theme)
 
     hxy = np.asarray(hull_xy, dtype=float)
     if len(hxy) == 0:
         return fig
     px = list(hxy[:, 0]) + [hxy[0, 0]]
     py = list(hxy[:, 1]) + [hxy[0, 1]]
-    fig = _add_role_trace(fig, go.Scatter(
-        x=px, y=py,
-        mode="lines",
-        fill="toself",
-        fillcolor=fill_color,
-        line=dict(color=line_color, width=1.5, dash="dash"),
-        name=name,
-        hovertemplate=f"{name}<extra></extra>",
-    ), "region")
+    fig["layers"]["convex_hull_xy"] = {
+        "xy": _poly_to_flat_xy(px, py),
+        "fill": fill_c,
+        "line": line_c,
+    }
+    return fig
+
+
+def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
+    """Add a centroid marker to a canvas payload dict."""
+    _assert_spatial_payload(fig)
+    stroke = color or _centroid_overlay_color(theme)
+    x, y = centroid_2d(voters)
+    fig["layers"]["centroid"] = [float(x), float(y)]
+    fig["layers"]["centroid_stroke"] = stroke
+    return fig
+
+
+def layer_marginal_median(fig, voters, color=None, name="Marginal Median", theme="dark2"):
+    """Add a marginal median marker to a canvas payload dict."""
+    _assert_spatial_payload(fig)
+    fill_c = color or _marginal_median_overlay_color(theme)
+    stroke_c = _overlay_triangle_outline_color(theme)
+    x, y = marginal_median_2d(voters)
+    fig["layers"]["marginal_median"] = [float(x), float(y)]
+    fig["layers"]["marginal_median_fill"] = fill_c
+    fig["layers"]["marginal_median_stroke"] = stroke_c
     return fig
 
 
 def save_plot(fig, path, width=None, height=None):
-    """Save a spatial voting plot to an HTML or image file.
-
-    HTML export uses ``fig.write_html()`` and requires no extra packages.
-    Image export (``.png``, ``.svg``, ``.pdf``) uses ``fig.write_image()``
-    which requires the ``kaleido`` package::
-
-        pip install kaleido
-
-    Parameters
-    ----------
-    fig:
-        A Plotly figure.
-    path:
-        Output file path.  Extension sets format: ``.html`` (recommended),
-        ``.png``, ``.svg``, ``.pdf``, ``.jpeg``, or ``.webp``.
-    width, height:
-        Optional pixel dimensions (override figure's own size).
-
-    Returns
-    -------
-    str
-        The output path.
-
-    Examples
-    --------
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> fig = sclp.plot_spatial_voting(voters, sq=np.array([0.0, 0.0]))
-    >>> _ = sclp.save_plot(fig, "/tmp/my_plot.html")
-    """
-    _require_plotly()
+    """Save a spatial voting canvas payload to a standalone HTML file."""
+    _assert_spatial_payload(fig)
     ext = Path(path).suffix.lower()
-    if width is not None or height is not None:
-        kw = {k: v for k, v in [("width", width), ("height", height)] if v is not None}
-        fig = fig.update_layout(**kw)
-
+    w = int(width if width is not None else fig.get("_width", 700))
+    h = int(height if height is not None else fig.get("_height", 600))
+    export = {k: v for k, v in fig.items() if not str(k).startswith("_")}
     if ext == ".html":
-        fig.write_html(str(path))
+        html = _html_from_spatial_payload(export, w, h)
+        Path(path).write_text(html, encoding="utf-8")
     elif ext in {".png", ".svg", ".pdf", ".jpeg", ".jpg", ".webp"}:
-        try:
-            fig.write_image(str(path))
-        except Exception as exc:
-            raise RuntimeError(
-                f"save_plot: failed to write image: {exc}\n"
-                "Image export requires the kaleido package. "
-                "Install it with: pip install kaleido"
-            ) from exc
+        raise NotImplementedError(
+            "PNG/SVG export is not yet supported for canvas plots; save as HTML "
+            "and use the browser's print/screenshot tools."
+        )
     else:
         raise ValueError(
-            f"save_plot: unsupported file extension '{ext}'. "
-            "Supported formats: .html, .png, .svg, .pdf, .jpeg, .webp."
+            f"save_plot: unsupported file extension '{ext}'. Supported formats: .html."
         )
     return str(path)
-
-
-def finalize_plot(fig):
-    """Enforce the canonical layer stack order.
-
-    Parameters
-    ----------
-    fig:
-        A Plotly figure.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import socialchoicelab.plots as sclp
-    >>> import numpy as np
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> fig = sclp.plot_spatial_voting(voters, sq=np.array([0.0, 0.0]))
-    >>> fig = sclp.finalize_plot(fig)
-    """
-    return _normalize_trace_roles(fig)
-
-
-def layer_centroid(fig, voters, color=None, name="Centroid", theme="dark2"):
-    """Add a centroid (mean voter position) marker layer.
-
-    Displays the coordinate-wise arithmetic mean of voter ideal points as a
-    labelled cross (+) marker, matching the competition-canvas overlay style.
-
-    Parameters
-    ----------
-    fig:
-        Plotly figure from :func:`plot_spatial_voting`.
-    voters:
-        Flat ``[x0, y0, …]`` voter ideal points.
-    color:
-        Marker colour string (CSS rgba).  ``None`` uses the canvas-matched
-        crimson (or grayscale when ``theme="bw"``).
-    name:
-        Legend entry label.
-    theme:
-        Colour theme — see :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> import socialchoicelab.plots as sclp
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> fig = sclp.plot_spatial_voting(voters)
-    >>> fig = sclp.layer_centroid(fig, voters)
-    """
-    if not _PLOTLY_AVAILABLE:
-        raise ImportError("plotly is required: pip install plotly")
-    color = color or _centroid_overlay_color(theme)
-    x, y = centroid_2d(voters)
-    fig = _add_role_trace(
-        fig,
-        go.Scatter(
-            x=[x], y=[y],
-            mode="markers+text",
-            marker=dict(symbol="cross", size=11, color=color,
-                        line=dict(color=color, width=2)),
-            text=[name],
-            textposition="top center",
-            name=name,
-            hovertemplate=f"{name} ({x:.4f}, {y:.4f})<extra></extra>",
-        )
-        ,
-        "point",
-    )
-    return fig
-
-
-def layer_marginal_median(fig, voters, color=None, name="Marginal Median",
-                          theme="dark2"):
-    """Add a marginal median marker layer.
-
-    Displays the coordinate-wise median of voter ideal points as a labelled
-    upward-pointing filled triangle, matching the competition-canvas overlay
-    (issue-by-issue median voter; Black 1948).
-
-    Parameters
-    ----------
-    fig:
-        Plotly figure from :func:`plot_spatial_voting`.
-    voters:
-        Flat ``[x0, y0, …]`` voter ideal points.
-    color:
-        Marker fill colour (CSS rgba).  ``None`` uses the canvas-matched
-        indigo-violet (or grayscale when ``theme="bw"``).  Outline always uses
-        a light stroke for contrast, as on the canvas.
-    name:
-        Legend entry label.
-    theme:
-        Colour theme — see :func:`plot_spatial_voting`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> import socialchoicelab.plots as sclp
-    >>> voters = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6])
-    >>> fig = sclp.plot_spatial_voting(voters)
-    >>> fig = sclp.layer_marginal_median(fig, voters)
-    """
-    if not _PLOTLY_AVAILABLE:
-        raise ImportError("plotly is required: pip install plotly")
-    fill_c = color or _marginal_median_overlay_color(theme)
-    stroke_c = _overlay_triangle_outline_color(theme)
-    x, y = marginal_median_2d(voters)
-    fig = _add_role_trace(
-        fig,
-        go.Scatter(
-            x=[x], y=[y],
-            mode="markers+text",
-            marker=dict(symbol="triangle-up", size=14, color=fill_c,
-                        line=dict(color=stroke_c, width=2)),
-            text=[name],
-            textposition="top center",
-            name=name,
-            hovertemplate=f"{name} ({x:.4f}, {y:.4f})<extra></extra>",
-        )
-        ,
-        "point",
-    )
-    return fig

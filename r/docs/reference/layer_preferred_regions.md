@@ -1,10 +1,6 @@
 # Add voter preferred-to regions
 
-Draws a filled region for each voter centred at their ideal point
-bounded by the indifference contour through the status quo. The interior
-is the set of policies the voter strictly prefers to the SQ. Under
-Euclidean distance (the default) each region is a circle; other metrics
-produce their respective iso-distance shapes.
+Add voter preferred-to regions
 
 ## Usage
 
@@ -17,6 +13,7 @@ layer_preferred_regions(
   color_by_voter = FALSE,
   fill_color = NULL,
   line_color = NULL,
+  line_colour = NULL,
   palette = "auto",
   voter_names = NULL,
   name = "Preferred Region",
@@ -28,67 +25,54 @@ layer_preferred_regions(
 
 - fig:
 
-  A plotly figure from
+  A widget from
   [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
 
 - voters:
 
-  Flat numeric vector of voter ideal points.
+  Flat numeric vector `[x0, y0, x1, y1, ...]` of voter ideal points
+  (length 2 \* n_voters).
 
 - sq:
 
-  Numeric vector `c(x, y)` for the status quo.
+  Numeric vector `c(x, y)` for the status quo, or `NULL`.
 
 - dist_config:
 
-  Distance metric configuration from
+  Distance metric from
   [`make_dist_config`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_dist_config.md).
-  `NULL` (default) uses Euclidean distance and draws an efficient
-  circle.
 
 - color_by_voter:
 
-  Logical. `FALSE` (default): all regions share one neutral colour.
-  `TRUE`: each voter gets a unique colour from `palette` shown
-  individually in the legend.
+  Per-voter colours from `palette` when `TRUE`.
 
 - fill_color:
 
-  Default fill colour. `NULL` uses the theme default.
+  Fill for closed curves; `NULL` means no fill unless
+  `color_by_voter = TRUE`.
 
-- line_color:
+- line_colour, line_color:
 
-  Default outline colour. `NULL` uses the theme default.
+  Outline colour when `color_by_voter = FALSE`.
 
 - palette:
 
-  Palette name for `color_by_voter` mode.
+  Palette name when `color_by_voter = TRUE`.
 
 - voter_names:
 
-  Character vector of voter labels.
+  Character vector of voter labels. `NULL` uses `"V1"`, `"V2"`, etc.
 
 - name:
 
-  Legend group label (when `color_by_voter = FALSE`).
+  Legend label when `color_by_voter = FALSE`.
 
 - theme:
 
-  Colour theme — see
-  [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
+  Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
+  `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
+  print).
 
 ## Value
 
-The updated plotly figure.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
-sq     <- c(0.1, 0.1)
-fig <- plot_spatial_voting(voters, sq = sq)
-fig <- layer_preferred_regions(fig, voters, sq)
-fig
-} # }
-```
+Updated widget.

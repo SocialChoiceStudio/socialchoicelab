@@ -14,18 +14,28 @@
 # Each plot is built in layers. Toggle any layer on or off by
 # commenting / uncommenting the corresponding line.
 #
-# HOW TO RUN IN RSTUDIO:
-#   Session > Set Working Directory > To Source File Location
-#   Then source or step through with Cmd+Enter.
-devtools::load_all("r/")
-
-library(socialchoicelab)
+# HOW TO RUN
+#   Option A — RStudio: Session > Set Working Directory > To Source File Location
+#              (must be the package root folder `.../socialchoicelab/r/` that contains DESCRIPTION).
+#              Then source this file or run line-by-line.
+#   Option B — From repo root:  setwd("r"); source("static_scenarios_demo.R")
+#
+# Plots are htmlwidgets (HTML5 canvas): use print(fig) in the console / Viewer, or set
+# SAVE_HTML / OPEN_FIRST_IN_BROWSER below and run the block at the bottom.
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  stop("static_scenarios_demo.R needs devtools: install.packages(\"devtools\")")
+}
+devtools::load_all(".")
 
 # ── Common settings ────────────────────────────────────────────────────────────
 THEME  <- "dark2"   # "dark2" | "set2" | "okabe_ito" | "paired" | "bw"
 WIDTH  <- 1000L
 HEIGHT <- 950L
-SHOW_LABELS <- TRUE   # draw voter names on the plot
+SHOW_LABELS <- TRUE   # canvas: alternative labels on-plot when TRUE; voters via legend / hover
+
+# Save self-contained HTML under r/tmp/ and optionally open the first scenario in the browser
+SAVE_HTML           <- TRUE
+OPEN_FIRST_IN_BROWSER <- interactive()
 
 # ===========================================================================
 # 1. Dougherty & Edward (PUCH 2012, Fig 3)
@@ -272,21 +282,26 @@ fig7 <- layer_marginal_median(fig7, sc1$voters, theme = THEME)
 
 
 # ===========================================================================
-# Optional: save any plot to HTML (self-contained, no server needed)
+# Display in RStudio Viewer / console (last line wins if you source the whole file)
 # ===========================================================================
-# dir.create("tmp", showWarnings = FALSE)
-# save_plot(fig1, "tmp/dougherty_edward_2012.html")
-# save_plot(fig2, "tmp/dpmr_2014.html")
-# save_plot(fig3, "tmp/laing_olmsted_bear.html")
-# save_plot(fig4, "tmp/laing_olmsted_skewed_star.html")
-# save_plot(fig5, "tmp/dougherty_edward_manhattan.html")
-# save_plot(fig6, "tmp/dougherty_edward_chebyshev.html")
-# save_plot(fig7, "tmp/dougherty_edward_minkowski_p3.html")
-
-fig7
-fig6
-fig5
-fig4
-fig3
-fig2
 fig1
+
+# ===========================================================================
+# Optional: save HTML and open in your default browser (no RStudio needed)
+# ===========================================================================
+if (isTRUE(SAVE_HTML)) {
+  tmp_dir <- file.path(getwd(), "tmp")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  save_plot(fig1, file.path(tmp_dir, "dougherty_edward_2012.html"))
+  save_plot(fig2, file.path(tmp_dir, "dpmr_2014.html"))
+  save_plot(fig3, file.path(tmp_dir, "laing_olmsted_bear.html"))
+  save_plot(fig4, file.path(tmp_dir, "laing_olmsted_skewed_star.html"))
+  save_plot(fig5, file.path(tmp_dir, "dougherty_edward_manhattan.html"))
+  save_plot(fig6, file.path(tmp_dir, "dougherty_edward_chebyshev.html"))
+  save_plot(fig7, file.path(tmp_dir, "dougherty_edward_minkowski_p3.html"))
+  message("Saved HTML under: ", normalizePath(tmp_dir, winslash = "/"))
+  if (isTRUE(OPEN_FIRST_IN_BROWSER)) {
+    p1 <- normalizePath(file.path(tmp_dir, "dougherty_edward_2012.html"))
+    utils::browseURL(paste0("file://", p1))
+  }
+}

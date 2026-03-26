@@ -110,16 +110,18 @@ test_that("different layer types get different colours", {
 # Integration: layer functions use theme colours
 # ---------------------------------------------------------------------------
 
-test_that("plot_spatial_voting returns plotly with dark2 theme", {
+test_that("plot_spatial_voting returns canvas widget with dark2 theme", {
   voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
   fig <- plot_spatial_voting(voters, sq = c(0.0, 0.0), theme = "dark2")
-  expect_s3_class(fig, "plotly")
+  expect_s3_class(fig, "spatial_voting_canvas")
+  expect_true(grepl("^rgba\\(", fig$x$theme_colors$winset_fill))
 })
 
-test_that("plot_spatial_voting returns plotly with bw theme", {
+test_that("plot_spatial_voting returns canvas widget with bw theme", {
   voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
   fig <- plot_spatial_voting(voters, sq = c(0.0, 0.0), theme = "bw")
-  expect_s3_class(fig, "plotly")
+  expect_s3_class(fig, "spatial_voting_canvas")
+  expect_identical(fig$x$theme, "bw")
 })
 
 test_that("layer_winset respects explicit fill_color override", {
@@ -129,7 +131,9 @@ test_that("layer_winset respects explicit fill_color override", {
   ws     <- winset_2d(sq, voters)
   fig    <- plot_spatial_voting(voters, sq = sq)
   fig2   <- layer_winset(fig, ws, fill_color = "rgba(255,0,0,0.2)")
-  expect_s3_class(fig2, "plotly")
+  paths  <- fig2$x$layers$winset_paths
+  expect_true(length(paths) > 0L)
+  expect_true(any(vapply(paths, function(p) identical(p$fill, "rgba(255,0,0,0.2)"), logical(1L))))
 })
 
 test_that("layer_ic color_by_voter uses palette", {
@@ -137,7 +141,7 @@ test_that("layer_ic color_by_voter uses palette", {
   sq     <- c(0.0, 0.0)
   fig    <- plot_spatial_voting(voters, sq = sq)
   fig2   <- layer_ic(fig, voters, sq, color_by_voter = TRUE, palette = "dark2")
-  expect_s3_class(fig2, "plotly")
+  expect_length(fig2$x$layers$ic_curves, 3L)
 })
 
 test_that("layer_ic color_by_voter auto palette uses theme", {
@@ -145,5 +149,5 @@ test_that("layer_ic color_by_voter auto palette uses theme", {
   sq     <- c(0.0, 0.0)
   fig    <- plot_spatial_voting(voters, sq = sq, theme = "set2")
   fig2   <- layer_ic(fig, voters, sq, color_by_voter = TRUE, theme = "set2")
-  expect_s3_class(fig2, "plotly")
+  expect_length(fig2$x$layers$ic_curves, 3L)
 })

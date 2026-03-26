@@ -25,8 +25,8 @@ Character vector of \code{n} RGBA strings.
 \description{
 A convenience utility for retrieving coordinated colours from the same
 palettes used by the \code{layer_*} plotting functions. Useful when adding
-custom Plotly traces that should remain visually consistent with the rest
-of the plot.
+custom drawing (e.g. extra canvas layers or external graphics) that should
+remain visually consistent with the rest of the plot.
 }
 \examples{
 scl_palette("dark2", n = 4L)

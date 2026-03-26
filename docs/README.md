@@ -7,6 +7,7 @@ This file is the single entry point for project documentation.
 | What you need | Where to look |
 |---------------|---------------|
 | What's next / current position | `docs/status/WHERE_WE_ARE.md` |
+| Session / owner follow-ups (durable queue) | `docs/status/follow_up_queue.md` |
 | Near-/mid-/long-term roadmap | `docs/status/ROADMAP.md` |
 | Layer 7 competition implementation plan | `docs/status/competition_plan.md` |
 | Visualization layer implementation plan (archived) | `docs/status/archive/visualization_plan.md` |
@@ -48,6 +49,7 @@ docs/
 ├── README.md                              ← you are here (master index)
 ├── status/
 │   ├── WHERE_WE_ARE.md                    ← current position + recent work log
+│   ├── follow_up_queue.md                 ← explicit follow-ups (don’t lose across chats)
 │   ├── ROADMAP.md                         ← near-term, mid-term, long-term plans
 │   ├── competition_plan.md                ← Layer 7 competition implementation plan
 │   │   ├── visualization_plan.md          ← visualization layer plan (complete, archived)

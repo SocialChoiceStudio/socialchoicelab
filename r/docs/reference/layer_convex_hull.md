@@ -1,7 +1,9 @@
-# Add a convex hull layer
+# Add a Pareto set layer (convex hull of ideals under Euclidean preferences)
 
-Overlays the convex hull boundary. If the hull is empty the figure is
-returned unchanged.
+The canvas labels this layer “Pareto Set”. For Euclidean distance-based
+utilities, the Pareto-efficient ideal points are exactly the vertices of
+the convex hull of voter ideals; the payload still stores geometry as
+`convex_hull_xy`.
 
 ## Usage
 
@@ -11,7 +13,9 @@ layer_convex_hull(
   hull_xy,
   fill_color = NULL,
   line_color = NULL,
-  name = "Convex Hull",
+  fill_colour = NULL,
+  line_colour = NULL,
+  name = "Pareto Set",
   theme = "dark2"
 )
 ```
@@ -20,43 +24,32 @@ layer_convex_hull(
 
 - fig:
 
-  A plotly figure from
+  A widget from
   [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
 
 - hull_xy:
 
-  Numeric matrix (n_hull × 2) with columns `x` and `y`, as returned by
-  [`convex_hull_2d`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/convex_hull_2d.md).
+  Matrix `(n x 2)` with columns `x`, `y`.
 
-- fill_color:
+- fill_color, line_color:
 
-  Fill colour (CSS rgba). `NULL` uses the theme default.
+  Colours; `NULL` uses the theme default.
 
-- line_color:
+- fill_colour, line_colour:
 
-  Outline colour (CSS rgba). `NULL` uses the theme default.
+  UK spellings accepted.
 
 - name:
 
-  Legend entry label.
+  Display name for API parity; the static canvas uses the fixed label
+  “Pareto Set”.
 
 - theme:
 
-  Colour theme — see
-  [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
+  Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
+  `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
+  print).
 
 ## Value
 
-The updated plotly figure.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6,  -0.4, 0.8,  0.5, -0.7)
-hull <- convex_hull_2d(voters)
-fig  <- plot_spatial_voting(voters)
-fig  <- layer_convex_hull(fig, hull)
-fig
-} # }
-```
+Updated widget.

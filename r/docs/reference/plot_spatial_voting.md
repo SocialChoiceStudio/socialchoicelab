@@ -1,7 +1,7 @@
 # Create a base 2D spatial voting plot
 
 Plots voter ideal points and policy alternatives in a 2D issue space
-using Plotly. Add optional geometric layers via
+using an HTML5 canvas `htmlwidget`. Add optional geometric layers via
 [`layer_winset`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_winset.md),
 [`layer_yolk`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_yolk.md),
 [`layer_uncovered_set`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_uncovered_set.md),
@@ -22,6 +22,7 @@ plot_spatial_voting(
   dim_names = c("Dimension 1", "Dimension 2"),
   title = "Spatial Voting Analysis",
   show_labels = FALSE,
+  layer_toggles = TRUE,
   xlim = NULL,
   ylim = NULL,
   theme = "dark2",
@@ -65,8 +66,17 @@ plot_spatial_voting(
 
 - show_labels:
 
-  Logical. If `TRUE`, point labels are drawn on the graph. Default
-  `FALSE`.
+  Logical. If `TRUE`, alternative names are drawn next to diamond
+  markers.
+
+- layer_toggles:
+
+  Logical. If `TRUE` (default), a bottom bar of checkboxes toggles layer
+  visibility (like the competition canvas controls; crop below the plot
+  for slides). The symbol legend stays in a column on the right of the
+  plot, drawn on the canvas (like the animation widget). If `FALSE`, the
+  bottom bar is omitted for publication-style figures; all layers stay
+  visible.
 
 - xlim, ylim:
 
@@ -77,23 +87,22 @@ plot_spatial_voting(
 
   Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
   `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
-  print). Passed unchanged to each `layer_*` call for coordinated
-  colours.
+  print).
 
 - width, height:
 
-  Plot dimensions in pixels.
+  Widget dimensions in pixels.
 
 ## Value
 
-A `plotly` figure object.
+An `htmlwidget` of class `spatial_voting_canvas`.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6,  -0.4, 0.8,  0.5, -0.7)
-sq     <- c(0.0,  0.0)
+voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6, -0.4, 0.8, 0.5, -0.7)
+sq     <- c(0.0, 0.0)
 fig <- plot_spatial_voting(voters, sq = sq, theme = "dark2")
 fig
 } # }

@@ -20,7 +20,7 @@ The system is built around a **C++ core** with bindings for **R** and **Python**
 - **Stable façade**: thin c_api (C ABI) with POD structs/opaque handles; no STL across boundary.
 - **R package (socialchoicelab)**: thin C registration layer (`.Call()`) that calls c_api via C ABI. No C++ compilation in the R package.
 - **Python package (socialchoicelab)**: cffi adapter that calls c_api via C ABI. No C++ compilation in the Python package.
-- **Plot helpers**: Plotly (R and Py) with identical APIs, Kaleido for static export.
+- **Plot helpers**: HTML5 Canvas widgets (R `htmlwidgets`, Python self-contained HTML) with identical APIs; static spatial plots use `spatial_voting_canvas.js` + `scs_canvas_core.js` (shared with the competition player).
 - **Repro**: ModelConfig JSON/YAML everywhere; export_script(config, lang="R|python").
 
 ### B) "GUI-lite"
@@ -154,7 +154,7 @@ Reference these when designing the c_api surface; they are not implementation ta
 - Separation of **distance** and **loss** functions for maximum flexibility in utility modeling.
 - Modular boundaries so each part can be swapped or extended.
 - Exact geometry (CGAL EPEC) only where correctness is critical and performance can be sacrificed.
-- **All social-choice computation in the C++ core.** Distance calculations, cutlines, Voronoi partitions, winsets, majority comparisons, and any other geometry that depends on the distance/loss configuration must be computed in the C++ core and exposed via the C API. Visualization layers (JS canvas player, Plotly helpers, R/Python plot code) are strictly renderers: they receive pre-computed results and draw them. They must not approximate, re-derive, or short-circuit social-choice geometry, even when a Euclidean special case would appear trivial — the distance metric is configurable and the "trivial" case is not general.
+- **All social-choice computation in the C++ core.** Distance calculations, cutlines, Voronoi partitions, winsets, majority comparisons, and any other geometry that depends on the distance/loss configuration must be computed in the C++ core and exposed via the C API. Visualization layers (JS canvas widgets, R/Python marshalling) are strictly renderers: they receive pre-computed results and draw them. They must not approximate, re-derive, or short-circuit social-choice geometry, even when a Euclidean special case would appear trivial — the distance metric is configurable and the "trivial" case is not general.
 
 ---
 
@@ -167,7 +167,7 @@ Reference these when designing the c_api surface; they are not implementation ta
 - **Plot helpers** (R, Python, JS canvas player) consume pre-computed results and produce visual output. They do not perform social-choice computation.
 - Any geometry that depends on the distance/loss configuration (cutlines, Voronoi cells, winsets, indifference curves, preferred-to sets) must arrive in the visualization layer as vertex lists, polygon boundaries, or other render-ready data produced by the C++ core via the C API.
 - The JS canvas player may perform purely visual computations (coordinate transforms, KDE heatmaps from raw voter positions, trail rendering, zoom/pan) but must not compute social-choice geometry.
-- R and Python plot helpers produce identical themes (`theme_scs` / `style_scs`) and share the same JS canvas player file for the animation widget.
+- R and Python plot helpers produce identical themes and share the same canonical JS files (`scs_canvas_core.js`, `spatial_voting_canvas.js`, `competition_canvas.js`).
 
 ---
 

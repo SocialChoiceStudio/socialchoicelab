@@ -21,7 +21,7 @@ Named list with elements \code{fill} and \code{line} (RGBA strings).
 \description{
 Returns the \code{(fill_color, line_color)} pair that \code{layer_*}
 functions will use for a given layer type and theme. Useful when adding
-custom Plotly traces that should match the rest of the plot.
+custom drawing that should match the rest of the plot.
 }
 \examples{
 cols <- scl_theme_colors("winset", theme = "dark2")

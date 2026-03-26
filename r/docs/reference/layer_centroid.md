@@ -1,9 +1,6 @@
 # Add a centroid (mean voter position) marker layer
 
-Displays the coordinate-wise arithmetic mean of voter ideal points as a
-labelled cross (`+`) marker, matching the competition-canvas overlay.
-Computed via
-[`centroid_2d`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/centroid_2d.md).
+Add a centroid (mean voter position) marker layer
 
 ## Usage
 
@@ -15,38 +12,27 @@ layer_centroid(fig, voters, color = NULL, name = "Centroid", theme = "dark2")
 
 - fig:
 
-  A plotly figure from
+  A widget from
   [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
 
 - voters:
 
-  Flat numeric vector `[x0, y0, ...]` of voter ideal coordinates.
+  Flat voter vector.
 
 - color:
 
-  Marker colour. `NULL` uses the canvas-matched crimson (or grayscale
-  when `theme = "bw"`).
+  Marker colour; `NULL` uses theme default.
 
 - name:
 
-  Legend entry label.
+  Ignored for canvas drawing; retained for API parity.
 
 - theme:
 
-  Colour theme — see
-  [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
+  Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
+  `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
+  print).
 
 ## Value
 
-The updated plotly figure.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
-fig <- plot_spatial_voting(voters)
-fig <- layer_centroid(fig, voters)
-fig
-} # }
-```
+Updated widget.

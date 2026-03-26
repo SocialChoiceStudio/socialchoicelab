@@ -206,8 +206,8 @@
 #'
 #' A convenience utility for retrieving coordinated colours from the same
 #' palettes used by the \code{layer_*} plotting functions. Useful when adding
-#' custom Plotly traces that should remain visually consistent with the rest
-#' of the plot.
+#' custom drawing (e.g. extra canvas layers or external graphics) that should
+#' remain visually consistent with the rest of the plot.
 #'
 #' @param name Palette name: \code{"dark2"} (ColorBrewer Dark2, 8 colours,
 #'   colorblind-safe), \code{"set2"} (ColorBrewer Set2, 8 colours, softer),
@@ -235,7 +235,7 @@ scl_palette <- function(name = "auto", n = 8L, alpha = 1.0) {
 #'
 #' Returns the \code{(fill_color, line_color)} pair that \code{layer_*}
 #' functions will use for a given layer type and theme. Useful when adding
-#' custom Plotly traces that should match the rest of the plot.
+#' custom drawing that should match the rest of the plot.
 #'
 #' @param layer_type One of \code{"winset"}, \code{"yolk"},
 #'   \code{"uncovered_set"}, \code{"convex_hull"}, \code{"voters"},

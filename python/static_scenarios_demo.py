@@ -17,11 +17,14 @@ commenting / uncommenting the corresponding line.
 Run from the project root:
   export SCS_LIB_PATH=$(pwd)/build
   python python/static_scenarios_demo.py
+
+Writes self-contained canvas HTML under ./tmp/ (HTML5 canvas, no Plotly).
+Set OPEN_FIRST_IN_BROWSER = True to open only the first plot in your default browser.
 """
 
 from __future__ import annotations
 
-import subprocess
+import webbrowser
 from pathlib import Path
 
 import numpy as np
@@ -30,13 +33,23 @@ import socialchoicelab as scl
 import socialchoicelab.plots as sclp
 
 # ── Common settings ────────────────────────────────────────────────────────────
-THEME       = "dark2"   # "dark2" | "set2" | "okabe_ito" | "paired" | "bw"
-WIDTH       = 700
-HEIGHT      = 650
-SHOW_LABELS = True      # draw voter names on the plot
+THEME         = "dark2"   # "dark2" | "set2" | "okabe_ito" | "paired" | "bw"
+WIDTH         = 700
+HEIGHT        = 650
+SHOW_LABELS   = True  # alternative labels on-canvas; voters via legend / hover
 
-# Output directory for saved HTML files
-Path("tmp").mkdir(exist_ok=True)
+# Project-root output dir (created if missing)
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "tmp"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+OPEN_FIRST_IN_BROWSER = True   # open only scenario 1; set False to skip browser
+
+
+def _save_and_maybe_open(path: Path, *, open_browser: bool) -> None:
+    path = path.resolve()
+    print(f"Saved: {path}")
+    if open_browser:
+        webbrowser.open(path.as_uri())
 
 # ===========================================================================
 # 1. Dougherty & Edward (PUCH 2012, Fig 3)
@@ -78,10 +91,9 @@ fig1 = sclp.layer_ic(fig1, voters1, sq=sq1, line_width=3, theme=THEME)
 fig1 = sclp.layer_centroid(fig1, voters1, theme=THEME)
 fig1 = sclp.layer_marginal_median(fig1, voters1, theme=THEME)
 
-out1 = "/tmp/dougherty_edward_2012_py.html"
-sclp.save_plot(fig1, out1)
-print(f"Saved: {out1}")
-subprocess.Popen(["open", out1])
+out1 = OUTPUT_DIR / "dougherty_edward_2012.html"
+sclp.save_plot(fig1, str(out1))
+_save_and_maybe_open(out1, open_browser=OPEN_FIRST_IN_BROWSER)
 
 # ===========================================================================
 # 2. DPMR (PUCH 2014)
@@ -114,10 +126,9 @@ fig2 = sclp.layer_ic(fig2, voters2, sq=sq2, line_width=3, theme=THEME)
 fig2 = sclp.layer_centroid(fig2, voters2, theme=THEME)
 fig2 = sclp.layer_marginal_median(fig2, voters2, theme=THEME)
 
-out2 = "/tmp/dpmr_2014_py.html"
-sclp.save_plot(fig2, out2)
-print(f"Saved: {out2}")
-subprocess.Popen(["open", out2])
+out2 = OUTPUT_DIR / "dpmr_2014.html"
+sclp.save_plot(fig2, str(out2))
+_save_and_maybe_open(out2, open_browser=False)
 
 # ===========================================================================
 # 3. Laing-Olmsted-Bear
@@ -157,10 +168,9 @@ fig3 = sclp.layer_ic(fig3, voters3, sq=sq3, line_width=3, theme=THEME)
 fig3 = sclp.layer_centroid(fig3, voters3, theme=THEME)
 fig3 = sclp.layer_marginal_median(fig3, voters3, theme=THEME)
 
-out3 = "/tmp/laing_olmsted_bear_py.html"
-sclp.save_plot(fig3, out3)
-print(f"Saved: {out3}")
-subprocess.Popen(["open", out3])
+out3 = OUTPUT_DIR / "laing_olmsted_bear.html"
+sclp.save_plot(fig3, str(out3))
+_save_and_maybe_open(out3, open_browser=False)
 
 # ===========================================================================
 # 4. Laing-Olmsted Skewed Star
@@ -200,10 +210,9 @@ fig4 = sclp.layer_ic(fig4, voters4, sq=sq4, line_width=3, theme=THEME)
 fig4 = sclp.layer_centroid(fig4, voters4, theme=THEME)
 fig4 = sclp.layer_marginal_median(fig4, voters4, theme=THEME)
 
-out4 = "/tmp/laing_olmsted_skewed_star_py.html"
-sclp.save_plot(fig4, out4)
-print(f"Saved: {out4}")
-subprocess.Popen(["open", out4])
+out4 = OUTPUT_DIR / "laing_olmsted_skewed_star.html"
+sclp.save_plot(fig4, str(out4))
+_save_and_maybe_open(out4, open_browser=False)
 
 # ===========================================================================
 # 5–7. Non-Euclidean indifference contours + winsets
@@ -241,10 +250,9 @@ fig5 = sclp.layer_preferred_regions(fig5, voters1, sq=sq1,
 fig5 = sclp.layer_centroid(fig5, voters1, theme=THEME)
 fig5 = sclp.layer_marginal_median(fig5, voters1, theme=THEME)
 
-out5 = "/tmp/dougherty_edward_manhattan_py.html"
-sclp.save_plot(fig5, out5)
-print(f"Saved: {out5}")
-subprocess.Popen(["open", out5])
+out5 = OUTPUT_DIR / "dougherty_edward_manhattan.html"
+sclp.save_plot(fig5, str(out5))
+_save_and_maybe_open(out5, open_browser=False)
 
 # ===========================================================================
 # 6. Chebyshev (L∞ / p→∞) — square-shaped ICs and winset
@@ -272,10 +280,9 @@ fig6 = sclp.layer_preferred_regions(fig6, voters1, sq=sq1,
 fig6 = sclp.layer_centroid(fig6, voters1, theme=THEME)
 fig6 = sclp.layer_marginal_median(fig6, voters1, theme=THEME)
 
-out6 = "/tmp/dougherty_edward_chebyshev_py.html"
-sclp.save_plot(fig6, out6)
-print(f"Saved: {out6}")
-subprocess.Popen(["open", out6])
+out6 = OUTPUT_DIR / "dougherty_edward_chebyshev.html"
+sclp.save_plot(fig6, str(out6))
+_save_and_maybe_open(out6, open_browser=False)
 
 # ===========================================================================
 # 7. Minkowski p=3 — intermediate squircle ICs and winset
@@ -303,7 +310,6 @@ fig7 = sclp.layer_preferred_regions(fig7, voters1, sq=sq1,
 fig7 = sclp.layer_centroid(fig7, voters1, theme=THEME)
 fig7 = sclp.layer_marginal_median(fig7, voters1, theme=THEME)
 
-out7 = "/tmp/dougherty_edward_minkowski_p3_py.html"
-sclp.save_plot(fig7, out7)
-print(f"Saved: {out7}")
-subprocess.Popen(["open", out7])
+out7 = OUTPUT_DIR / "dougherty_edward_minkowski_p3.html"
+sclp.save_plot(fig7, str(out7))
+_save_and_maybe_open(out7, open_browser=False)

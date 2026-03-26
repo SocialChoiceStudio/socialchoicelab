@@ -10,7 +10,7 @@ High-level direction for the project. This document does not duplicate detail; i
 | Layer 7 candidate-competition implementation plan | [competition_plan.md](competition_plan.md) |
 | Archived plans (consensus reviews, core completion) | [archive/](archive/README.md) |
 | Definition of done per milestone (features, tests, docs, API stability) | [MILESTONE_GATES.md](MILESTONE_GATES.md) |
-| Rendering backend consolidation analysis (Plotly vs. Canvas) | [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md) |
+| Rendering consolidation (decision record: canvas for static + competition) | [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md) |
 
 **Dependency order** (from design): core C++ and foundation first → stable **c_api** → geometry primitives (e.g. CGAL 2D) → voting rules and outcome concepts → **then** R/Python bindings and GUI. Language bindings and advanced electoral methods depend on the C API and core geometry.
 
@@ -38,7 +38,7 @@ High-level direction for the project. This document does not duplicate detail; i
 ## Mid-term (3–6 months)
 
 - **First R and Python bindings:** Complete ✅. `socialchoicelab` R (`.Call()`) and Python (cffi) packages calling the pre-built `libscs_api` via the C ABI. See [archive/binding_plan_completed.md](archive/binding_plan_completed.md).
-- **Visualization layer:** Complete ✅. Plotly-based spatial voting plot helpers in R and Python. Composable layers, colorblind-safe theme system, built-in scenario datasets, indifference curves, preferred-region overlays, `save_plot()`. See [archive/visualization_plan.md](archive/visualization_plan.md).
+- **Visualization layer:** Complete ✅. Canvas-based spatial voting widgets in R and Python (`spatial_voting_canvas` htmlwidget / Python payload dict). Composable layers, colorblind-safe theme system, built-in scenario datasets, indifference curves, preferred-region overlays, `save_plot()` (HTML). See [archive/visualization_plan.md](archive/visualization_plan.md).
 - **`0.2.0` / `0.3.0` tags:** Complete ✅. See [MILESTONE_GATES.md](MILESTONE_GATES.md).
 
 ---
@@ -50,7 +50,7 @@ High-level direction for the project. This document does not duplicate detail; i
 - **Layer 7 simulation engines (`0.3.0` track):** ✅ Shipped in `v0.3.0`.
   - **Adaptive candidate / party competition:** multi-candidate spatial competition with Sticker, Hunter, Aggregator, and Predator heuristics; plurality and PR seat conversion; deterministic trace recording; convergence/cycle diagnostics; C API wrappers; R/Python bindings; canvas-based animation (`animate_competition_canvas`). Authoritative plan: [competition_plan.md](competition_plan.md).
   - **Experiment runner:** reproducible parameter sweeps and parallel replications built on top of the stable competition engine, using named streams and per-run seeds.
-  - **Follow-on (post-tag):** optional engine extensions (e.g. per-run position re-randomization in [competition_plan.md](competition_plan.md)); retire Plotly frame animation before `1.0.0` per release ladder below.
+  - **Follow-on (post-tag):** optional engine extensions (e.g. per-run position re-randomization in [competition_plan.md](competition_plan.md)). ~~Frame-based Plotly competition animation~~ — **removed**; use `animate_competition_canvas`.
 - **Next major feature track after candidate competition:** working title **Characteristics of Voting Rules**. This will be renamed when its scope is formalized, but it is currently the feature family intended to take the project from `0.3.0` to `1.0.0`.
 - **Advanced features beyond Layer 7:** 3D/N-D geometry, empirical profiles, preference estimation — per [implementation priority](../references/implementation_priority.md) Phases 3–4.
 - **Contributor C API wrapper tooling:** When the project opens to external contributors, any new C++ functionality (preference generation, voting rules, candidate/party strategy, etc.) will require a corresponding C API wrapper. Provide either: (a) documented wrapper templates so contributors know the expected pattern, (b) a template generator script, or (c) a PR-triggered agent that drafts wrapper boilerplate for review. Without this, C API coverage will fall behind the C++ surface. See expanded note at the bottom of this file.
@@ -95,41 +95,34 @@ Layer 7 is complete and tagged as `v0.3.0`. Ongoing work is **extensions and mai
 
 ### Post-`v0.3.0` static visualization (on `main`, not yet in a tagged release)
 
-These changes landed after the `v0.3.0` tag; they tighten parity between **static Plotly** spatial plots and the **competition canvas** player:
+These changes landed after the `v0.3.0` tag; they tightened parity between **static** spatial plots and the **competition canvas** player (now both canvas-backed):
 
 - **`dist_config` on static layers:** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` (auto-compute path) accept `DistanceConfig` so indifference boundaries, preferred regions, and winsets match non-Euclidean metrics (e.g. Manhattan, Chebyshev, Minkowski \(p\neq 2\)) where the core already supports them.
-- **Polygon closure:** level-set polygons are explicitly closed in Plotly coordinate arrays so stroke outlines match fills for non-Euclidean ICs and preferred regions.
-- **Centroid / marginal median markers:** Plotly symbols and theme colours aligned with the canvas (centroid: crimson cross; marginal median: filled triangle-up with outline).
+- **Polygon closure:** level-set polygons are explicitly closed in coordinate arrays so stroke outlines match fills for non-Euclidean ICs and preferred regions.
+- **Centroid / marginal median markers:** symbols and theme colours aligned across static and competition canvas (centroid: crimson cross; marginal median: filled triangle-up with outline).
 - **Status quo:** no on-plot `"SQ"` text label; identification is via legend (`Status Quo`) and hover only (even when `show_labels=TRUE` for alternatives).
 
 **Release:** Cut `0.3.1` (or next appropriate semver) when you want these on a tagged line; until then they are `[Unreleased]` in [CHANGELOG.md](../../CHANGELOG.md).
 
+### Next work sequence (visual stack and C API)
+
+Order for the next tracks:
+
+1. **Canvas for static spatial plots** — **Complete ✅** (see [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md)): `plot_spatial_voting` and all `layer_*` use the shared `scs_canvas_core.js` + `spatial_voting_canvas.js` stack; Plotly is removed from R and Python dependencies.
+
+2. **Composite C API operations** — Systematically add new **`scs_*` functions** where R/Python today chain **multiple** existing `scs_*` calls to obtain **one** logical result. (*Naming note:* the **stable boundary** is the C API (`extern "C"` in `scs_api.cpp`); the **implementation** of each composite is C++ that reuses existing core code—so we speak of “composite C API operations,” not “C++ wrappers,” to match what bindings actually call.) Same pattern as `scs_ic_polygon_2d`: one multi-step pipeline inside the library, one C entry point, then thin R/Python bindings. **Candidates** (non-exhaustive): 1D IC paths that still do `calculate_distance` → `distance_to_utility` → `level_set_1d` per segment; redundant `calculate_distance` + `ic_polygon_2d` when both distance and polygon are needed; R’s `level_set_2d` → named list → `level_set_to_polygon` round-trip in hot loops. **Keep** granular `scs_*` primitives for tests, teaching, and composition.
+
+3. **Utility function plot** — **After** composite C API work (or in parallel where it does not block it), **revisit** the **utility function plot** (loss / distance → **utility**, e.g. \(u\) vs distance and related teaching or diagnostic views). Align with the canvas static renderer; refresh R/Python parity, theming, and documentation.
+
 ### Animation implementation
 
-The Plotly frame-based approach (`animate_competition_trajectories`) has been superseded by a canvas-based player (`animate_competition_canvas`) that stores data once and draws frames on demand. The canvas version handles long runs (hundreds to thousands of rounds) without prohibitive file sizes or generation times, and supports additional features (KDE heatmap, vote-share bar, movement arrows, ghost position, keyboard scrubbing, loop toggle) that are impractical to implement cleanly in Plotly. R and Python share the same JS player file for consistency.
-
-The Plotly implementation is retained with its tests for now because the project is not yet open to external users. It should be revisited and retired before `1.0.0`.
+The canvas-based player (`animate_competition_canvas`) stores data once and draws frames on demand. It handles long runs (hundreds to thousands of rounds) without prohibitive file sizes or generation times, and supports additional features (KDE heatmap, vote-share bar, movement arrows, ghost position, keyboard scrubbing, loop toggle). R and Python share the same JS player file for consistency. Frame-based Plotly animation (`animate_competition_trajectories`) has been **removed** from both bindings.
 
 ### Rendering backend consolidation (evaluation)
 
-The project currently maintains two independent rendering backends: **Plotly** (SVG-based via D3.js, used for all static spatial voting plots in R and Python) and the **JS Canvas 2D** player (immediate-mode raster rendering, used for competition animations). Evaluate consolidating on a single JS Canvas backend for both static and animated visualizations, with the goal of eliminating Plotly as a required dependency.
+**Decision (implemented):** Static spatial voting plots and competition animation both use **HTML5 Canvas 2D** widgets backed by shared JS (`scs_canvas_core.js`). **Plotly** and **`finalize_plot()`** are no longer part of the R/Python visualization API. `save_plot()` for static figures writes **HTML** only; PNG/SVG export may be revisited later (see evaluation doc for canvas2svg / `toDataURL` notes).
 
-**Motivation:**
-
-- The canvas widget already renders most of the geometric primitives the static plots require (points, polygons, circles, axes, grid, labels). Extending it to cover the static spatial voting use case is an incremental step, not a ground-up build.
-- Removing Plotly eliminates a runtime dependency from both R (`plotly >= 4.10.0`) and Python (`plotly >= 5.0`), plus `kaleido` for static image export.
-- Reduces the R-Python parity maintenance surface: both layers would share a single canonical JS renderer with only data marshalling differing per language, instead of maintaining two parallel sets of Plotly API calls that must stay in sync.
-- Gives full control over rendering (z-ordering, styling, interaction) without working around a third-party API.
-
-**Key technical finding:** Plotly renders to SVG natively (via D3.js); its easy SVG export comes from serializing the DOM, not from a Canvas-to-vector conversion. Our canvas widget uses the HTML5 Canvas 2D API (raster/immediate-mode). For vector export from Canvas, the off-the-shelf library **[canvas2svg](https://github.com/gliffy/canvas2svg)** (MIT license) provides a mock Canvas 2D context that records standard drawing calls (`arc`, `lineTo`, `fill`, etc.) and builds an SVG scene graph. PNG export is native via `canvas.toDataURL()`.
-
-**Phase 1 — Spike / proof-of-concept:** Port `plot_spatial_voting` + `layer_ic` + `layer_winset` to a canvas-based static widget. Evaluate: output quality, interactivity (hover/tooltips), composability (layer stacking via JSON spec analogous to `overlays_static`), and export (PNG via `toDataURL`, SVG via canvas2svg). Decision gate: proceed to full migration, keep Plotly as optional secondary format, or abandon.
-
-**Phase 2 — Full migration (contingent on Phase 1):** Port all remaining `layer_*()` functions, `finalize_plot()`, and `save_plot()`. Retire Plotly imports and dependencies from both R and Python packages.
-
-**When:** Evaluation spike after `0.3.0` is stable; full migration decision before `1.0.0`.
-
-Detail and technical analysis: [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md).
+Historical motivation, trade-offs, and technical analysis: [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md).
 
 ### Parallel processing in IC construction (investigation)
 
@@ -158,14 +151,14 @@ Indifference curves (ICs) are computed during both static spatial voting visuali
 |---------|---------|
 | `0.2.0` | First cohesive public package release: core + c_api + geometry + aggregation + bindings + visualization. |
 | `0.3.0` | Candidate competition / Layer 7 release: adaptive candidate engine + trace/C API/bindings + experiment runner baseline. |
-| pre-`1.0.0` | **Clean up deprecated animation code:** retire `animate_competition_trajectories` (R and Python) and its tests now that the canvas player is the sole animation backend. **Rendering backend decision:** complete the Plotly-vs-Canvas consolidation evaluation (see § Rendering backend consolidation) and act on the result — either migrate static plots to Canvas or document the decision to retain Plotly. |
+| pre-`1.0.0` | **Composite C API operations:** add composite `scs_*` entry points where bindings still chain multiple calls for one result. **Utility function plot:** revisit the loss/distance→utility diagnostic plot for parity and the canvas renderer (see [§ Next work sequence](#next-work-sequence-visual-stack-and-c-api)). |
 | `1.0.0` | Major components complete: `0.3.0` scope plus the next major feature track (currently "Characteristics of Voting Rules", working title). |
 
 ---
 
 ## Non-Euclidean geometry (deferred)
 
-**Static Plotly overlays (partially addressed on `main`, post-`v0.3.0`):** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` auto-compute accept `dist_config` and use core level-set / winset machinery for non-Euclidean metrics. This does **not** resolve the deferred items below (Pareto proxy, Voronoi, Yolk/Heart/etc. under alternate metrics).
+**Static canvas overlays (partially addressed on `main`, post-`v0.3.0`):** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` auto-compute accept `dist_config` and use core level-set / winset machinery for non-Euclidean metrics. This does **not** resolve the deferred items below (Pareto proxy, Voronoi, Yolk/Heart/etc. under alternate metrics).
 
 Several geometry services are currently valid only under Euclidean distance (or
 have not been verified for other metrics). These must be addressed before the

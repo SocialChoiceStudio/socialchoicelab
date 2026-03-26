@@ -108,8 +108,8 @@ reference:
 
   - title: "Visualization"
     desc: >
-      Interactive Plotly-based plots for spatial voting analysis.
-      Compose layers by passing the figure from one function into the next.
+      Interactive **canvas** htmlwidgets for spatial voting analysis.
+      Compose layers by passing the figure payload from one function into the next.
     contents:
       - plot_spatial_voting
       - layer_winset
@@ -126,7 +126,6 @@ reference:
       - scl_theme_colors
       - scl_palette
       - .PALETTE_HEX
-      - finalize_plot
       - save_plot
       - list_scenarios
       - load_scenario
@@ -144,8 +143,6 @@ reference:
       - make_competition_termination_config
       - CompetitionTrace
       - CompetitionExperiment
-      - plot_competition_trajectories
-      - animate_competition_trajectories
       - animate_competition_canvas
       - save_competition_canvas
       - load_competition_canvas

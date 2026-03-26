@@ -1,6 +1,6 @@
 # Add a yolk circle layer
 
-Draws the yolk as a filled circle.
+Add a yolk circle layer
 
 ## Usage
 
@@ -12,6 +12,8 @@ layer_yolk(
   radius,
   fill_color = NULL,
   line_color = NULL,
+  fill_colour = NULL,
+  line_colour = NULL,
   name = "Yolk",
   theme = "dark2"
 )
@@ -21,45 +23,31 @@ layer_yolk(
 
 - fig:
 
-  A plotly figure from
+  A widget from
   [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
 
-- center_x, center_y:
+- center_x, center_y, radius:
 
-  Yolk center coordinates.
+  Circle geometry.
 
-- radius:
+- fill_color, line_color:
 
-  Yolk radius (same units as the plot axes).
+  Colours; `NULL` uses the theme default.
 
-- fill_color:
+- fill_colour, line_colour:
 
-  Fill colour (CSS rgba). `NULL` uses the theme default.
-
-- line_color:
-
-  Outline colour (CSS rgba). `NULL` uses the theme default.
+  UK spellings accepted.
 
 - name:
 
-  Legend entry label.
+  Ignored (canvas legend uses fixed labels); retained for parity.
 
 - theme:
 
-  Colour theme — see
-  [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
+  Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
+  `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
+  print).
 
 ## Value
 
-The updated plotly figure.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6)
-fig <- plot_spatial_voting(voters, c(0.0, 0.0))
-fig <- layer_yolk(fig, center_x = 0.1, center_y = 0.05, radius = 0.3)
-fig
-} # }
-```
+Updated widget.

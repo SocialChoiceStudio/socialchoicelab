@@ -256,8 +256,8 @@ def scl_palette(name: str = "auto", n: int = 8, alpha: float = 1.0) -> list[str]
 
     A convenience utility for retrieving coordinated colours from the same
     palettes used by the ``layer_*`` plotting functions.  Useful when adding
-    custom Plotly traces that should remain visually consistent with the rest
-    of the plot.
+    custom drawing (e.g. extra canvas layers or external graphics) that should
+    remain visually consistent with the rest of the plot.
 
     Parameters
     ----------
@@ -294,8 +294,8 @@ def scl_palette(name: str = "auto", n: int = 8, alpha: float = 1.0) -> list[str]
 def scl_theme_colors(layer_type: str, theme: str = "dark2") -> tuple[str, str]:
     """Return the ``(fill_color, line_color)`` RGBA pair for a layer type in a theme.
 
-    Useful when adding custom Plotly traces that should match the colours
-    used by the built-in ``layer_*`` functions.
+    Useful when adding custom drawing that should match the colours used by
+    the built-in ``layer_*`` functions.
 
     Parameters
     ----------

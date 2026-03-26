@@ -1,9 +1,6 @@
 # Add a winset polygon layer
 
-Overlays the majority-rule winset boundary. Pass either a pre-computed
-[`Winset`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/Winset.md)
-object or raw `voters` and `sq` for auto-compute. If the winset is empty
-the figure is returned unchanged.
+Add a winset polygon layer
 
 ## Usage
 
@@ -13,6 +10,8 @@ layer_winset(
   winset = NULL,
   fill_color = NULL,
   line_color = NULL,
+  fill_colour = NULL,
+  line_colour = NULL,
   name = "Winset",
   voters = NULL,
   sq = NULL,
@@ -25,7 +24,7 @@ layer_winset(
 
 - fig:
 
-  A plotly figure from
+  A widget from
   [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
 
 - winset:
@@ -34,52 +33,32 @@ layer_winset(
   [`Winset`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/Winset.md)
   object, or `NULL` for auto-compute.
 
-- fill_color:
+- fill_color, line_color:
 
-  Fill colour (CSS rgba). `NULL` uses the theme default.
+  Colours; `NULL` uses the theme default.
 
-- line_color:
+- fill_colour, line_colour:
 
-  Outline colour (CSS rgba). `NULL` uses the theme default.
+  UK spellings accepted.
 
 - name:
 
-  Legend entry label.
+  Ignored (canvas legend uses fixed labels); retained for parity.
 
-- voters:
+- voters, sq:
 
-  Flat voter vector (required when `winset = NULL`).
-
-- sq:
-
-  Status quo `c(x, y)` (required when `winset = NULL`).
+  Required when `winset` is `NULL`.
 
 - dist_config:
 
-  Distance metric configuration from
-  [`make_dist_config`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/make_dist_config.md).
-  `NULL` (default) uses Euclidean distance. Only used in the
-  auto-compute path (`winset = NULL`); ignored when a pre-computed
-  `winset` is supplied.
+  Used only when auto-computing the winset.
 
 - theme:
 
-  Colour theme — see
-  [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
+  Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
+  `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
+  print).
 
 ## Value
 
-The updated plotly figure.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6,  -0.4, 0.8,  0.5, -0.7)
-sq     <- c(0.0,  0.0)
-ws  <- winset_2d(sq, voters)
-fig <- plot_spatial_voting(voters, sq = sq)
-fig <- layer_winset(fig, ws)
-fig
-} # }
-```
+Updated widget.

@@ -2,8 +2,8 @@
 
 A convenience utility for retrieving coordinated colours from the same
 palettes used by the `layer_*` plotting functions. Useful when adding
-custom Plotly traces that should remain visually consistent with the
-rest of the plot.
+custom drawing (e.g. extra canvas layers or external graphics) that
+should remain visually consistent with the rest of the plot.
 
 ## Usage
 

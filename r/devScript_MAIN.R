@@ -273,7 +273,7 @@ version <- scs_version()
 cat("C API version:", version$major, ".", version$minor, ".", version$patch, "\n")
 
 # ===========================================================================
-# 10. VISUALIZATION (requires plotly — install.packages("plotly") once)
+# 10. VISUALIZATION (htmlwidgets canvas — no extra R packages)
 # ===========================================================================
 
 cat("\n=== 10. VISUALIZATION ===\n")
@@ -294,7 +294,6 @@ fig <- plot_spatial_voting(
 # Add layers
 fig <- layer_winset(fig, ws)
 fig <- layer_convex_hull(fig, hull)
-fig <- finalize_plot(fig)
 
 # Display (opens in RStudio Viewer / browser)
 print(fig)

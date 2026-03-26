@@ -1,10 +1,8 @@
 # Animate 2D competition trajectories (canvas backend)
 
-Renders the same competition animation as
-[`animate_competition_trajectories`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_trajectories.md)
-using a canvas-based widget. Data is sent once; the browser draws frames
-on demand. This scales to long runs (hundreds or thousands of rounds)
-without the large HTML and slow load of the Plotly frame-based approach.
+Renders competition trajectories using a canvas-based `htmlwidget`. Data
+is sent once; the browser draws frames on demand. This scales to long
+runs (hundreds or thousands of rounds) without large HTML payloads.
 
 ## Usage
 

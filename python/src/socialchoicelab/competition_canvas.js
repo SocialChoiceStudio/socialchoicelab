@@ -18,68 +18,18 @@
  *  - ResizeObserver: re-renders when the host element changes size.
  */
 (function() {
-  var FONT   = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-  var MONO   = "ui-monospace, 'Cascadia Code', Menlo, monospace";
-  var COLORS = {
-    background:    "#fafafa",
-    plotBorder:    "#d4d4d4",
-    grid:          "rgba(140,140,140,0.18)",
-    axis:          "rgba(100,100,100,0.45)",
-    text:          "#2d2d2d",
-    textLight:     "#888",
-    controls:      "#f2f2f2",
-    controlBorder: "#ddd",
-    button:        "#3a6bbf",
-    buttonHover:   "#2e5a9e",
-    buttonText:    "#fff"
-  };
-
-  // Colours for static geometry overlays.
-  // Chosen to avoid clashing with candidate palettes (okabe_ito, dark2, competition_1d).
-  // Centroid = crimson red; Marginal median = indigo-violet (avoids the blue in okabe_ito/competition_1d).
-  var OVERLAY_COLORS = {
-    centroid:        { pt: "rgba(185,10,10,0.95)",   stroke: "rgba(255,255,255,0.85)" },
-    marginal_median: { pt: "rgba(100,0,180,0.90)",   stroke: "rgba(255,255,255,0.85)" },
-    geometric_mean:  { pt: "rgba(100,55,0,0.95)",    stroke: "rgba(255,255,255,0.85)" },
-    pareto_set:      { fill: "rgba(120,0,220,0.08)", border: "rgba(120,0,220,0.50)" }
-  };
-  // Human-readable labels for overlay keys.
-  var OVERLAY_LABELS = {
-    centroid:        "Centroid",
-    marginal_median: "Marginal Median",
-    geometric_mean:  "Geometric Mean",
-    pareto_set:      "Pareto Set"
-  };
-
-  // ── Colour helpers ─────────────────────────────────────────────────────────
-
-  function parseRGBA(str) {
-    var m = str.match(
-      /rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/
-    );
-    if (m) return { r: +m[1], g: +m[2], b: +m[3], a: m[4] != null ? +m[4] : 1 };
-    if (str.charAt(0) === "#") {
-      var hex = str.slice(1);
-      if (hex.length === 6) {
-        return {
-          r: parseInt(hex.slice(0, 2), 16),
-          g: parseInt(hex.slice(2, 4), 16),
-          b: parseInt(hex.slice(4, 6), 16),
-          a: 1
-        };
-      }
-    }
-    return { r: 0, g: 0, b: 0, a: 1 };
+  if (typeof ScsCanvasCore === "undefined") {
+    throw new Error("competition_canvas.js requires scs_canvas_core.js to be loaded first.");
   }
+  var FONT   = ScsCanvasCore.FONT;
+  var MONO   = ScsCanvasCore.MONO;
+  var COLORS = ScsCanvasCore.COLORS;
+  var OVERLAY_COLORS = ScsCanvasCore.OVERLAY_COLORS;
+  var OVERLAY_LABELS = ScsCanvasCore.OVERLAY_LABELS;
 
-  function rgba(c, alpha) {
-    return "rgba(" + c.r + "," + c.g + "," + c.b + "," +
-           (alpha != null ? alpha : c.a) + ")";
-  }
-
-  function formatTick(val) {
-    return val.toFixed(2).replace(/\.?0+$/, "");
-  }
+  function parseRGBA(str) { return ScsCanvasCore.parseRGBA(str); }
+  function rgba(c, alpha) { return ScsCanvasCore.rgba(c, alpha); }
+  function formatTick(val) { return ScsCanvasCore.formatTick(val); }
 
   // ── UI helpers ─────────────────────────────────────────────────────────────
 
@@ -907,30 +857,25 @@
   // ── Coordinate transforms (use current view range for zoom/pan) ───────────
 
   CompetitionCanvas.prototype.xToPx = function(x) {
-    var t = (x - this.viewXMin) / (this.viewXMax - this.viewXMin);
-    return this.padding.left + t * this.plotSide;
+    return ScsCanvasCore.xToPx2d(x, this.viewXMin, this.viewXMax, this.padding.left, this.plotSide);
   };
 
   CompetitionCanvas.prototype.yToPx = function(y) {
-    var t = (y - this.viewYMin) / (this.viewYMax - this.viewYMin);
-    return this.padding.top + (1 - t) * this.plotSide;
+    return ScsCanvasCore.yToPx2d(y, this.viewYMin, this.viewYMax, this.padding.top, this.plotSide);
   };
 
   // 1D coordinate transform: data x → CSS pixel along the number line.
   CompetitionCanvas.prototype.xToPx1d = function(x) {
-    var t = (x - this.viewXMin) / (this.viewXMax - this.viewXMin);
-    return this.padding.left + t * this.plotW;
+    return ScsCanvasCore.xToPx1d(x, this.viewXMin, this.viewXMax, this.padding.left, this.plotW);
   };
 
   // Inverse: CSS pixel → data coordinate (used by zoom/pan).
   CompetitionCanvas.prototype.pxToX = function(cssPx) {
-    return this.viewXMin + (cssPx - this.padding.left) / this.plotSide *
-           (this.viewXMax - this.viewXMin);
+    return ScsCanvasCore.pxToX2d(cssPx, this.viewXMin, this.viewXMax, this.padding.left, this.plotSide);
   };
 
   CompetitionCanvas.prototype.pxToY = function(cssPy) {
-    return this.viewYMin + (1 - (cssPy - this.padding.top) / this.plotSide) *
-           (this.viewYMax - this.viewYMin);
+    return ScsCanvasCore.pxToY2d(cssPy, this.viewYMin, this.viewYMax, this.padding.top, this.plotSide);
   };
 
   // ── KDE heatmap ───────────────────────────────────────────────────────────
@@ -1304,7 +1249,7 @@
         ? parseRGBA(data.competitor_colors[0])
         : { r: 128, g: 128, b: 128, a: 0.9 };
       ctx.strokeStyle = rgba(icLegColor, 0.40);
-      ctx.lineWidth   = 1.5;
+      ctx.lineWidth   = 2;
       ctx.beginPath();
       ctx.moveTo(legX + 8 - legIconR, icLegY);
       ctx.lineTo(legX + 8 + legIconR, icLegY);
@@ -1372,6 +1317,24 @@
       ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(pad.left + side, gy); ctx.stroke();
     }
     ctx.setLineDash([]);
+
+    // Solid axes through the origin when 0 lies in view (matches spatial_voting_canvas).
+    ctx.strokeStyle = COLORS.axis;
+    ctx.lineWidth   = 1.5;
+    if (this.viewXMin < 0 && this.viewXMax > 0) {
+      var ox = this.xToPx(0);
+      ctx.beginPath();
+      ctx.moveTo(ox, pad.top);
+      ctx.lineTo(ox, pad.top + side);
+      ctx.stroke();
+    }
+    if (this.viewYMin < 0 && this.viewYMax > 0) {
+      var oy = this.yToPx(0);
+      ctx.beginPath();
+      ctx.moveTo(pad.left, oy);
+      ctx.lineTo(pad.left + side, oy);
+      ctx.stroke();
+    }
 
     // Tick marks + numeric labels (use current view range so labels update on zoom/pan).
     var nTicks   = 5;
@@ -1556,7 +1519,7 @@
         ? parseRGBA(data.competitor_colors[0])
         : {r: 128, g: 128, b: 128, a: 0.9};
       ctx.strokeStyle = rgba(icLegColor, 0.40);
-      ctx.lineWidth   = 1.5;
+      ctx.lineWidth   = 2;
       ctx.setLineDash([]);
       ctx.beginPath();
       ctx.arc(icLegCx, icLegY, icLegR, 0, Math.PI * 2);
@@ -1649,7 +1612,7 @@
         var scol         = parseRGBA(data.competitor_colors[seatCidx] || "rgba(128,128,128,0.9)");
         var sVoterCurves = icFrame[si];
         ctx.strokeStyle = rgba(scol, 0.30);
-        ctx.lineWidth   = 1 * this.pointScale;
+        ctx.lineWidth   = 2 * this.pointScale;
         ctx.lineCap     = "round";
         for (var vi = 0; vi < sVoterCurves.length; vi++) {
           var pts = sVoterCurves[vi];
@@ -2051,7 +2014,7 @@
       var icFrames = data.indifference_curves[frameIdx];
       var icIdxs   = data.ic_competitor_indices ? data.ic_competitor_indices[frameIdx] : null;
       if (icFrames) {
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.lineCap   = "round";
         ctx.lineJoin  = "round";
         for (var si = 0; si < icFrames.length; si++) {
@@ -2258,7 +2221,7 @@
       }
       if (this.showIC     && data.indifference_curves) sRows++;
       if (this.showWinset && data.winsets)             sRows++;
-      if (this.showVoronoi && data.voronoi_cells)      sRows++;
+      if (this.showVoronoi && data.voronoi_cells)      sRows++;   // legend row only
       var statsY0  = sLegY0 + sRows * sLineH + 10;
       var canvasH  = this.fgCanvas.height / dpr;
       if (statsY0 < canvasH - 20) {
@@ -2412,25 +2375,7 @@
   // ── Drawing primitives ─────────────────────────────────────────────────────
 
   CompetitionCanvas.prototype._drawDiamond = function(ctx, px, py, size, fill, shadow) {
-    ctx.beginPath();
-    ctx.moveTo(px,        py - size);
-    ctx.lineTo(px + size, py);
-    ctx.lineTo(px,        py + size);
-    ctx.lineTo(px - size, py);
-    ctx.closePath();
-    if (shadow) {
-      ctx.shadowColor   = "rgba(0,0,0,0.30)";
-      ctx.shadowBlur    = shadow;
-      ctx.shadowOffsetY = 1;
-    }
-    ctx.fillStyle = fill;
-    ctx.fill();
-    ctx.shadowColor   = "rgba(0,0,0,0)";
-    ctx.shadowBlur    = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.strokeStyle   = "rgba(255,255,255,0.92)";
-    ctx.lineWidth     = 1.5;
-    ctx.stroke();
+    ScsCanvasCore.drawDiamond(ctx, px, py, size, fill, shadow);
   };
 
   // ── HTMLWidgets registration ───────────────────────────────────────────────

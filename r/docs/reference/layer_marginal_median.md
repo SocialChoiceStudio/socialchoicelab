@@ -1,9 +1,6 @@
 # Add a marginal median marker layer
 
-Displays the coordinate-wise median of voter ideal points as a labelled
-upward-pointing filled triangle, matching the competition-canvas overlay
-(issue-by-issue median voter; Black 1948). Computed via
-[`marginal_median_2d`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/marginal_median_2d.md).
+Add a marginal median marker layer
 
 ## Usage
 
@@ -21,39 +18,27 @@ layer_marginal_median(
 
 - fig:
 
-  A plotly figure from
+  A widget from
   [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
 
 - voters:
 
-  Flat numeric vector `[x0, y0, ...]` of voter ideal coordinates.
+  Flat voter vector.
 
 - color:
 
-  Marker fill colour. `NULL` uses the canvas-matched indigo-violet (or
-  grayscale when `theme = "bw"`). Outline uses a light stroke for
-  contrast, as on the canvas.
+  Marker colour; `NULL` uses theme default.
 
 - name:
 
-  Legend entry label.
+  Ignored for canvas drawing; retained for API parity.
 
 - theme:
 
-  Colour theme — see
-  [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
+  Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
+  `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
+  print).
 
 ## Value
 
-The updated plotly figure.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5, 0.0, 0.0, 0.8, 0.6)
-fig <- plot_spatial_voting(voters)
-fig <- layer_marginal_median(fig, voters)
-fig
-} # }
-```
+Updated widget.

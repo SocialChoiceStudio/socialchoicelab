@@ -7,19 +7,16 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-plotly = pytest.importorskip("plotly")
-import plotly.graph_objects as go  # noqa: E402
-
-import socialchoicelab as scl  # noqa: E402
-import socialchoicelab.plots as sclp  # noqa: E402
+import socialchoicelab as scl
+import socialchoicelab.plots as sclp
 
 # ---------------------------------------------------------------------------
 # Shared data
 # ---------------------------------------------------------------------------
 
-VOTERS = np.array([-1.0, -0.5,  0.0,  0.0,  0.8,  0.6, -0.4,  0.8,  0.5, -0.7])
-ALTS   = np.array([ 0.0,  0.0,  0.6,  0.4, -0.5,  0.3])
-SQ     = np.array([ 0.0,  0.0])
+VOTERS = np.array([-1.0, -0.5, 0.0, 0.0, 0.8, 0.6, -0.4, 0.8, 0.5, -0.7])
+ALTS = np.array([0.0, 0.0, 0.6, 0.4, -0.5, 0.3])
+SQ = np.array([0.0, 0.0])
 
 
 def _competition_trace_2d():
@@ -39,163 +36,77 @@ def _competition_trace_2d():
         engine_config=cfg,
     )
 
+
 # ---------------------------------------------------------------------------
 # plot_spatial_voting
 # ---------------------------------------------------------------------------
 
 
-def test_plot_spatial_voting_returns_figure():
+def test_plot_spatial_voting_returns_payload():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS)
-    assert isinstance(fig, go.Figure)
+    assert fig["_scs_spatial_canvas"]
+    assert len(fig["voters_x"]) == 5
+    assert fig["layers"] == {}
 
 
 def test_plot_spatial_voting_with_sq():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
-    assert isinstance(fig, go.Figure)
+    assert fig["sq"] == [0.0, 0.0]
 
 
 def test_plot_spatial_voting_custom_names():
     fig = sclp.plot_spatial_voting(
-        VOTERS, ALTS,
+        VOTERS,
+        ALTS,
         sq=SQ,
         voter_names=[f"V{i}" for i in range(5)],
         alt_names=["Origin", "Alt A", "Alt B"],
         dim_names=("Economic", "Social"),
         title="Test Legislature",
     )
-    assert isinstance(fig, go.Figure)
+    assert fig["voter_names"][0] == "V0"
+    assert fig["alternative_names"] == ["Origin", "Alt A", "Alt B"]
 
 
 def test_plot_spatial_voting_custom_dimensions():
     fig = sclp.plot_spatial_voting(VOTERS[:4], ALTS[:2], width=800, height=500)
-    assert isinstance(fig, go.Figure)
+    assert fig["_width"] == 800
+    assert fig["_height"] == 500
 
 
 def test_plot_spatial_voting_explicit_xlim_ylim():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, xlim=[-2, 2], ylim=[-2, 2])
-    assert isinstance(fig, go.Figure)
-    assert tuple(fig.layout.xaxis.range) == (-2, 2)
-    assert tuple(fig.layout.yaxis.range) == (-2, 2)
+    assert fig["xlim"] == [-2.0, 2.0]
+    assert fig["ylim"] == [-2.0, 2.0]
 
 
 def test_plot_spatial_voting_auto_range_set():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
-    assert isinstance(fig, go.Figure)
-    assert fig.layout.xaxis.range is not None
+    assert fig["xlim"][0] <= fig["xlim"][1]
+    assert fig["ylim"][0] <= fig["ylim"][1]
 
 
-def test_plot_spatial_voting_defaults_include_origin_and_center_title():
+def test_plot_spatial_voting_defaults_include_origin():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
-    assert fig.layout.title.x == 0.5
-    assert fig.layout.plot_bgcolor == "white"
-    assert fig.layout.xaxis.range[0] <= 0 <= fig.layout.xaxis.range[1]
-    assert fig.layout.yaxis.range[0] <= 0 <= fig.layout.yaxis.range[1]
-
-
-def test_plot_spatial_voting_does_not_label_sq_by_default():
-    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    sq_trace = next(trace for trace in fig.data if trace.name == "Status Quo")
-    assert sq_trace.mode == "markers"
+    assert fig["xlim"][0] <= 0 <= fig["xlim"][1]
+    assert fig["ylim"][0] <= 0 <= fig["ylim"][1]
 
 
 def test_plot_spatial_voting_no_alternatives():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    assert isinstance(fig, go.Figure)
+    assert fig["alternatives"] == []
 
 
 def test_plot_spatial_voting_show_labels():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, show_labels=True)
-    assert isinstance(fig, go.Figure)
+    assert fig["show_labels"] is True
 
 
-def test_plot_competition_trajectories_returns_figure():
-    with _competition_trace_2d() as trace:
-        fig = sclp.plot_competition_trajectories(trace, voters=VOTERS)
-        assert isinstance(fig, go.Figure)
-        assert len(fig.data) >= 3  # voter layer + competitor paths
-
-
-def test_animate_competition_trajectories_returns_figure_with_frames():
-    with _competition_trace_2d() as trace:
-        fig = sclp.animate_competition_trajectories(trace, voters=VOTERS)
-        assert isinstance(fig, go.Figure)
-        assert len(fig.frames) >= 2
-        assert fig.layout.margin.b == 220
-        assert fig.layout.sliders[0].y < 0
-        assert fig.layout.updatemenus[0].y < 0
-        assert fig.layout.sliders[0].currentvalue.visible is False
-        assert "select2d" in fig.layout.modebar.remove
-        overlay_traces = [t for t in fig.data if getattr(t, "meta", {}).get("scl_role") == "overlay"]
-        assert overlay_traces
-
-
-def test_animate_competition_trajectories_trail_none_markers_only():
-    """With trail='none' all overlay traces must be markers."""
-    with _competition_trace_2d() as trace:
-        fig = sclp.animate_competition_trajectories(trace, voters=VOTERS, trail="none")
-        overlay_modes = [t.mode for t in fig.data if getattr(t, "meta", {}).get("scl_role") == "overlay"]
-        assert overlay_modes
-        assert all(mode == "markers" for mode in overlay_modes)
-
-
-def test_animate_competition_trajectories_fade_trail_produces_frames():
-    with _competition_trace_2d() as trace:
-        fig = sclp.animate_competition_trajectories(trace, voters=VOTERS, trail="fade")
-        assert isinstance(fig, go.Figure)
-        assert len(fig.frames) >= 2
-
-
-def test_animate_competition_trajectories_fade_trail_length_integer_respected():
-    """With trail_length=2 (integer), no frame should contain more than 2 non-empty
-    segments per competitor."""
-    with _competition_trace_2d() as trace:
-        n_rounds, n_competitors, _ = trace.dims()
-        fig = sclp.animate_competition_trajectories(
-            trace, voters=VOTERS, trail="fade", trail_length=2
-        )
-        for frame in fig.frames:
-            non_empty = [
-                t for t in frame.data
-                if t.mode == "lines" and t.x is not None and len(t.x) > 0
-            ]
-            assert len(non_empty) <= n_competitors * 2
-
-
-@pytest.mark.parametrize("shorthand,divisor", [
-    ("short", 3),
-    ("medium", 2),
-    ("long", 4),  # 3/4 rounds, so max_segments // 4 * 3
-])
-def test_animate_competition_trajectories_fade_trail_length_shorthand(shorthand, divisor):
-    """String shorthands resolve relative to total rounds and cap segments correctly."""
-    with _competition_trace_2d() as trace:
-        n_rounds, n_competitors, _ = trace.dims()
-        n_segments_max = n_rounds  # n_rounds + 1 frames → n_rounds segments
-        if shorthand == "long":
-            expected_max = max(1, (n_segments_max * 3) // 4)
-        else:
-            expected_max = max(1, n_segments_max // divisor)
-        fig = sclp.animate_competition_trajectories(
-            trace, voters=VOTERS, trail="fade", trail_length=shorthand
-        )
-        for frame in fig.frames:
-            non_empty = [
-                t for t in frame.data
-                if t.mode == "lines" and t.x is not None and len(t.x) > 0
-            ]
-            assert len(non_empty) <= n_competitors * expected_max
-
-
-def test_animate_competition_trajectories_trail_length_invalid_string_raises():
-    with _competition_trace_2d() as trace:
-        with pytest.raises(ValueError, match="trail_length"):
-            sclp.animate_competition_trajectories(trace, trail="fade", trail_length="huge")
-
-
-def test_animate_competition_trajectories_trail_length_zero_raises():
-    with _competition_trace_2d() as trace:
-        with pytest.raises(ValueError, match="trail_length"):
-            sclp.animate_competition_trajectories(trace, trail="fade", trail_length=0)
+def test_plot_spatial_voting_layer_toggles_default_and_false():
+    fig_on = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
+    assert fig_on["layer_toggles"] is True
+    fig_off = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, layer_toggles=False)
+    assert fig_off["layer_toggles"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -211,11 +122,15 @@ def test_animate_competition_canvas_returns_html_string():
         assert "competition-canvas" in html
 
 
+def test_animate_competition_canvas_includes_core_js():
+    with _competition_trace_2d() as trace:
+        html = sclp.animate_competition_canvas(trace, voters=VOTERS)
+        assert "ScsCanvasCore" in html or "scs_canvas_core" in html.lower()
+
+
 def test_animate_competition_canvas_embeds_json_payload():
     with _competition_trace_2d() as trace:
-        html = sclp.animate_competition_canvas(
-            trace, voters=VOTERS, title="Test Title"
-        )
+        html = sclp.animate_competition_canvas(trace, voters=VOTERS, title="Test Title")
         assert "Test Title" in html
         assert "voters_x" in html
         assert "positions" in html
@@ -268,9 +183,7 @@ def test_animate_competition_canvas_invalid_trail_length_raises():
 def test_animate_competition_canvas_wrong_competitor_names_raises():
     with _competition_trace_2d() as trace:
         with pytest.raises(ValueError, match="competitor_names"):
-            sclp.animate_competition_canvas(
-                trace, competitor_names=["Only One Name"]
-            )
+            sclp.animate_competition_canvas(trace, competitor_names=["Only One Name"])
 
 
 def test_strategy_kinds_returns_correct_strategies():
@@ -296,23 +209,28 @@ def test_animate_competition_canvas_annotates_user_names_with_strategy():
 
 
 # ---------------------------------------------------------------------------
-# layer_yolk  (no C library needed)
+# layer_yolk
 # ---------------------------------------------------------------------------
 
 
-def test_layer_yolk_returns_figure():
+def test_layer_yolk():
     fig = sclp.plot_spatial_voting(VOTERS[:6], ALTS[:2])
     fig = sclp.layer_yolk(fig, center_x=0.1, center_y=0.05, radius=0.3)
-    assert isinstance(fig, go.Figure)
+    assert fig["layers"]["yolk"]["r"] == pytest.approx(0.3)
 
 
 def test_layer_yolk_custom_colors():
     fig = sclp.plot_spatial_voting(VOTERS[:4], ALTS[:2])
-    fig = sclp.layer_yolk(fig, 0.0, 0.0, 0.5,
-                          fill_color="rgba(0,0,255,0.2)",
-                          line_color="rgba(0,0,255,0.8)",
-                          name="Yolk approx.")
-    assert isinstance(fig, go.Figure)
+    fig = sclp.layer_yolk(
+        fig,
+        0.0,
+        0.0,
+        0.5,
+        fill_color="rgba(0,0,255,0.2)",
+        line_color="rgba(0,0,255,0.8)",
+        name="Yolk approx.",
+    )
+    assert fig["layers"]["yolk"]["fill"] == "rgba(0,0,255,0.2)"
 
 
 # ---------------------------------------------------------------------------
@@ -320,31 +238,18 @@ def test_layer_yolk_custom_colors():
 # ---------------------------------------------------------------------------
 
 
-def test_layer_convex_hull_returns_figure():
+def test_layer_convex_hull():
     hull = scl.convex_hull_2d(VOTERS)
-    fig  = sclp.plot_spatial_voting(VOTERS, ALTS)
-    fig  = sclp.layer_convex_hull(fig, hull)
-    assert isinstance(fig, go.Figure)
-
-
-def test_background_regions_stay_below_points_without_zorder_dependency():
-    hull = scl.convex_hull_2d(VOTERS)
-    ws = scl.winset_2d(SQ[0], SQ[1], VOTERS)
-    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS)
     fig = sclp.layer_convex_hull(fig, hull)
-    fig = sclp.layer_winset(fig, ws)
-    names = [trace.name for trace in fig.data]
-    assert names[:2] == ["Convex Hull", "Winset"]
-    assert names[-2:] == ["Voters", "Status Quo"]
+    assert "xy" in fig["layers"]["convex_hull_xy"]
 
 
 def test_layer_convex_hull_empty():
     hull = np.empty((0, 2), dtype=np.float64)
-    fig  = sclp.plot_spatial_voting(VOTERS, ALTS)
-    n_before = len(fig.data)
-    fig  = sclp.layer_convex_hull(fig, hull)
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before
+    fig = sclp.plot_spatial_voting(VOTERS, ALTS)
+    fig = sclp.layer_convex_hull(fig, hull)
+    assert "convex_hull_xy" not in fig["layers"]
 
 
 # ---------------------------------------------------------------------------
@@ -352,26 +257,24 @@ def test_layer_convex_hull_empty():
 # ---------------------------------------------------------------------------
 
 
-def test_layer_uncovered_set_returns_figure():
+def test_layer_uncovered_set():
     bnd = scl.uncovered_set_boundary_2d(VOTERS, grid_resolution=8)
     fig = sclp.plot_spatial_voting(VOTERS, ALTS)
     fig = sclp.layer_uncovered_set(fig, bnd)
-    assert isinstance(fig, go.Figure)
+    assert "uncovered_xy" in fig["layers"]
 
 
 def test_layer_uncovered_set_empty():
     bnd = np.empty((0, 2), dtype=np.float64)
     fig = sclp.plot_spatial_voting(VOTERS, ALTS)
-    n_before = len(fig.data)
     fig = sclp.layer_uncovered_set(fig, bnd)
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before
+    assert "uncovered_xy" not in fig["layers"]
 
 
 def test_layer_uncovered_set_auto_compute():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS)
     fig = sclp.layer_uncovered_set(fig, voters=VOTERS, grid_resolution=8)
-    assert isinstance(fig, go.Figure)
+    assert "uncovered_xy" in fig["layers"]
 
 
 def test_layer_uncovered_set_error_no_args():
@@ -386,26 +289,24 @@ def test_layer_uncovered_set_error_no_args():
 
 
 def test_layer_winset_non_empty():
-    ws  = scl.winset_2d(SQ[0], SQ[1], VOTERS)
+    ws = scl.winset_2d(SQ[0], SQ[1], VOTERS)
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
     fig = sclp.layer_winset(fig, ws)
-    assert isinstance(fig, go.Figure)
+    assert fig["layers"]["winset_paths"]
 
 
 def test_layer_winset_empty():
     voters_same = np.zeros(6, dtype=np.float64)
-    ws  = scl.winset_2d(0.0, 0.0, voters_same)
+    ws = scl.winset_2d(0.0, 0.0, voters_same)
     fig = sclp.plot_spatial_voting(voters_same, ALTS[:2])
-    n_before = len(fig.data)
     fig = sclp.layer_winset(fig, ws)
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before
+    assert "winset_paths" not in fig["layers"]
 
 
 def test_layer_winset_auto_compute():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
     fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ)
-    assert isinstance(fig, go.Figure)
+    assert fig["layers"].get("winset_paths") is not None
 
 
 def test_layer_winset_error_no_args():
@@ -418,21 +319,22 @@ def test_layer_winset_auto_compute_manhattan():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
     dc = scl.make_dist_config("manhattan")
     fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ, dist_config=dc)
-    assert isinstance(fig, go.Figure)
+    assert fig["layers"]["winset_paths"]
 
 
 def test_layer_winset_auto_compute_chebyshev():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
     dc = scl.make_dist_config("chebyshev")
     fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ, dist_config=dc)
-    assert isinstance(fig, go.Figure)
+    # Chebyshev winset can be empty for this fixture; layer must not error.
+    assert fig["_scs_spatial_canvas"]
 
 
 def test_layer_winset_auto_compute_minkowski_p3():
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ)
     dc = scl.make_dist_config("minkowski", order_p=3.0)
     fig = sclp.layer_winset(fig, voters=VOTERS, sq=SQ, dist_config=dc)
-    assert isinstance(fig, go.Figure)
+    assert fig["layers"]["winset_paths"]
 
 
 # ---------------------------------------------------------------------------
@@ -440,57 +342,53 @@ def test_layer_winset_auto_compute_minkowski_p3():
 # ---------------------------------------------------------------------------
 
 
-def test_layer_ic_returns_figure():
+def test_layer_ic():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_ic(fig, VOTERS, SQ)
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["ic_curves"]) == 5
 
 
-def test_layer_ic_adds_traces_per_voter():
-    voters = VOTERS[:6]  # 3 voters
+def test_layer_ic_adds_per_voter():
+    voters = VOTERS[:6]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
-    n_before = len(fig.data)
     fig = sclp.layer_ic(fig, voters, SQ)
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before + 3  # one circle per voter
+    assert len(fig["layers"]["ic_curves"]) == 3
 
 
 def test_layer_ic_color_by_voter():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_ic(fig, VOTERS, SQ, color_by_voter=True)
-    assert isinstance(fig, go.Figure)
+    assert len({c["line"] for c in fig["layers"]["ic_curves"]}) >= 2
 
 
 def test_layer_ic_with_fill():
     voters = VOTERS[:6]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
     fig = sclp.layer_ic(fig, voters, SQ, fill_color="rgba(150,150,200,0.08)")
-    assert isinstance(fig, go.Figure)
+    assert all(c["fill"] is not None for c in fig["layers"]["ic_curves"])
 
 
 def test_layer_ic_custom_voter_names():
     voters = VOTERS[:6]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
     fig = sclp.layer_ic(fig, voters, SQ, voter_names=["Alice", "Bob", "Carol"])
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["ic_curves"]) == 3
 
 
 def test_layer_ic_non_euclidean_manhattan():
-    voters = VOTERS[:6]  # 3 voters
+    voters = VOTERS[:6]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
-    n_before = len(fig.data)
     dc = scl.make_dist_config("manhattan")
     fig = sclp.layer_ic(fig, voters, SQ, dist_config=dc)
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before + 3
+    assert len(fig["layers"]["ic_curves"]) == 3
 
 
 def test_layer_ic_non_euclidean_chebyshev():
-    voters = VOTERS[:4]  # 2 voters
+    voters = VOTERS[:4]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
     dc = scl.make_dist_config("chebyshev")
     fig = sclp.layer_ic(fig, voters, SQ, dist_config=dc)
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["ic_curves"]) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -498,43 +396,39 @@ def test_layer_ic_non_euclidean_chebyshev():
 # ---------------------------------------------------------------------------
 
 
-def test_layer_preferred_regions_returns_figure():
+def test_layer_preferred_regions():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_preferred_regions(fig, VOTERS, SQ)
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["preferred_regions"]) == 5
 
 
-def test_layer_preferred_regions_adds_traces():
-    voters = VOTERS[:6]  # 3 voters
+def test_layer_preferred_regions_adds_per_voter():
+    voters = VOTERS[:6]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
-    n_before = len(fig.data)
     fig = sclp.layer_preferred_regions(fig, voters, SQ)
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before + 3
+    assert len(fig["layers"]["preferred_regions"]) == 3
 
 
 def test_layer_preferred_regions_color_by_voter():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_preferred_regions(fig, VOTERS, SQ, color_by_voter=True)
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["preferred_regions"]) == 5
 
 
 def test_layer_preferred_regions_non_euclidean_manhattan():
-    voters = VOTERS[:6]  # 3 voters
+    voters = VOTERS[:6]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
-    n_before = len(fig.data)
     dc = scl.make_dist_config("manhattan")
     fig = sclp.layer_preferred_regions(fig, voters, SQ, dist_config=dc)
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == n_before + 3
+    assert len(fig["layers"]["preferred_regions"]) == 3
 
 
 def test_layer_preferred_regions_non_euclidean_chebyshev():
-    voters = VOTERS[:4]  # 2 voters
+    voters = VOTERS[:4]
     fig = sclp.plot_spatial_voting(voters, sq=SQ)
     dc = scl.make_dist_config("chebyshev")
     fig = sclp.layer_preferred_regions(fig, voters, SQ, dist_config=dc)
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["preferred_regions"]) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -551,8 +445,16 @@ def test_save_plot_html():
         assert result == path
         assert os.path.exists(path)
         assert os.path.getsize(path) > 0
+        txt = Path(path).read_text(encoding="utf-8")
+        assert "spatial-voting-canvas" in txt
     finally:
         os.unlink(path)
+
+
+def test_save_plot_png_not_implemented():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    with pytest.raises(NotImplementedError, match="PNG"):
+        sclp.save_plot(fig, "out.png")
 
 
 def test_save_plot_unsupported_extension():
@@ -567,9 +469,9 @@ def test_save_plot_unsupported_extension():
 
 
 def test_full_composition():
-    ws   = scl.winset_2d(SQ[0], SQ[1], VOTERS)
+    ws = scl.winset_2d(SQ[0], SQ[1], VOTERS)
     hull = scl.convex_hull_2d(VOTERS)
-    bnd  = scl.uncovered_set_boundary_2d(VOTERS, grid_resolution=8)
+    bnd = scl.uncovered_set_boundary_2d(VOTERS, grid_resolution=8)
 
     fig = sclp.plot_spatial_voting(VOTERS, ALTS, sq=SQ, title="Composition Test")
     fig = sclp.layer_ic(fig, VOTERS, SQ)
@@ -578,10 +480,12 @@ def test_full_composition():
     fig = sclp.layer_uncovered_set(fig, bnd)
     fig = sclp.layer_yolk(fig, 0.1, 0.05, 0.3)
     fig = sclp.layer_winset(fig, ws)
-    fig = sclp.finalize_plot(fig)
-
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) >= 7
+    assert fig["layers"]["ic_curves"]
+    assert fig["layers"]["preferred_regions"]
+    assert fig["layers"]["convex_hull_xy"]
+    assert fig["layers"]["uncovered_xy"]
+    assert fig["layers"]["yolk"]
+    assert fig["layers"]["winset_paths"]
 
 
 # ---------------------------------------------------------------------------
@@ -589,32 +493,19 @@ def test_full_composition():
 # ---------------------------------------------------------------------------
 
 
-def test_layer_centroid_returns_figure():
-    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    fig2 = sclp.layer_centroid(fig, VOTERS)
-    assert isinstance(fig2, go.Figure)
-
-
-def test_layer_centroid_adds_one_trace():
-    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    n_before = len(fig.data)
-    fig2 = sclp.layer_centroid(fig, VOTERS)
-    assert len(fig2.data) == n_before + 1
-
-
-def test_layer_centroid_marker_is_cross():
+def test_layer_centroid():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    fig = sclp.layer_centroid(fig, VOTERS)
-    assert fig.data[-1].marker.symbol == "cross"
+    fig2 = sclp.layer_centroid(fig, VOTERS)
+    assert len(fig2["layers"]["centroid"]) == 2
 
 
 def test_layer_centroid_position_matches_mean():
-    voters = np.array([-1.0, 0.0,  1.0, 0.0,  0.0, 2.0])
+    voters = np.array([-1.0, 0.0, 1.0, 0.0, 0.0, 2.0])
     fig = sclp.plot_spatial_voting(voters)
     fig = sclp.layer_centroid(fig, voters)
-    trace = fig.data[-1]
-    assert abs(trace.x[0] - 0.0) < 1e-10
-    assert abs(trace.y[0] - (2.0 / 3.0)) < 1e-10
+    cx, cy = fig["layers"]["centroid"]
+    assert abs(cx - 0.0) < 1e-10
+    assert abs(cy - (2.0 / 3.0)) < 1e-10
 
 
 # ---------------------------------------------------------------------------
@@ -622,30 +513,16 @@ def test_layer_centroid_position_matches_mean():
 # ---------------------------------------------------------------------------
 
 
-def test_layer_marginal_median_returns_figure():
-    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    fig2 = sclp.layer_marginal_median(fig, VOTERS)
-    assert isinstance(fig2, go.Figure)
-
-
-def test_layer_marginal_median_adds_one_trace():
-    fig  = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    n_before = len(fig.data)
-    fig2 = sclp.layer_marginal_median(fig, VOTERS)
-    assert len(fig2.data) == n_before + 1
-
-
-def test_layer_marginal_median_marker_is_triangle_up():
+def test_layer_marginal_median():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
-    fig = sclp.layer_marginal_median(fig, VOTERS)
-    assert fig.data[-1].marker.symbol == "triangle-up"
+    fig2 = sclp.layer_marginal_median(fig, VOTERS)
+    assert len(fig2["layers"]["marginal_median"]) == 2
 
 
 def test_layer_marginal_median_position_matches_median():
-    # Three voters at x=-1,0,1 and y=0 → median (0,0)
-    voters = np.array([-1.0, 0.0,  0.0, 0.0,  1.0, 0.0])
+    voters = np.array([-1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
     fig = sclp.plot_spatial_voting(voters)
     fig = sclp.layer_marginal_median(fig, voters)
-    trace = fig.data[-1]
-    assert abs(trace.x[0] - 0.0) < 1e-10
-    assert abs(trace.y[0] - 0.0) < 1e-10
+    mx, my = fig["layers"]["marginal_median"]
+    assert abs(mx - 0.0) < 1e-10
+    assert abs(my - 0.0) < 1e-10

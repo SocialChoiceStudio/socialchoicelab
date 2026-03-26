@@ -6,12 +6,22 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 
 ### Changed
 
-#### Static spatial plots (R and Python)
+#### Static spatial plots (R and Python) — canvas migration
 
-- **`dist_config`:** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` (auto-compute) accept `DistanceConfig` / `dist_config` so static Plotly overlays match non-Euclidean metrics where the core supports them.
-- **Polygon stroke:** non-Euclidean indifference and preferred-region polygons explicitly repeat the first vertex so Plotly line strokes close correctly.
-- **Centroid / marginal median:** marker symbols and colours aligned with the competition canvas (centroid: cross; marginal median: filled triangle-up with outline).
-- **Status quo:** no on-plot `"SQ"` text; legend and hover only (R and Python `plot_spatial_voting()`).
+- **Renderer:** `plot_spatial_voting()` and all `layer_*()` now build a **canvas**
+  payload (`spatial_voting_canvas` htmlwidget in R; `dict` in Python) using shared
+  JS (`scs_canvas_core.js`, `spatial_voting_canvas.js`). **Plotly** removed from
+  package dependencies; **`finalize_plot()`** removed.
+- **`save_plot()`:** writes **HTML** for static figures; **PNG/SVG** raise a clear
+  error (use HTML + browser print/screenshot).
+- **`dist_config`:** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()`
+  (auto-compute) still accept `DistanceConfig` / `dist_config` for non-Euclidean
+  metrics where the core supports them.
+- **Polygon stroke:** level-set polygons remain explicitly closed so strokes match fills.
+- **Centroid / marginal median:** symbols and colours aligned with the competition canvas.
+- **Status quo:** no on-plot `"SQ"` text; legend and hover only.
+- **Removed:** `animate_competition_trajectories`, `plot_competition_trajectories`
+  (R and Python) and their tests — use `animate_competition_canvas` for animation.
 
 ---
 
@@ -33,8 +43,7 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 
 #### R and Python bindings — competition layer
 - `CompetitionExperiment`, `CompetitionTrace`, `make_competition_step_config` in both R and Python with full API parity.
-- `animate_competition_canvas`: canvas-based animated player with trail modes, fade control, and layout polish. Supersedes frame-based Plotly animation for competition visualization.
-- `animate_competition_trajectories`: Plotly frame-based animation (retained; to be retired before `v1.0.0`).
+- `animate_competition_canvas`: canvas-based animated player with trail modes, fade control, and layout polish. Supersedes the former frame-based `animate_competition_trajectories` helper (**removed** in the static canvas migration; see `[Unreleased]`).
 - Voter sampling: `make_voter_sampler` and `draw_voters` in R and Python.
 
 #### Documentation

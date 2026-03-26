@@ -1015,8 +1015,9 @@
 
 
 <h1 id="spatial-voting-visualization">Spatial Voting Visualization<a class="headerlink" href="#spatial-voting-visualization" title="Permanent link">&para;</a></h1>
-<p>Interactive Plotly-based visualization helpers for spatial voting analysis.</p>
-<p>Import as a submodule (keeps <code>plotly</code> as an optional runtime dependency):</p>
+<p>Static spatial plots use an <strong>HTML5 canvas</strong> payload (<code>dict</code>) built by
+<code>plot_spatial_voting()</code> and <code>layer_*()</code>; <code>save_plot()</code> writes self-contained HTML.
+Competition animation uses <code>animate_competition_canvas()</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
 </code></pre></div>
 <h2 id="base-plot">Base plot<a class="headerlink" href="#base-plot" title="Permanent link">&para;</a></h2>
@@ -1026,7 +1027,7 @@
 
 
 <h2 id="socialchoicelab.plots.plot_spatial_voting" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">voter_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alt_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dim_names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Dimension 1&#39;</span><span class="p">,</span> <span class="s1">&#39;Dimension 2&#39;</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Spatial Voting Analysis&#39;</span><span class="p">,</span> <span class="n">show_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">voter_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alt_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dim_names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Dimension 1&#39;</span><span class="p">,</span> <span class="s1">&#39;Dimension 2&#39;</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Spatial Voting Analysis&#39;</span><span class="p">,</span> <span class="n">show_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">layer_toggles</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.plot_spatial_voting" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -1169,6 +1170,24 @@
           </tr>
           <tr class="doc-section-item">
             <td>
+                <code>layer_toggles</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code> (default), show a bottom checkbox bar to toggle visibility
+(like the competition canvas; crop below the plot for slides). The legend
+with symbols stays on the right of the plot on the canvas. If <code>False</code>,
+omit the bottom bar for publication figures; all layers remain visible.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
                 <code>xlim</code>
             </td>
             <td>
@@ -1223,7 +1242,7 @@ colours across the whole plot.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Figure dimensions in pixels.</p>
+                <p>Widget dimensions in pixels (used when saving HTML).</p>
               </div>
             </td>
             <td>
@@ -1238,7 +1257,7 @@ colours across the whole plot.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Figure dimensions in pixels.</p>
+                <p>Widget dimensions in pixels (used when saving HTML).</p>
               </div>
             </td>
             <td>
@@ -1260,11 +1279,11 @@ colours across the whole plot.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="plotly.graph_objects.Figure">Figure</span></code>
+                  <code><span title="dict">dict</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>Canvas payload for :func:<code>layer_*</code> and :func:<code>save_plot</code>.</p>
               </div>
             </td>
           </tr>
@@ -1296,196 +1315,7 @@ colours across the whole plot.</p>
 
     <div class="doc doc-contents first">
 
-        <p>Add a winset polygon layer.</p>
-<p>Pass either a pre-computed :class:<code>~socialchoicelab.Winset</code> or raw
-<code>voters</code> + <code>sq</code> for auto-compute.  Empty winsets are ignored.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>fig</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Figure from :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>winset</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A :class:<code>~socialchoicelab.Winset</code> object, or <code>None</code> for auto-compute.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>fill_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit fill colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>line_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit outline colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>name</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Legend entry label.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;Winset&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>voters</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Flat voter array (required when <code>winset=None</code>).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>sq</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Status quo <code>[x, y]</code> (required when <code>winset=None</code>).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>dist_config</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Distance metric configuration (:class:<code>~socialchoicelab.DistanceConfig</code>).
-<code>None</code> (default) uses Euclidean distance.  Only used in the
-auto-compute path (<code>winset=None</code>); ignored when a pre-computed
-<code>winset</code> is supplied.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>theme</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;dark2&#39;</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="plotly.graph_objects.Figure">Figure</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">scl</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">])</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span>  <span class="o">=</span> <span class="n">scl</span><span class="o">.</span><span class="n">winset_2d</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_winset</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ws</span><span class="p">)</span>
-</code></pre></div>
+        <p>Add a winset polygon layer to a canvas payload dict.</p>
 
 
     </div>
@@ -1503,174 +1333,7 @@ auto-compute path (<code>winset=None</code>); ignored when a pre-computed
 
     <div class="doc doc-contents first">
 
-        <p>Add a yolk circle layer.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>fig</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Figure from :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>center_x</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Yolk center coordinates.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>center_y</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Yolk center coordinates.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>radius</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Yolk radius (same units as plot axes).</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>fill_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit fill colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>line_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit outline colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>name</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Legend entry label.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;Yolk&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>theme</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;dark2&#39;</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="plotly.graph_objects.Figure">Figure</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">])</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_yolk</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">center_x</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">center_y</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-</code></pre></div>
+        <p>Add a yolk circle layer to a canvas payload dict.</p>
 
 
     </div>
@@ -1688,178 +1351,7 @@ auto-compute path (<code>winset=None</code>); ignored when a pre-computed
 
     <div class="doc doc-contents first">
 
-        <p>Add an uncovered set boundary layer.</p>
-<p>Pass either a pre-computed boundary or raw <code>voters</code> for auto-compute.
-Empty boundaries are ignored.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>fig</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Figure from :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>boundary_xy</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>ndarray</code> of shape <code>(n_pts, 2)</code>, or <code>None</code> for auto-compute.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>fill_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit fill colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>line_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit outline colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>name</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Legend entry label.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;Uncovered Set&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>voters</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Flat voter array (required when <code>boundary_xy=None</code>).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>grid_resolution</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Grid resolution for auto-compute (default 20).</p>
-              </div>
-            </td>
-            <td>
-                  <code>20</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>theme</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;dark2&#39;</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="plotly.graph_objects.Figure">Figure</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">scl</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">])</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">bnd</span> <span class="o">=</span> <span class="n">scl</span><span class="o">.</span><span class="n">uncovered_set_boundary_2d</span><span class="p">(</span><span class="n">voters</span><span class="p">,</span> <span class="n">grid_resolution</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_uncovered_set</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">bnd</span><span class="p">)</span>
-</code></pre></div>
+        <p>Add an uncovered set boundary layer to a canvas payload dict.</p>
 
 
     </div>
@@ -1870,153 +1362,15 @@ Empty boundaries are ignored.</p>
 
 
 <h2 id="socialchoicelab.plots.layer_convex_hull" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_convex_hull</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">hull_xy</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Convex Hull&#39;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">socialchoicelab</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">layer_convex_hull</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">hull_xy</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Pareto Set&#39;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s1">&#39;dark2&#39;</span><span class="p">)</span></code>
 
 <a href="#socialchoicelab.plots.layer_convex_hull" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents first">
 
-        <p>Add a convex hull layer.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>fig</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Figure from :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>hull_xy</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>ndarray</code> of shape <code>(n_hull, 2)</code>.  Empty arrays are ignored.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>fill_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit fill colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>line_color</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Explicit outline colour (overrides theme).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>name</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Legend entry label.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;Convex Hull&#39;</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>theme</code>
-            </td>
-            <td>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Colour theme — same options as :func:<code>plot_spatial_voting</code>.</p>
-              </div>
-            </td>
-            <td>
-                  <code>&#39;dark2&#39;</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="plotly.graph_objects.Figure">Figure</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">scl</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">socialchoicelab.plots</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sclp</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">voters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">])</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">hull</span> <span class="o">=</span> <span class="n">scl</span><span class="o">.</span><span class="n">convex_hull_2d</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span>  <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">plot_spatial_voting</span><span class="p">(</span><span class="n">voters</span><span class="p">)</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span>  <span class="o">=</span> <span class="n">sclp</span><span class="o">.</span><span class="n">layer_convex_hull</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">hull</span><span class="p">)</span>
-</code></pre></div>
+        <p>Add a Pareto set layer (convex hull of ideals for Euclidean preferences).</p>
+<p>The canvas labels this layer "Pareto Set". Payload key remains <code>convex_hull_xy</code>.</p>
 
 
     </div>

@@ -141,7 +141,7 @@ s$status_quo                              # length-2 vector
 
 ## 10 — Interactive visualization
 
-All plotting functions return composable **Plotly** figures.
+All plotting functions return composable **canvas** figures (`spatial_voting_canvas` htmlwidget in R; a payload `dict` in Python).
 
 ```{r plot-setup}
 voter_names <- paste0("P", 1:5)
@@ -158,8 +158,8 @@ fig <- plot_spatial_voting(
 fig
 ```
 
-Add geometric layers one at a time — each returns the same figure enriched
-with a new trace:
+Add geometric layers one at a time — each returns the same widget with an
+updated payload (draw order in the canvas follows the canonical layer stack):
 
 ```{r plot-layers}
 hull <- convex_hull_2d(voters)
@@ -176,7 +176,6 @@ fig <- layer_uncovered_set(fig, bnd)
 fig <- layer_ic(fig, voters, sq, color_by_voter = TRUE)
 fig <- layer_centroid(fig, voters)
 fig <- layer_marginal_median(fig, voters)
-fig <- finalize_plot(fig)
 fig
 ```
 
@@ -193,5 +192,5 @@ scl_theme_colors("winset")       # canonical color for the winset layer
 
 ```{r save}
 save_plot(fig, "analysis.html")           # self-contained HTML
-# save_plot(fig, "analysis.png")          # raster image (requires kaleido)
+# save_plot(fig, "analysis.png")          # not supported — use HTML + browser print/screenshot
 ```

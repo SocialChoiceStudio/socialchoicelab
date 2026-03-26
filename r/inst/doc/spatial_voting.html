@@ -455,8 +455,9 @@ figures.</p>
 <span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>  <span class="at">title       =</span> <span class="st">&quot;5-voter legislature&quot;</span></span>
 <span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>)</span>
 <span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>fig</span></code></pre></div>
-<p>Add geometric layers one at a time — each returns the same figure
-enriched with a new trace:</p>
+<p>Add geometric layers one at a time — each returns the same widget
+with an updated payload (draw order in the canvas follows the canonical
+layer stack):</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>hull <span class="ot">&lt;-</span> <span class="fu">convex_hull_2d</span>(voters)</span>
 <span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>ws   <span class="ot">&lt;-</span> <span class="fu">winset_2d</span>(sq, voters)</span>
 <span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>bnd  <span class="ot">&lt;-</span> <span class="fu">uncovered_set_boundary_2d</span>(voters, <span class="at">grid_resolution =</span> <span class="dv">12</span><span class="dt">L</span>)</span>
@@ -471,8 +472,7 @@ enriched with a new trace:</p>
 <span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>fig <span class="ot">&lt;-</span> <span class="fu">layer_ic</span>(fig, voters, sq, <span class="at">color_by_voter =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>fig <span class="ot">&lt;-</span> <span class="fu">layer_centroid</span>(fig, voters)</span>
 <span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>fig <span class="ot">&lt;-</span> <span class="fu">layer_marginal_median</span>(fig, voters)</span>
-<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>fig <span class="ot">&lt;-</span> <span class="fu">finalize_plot</span>(fig)</span>
-<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a>fig</span></code></pre></div>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>fig</span></code></pre></div>
 <div id="color-themes" class="section level3">
 <h3>Color themes</h3>
 <p>All <code>layer_*()</code> functions accept a <code>theme</code>
@@ -483,7 +483,7 @@ argument for colorblind-safe palettes:</p>
 <div id="saving-plots" class="section level3">
 <h3>Saving plots</h3>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">save_plot</span>(fig, <span class="st">&quot;analysis.html&quot;</span>)           <span class="co"># self-contained HTML</span></span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co"># save_plot(fig, &quot;analysis.png&quot;)          # raster image (requires kaleido)</span></span></code></pre></div>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co"># save_plot(fig, &quot;analysis.png&quot;)          # not supported — use HTML + browser print/screenshot</span></span></code></pre></div>
 </div>
 </div>
 

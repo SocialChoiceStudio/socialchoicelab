@@ -1,0 +1,5 @@
+dependencies:
+  - name: scs_canvas_core
+    version: 1.0.0
+    src: htmlwidgets
+    script: scs_canvas_core.js

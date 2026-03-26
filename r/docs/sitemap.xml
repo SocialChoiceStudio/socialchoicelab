@@ -8,7 +8,6 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/StreamManager.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/Winset.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_canvas.html</loc></url>
-<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_trajectories.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/antiplurality_all_winners.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/antiplurality_one_winner.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/antiplurality_scores.html</loc></url>
@@ -33,7 +32,6 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/distance_to_utility.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/dot-PALETTE_HEX.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/draw_voters.html</loc></url>
-<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/finalize_plot.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/geometric_mean_2d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/has_condorcet_winner_2d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/has_condorcet_winner_profile.html</loc></url>
@@ -68,7 +66,6 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/pairwise_matrix_2d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/pairwise_ranking_from_matrix.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/pareto_set.html</loc></url>
-<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_competition_trajectories.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plurality_all_winners.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plurality_one_winner.html</loc></url>

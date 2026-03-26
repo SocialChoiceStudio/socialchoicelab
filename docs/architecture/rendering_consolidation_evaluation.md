@@ -1,22 +1,33 @@
 # Rendering backend consolidation evaluation
 
+**Status:** Migration complete — R and Python use **HTML5 Canvas** for static spatial plots and competition animation; **Plotly is removed** from dependencies. The sections below retain the historical analysis that informed the decision.
+
 Evaluate whether to consolidate the project's two rendering backends — Plotly
 (static spatial voting plots) and JS Canvas 2D (competition animations) — onto
 a single Canvas-based renderer, eliminating Plotly as a dependency.
 
-This document provides the technical analysis behind the roadmap item
-(ROADMAP.md § Rendering backend consolidation). It is a decision record, not
-an implementation plan; an implementation plan should be written if and when the
-Phase 1 spike produces a positive result.
+## Decision (2026)
+
+**Adopted:** Full migration to **HTML5 Canvas 2D** for static spatial voting
+plots and competition animation. Shared primitives live in
+`r/inst/htmlwidgets/scs_canvas_core.js`; static plots use
+`spatial_voting_canvas.js` (R: `spatial_voting_canvas.R`, Python: payload dict
+in `plots.py`). **Plotly**, **`finalize_plot()`**, and Plotly-only trajectory
+helpers are **removed** from R and Python. **`save_plot()`** for static figures
+writes **HTML** only; PNG/SVG are not implemented (users save HTML and print or
+screenshot; future work may use `canvas.toDataURL` or canvas2svg — see below).
+
+The remainder of this document preserves the **historical technical analysis**
+that informed the decision.
 
 ---
 
-## Current state
+## Previous state (pre-migration)
 
-### Plotly (static spatial voting plots)
+### Plotly (static spatial voting plots) — removed
 
-Used in `r/R/plots.R` and `python/src/socialchoicelab/plots.py` for all static
-spatial voting visualizations:
+Previously used in R (`plots.R`) and Python (`plots.py`) for static spatial
+voting visualizations:
 
 - `plot_spatial_voting()` — base 2D plot: voter ideal points, status quo,
   policy alternatives
@@ -28,18 +39,17 @@ spatial voting visualizations:
 - `layer_uncovered_set()` — uncovered set polygon
 - `layer_centroid()` — centroid point
 - `layer_marginal_median()` — marginal median point
-- `finalize_plot()` — enforces layer stacking order
-- `save_plot()` — exports to HTML or image (via Kaleido)
+- `finalize_plot()` — (removed) enforced layer stacking order in Plotly
+- `save_plot()` — previously exported to HTML or image (via Kaleido)
 
-**Dependencies:** R requires `plotly >= 4.10.0`; Python requires `plotly >= 5.0`
-and `kaleido` for static image export. Both are runtime dependencies listed in
+**Dependencies (removed):** R required `plotly >= 4.10.0`; Python required `plotly >= 5.0`
+and `kaleido` for static image export. Both were runtime dependencies listed in
 package metadata.
 
-**Parity surface:** Every `layer_*()` function is implemented twice — once
-calling Plotly's R API, once calling Plotly's Python API — and both must stay
-in sync per the project's R-Python Layer Parity rule.
+**Parity surface (historical):** Every `layer_*()` function was implemented twice
+against Plotly's R and Python APIs and had to stay in sync.
 
-### JS Canvas 2D (competition animations)
+### JS Canvas 2D (competition animations; now also static spatial plots)
 
 Used in `r/inst/htmlwidgets/competition_canvas.js` (canonical) and
 `python/src/socialchoicelab/competition_canvas.js` (copy). R binding in

@@ -261,8 +261,8 @@ consistency.
 
 ## Visualization
 
-Interactive Plotly-based plots for spatial voting analysis. Compose
-layers by passing the figure from one function into the next.
+Interactive **canvas** htmlwidgets for spatial voting analysis. Compose
+layers by passing the figure payload from one function into the next.
 
 - [`plot_spatial_voting()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md)
   : Create a base 2D spatial voting plot
@@ -273,7 +273,8 @@ layers by passing the figure from one function into the next.
 - [`layer_uncovered_set()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_uncovered_set.md)
   : Add an uncovered set boundary layer
 - [`layer_convex_hull()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_convex_hull.md)
-  : Add a convex hull layer
+  : Add a Pareto set layer (convex hull of ideals under Euclidean
+  preferences)
 - [`layer_centroid()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_centroid.md)
   : Add a centroid (mean voter position) marker layer
 - [`layer_marginal_median()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_marginal_median.md)
@@ -295,10 +296,8 @@ layers by passing the figure from one function into the next.
 - [`.PALETTE_HEX`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/dot-PALETTE_HEX.md)
   : Approved qualitative palettes. Source: ColorBrewer 2.0 (Cynthia
   Brewer) and Okabe & Ito (2008).
-- [`finalize_plot()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/finalize_plot.md)
-  : Enforce the canonical layer stack order
 - [`save_plot()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/save_plot.md)
-  : Save a spatial voting plot to file
+  : Save a spatial voting canvas widget to file
 - [`list_scenarios()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/list_scenarios.md)
   : List available built-in scenarios
 - [`load_scenario()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/load_scenario.md)
@@ -324,10 +323,6 @@ seat conversion; full trace recording and experiment sweeps.
   : CompetitionTrace: one competition simulation trace
 - [`CompetitionExperiment`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/CompetitionExperiment.md)
   : CompetitionExperiment: replicated competition runs
-- [`plot_competition_trajectories()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_competition_trajectories.md)
-  : Plot 2D competition trajectories from a CompetitionTrace
-- [`animate_competition_trajectories()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_trajectories.md)
-  : Animate 2D competition trajectories from a CompetitionTrace
 - [`animate_competition_canvas()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/animate_competition_canvas.md)
   : Animate 2D competition trajectories (canvas backend)
 - [`save_competition_canvas()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/save_competition_canvas.md)

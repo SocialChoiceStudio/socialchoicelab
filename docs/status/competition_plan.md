@@ -58,7 +58,7 @@ This roadmap departs slightly from the user-suggested phase order in three place
 
 - It puts **electoral evaluation and seat allocation before adaptation strategies**, because Hunter/Aggregator/Predator all need a clean, tested notion of round feedback before their behavior can be implemented correctly.
 - It puts **all public C API work after the core C++ engine stabilizes**, to avoid freezing an ABI around churn-prone internal types.
-- It treats **visualization as the last implementation phase**, because the existing Plotly layer should consume a stable exported trace format rather than drive core design.
+- It treats **visualization as the last implementation phase**, so bindings consume a stable exported trace format rather than driving core design. (Implemented: **canvas** — `animate_competition_canvas` in R/Python, not Plotly.)
 
 ## Recommended design decisions
 
@@ -566,9 +566,11 @@ Add a stateful experiment runner for replicated sweeps over voters, competitors,
 
 ## Phase J: Visualization and trajectory animation
 
-**Goal**
+**Status:** Delivered as **canvas** (`r/R/competition_canvas.R`, `animate_competition_canvas` in Python). Plotly trajectory helpers were removed during the static canvas migration.
 
-Expose animated competition trajectories through the existing Plotly-based visualization layer in R and Python.
+**Goal (historical)**
+
+Expose animated competition trajectories through the R/Python visualization layer (originally described as Plotly; superseded by canvas).
 
 **Prerequisites**
 

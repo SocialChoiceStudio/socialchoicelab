@@ -9,9 +9,6 @@ import socialchoicelab as scl
 import socialchoicelab.plots as sclp
 from socialchoicelab.palette import scl_palette, scl_theme_colors
 
-plotly = pytest.importorskip("plotly")
-import plotly.graph_objects as go  # noqa: E402
-
 VOTERS = np.array([-1.0, -0.5,  0.0,  0.0,  0.8,  0.6, -0.4,  0.8,  0.5, -0.7])
 SQ     = np.array([ 0.0,  0.0])
 
@@ -138,24 +135,30 @@ def test_scl_theme_colors_accessible_via_plots_module():
 
 def test_plot_spatial_voting_dark2_theme():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ, theme="dark2")
-    assert isinstance(fig, go.Figure)
+    assert fig["_scs_spatial_canvas"]
+    assert "voters_x" in fig and len(fig["voters_x"]) == 5
+    assert fig["theme_colors"]["winset_fill"].startswith("rgba(")
 
 
 def test_plot_spatial_voting_bw_theme():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ, theme="bw")
-    assert isinstance(fig, go.Figure)
+    assert fig["_scs_spatial_canvas"]
+    assert fig["theme"] == "bw"
 
 
 def test_plot_spatial_voting_set2_theme():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ, theme="set2")
-    assert isinstance(fig, go.Figure)
+    assert fig["_scs_spatial_canvas"]
+    assert fig["theme"] == "set2"
 
 
 def test_layer_winset_explicit_fill_overrides_theme():
     ws  = scl.winset_2d(SQ[0], SQ[1], VOTERS)
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_winset(fig, ws, fill_color="rgba(255,0,0,0.2)")
-    assert isinstance(fig, go.Figure)
+    paths = fig["layers"]["winset_paths"]
+    assert paths
+    assert any(p["fill"] == "rgba(255,0,0,0.2)" for p in paths)
 
 
 def test_layer_yolk_explicit_colors_override_theme():
@@ -163,27 +166,27 @@ def test_layer_yolk_explicit_colors_override_theme():
     fig = sclp.layer_yolk(fig, 0.0, 0.0, 0.5,
                           fill_color="rgba(0,0,255,0.2)",
                           line_color="rgba(0,0,255,0.8)")
-    assert isinstance(fig, go.Figure)
+    assert fig["layers"]["yolk"]["fill"] == "rgba(0,0,255,0.2)"
+    assert fig["layers"]["yolk"]["line"] == "rgba(0,0,255,0.8)"
 
 
 def test_layer_ic_color_by_voter_with_palette():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_ic(fig, VOTERS, SQ, color_by_voter=True, palette="dark2")
-    assert isinstance(fig, go.Figure)
-    assert len(fig.data) == 2 + 5  # voters + SQ traces + 5 IC traces
+    assert len(fig["layers"]["ic_curves"]) == 5
 
 
 def test_layer_ic_color_by_voter_auto_uses_theme():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ, theme="set2")
     fig = sclp.layer_ic(fig, VOTERS, SQ, color_by_voter=True, theme="set2")
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["ic_curves"]) == 5
 
 
 def test_layer_preferred_regions_color_by_voter_with_palette():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     fig = sclp.layer_preferred_regions(fig, VOTERS, SQ,
                                        color_by_voter=True, palette="okabe_ito")
-    assert isinstance(fig, go.Figure)
+    assert len(fig["layers"]["preferred_regions"]) == 5
 
 
 def test_full_composition_with_bw_theme():
@@ -196,4 +199,7 @@ def test_full_composition_with_bw_theme():
     fig = sclp.layer_uncovered_set(fig, bnd, theme="bw")
     fig = sclp.layer_yolk(fig, 0.1, 0.05, 0.3, theme="bw")
     fig = sclp.layer_winset(fig, ws, theme="bw")
-    assert isinstance(fig, go.Figure)
+    assert fig["layers"]["convex_hull_xy"]
+    assert fig["layers"]["uncovered_xy"]
+    assert fig["layers"]["yolk"]
+    assert fig["layers"]["winset_paths"]

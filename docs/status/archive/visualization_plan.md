@@ -1,5 +1,7 @@
 # Visualization Plan — R and Python Plotting Layer
 
+> **Historical note:** Static spatial plots later migrated to **HTML5 canvas** (shared JS); **Plotly** is no longer a dependency. This document describes the original plan and completed checklist as shipped at the time.
+
 **Phase:** C10–C13 ✅ Complete
 
 Short-to-medium-term plan to build spatial voting visualization helpers in R and Python. After this milestone, users can plot voter ideal points, policy alternatives, winsets, yolk, uncovered set, and convex hull with a few lines of code.

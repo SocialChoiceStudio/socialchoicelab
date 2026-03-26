@@ -12,7 +12,6 @@ requires-python = ">=3.10"
 dependencies = [
     "cffi>=1.15",
     "numpy>=1.23",
-    "plotly>=5.0",
 ]
 
 [project.optional-dependencies]

@@ -1,8 +1,6 @@
 # Add an uncovered set boundary layer
 
-Overlays the approximate uncovered set boundary. Pass either a
-pre-computed matrix or raw `voters` for auto-compute. Returns the figure
-unchanged if the boundary is empty.
+Add an uncovered set boundary layer
 
 ## Usage
 
@@ -12,6 +10,8 @@ layer_uncovered_set(
   boundary_xy = NULL,
   fill_color = NULL,
   line_color = NULL,
+  fill_colour = NULL,
+  line_colour = NULL,
   name = "Uncovered Set",
   voters = NULL,
   grid_resolution = 20L,
@@ -23,51 +23,36 @@ layer_uncovered_set(
 
 - fig:
 
-  A plotly figure from
+  A widget from
   [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
 
 - boundary_xy:
 
-  Numeric matrix (n_pts × 2) with columns `x` and `y`, or `NULL` for
-  auto-compute.
+  Matrix with columns `x`, `y`, or `NULL` for auto-compute from
+  `voters`.
 
-- fill_color:
+- fill_color, line_color:
 
-  Fill colour (CSS rgba). `NULL` uses the theme default.
+  Colours; `NULL` uses the theme default.
 
-- line_color:
+- fill_colour, line_colour:
 
-  Outline colour (CSS rgba). `NULL` uses the theme default.
+  UK spellings accepted.
 
 - name:
 
-  Legend entry label.
-
-- voters:
-
-  Flat voter vector (required when `boundary_xy = NULL`).
+  Ignored (canvas legend uses fixed labels); retained for parity.
 
 - grid_resolution:
 
-  Integer grid resolution for auto-compute (default 20).
+  Grid resolution when auto-computing.
 
 - theme:
 
-  Colour theme — see
-  [`plot_spatial_voting`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.md).
+  Colour theme: `"dark2"` (default, ColorBrewer Dark2, colorblind-safe),
+  `"set2"`, `"okabe_ito"`, `"paired"`, or `"bw"` (black-and-white
+  print).
 
 ## Value
 
-The updated plotly figure.
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-voters <- c(-1.0, -0.5,  0.0, 0.0,  0.8, 0.6,  -0.4, 0.8,  0.5, -0.7)
-bnd <- uncovered_set_boundary_2d(voters, grid_resolution = 10L)
-fig <- plot_spatial_voting(voters)
-fig <- layer_uncovered_set(fig, bnd)
-fig
-} # }
-```
+Updated widget.

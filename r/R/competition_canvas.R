@@ -1,8 +1,7 @@
 # competition_canvas.R — Canvas-based competition trajectory animation widget
 #
-# Parallel implementation to animate_competition_trajectories (Plotly). Data is
-# stored once and frames are drawn on demand in the browser, so it scales to
-# hundreds or thousands of rounds. Returns an htmlwidget, not a plotly figure.
+# Data is stored once and frames are drawn on demand in the browser, so it
+# scales to long runs. Returns an htmlwidget.
 
 #' @importFrom htmlwidgets createWidget sizingPolicy
 NULL
@@ -105,7 +104,7 @@ NULL
       if (nm == "centroid") {
         overlays_out[["centroid"]] <- list(x = unname(mean(voters_x)))
       } else if (nm == "marginal_median") {
-        overlays_out[["marginal_median"]] <- list(x = unname(median(voters_x)))
+        overlays_out[["marginal_median"]] <- list(x = unname(stats::median(voters_x)))
       } else {
         warning(
           "Overlay '", nm, "' is not supported for 1D traces and will be skipped. ",
@@ -259,10 +258,9 @@ NULL
 
 #' Animate 2D competition trajectories (canvas backend)
 #'
-#' Renders the same competition animation as \code{\link{animate_competition_trajectories}}
-#' using a canvas-based widget. Data is sent once; the browser draws frames on
-#' demand. This scales to long runs (hundreds or thousands of rounds) without the
-#' large HTML and slow load of the Plotly frame-based approach.
+#' Renders competition trajectories using a canvas-based \code{htmlwidget}.
+#' Data is sent once; the browser draws frames on demand. This scales to long
+#' runs (hundreds or thousands of rounds) without large HTML payloads.
 #'
 #' @param trace A \code{\link{CompetitionTrace}} object.
 #' @param voters Optional flat numeric voter vector or \code{numeric(0)}.

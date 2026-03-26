@@ -490,7 +490,7 @@
       </dl></div><div class="section level2">
       <h2 id="visualization">Visualization<a class="anchor" aria-label="anchor" href="#visualization"></a></h2>
 
-      <div class="section-desc"><p>Interactive Plotly-based plots for spatial voting analysis. Compose layers by passing the figure from one function into the next.</p></div>
+      <div class="section-desc"><p>Interactive <strong>canvas</strong> htmlwidgets for spatial voting analysis. Compose layers by passing the figure payload from one function into the next.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -530,7 +530,7 @@
           <code><a href="layer_convex_hull.html">layer_convex_hull()</a></code>
 
         </dt>
-        <dd>Add a convex hull layer</dd>
+        <dd>Add a Pareto set layer (convex hull of ideals under Euclidean preferences)</dd>
 
         <dt>
 
@@ -604,17 +604,10 @@
 
         <dt>
 
-          <code><a href="finalize_plot.html">finalize_plot()</a></code>
-
-        </dt>
-        <dd>Enforce the canonical layer stack order</dd>
-
-        <dt>
-
           <code><a href="save_plot.html">save_plot()</a></code>
 
         </dt>
-        <dd>Save a spatial voting plot to file</dd>
+        <dd>Save a spatial voting canvas widget to file</dd>
 
         <dt>
 
@@ -687,20 +680,6 @@
 
         </dt>
         <dd>CompetitionExperiment: replicated competition runs</dd>
-
-        <dt>
-
-          <code><a href="plot_competition_trajectories.html">plot_competition_trajectories()</a></code>
-
-        </dt>
-        <dd>Plot 2D competition trajectories from a CompetitionTrace</dd>
-
-        <dt>
-
-          <code><a href="animate_competition_trajectories.html">animate_competition_trajectories()</a></code>
-
-        </dt>
-        <dd>Animate 2D competition trajectories from a CompetitionTrace</dd>
 
         <dt>
 

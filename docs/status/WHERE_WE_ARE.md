@@ -6,9 +6,10 @@
 - **Next:** Begin **Characteristics of Voting Rules** (working title), the next major feature track toward `1.0.0`. Optionally cut a patch/minor release (`0.3.1` or similar) to publish the post-tag visualization changes.
 - **Release context:** `v0.2.0` and `v0.3.0` are tagged. Authoritative Layer 7 plan: [competition_plan.md](competition_plan.md).
 - **After the next release line:** Iterate to `1.0.0` once all major components — including Characteristics of Voting Rules — are in place.
+- **Ad-hoc follow-ups:** Use [follow_up_queue.md](follow_up_queue.md) for items you explicitly want remembered across sessions (so they are not lost in chat).
 - **Last updated:** 2026-03-11
 
-**Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Completed short-term plans live in `docs/status/archive/` for reference. Milestone definitions: [MILESTONE_GATES.md](MILESTONE_GATES.md).
+**Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Use `follow_up_queue.md` only as a durable scratchpad / pointer list. Completed short-term plans live in `docs/status/archive/` for reference. Milestone definitions: [MILESTONE_GATES.md](MILESTONE_GATES.md).
 
 ---
 
@@ -72,14 +73,14 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 
 ### Sessions: 2026-03-07/08 — Visualization layer (C10–C13) COMPLETE
 
-- **C10–C12 (core):** `plot_spatial_voting()`, `layer_winset()`, `layer_yolk()`, `layer_uncovered_set()`, `layer_convex_hull()` implemented in R (`r/R/plots.R`) and Python (`python/src/socialchoicelab/plots.py`). Identical API across both languages (Plotly output, composable layers, `zorder` for correct stacking). CI green on both R and Python jobs.
+- **C10–C12 (core):** `plot_spatial_voting()`, `layer_winset()`, `layer_yolk()`, `layer_uncovered_set()`, `layer_convex_hull()` implemented in R (`r/R/spatial_voting_canvas.R`) and Python (`python/src/socialchoicelab/plots.py`). Identical API across both languages (canvas payload / htmlwidget, composable layers; draw order fixed in JS). CI green on both R and Python jobs.
 - **C13.A (built-in scenarios):** 33 scenarios in JSON format bundled in R `inst/extdata/scenarios/` and Python `src/socialchoicelab/data/scenarios/`. `load_scenario(name)` and `list_scenarios()` in both languages. Full unit test coverage.
 - **C13.2 (`layer_ic`):** Individual voter indifference curves (default: Euclidean circles; extended post-`v0.3.0` with `dist_config` for non-Euclidean boundaries). `color_by_voter` flag; dotted dash style.
 - **C13.3 (auto-compute):** `layer_winset()` and `layer_uncovered_set()` accept `voters` + `sq` and compute geometry internally.
 - **C13.4 (theme system):** `scl_palette(name, n, alpha)` and `scl_theme_colors(layer_type, theme)` in R (`r/R/palette.R`) and Python (`python/src/socialchoicelab/palette.py`). Five themes: `dark2`, `set2`, `okabe_ito`, `paired`, `bw`. All `layer_*()` functions accept `theme=` (default `"dark2"`).
 - **C13.5 (axis auto-range):** `plot_spatial_voting()` auto-computes 12%-padded axis range; `xlim`/`ylim` override.
 - **C13.6 (`layer_preferred_regions`):** Filled voter-preferred-to-SQ regions (default: Euclidean disks; extended post-`v0.3.0` with `dist_config`); `color_by_voter` flag.
-- **C13.8 (`save_plot`):** HTML export via `htmlwidgets::saveWidget()` / `fig.write_html()`; image export via `plotly::save_image()` / `fig.write_image()`.
+- **C13.8 (`save_plot`):** Self-contained **HTML** for static canvas figures (R: `htmlwidgets::saveWidget()`; Python: HTML writer on the payload). No Plotly/Kaleido image export in the current stack.
 - **Deferred:** C13.1 (external file format → ROADMAP), C13.7 (Shapley-Owen → blocked on C API), C13.9 (gallery notebook → docs milestone).
 - **Tests:** Full unit test coverage added for all new functions in R (`test_palette.R`, `test_plots.R`) and Python (`test_palette.py`, `test_plots.py`).
 

@@ -73,7 +73,7 @@ For each milestone we tag (e.g. `phase-3`, `c-api-minimal`), these are the gates
 
 ## Visualization layer (tag: `visualization-complete`) ✅ 2026-03-08
 
-**Scope:** Plotly-based spatial voting plot helpers in R and Python. Identical API across both languages; composable layers; colorblind-safe theme system; built-in scenario datasets.
+**Scope:** Spatial voting visualization in R and Python (originally Plotly; **now HTML5 canvas** htmlwidgets / payload + shared JS). Identical API across both languages; composable layers; colorblind-safe theme system; built-in scenario datasets.
 
 | Gate | Criteria | Status |
 |------|----------|--------|
@@ -136,7 +136,7 @@ Tag `v0.3.0` is on `main` (annotated). Post-tag visualization-only improvements 
 | Geometry Layer 3 | CGAL 2D, winset, Yolk, uncovered set, Heart, Copeland | CI + 250+ tests | geometry_design.md | C++ API stable | ✅ 2026-03-06 |
 | Profiles & Aggregation | Profile, voting rules, Pareto, Condorcet | CI + 100 tests | aggregation_design.md | C++ API stable | ✅ 2026-03-06 |
 | c_api extensions | Full c_api for geometry + aggregation | CI + extended c_api tests | c_api_design.md updated | Extended c_api frozen | ✅ 2026-03-07 |
-| Visualization layer | Plotly layers, theme system, built-in scenarios | R + Python test suites | visualization_design.md | Plotting API stable | ✅ 2026-03-08 |
+| Visualization layer | Canvas spatial plots, theme system, built-in scenarios | R + Python test suites | visualization_design.md | Plotting API stable | ✅ 2026-03-08 |
 | First public release / `0.2.0` | Core + c_api + bindings + visualization | CI + binding tests | User docs | Pre-1.0 stability in `0.x` line | ✅ Tagged 2026-03-08 |
 | Competition Layer 7 / `0.3.0` | Adaptive candidate engine + stable trace/C API/bindings | CI + engine/C API/binding tests | competition_design.md + roadmap updates | Competition API frozen for tag | ✅ Tagged 2026-03-18 |
 | Major components complete / `1.0.0` | All major feature families complete | Full-stack CI + end-to-end workflows | Full 1.0 docs | Semver 1.0 promise | 🔲 Future |

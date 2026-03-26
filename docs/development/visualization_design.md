@@ -1,16 +1,16 @@
 # Visualization Design
 
 This document is the canonical specification for all spatial voting plots produced
-by `socialchoicelab`. Both the R (`plots.R`) and Python (`plots.py`) implementations
-must conform to it. Deviations require an update here first.
+by `socialchoicelab`. Both the R (`spatial_voting_canvas.R`) and Python
+(`plots.py`) implementations must conform to it. Deviations require an update here first.
 
 ---
 
 ## Layer stack order
 
-Layers are rendered bottom-to-top in the following fixed order.
-`finalize_plot()` / `finalize_plot()` enforces this order regardless of the
-sequence in which `layer_*` functions are called.
+Layers are rendered bottom-to-top in the following fixed order. The **canvas
+widget** (`spatial_voting_canvas.js`) applies this order when drawing, regardless
+of the sequence in which `layer_*` functions append data to the payload.
 
 | Z | Layer | Function | Status |
 |---|---|---|---|
@@ -97,10 +97,10 @@ string), even when `show_labels` is `TRUE` for alternatives — use the legend
 
 Symbols and colours are aligned with the **competition canvas** player:
 
-| Measure | Plotly marker | Notes |
-|---------|---------------|--------|
-| Centroid | `cross` | Fill/stroke from theme helpers (`_centroid_overlay_color` / R equivalent); reads as a plus/cross on the plot. |
-| Marginal median | `triangle-up` | Filled triangle, outline colour for contrast on dark themes. |
+| Measure | Canvas rendering | Notes |
+|---------|------------------|--------|
+| Centroid | Cross (two strokes) | Colours from theme helpers (`_centroid_overlay_color` / R equivalent). |
+| Marginal median | Filled triangle-up | Outline colour for contrast on dark themes. |
 
 ### Non-Euclidean distance (`dist_config`)
 
@@ -113,8 +113,9 @@ When **provided**, boundaries come from the core level-set pipeline
 `layer_winset()` auto-compute (`voters` + `sq`, no precomputed winset) passes
 `dist_config` through to `winset_2d` so the plotted region matches the metric.
 
-**Plotly detail:** for polygons from level sets, the first vertex is repeated at
-the end of the `x`/`y` arrays so `fill="toself"` and the line stroke both close.
+**Polygon closure:** for polygons from level sets, the first vertex is repeated
+at the end of coordinate arrays so fills and strokes both close (same convention
+as the core boundary export).
 
 ### Utility functions
 
@@ -137,7 +138,7 @@ fill, line = sclp.scl_theme_colors("winset", theme="dark2")
 A unique dash pattern is assigned to each area-object layer so that plots are
 legible in black-and-white or greyscale.
 
-| Layer | Plotly dash value |
+| Layer | Dash style (canvas stroke) |
 |---|---|
 | Indifference curves | `"dot"` |
 | Pareto / convex hull | `"dash"` |
@@ -149,33 +150,15 @@ legible in black-and-white or greyscale.
 
 ---
 
-## `finalize_plot(fig)`
+## Display and export
 
-Reorders all traces in the figure to match the stack order table above.
-Call once, immediately before `fig.show()` / `print(fig)`.
-
-```r
-# R
-fig <- plot_spatial_voting(voters, sq = sq)
-fig <- layer_winset(fig, ws)
-fig <- layer_convex_hull(fig, hull)
-fig <- finalize_plot(fig)   # correct stack order enforced here
-print(fig)
-```
-
-```python
-# Python
-fig = sclp.plot_spatial_voting(voters, sq=sq)
-fig = sclp.layer_winset(fig, ws)
-fig = sclp.layer_convex_hull(fig, hull)
-fig = sclp.finalize_plot(fig)   # correct stack order enforced here
-fig.show()
-```
-
-Trace identity is determined by the `name` / `legendgroup` field that each
-`layer_*` function sets. Custom traces added directly via the Plotly API and
-not using one of the standard names are placed at z=7 (between cut lines and
-voter points).
+- **R:** `print(fig)` renders the `spatial_voting_canvas` htmlwidget; `save_plot(fig, path)`
+  writes self-contained HTML (`htmlwidgets::saveWidget`). Raster/vector export
+  (`PNG`/`SVG`) is not implemented for canvas plots — save HTML and use the
+  browser’s print or screenshot tools.
+- **Python:** build the payload with `plot_spatial_voting` / `layer_*`, then
+  `save_plot(fig, path)` for HTML. There is no `fig.show()`; open the saved file
+  in a browser or use `IPython.display.HTML` in notebooks.
 
 ---
 
