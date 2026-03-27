@@ -93,6 +93,23 @@ test_that("level_set_1d returns a numeric vector of length 0 to 2", {
 })
 
 # ---------------------------------------------------------------------------
+# ic_interval_1d
+# ---------------------------------------------------------------------------
+
+test_that("ic_interval_1d matches three-call path", {
+  skip_without_lib()
+  lc <- make_loss_config(loss_type = "linear", sensitivity = 1)
+  dc <- make_dist_config(n_dims = 1L, weights = 1)
+  ideal <- 0.5
+  ref <- 1.2
+  p1 <- ic_interval_1d(ideal, ref, lc, dc)
+  d <- calculate_distance(ideal, ref, dc)
+  ul <- distance_to_utility(d, lc)
+  p3 <- level_set_1d(ideal, weight = 1, utility_level = ul, lc)
+  expect_equal(as.numeric(p1), as.numeric(p3), tolerance = 1e-12)
+})
+
+# ---------------------------------------------------------------------------
 # level_set_2d
 # ---------------------------------------------------------------------------
 

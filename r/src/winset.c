@@ -207,6 +207,77 @@ SEXP r_scs_winset_boundary_2d(SEXP ptr) {
     return result;
 }
 
+/* r_scs_winset_2d_export_boundary — compound: winset + boundary export without
+ * exposing an SCS_Winset* to R. Returns named list: empty (logical), paths
+ * (VECSXP of flat REAL per ring), is_hole (INTSXP, 0/1 per path). */
+SEXP r_scs_winset_2d_export_boundary(SEXP sqx, SEXP sqy, SEXP voter_xy,
+                                     SEXP k_s, SEXP samples_s, SEXP dist_cfg) {
+    SCS_DistanceConfig dc = build_dist_config(dist_cfg);
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    int n_voters = (int)(XLENGTH(voter_xy) / 2);
+    int is_empty = 0, nx = 0, np = 0;
+    scs_check(scs_winset_2d_export_boundary(
+                  asReal(sqx), asReal(sqy), REAL(voter_xy), n_voters, &dc,
+                  asInteger(k_s), asInteger(samples_s), &is_empty, NULL, 0, NULL,
+                  0, NULL, &nx, &np, err, SCS_ERR_BUF_SIZE),
+              err);
+
+    if (is_empty) {
+        SEXP result = PROTECT(allocVector(VECSXP, 3));
+        SEXP rnames = PROTECT(allocVector(STRSXP, 3));
+        SET_VECTOR_ELT(result, 0, ScalarLogical(1));
+        SET_STRING_ELT(rnames, 0, mkChar("empty"));
+        SET_VECTOR_ELT(result, 1, R_NilValue);
+        SET_STRING_ELT(rnames, 1, mkChar("paths"));
+        SET_VECTOR_ELT(result, 2, R_NilValue);
+        SET_STRING_ELT(rnames, 2, mkChar("is_hole"));
+        setAttrib(result, R_NamesSymbol, rnames);
+        UNPROTECT(2);
+        return result;
+    }
+
+    double *tmp_xy = (double *)R_alloc((size_t)nx * 2, sizeof(double));
+    int *tmp_starts = (int *)R_alloc((size_t)np, sizeof(int));
+    int *tmp_holes = (int *)R_alloc((size_t)np, sizeof(int));
+    int nx2 = 0, np2 = 0;
+    is_empty = 0;
+    scs_check(scs_winset_2d_export_boundary(
+                  asReal(sqx), asReal(sqy), REAL(voter_xy), n_voters, &dc,
+                  asInteger(k_s), asInteger(samples_s), &is_empty, tmp_xy, nx,
+                  tmp_starts, np, tmp_holes, &nx2, &np2, err, SCS_ERR_BUF_SIZE),
+              err);
+
+    SEXP paths = PROTECT(allocVector(VECSXP, np2));
+    for (int p = 0; p < np2; ++p) {
+        int s = tmp_starts[p];
+        int e = (p + 1 < np2) ? tmp_starts[p + 1] : nx2;
+        int nv = e - s;
+        SEXP flat = PROTECT(allocVector(REALSXP, nv * 2));
+        double *dst = REAL(flat);
+        for (int j = 0; j < nv; ++j) {
+            dst[2 * j] = tmp_xy[2 * (s + j)];
+            dst[2 * j + 1] = tmp_xy[2 * (s + j) + 1];
+        }
+        SET_VECTOR_ELT(paths, p, flat);
+        UNPROTECT(1);
+    }
+    SEXP is_hole_vec = PROTECT(allocVector(INTSXP, np2));
+    for (int p = 0; p < np2; ++p)
+        INTEGER(is_hole_vec)[p] = tmp_holes[p];
+
+    SEXP result = PROTECT(allocVector(VECSXP, 3));
+    SEXP rnames = PROTECT(allocVector(STRSXP, 3));
+    SET_VECTOR_ELT(result, 0, ScalarLogical(0));
+    SET_STRING_ELT(rnames, 0, mkChar("empty"));
+    SET_VECTOR_ELT(result, 1, paths);
+    SET_STRING_ELT(rnames, 1, mkChar("paths"));
+    SET_VECTOR_ELT(result, 2, is_hole_vec);
+    SET_STRING_ELT(rnames, 2, mkChar("is_hole"));
+    setAttrib(result, R_NamesSymbol, rnames);
+    UNPROTECT(4);
+    return result;
+}
+
 /* ---------------------------------------------------------------------------
  * Boolean set operations — each returns a new owned EXTPTR
  * --------------------------------------------------------------------------- */

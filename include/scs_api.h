@@ -78,6 +78,12 @@ extern "C" {
 /** A handle construction or internal heap allocation failed. (C0.2) */
 #define SCS_ERROR_OUT_OF_MEMORY 4
 
+/**
+ * @brief Free a pointer returned by a heap-style `scs_*` export helper.
+ * NULL is a no-op.
+ */
+SCS_API void scs_heap_free(void* ptr);
+
 // ---------------------------------------------------------------------------
 // Pairwise comparison result domain  (C0.3)
 // ---------------------------------------------------------------------------
@@ -281,6 +287,23 @@ SCS_API int scs_normalize_utility(double utility, double max_distance,
 SCS_API int scs_level_set_1d(double ideal, double weight, double utility_level,
                              const SCS_LossConfig* loss_cfg, double* out_points,
                              int* out_n, char* err_buf, int err_buf_len);
+
+/**
+ * @brief Compound 1D IC: points where u(x) equals utility at reference_x.
+ *
+ * Equivalent to scs_calculate_distance (1D), scs_distance_to_utility, and
+ * scs_level_set_1d in sequence. dist_cfg must have n_weights == 1.
+ *
+ * @param ideal          Voter ideal (1D coordinate).
+ * @param reference_x    Reference point (status quo or seat).
+ * @param[out] out_points Buffer for up to 2 doubles.
+ * @param[out] out_n      0, 1, or 2 points written.
+ */
+SCS_API int scs_ic_interval_1d(double ideal, double reference_x,
+                               const SCS_LossConfig* loss_cfg,
+                               const SCS_DistanceConfig* dist_cfg,
+                               double* out_points, int* out_n, char* err_buf,
+                               int err_buf_len);
 
 /**
  * @brief 2D level set: exact shape (circle, ellipse, superellipse, or polygon).
@@ -792,6 +815,26 @@ SCS_API int scs_winset_sample_boundary_2d(
     int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
     int* out_n_paths, char* err_buf, int err_buf_len);
 
+/**
+ * @brief Compound: compute 2D winset and export boundary in one call.
+ *
+ * No SCS_Winset handle crosses the boundary. If the winset is empty,
+ * *out_is_empty is 1, *out_xy_n_pairs and *out_n_paths are 0, and SCS_OK.
+ *
+ * Size query: pass out_xy == NULL and out_path_starts == NULL; requires
+ * out_is_empty, out_xy_n_pairs, out_n_paths non-null. Runs one winset build.
+ *
+ * Fill: provide buffers with capacity at least the values from a prior size
+ * query (or use conservative sizes). Same semantics as
+ * scs_winset_sample_boundary_2d for path metadata.
+ */
+SCS_API int scs_winset_2d_export_boundary(
+    double status_quo_x, double status_quo_y, const double* voter_ideals_xy,
+    int n_voters, const SCS_DistanceConfig* dist_cfg, int k, int num_samples,
+    int* out_is_empty, double* out_xy, int out_xy_capacity_pairs,
+    int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
+    int* out_xy_n_pairs, int* out_n_paths, char* err_buf, int err_buf_len);
+
 // ---------------------------------------------------------------------------
 // Geometry — Euclidean Voronoi cells 2D  (C2.8)
 // ---------------------------------------------------------------------------
@@ -840,6 +883,23 @@ SCS_API int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
                                  int* out_xy_n, int* out_cell_start,
                                  int out_cell_start_capacity, char* err_buf,
                                  int err_buf_len);
+
+/** Heap export for Voronoi: single `voronoi_cells_2d` compute; free with
+ *  scs_voronoi_cells_heap_destroy. */
+typedef struct SCS_VoronoiCellsHeap {
+  double* xy;
+  int n_xy_pairs;
+  int* cell_start;
+  int cell_start_len;
+} SCS_VoronoiCellsHeap;
+
+SCS_API int scs_voronoi_cells_2d_heap(const double* sites_xy, int n_sites,
+                                      double bbox_min_x, double bbox_min_y,
+                                      double bbox_max_x, double bbox_max_y,
+                                      SCS_VoronoiCellsHeap* out, char* err_buf,
+                                      int err_buf_len);
+
+SCS_API void scs_voronoi_cells_heap_destroy(SCS_VoronoiCellsHeap* h);
 
 // ---------------------------------------------------------------------------
 // Geometry — winset boolean set operations  (C2.7)
@@ -1031,6 +1091,16 @@ SCS_API int scs_uncovered_set_boundary_2d(const double* voter_ideals_xy,
                                           double* out_xy, int out_capacity,
                                           int* out_n, char* err_buf,
                                           int err_buf_len);
+
+/**
+ * @brief Heap export for uncovered-set boundary: one internal geometry pass.
+ * On success, *out_xy points to malloc'd memory (2 * *out_n_pairs doubles);
+ * free with scs_heap_free. If *out_n_pairs is 0, *out_xy is NULL.
+ */
+SCS_API int scs_uncovered_set_boundary_2d_heap(
+    const double* voter_ideals_xy, int n_voters,
+    const SCS_DistanceConfig* dist_cfg, int grid_resolution, int k,
+    double** out_xy, int* out_n_pairs, char* err_buf, int err_buf_len);
 
 // ---------------------------------------------------------------------------
 // Geometry — Heart (discrete and continuous)  (C4.7, C4.8)

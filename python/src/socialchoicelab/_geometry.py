@@ -327,32 +327,30 @@ def uncovered_set_boundary_2d(
     vtr_buf, vtr_arr = _c_double_array(voter_ideals_xy)
     n_voters = len(vtr_arr) // 2
 
-    # Size query
+    out_xy_ptr = _ffi.new("double **")
     out_n_pairs = _ffi.new("int *")
     err = new_err_buf()
-    _check(
-        _lib.scs_uncovered_set_boundary_size_2d(
-            vtr_buf, n_voters, cfg, int(grid_resolution), int(k), out_n_pairs, err, _ERR
-        ),
-        err,
+    rc = _lib.scs_uncovered_set_boundary_2d_heap(
+        vtr_buf, n_voters, cfg, int(grid_resolution), int(k),
+        out_xy_ptr, out_n_pairs, err, _ERR,
     )
+    if rc != 0:
+        p = out_xy_ptr[0]
+        if p != _ffi.NULL:
+            _lib.scs_heap_free(p)
+        _check(rc, err)
     n_pts = int(out_n_pairs[0])
-
     if n_pts == 0:
+        p = out_xy_ptr[0]
+        if p != _ffi.NULL:
+            _lib.scs_heap_free(p)
         return np.empty((0, 2), dtype=np.float64)
-
-    # Fill
-    out_n = _ffi.new("int *")
-    xy = np.zeros(n_pts * 2, dtype=np.float64)
-    xy_buf = _ffi.cast("double *", _ffi.from_buffer(xy))
-    err = new_err_buf()
-    _check(
-        _lib.scs_uncovered_set_boundary_2d(
-            vtr_buf, n_voters, cfg, int(grid_resolution), int(k), xy_buf, n_pts, out_n, err, _ERR
-        ),
-        err,
-    )
-    return xy.reshape(int(out_n[0]), 2).copy()
+    c_ptr = out_xy_ptr[0]
+    try:
+        flat = np.frombuffer(_ffi.buffer(c_ptr, n_pts * 2 * 8), dtype=np.float64).copy()
+    finally:
+        _lib.scs_heap_free(c_ptr)
+    return flat.reshape(n_pts, 2)
 
 
 # ---------------------------------------------------------------------------

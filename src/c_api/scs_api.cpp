@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
 #include <numbers>
@@ -100,6 +101,8 @@ extern "C" int scs_api_version(int* out_major, int* out_minor, int* out_patch,
   *out_patch = SCS_API_VERSION_PATCH;
   return SCS_OK;
 }
+
+extern "C" void scs_heap_free(void* ptr) { std::free(ptr); }
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -727,6 +730,46 @@ extern "C" int scs_level_set_1d(double ideal, double weight,
     set_error(err_buf, err_buf_len, e.what());
     return SCS_ERROR_INTERNAL;
   }
+}
+
+extern "C" int scs_ic_interval_1d(double ideal, double reference_x,
+                                  const SCS_LossConfig* loss_cfg,
+                                  const SCS_DistanceConfig* dist_cfg,
+                                  double* out_points, int* out_n, char* err_buf,
+                                  int err_buf_len) {
+  if (!loss_cfg || !dist_cfg || !out_points || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_ic_interval_1d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (dist_cfg->n_weights != 1 || !dist_cfg->salience_weights) {
+    set_error(err_buf, err_buf_len,
+              "scs_ic_interval_1d: dist_cfg must have n_weights == 1");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(ideal) || !std::isfinite(reference_x)) {
+    set_error(err_buf, err_buf_len,
+              "scs_ic_interval_1d: ideal and reference_x must be finite");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_finite_doubles(dist_cfg->salience_weights, 1,
+                               "scs_ic_interval_1d dist_cfg->salience_weights",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const double ideal_arr[1] = {ideal};
+  const double ref_arr[1] = {reference_x};
+  double dist = 0.0;
+  int rc = scs_calculate_distance(ideal_arr, ref_arr, 1, dist_cfg, &dist,
+                                  err_buf, err_buf_len);
+  if (rc != SCS_OK) return rc;
+  double util_level = 0.0;
+  rc = scs_distance_to_utility(dist, loss_cfg, &util_level, err_buf,
+                               err_buf_len);
+  if (rc != SCS_OK) return rc;
+  const double weight = dist_cfg->salience_weights[0];
+  return scs_level_set_1d(ideal, weight, util_level, loss_cfg, out_points,
+                          out_n, err_buf, err_buf_len);
 }
 
 extern "C" int scs_level_set_2d(double ideal_x, double ideal_y,
@@ -1624,6 +1667,41 @@ extern "C" int scs_winset_interval_1d(const double* voter_x, int n_voters,
   }
 }
 
+extern "C" int scs_winset_2d_export_boundary(
+    double status_quo_x, double status_quo_y, const double* voter_ideals_xy,
+    int n_voters, const SCS_DistanceConfig* dist_cfg, int k, int num_samples,
+    int* out_is_empty, double* out_xy, int out_xy_capacity_pairs,
+    int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
+    int* out_xy_n_pairs, int* out_n_paths, char* err_buf, int err_buf_len) {
+  if (!out_is_empty || !out_xy_n_pairs || !out_n_paths) {
+    set_error(err_buf, err_buf_len,
+              "scs_winset_2d_export_boundary: null required output pointer");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  SCS_Winset* ws =
+      scs_winset_2d(status_quo_x, status_quo_y, voter_ideals_xy, n_voters,
+                    dist_cfg, k, num_samples, err_buf, err_buf_len);
+  if (!ws) return SCS_ERROR_INTERNAL;
+  int empty = 0;
+  int rc = scs_winset_is_empty(ws, &empty, err_buf, err_buf_len);
+  if (rc != SCS_OK) {
+    scs_winset_destroy(ws);
+    return rc;
+  }
+  *out_is_empty = empty;
+  if (empty) {
+    *out_xy_n_pairs = 0;
+    *out_n_paths = 0;
+    scs_winset_destroy(ws);
+    return SCS_OK;
+  }
+  rc = scs_winset_sample_boundary_2d(
+      ws, out_xy, out_xy_capacity_pairs, out_xy_n_pairs, out_path_starts,
+      out_path_capacity, out_path_is_hole, out_n_paths, err_buf, err_buf_len);
+  scs_winset_destroy(ws);
+  return rc;
+}
+
 // ---------------------------------------------------------------------------
 // Voronoi cells 2D  (C2.8)
 // ---------------------------------------------------------------------------
@@ -1717,6 +1795,83 @@ extern "C" int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
     set_error(err_buf, err_buf_len, e.what());
     return SCS_ERROR_INTERNAL;
   }
+}
+
+extern "C" int scs_voronoi_cells_2d_heap(const double* sites_xy, int n_sites,
+                                         double bbox_min_x, double bbox_min_y,
+                                         double bbox_max_x, double bbox_max_y,
+                                         SCS_VoronoiCellsHeap* out,
+                                         char* err_buf, int err_buf_len) {
+  if (!sites_xy || !out) {
+    set_error(err_buf, err_buf_len,
+              "scs_voronoi_cells_2d_heap: null required argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  out->xy = nullptr;
+  out->cell_start = nullptr;
+  out->n_xy_pairs = 0;
+  out->cell_start_len = 0;
+  try {
+    auto cells = socialchoicelab::geometry::voronoi_cells_2d(
+        sites_xy, n_sites, bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y);
+    const int n_cells = static_cast<int>(cells.size());
+    const int cell_start_len = n_sites + 1;
+    int total_pairs = 0;
+    for (const auto& cell : cells) total_pairs += static_cast<int>(cell.size());
+    out->n_xy_pairs = total_pairs;
+    out->cell_start_len = cell_start_len;
+
+    int* cs_buf = static_cast<int*>(
+        std::malloc(sizeof(int) * static_cast<size_t>(cell_start_len)));
+    if (!cs_buf) {
+      set_error(err_buf, err_buf_len,
+                "scs_voronoi_cells_2d_heap: out of memory (cell_start)");
+      return SCS_ERROR_OUT_OF_MEMORY;
+    }
+    double* xy_buf = nullptr;
+    if (total_pairs > 0) {
+      xy_buf = static_cast<double*>(
+          std::malloc(sizeof(double) * static_cast<size_t>(total_pairs * 2)));
+      if (!xy_buf) {
+        std::free(cs_buf);
+        set_error(err_buf, err_buf_len,
+                  "scs_voronoi_cells_2d_heap: out of memory (xy)");
+        return SCS_ERROR_OUT_OF_MEMORY;
+      }
+    }
+
+    int xy_pos = 0;
+    for (int c = 0; c < n_cells; ++c) {
+      cs_buf[c] = xy_pos;
+      const auto& cell = cells[static_cast<size_t>(c)];
+      for (const auto& p : cell) {
+        xy_buf[2 * xy_pos] = p.x();
+        xy_buf[2 * xy_pos + 1] = p.y();
+        ++xy_pos;
+      }
+    }
+    cs_buf[n_cells] = xy_pos;
+
+    out->xy = xy_buf;
+    out->cell_start = cs_buf;
+    return SCS_OK;
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" void scs_voronoi_cells_heap_destroy(SCS_VoronoiCellsHeap* h) {
+  if (!h) return;
+  std::free(h->xy);
+  std::free(h->cell_start);
+  h->xy = nullptr;
+  h->cell_start = nullptr;
+  h->n_xy_pairs = 0;
+  h->cell_start_len = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -2136,31 +2291,14 @@ extern "C" int scs_uncovered_set_boundary_size_2d(
     const double* voter_ideals_xy, int n_voters,
     const SCS_DistanceConfig* dist_cfg, int grid_resolution, int k,
     int* out_xy_pairs, char* err_buf, int err_buf_len) {
-  if (!voter_ideals_xy || !out_xy_pairs) {
+  if (!out_xy_pairs) {
     set_error(err_buf, err_buf_len,
               "scs_uncovered_set_boundary_size_2d: null pointer argument");
     return SCS_ERROR_INVALID_ARGUMENT;
   }
-  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
-                               err_buf, err_buf_len)) {
-    return SCS_ERROR_INVALID_ARGUMENT;
-  }
-  socialchoicelab::geometry::DistConfig cfg;
-  if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
-    return SCS_ERROR_INVALID_ARGUMENT;
-  try {
-    auto voters = build_voters(voter_ideals_xy, n_voters);
-    auto poly = socialchoicelab::geometry::uncovered_set_boundary_2d(
-        voters, cfg, grid_resolution, k);
-    *out_xy_pairs = static_cast<int>(poly.size());
-    return SCS_OK;
-  } catch (const std::invalid_argument& e) {
-    set_error(err_buf, err_buf_len, e.what());
-    return SCS_ERROR_INVALID_ARGUMENT;
-  } catch (const std::exception& e) {
-    set_error(err_buf, err_buf_len, e.what());
-    return SCS_ERROR_INTERNAL;
-  }
+  return scs_uncovered_set_boundary_2d(voter_ideals_xy, n_voters, dist_cfg,
+                                       grid_resolution, k, nullptr, 0,
+                                       out_xy_pairs, err_buf, err_buf_len);
 }
 
 extern "C" int scs_uncovered_set_boundary_2d(const double* voter_ideals_xy,
@@ -2188,6 +2326,58 @@ extern "C" int scs_uncovered_set_boundary_2d(const double* voter_ideals_xy,
         voters, cfg, grid_resolution, k);
     return export_polygon2e(poly, out_xy, out_capacity, out_n, err_buf,
                             err_buf_len);
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INVALID_ARGUMENT;
+  } catch (const std::exception& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return SCS_ERROR_INTERNAL;
+  }
+}
+
+extern "C" int scs_uncovered_set_boundary_2d_heap(
+    const double* voter_ideals_xy, int n_voters,
+    const SCS_DistanceConfig* dist_cfg, int grid_resolution, int k,
+    double** out_xy, int* out_n_pairs, char* err_buf, int err_buf_len) {
+  if (!voter_ideals_xy || !out_xy || !out_n_pairs) {
+    set_error(err_buf, err_buf_len,
+              "scs_uncovered_set_boundary_2d_heap: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  *out_xy = nullptr;
+  *out_n_pairs = 0;
+  if (!validate_finite_doubles(voter_ideals_xy, n_voters * 2, "voter_ideals_xy",
+                               err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  socialchoicelab::geometry::DistConfig cfg;
+  if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  try {
+    auto voters = build_voters(voter_ideals_xy, n_voters);
+    auto poly = socialchoicelab::geometry::uncovered_set_boundary_2d(
+        voters, cfg, grid_resolution, k);
+    const int n = static_cast<int>(poly.size());
+    *out_n_pairs = n;
+    if (n == 0) return SCS_OK;
+    double* buf = static_cast<double*>(
+        std::malloc(sizeof(double) * static_cast<size_t>(n * 2)));
+    if (!buf) {
+      set_error(err_buf, err_buf_len,
+                "scs_uncovered_set_boundary_2d_heap: out of memory");
+      return SCS_ERROR_OUT_OF_MEMORY;
+    }
+    int written = n;
+    const int rc =
+        export_polygon2e(poly, buf, n, &written, err_buf, err_buf_len);
+    if (rc != SCS_OK) {
+      std::free(buf);
+      *out_xy = nullptr;
+      *out_n_pairs = 0;
+      return rc;
+    }
+    *out_xy = buf;
+    return SCS_OK;
   } catch (const std::invalid_argument& e) {
     set_error(err_buf, err_buf_len, e.what());
     return SCS_ERROR_INVALID_ARGUMENT;

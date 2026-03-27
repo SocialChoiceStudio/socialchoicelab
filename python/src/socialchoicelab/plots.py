@@ -32,15 +32,13 @@ _COMPETITION_JS_PATH = _PACKAGE_DIR / "competition_canvas.js"
 _SPATIAL_JS_PATH = _PACKAGE_DIR / "spatial_voting_canvas.js"
 
 from socialchoicelab._functions import (
-    calculate_distance,
-    distance_to_utility,
+    ic_interval_1d,
     ic_polygon_2d,
-    level_set_1d,
     level_set_to_polygon,
 )
 from socialchoicelab._geometry import centroid_2d, marginal_median_2d
 from socialchoicelab._winset import winset_2d
-from socialchoicelab._types import DistanceConfig, LossConfig
+from socialchoicelab._types import DistanceConfig, LossConfig, _to_cffi_dist
 from socialchoicelab._error import _check, new_err_buf
 from socialchoicelab._loader import _ffi, _lib
 from socialchoicelab.palette import (
@@ -517,7 +515,7 @@ def _animate_competition_canvas_1d(
                 )
     overlays_serialised = overlays_out if overlays_out else None
 
-    # 1D IC computation — uses level_set_1d to get interval boundaries per voter
+    # 1D IC computation — single C call per voter (ic_interval_1d)
     ic_data_payload = None
     ic_indices_payload = None
     if compute_ic:
@@ -531,13 +529,6 @@ def _animate_competition_canvas_1d(
         ic_num_samples = int(ic_num_samples)
         if ic_num_samples < 3:
             raise ValueError(f"ic_num_samples must be >= 3, got {ic_num_samples}.")
-
-        # Extract salience weight for level_set_1d
-        weight_1d = (
-            float(ic_dist_config.salience_weights[0])
-            if ic_dist_config.salience_weights is not None
-            else 1.0
-        )
 
         n_frames = n_rounds + 1
         seat_idxs_per_frame = []
@@ -560,10 +551,10 @@ def _animate_competition_canvas_1d(
                 frame_cidxs.append(s)
                 voter_curves = []
                 for v in range(n_voters):
-                    voter_x_v = voters_x[v]
-                    dist_val = calculate_distance([voter_x_v], [seat_x], ic_dist_config)
-                    util_level = distance_to_utility(dist_val, ic_loss_config)
-                    pts = level_set_1d(voter_x_v, weight_1d, util_level, ic_loss_config)
+                    pts = ic_interval_1d(
+                        float(voters_x[v]), float(seat_x),
+                        ic_loss_config, ic_dist_config,
+                    )
                     voter_curves.append(pts.tolist())
                 frame_curves.append(voter_curves)
             ic_data_payload.append(frame_curves)
@@ -950,6 +941,9 @@ def animate_competition_canvas(
         voter_ideals_flat = np.empty(n_voters * 2, dtype=float)
         voter_ideals_flat[0::2] = voters_x
         voter_ideals_flat[1::2] = voters_y
+        vif_buf = _ffi.cast("double *", _ffi.from_buffer(voter_ideals_flat))
+        wcfg, _wka = _to_cffi_dist(winset_dist_config, n_dims=2)
+        _WS_ERR = 512
 
         ws_data_payload = []
         ws_indices_payload = []
@@ -961,31 +955,61 @@ def animate_competition_canvas(
                 frame_cidxs.append(s)
                 sq_x = float(pos_mat[s, 0])
                 sq_y = float(pos_mat[s, 1])
-                ws = winset_2d(
-                    sq_x, sq_y, voter_ideals_flat,
-                    dist_config=winset_dist_config,
-                    k=winset_k,
-                    num_samples=winset_num_samples,
+                is_empty = _ffi.new("int *")
+                nx = _ffi.new("int *")
+                np_paths = _ffi.new("int *")
+                err = new_err_buf()
+                _check(
+                    _lib.scs_winset_2d_export_boundary(
+                        sq_x, sq_y, vif_buf, n_voters, wcfg,
+                        int(winset_k), int(winset_num_samples),
+                        is_empty, _ffi.NULL, 0, _ffi.NULL, 0, _ffi.NULL,
+                        nx, np_paths, err, _WS_ERR,
+                    ),
+                    err,
                 )
-                if ws.is_empty():
+                if is_empty[0]:
                     frame_ws.append(None)
-                else:
-                    bnd = ws.boundary()
-                    xy = bnd["xy"]
-                    path_starts = bnd["path_starts"]
-                    path_is_hole = bnd["path_is_hole"]
-                    n_paths = len(path_starts)
-                    ends = list(path_starts[1:]) + [len(xy)]
-                    paths_list = []
-                    for p_i in range(n_paths):
-                        s_idx = int(path_starts[p_i])
-                        e_idx = int(ends[p_i])
-                        paths_list.append(xy[s_idx:e_idx].ravel().tolist())
-                    frame_ws.append({
-                        "paths":          paths_list,
-                        "is_hole":        [int(h) for h in path_is_hole],
-                        "competitor_idx": s,
-                    })
+                    continue
+                n_x = int(nx[0])
+                n_p = int(np_paths[0])
+                tmp_xy = _ffi.new("double[]", n_x * 2)
+                tmp_starts = _ffi.new("int[]", n_p)
+                tmp_holes = _ffi.new("int[]", n_p)
+                nx2 = _ffi.new("int *")
+                np2 = _ffi.new("int *")
+                is_empty2 = _ffi.new("int *")
+                err = new_err_buf()
+                _check(
+                    _lib.scs_winset_2d_export_boundary(
+                        sq_x, sq_y, vif_buf, n_voters, wcfg,
+                        int(winset_k), int(winset_num_samples),
+                        is_empty2, tmp_xy, n_x, tmp_starts, n_p, tmp_holes,
+                        nx2, np2, err, _WS_ERR,
+                    ),
+                    err,
+                )
+                xy_flat = np.frombuffer(
+                    _ffi.buffer(tmp_xy, int(nx2[0]) * 2 * 8), dtype=np.float64
+                )
+                path_starts = np.frombuffer(
+                    _ffi.buffer(tmp_starts, int(np2[0]) * 4), dtype=np.int32
+                )
+                path_is_hole = np.frombuffer(
+                    _ffi.buffer(tmp_holes, int(np2[0]) * 4), dtype=np.int32
+                )
+                n_paths = int(np2[0])
+                ends = list(path_starts[1:]) + [int(nx2[0])]
+                paths_list = []
+                for p_i in range(n_paths):
+                    s_idx = int(path_starts[p_i])
+                    e_idx = int(ends[p_i])
+                    paths_list.append(xy_flat[2 * s_idx : 2 * e_idx].tolist())
+                frame_ws.append({
+                    "paths":          paths_list,
+                    "is_hole":        [int(h) for h in path_is_hole],
+                    "competitor_idx": s,
+                })
             ws_data_payload.append(frame_ws)
             ws_indices_payload.append(frame_cidxs)
 
@@ -998,44 +1022,40 @@ def animate_competition_canvas(
         for frame_i, pos_mat in enumerate(positions):
             sites_xy = np.asarray(pos_mat, dtype=np.float64).ravel()
             n_sites = pos_mat.shape[0]
+            heap = _ffi.new("SCS_VoronoiCellsHeap *")
             err = new_err_buf()
-            out_total = _ffi.new("int *")
-            out_n_cells = _ffi.new("int *")
-            _check(
-                _lib.scs_voronoi_cells_2d_size(
-                    _ffi.cast("double *", _ffi.from_buffer(sites_xy)), n_sites,
-                    bbox[0], bbox[1], bbox[2], bbox[3],
-                    out_total, out_n_cells, err, _VORONOI_ERR_BUF,
-                ),
-                err,
+            rc = _lib.scs_voronoi_cells_2d_heap(
+                _ffi.cast("double *", _ffi.from_buffer(sites_xy)), n_sites,
+                bbox[0], bbox[1], bbox[2], bbox[3],
+                heap, err, _VORONOI_ERR_BUF,
             )
-            total_pairs = int(out_total[0])
-            n_cells = int(out_n_cells[0])
-            xy_buf = _ffi.new("double[]", 2 * total_pairs) if total_pairs > 0 else _ffi.new("double[]", 1)
-            cell_start_buf = _ffi.new("int[]", n_cells + 1)
-            out_xy_n = _ffi.new("int *")
-            err = new_err_buf()
-            _check(
-                _lib.scs_voronoi_cells_2d(
-                    _ffi.cast("double *", _ffi.from_buffer(sites_xy)), n_sites,
-                    bbox[0], bbox[1], bbox[2], bbox[3],
-                    xy_buf, total_pairs, out_xy_n, cell_start_buf, n_cells + 1,
-                    err, _VORONOI_ERR_BUF,
-                ),
-                err,
-            )
-            xy_flat = np.frombuffer(_ffi.buffer(xy_buf, int(out_xy_n[0]) * 2 * 8), dtype=np.float64)
-            cell_starts = np.frombuffer(_ffi.buffer(cell_start_buf, (n_cells + 1) * 4), dtype=np.int32)
-            frame_cells = []
-            for c in range(n_cells):
-                start = int(cell_starts[c])
-                end = int(cell_starts[c + 1])
-                if start >= end:
-                    frame_cells.append(None)
-                    continue
-                path_xy = xy_flat[2 * start : 2 * end].tolist()
-                frame_cells.append({"paths": [path_xy], "competitor_idx": c})
-            voronoi_cells_payload.append(frame_cells)
+            if rc != 0:
+                _lib.scs_voronoi_cells_heap_destroy(heap)
+                _check(rc, err)
+            try:
+                h = heap[0]
+                n_cells = h.cell_start_len - 1 if h.cell_start_len > 0 else 0
+                cell_starts = np.frombuffer(
+                    _ffi.buffer(h.cell_start, (n_cells + 1) * 4), dtype=np.int32
+                ).copy()
+                if h.n_xy_pairs > 0 and h.xy != _ffi.NULL:
+                    xy_flat = np.frombuffer(
+                        _ffi.buffer(h.xy, h.n_xy_pairs * 2 * 8), dtype=np.float64
+                    ).copy()
+                else:
+                    xy_flat = np.zeros(0, dtype=np.float64)
+                frame_cells = []
+                for c in range(n_cells):
+                    start = int(cell_starts[c])
+                    end = int(cell_starts[c + 1])
+                    if start >= end:
+                        frame_cells.append(None)
+                        continue
+                    path_xy = xy_flat[2 * start : 2 * end].tolist()
+                    frame_cells.append({"paths": [path_xy], "competitor_idx": c})
+                voronoi_cells_payload.append(frame_cells)
+            finally:
+                _lib.scs_voronoi_cells_heap_destroy(heap)
 
     # ── Seat-holder indices (unconditional, used by JS stats block) ────────────
     # 0-based competitor indices of seat holders per frame; minimal payload cost.

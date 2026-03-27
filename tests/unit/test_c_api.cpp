@@ -208,6 +208,42 @@ TEST(CApi_LevelSet1d, ErrorOnNullPointer) {
   EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
 }
 
+TEST(CApi_IcInterval1d, MatchesThreeCallPath) {
+  SCS_LossConfig lc = make_linear();
+  static double w1[1] = {1.0};
+  SCS_DistanceConfig dc{};
+  dc.distance_type = SCS_DIST_EUCLIDEAN;
+  dc.order_p = 2.0;
+  dc.salience_weights = w1;
+  dc.n_weights = 1;
+  double ideal = 2.0;
+  double ref = 5.0;
+  double pts_compound[2] = {0.0, 0.0};
+  int n_c = 0;
+  char err[256] = {};
+  ASSERT_EQ(
+      scs_ic_interval_1d(ideal, ref, &lc, &dc, pts_compound, &n_c, err, 256),
+      SCS_OK)
+      << err;
+
+  double dist = 0.0;
+  const double ia[1] = {ideal};
+  const double ra[1] = {ref};
+  ASSERT_EQ(scs_calculate_distance(ia, ra, 1, &dc, &dist, err, 256), SCS_OK)
+      << err;
+  double ul = 0.0;
+  ASSERT_EQ(scs_distance_to_utility(dist, &lc, &ul, err, 256), SCS_OK) << err;
+  double pts_seq[2] = {0.0, 0.0};
+  int n_s = 0;
+  ASSERT_EQ(scs_level_set_1d(ideal, w1[0], ul, &lc, pts_seq, &n_s, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(n_c, n_s);
+  for (int i = 0; i < n_c; ++i) {
+    EXPECT_NEAR(pts_compound[i], pts_seq[i], 1e-12) << "i=" << i;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Level set 2D tests
 // ---------------------------------------------------------------------------
@@ -1443,6 +1479,57 @@ TEST(CApi_Winset, BoundarySampleNullBufferSizeQuery) {
   scs_winset_destroy(ws);
 }
 
+TEST(CApi_Winset, ExportBoundaryMatchesHandlePath) {
+  char err[256] = {};
+  double voters[] = {0.0, 0.0, 2.0, 0.0, 1.0, 2.0};
+  double w[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(w, 2);
+  int is_empty = -1, nx = 0, np = 0;
+  ASSERT_EQ(scs_winset_2d_export_boundary(
+                1.0, 0.667, voters, 3, &dc, SCS_MAJORITY_SIMPLE,
+                SCS_DEFAULT_WINSET_SAMPLES, &is_empty, nullptr, 0, nullptr, 0,
+                nullptr, &nx, &np, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(is_empty, 0);
+  ASSERT_GT(nx, 0);
+  ASSERT_GT(np, 0);
+  std::vector<double> xy(static_cast<size_t>(2 * nx));
+  std::vector<int> starts(static_cast<size_t>(np));
+  std::vector<int> holes(static_cast<size_t>(np));
+  int nx2 = 0, np2 = 0;
+  ASSERT_EQ(scs_winset_2d_export_boundary(
+                1.0, 0.667, voters, 3, &dc, SCS_MAJORITY_SIMPLE,
+                SCS_DEFAULT_WINSET_SAMPLES, &is_empty, xy.data(), nx,
+                starts.data(), np, holes.data(), &nx2, &np2, err, 256),
+            SCS_OK)
+      << err;
+  SCS_Winset* ws =
+      scs_winset_2d(1.0, 0.667, voters, 3, &dc, SCS_MAJORITY_SIMPLE,
+                    SCS_DEFAULT_WINSET_SAMPLES, err, 256);
+  ASSERT_NE(ws, nullptr) << err;
+  int xy_pairs = 0, n_paths = 0;
+  ASSERT_EQ(scs_winset_boundary_size_2d(ws, &xy_pairs, &n_paths, err, 256),
+            SCS_OK)
+      << err;
+  std::vector<double> xy2(static_cast<size_t>(2 * xy_pairs));
+  std::vector<int> starts2(static_cast<size_t>(n_paths));
+  std::vector<int> holes2(static_cast<size_t>(n_paths));
+  int oxn = 0, onp = 0;
+  ASSERT_EQ(scs_winset_sample_boundary_2d(ws, xy2.data(), xy_pairs, &oxn,
+                                          starts2.data(), n_paths,
+                                          holes2.data(), &onp, err, 256),
+            SCS_OK)
+      << err;
+  scs_winset_destroy(ws);
+  EXPECT_EQ(nx2, oxn);
+  EXPECT_EQ(np2, onp);
+  for (int i = 0; i < oxn * 2; ++i) {
+    EXPECT_NEAR(xy[static_cast<size_t>(i)], xy2[static_cast<size_t>(i)], 1e-9)
+        << "i=" << i;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Voronoi cells 2D (C2.8)
 // ---------------------------------------------------------------------------
@@ -1478,6 +1565,34 @@ TEST(CApi_Voronoi2d, ExportTwoSites) {
   EXPECT_EQ(cell_start[2], out_xy_n);
   EXPECT_GT(cell_start[1] - cell_start[0], 0);
   EXPECT_GT(cell_start[2] - cell_start[1], 0);
+}
+
+TEST(CApi_Voronoi2d, HeapMatchesTwoStepExport) {
+  char err[256] = {};
+  double sites[] = {0.0, 0.0, 2.0, 0.0};
+  SCS_VoronoiCellsHeap heap{};
+  ASSERT_EQ(scs_voronoi_cells_2d_heap(sites, 2, -0.5, -0.5, 2.5, 0.5, &heap,
+                                      err, 256),
+            SCS_OK)
+      << err;
+  ASSERT_GT(heap.n_xy_pairs, 0);
+  EXPECT_EQ(heap.cell_start_len, 3);
+  std::vector<double> xy(static_cast<size_t>(2 * heap.n_xy_pairs));
+  std::vector<int> cs(static_cast<size_t>(heap.cell_start_len));
+  int out_xy_n = 0;
+  ASSERT_EQ(scs_voronoi_cells_2d(sites, 2, -0.5, -0.5, 2.5, 0.5, xy.data(),
+                                 heap.n_xy_pairs, &out_xy_n, cs.data(),
+                                 heap.cell_start_len, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(out_xy_n, heap.n_xy_pairs);
+  for (int i = 0; i < heap.n_xy_pairs * 2; ++i) {
+    EXPECT_NEAR(heap.xy[i], xy[static_cast<size_t>(i)], 1e-12) << "i=" << i;
+  }
+  for (int j = 0; j < heap.cell_start_len; ++j) {
+    EXPECT_EQ(heap.cell_start[j], cs[static_cast<size_t>(j)]) << "j=" << j;
+  }
+  scs_voronoi_cells_heap_destroy(&heap);
 }
 
 TEST(CApi_Voronoi2d, InvalidNSites) {
@@ -1888,6 +2003,37 @@ TEST(CApi_UncoveredSetBoundary, FillBuffer) {
                                          buf.data(), pairs, &out_n, err, 256);
   ASSERT_EQ(rc, SCS_OK) << err;
   EXPECT_EQ(out_n, pairs);
+}
+
+TEST(CApi_UncoveredSetBoundary, HeapMatchesFill) {
+  const double pi = 3.14159265358979323846;
+  double voters[10];
+  for (int i = 0; i < 5; ++i) {
+    voters[2 * i] = std::cos(2.0 * pi * i / 5.0);
+    voters[2 * i + 1] = std::sin(2.0 * pi * i / 5.0);
+  }
+  SCS_DistanceConfig dc = make_euc2d();
+  char err[256] = {};
+  double* heap_xy = nullptr;
+  int n_pairs = 0;
+  ASSERT_EQ(
+      scs_uncovered_set_boundary_2d_heap(voters, 5, &dc, 5, SCS_MAJORITY_SIMPLE,
+                                         &heap_xy, &n_pairs, err, 256),
+      SCS_OK)
+      << err;
+  ASSERT_GT(n_pairs, 0);
+  std::vector<double> buf(static_cast<size_t>(n_pairs * 2));
+  int out_n = -1;
+  ASSERT_EQ(
+      scs_uncovered_set_boundary_2d(voters, 5, &dc, 5, SCS_MAJORITY_SIMPLE,
+                                    buf.data(), n_pairs, &out_n, err, 256),
+      SCS_OK)
+      << err;
+  EXPECT_EQ(out_n, n_pairs);
+  for (int i = 0; i < n_pairs * 2; ++i) {
+    EXPECT_NEAR(heap_xy[i], buf[static_cast<size_t>(i)], 1e-12) << "i=" << i;
+  }
+  scs_heap_free(heap_xy);
 }
 
 // ==========================================================================

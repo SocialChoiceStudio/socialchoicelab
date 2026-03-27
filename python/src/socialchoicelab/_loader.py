@@ -248,6 +248,12 @@ _DECLARATIONS = """
                          const SCS_LossConfig* loss_cfg, double* out_points,
                          int* out_n, char* err_buf, int err_buf_len);
 
+    int scs_ic_interval_1d(double ideal, double reference_x,
+                         const SCS_LossConfig* loss_cfg,
+                         const SCS_DistanceConfig* dist_cfg,
+                         double* out_points, int* out_n,
+                         char* err_buf, int err_buf_len);
+
     int scs_level_set_2d(double ideal_x, double ideal_y,
                          double utility_level,
                          const SCS_LossConfig* loss_cfg,
@@ -343,6 +349,15 @@ _DECLARATIONS = """
                                       int* out_n, char* err_buf,
                                       int err_buf_len);
 
+    int scs_uncovered_set_boundary_2d_heap(
+        const double* voter_ideals_xy, int n_voters,
+        const SCS_DistanceConfig* dist_cfg,
+        int grid_resolution, int k,
+        double** out_xy, int* out_n_pairs,
+        char* err_buf, int err_buf_len);
+
+    void scs_heap_free(void* ptr);
+
     /* ---------------------------------------------------------------------------
      * StreamManager lifecycle and PRNG draws
      * ------------------------------------------------------------------------- */
@@ -432,6 +447,15 @@ _DECLARATIONS = """
         int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
         int* out_n_paths, char* err_buf, int err_buf_len);
 
+    int scs_winset_2d_export_boundary(
+        double status_quo_x, double status_quo_y,
+        const double* voter_ideals_xy, int n_voters,
+        const SCS_DistanceConfig* dist_cfg, int k, int num_samples,
+        int* out_is_empty, double* out_xy, int out_xy_capacity_pairs,
+        int* out_path_starts, int out_path_capacity, int* out_path_is_hole,
+        int* out_xy_n_pairs, int* out_n_paths,
+        char* err_buf, int err_buf_len);
+
     SCS_Winset* scs_winset_union(const SCS_Winset* a, const SCS_Winset* b,
                                  char* err_buf, int err_buf_len);
 
@@ -471,6 +495,22 @@ _DECLARATIONS = """
                             double* out_xy, int out_xy_capacity, int* out_xy_n,
                             int* out_cell_start, int out_cell_start_capacity,
                             char* err_buf, int err_buf_len);
+
+    typedef struct SCS_VoronoiCellsHeap {
+        double* xy;
+        int n_xy_pairs;
+        int* cell_start;
+        int cell_start_len;
+    } SCS_VoronoiCellsHeap;
+
+    int scs_voronoi_cells_2d_heap(
+        const double* sites_xy, int n_sites,
+        double bbox_min_x, double bbox_min_y,
+        double bbox_max_x, double bbox_max_y,
+        SCS_VoronoiCellsHeap* out,
+        char* err_buf, int err_buf_len);
+
+    void scs_voronoi_cells_heap_destroy(SCS_VoronoiCellsHeap* h);
 
     /* ---------------------------------------------------------------------------
      * Profile factory functions

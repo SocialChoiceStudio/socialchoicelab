@@ -84,6 +84,22 @@ SEXP r_scs_level_set_1d(SEXP ideal, SEXP weight, SEXP utility_level,
     return result;
 }
 
+/* r_scs_ic_interval_1d — compound 1D IC: distance → utility → level_set_1d. */
+SEXP r_scs_ic_interval_1d(SEXP ideal, SEXP ref_x, SEXP loss_cfg, SEXP dist_cfg) {
+    SCS_LossConfig lc = build_loss_config(loss_cfg);
+    SCS_DistanceConfig dc = build_dist_config(dist_cfg);
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    double pts[2];
+    int n = 0;
+    scs_check(scs_ic_interval_1d(asReal(ideal), asReal(ref_x), &lc, &dc, pts,
+                                &n, err, SCS_ERR_BUF_SIZE),
+              err);
+    SEXP result = PROTECT(allocVector(REALSXP, n));
+    for (int i = 0; i < n; i++) REAL(result)[i] = pts[i];
+    UNPROTECT(1);
+    return result;
+}
+
 static const char *level_set_type_name(SCS_LevelSetType t) {
     switch (t) {
     case SCS_LEVEL_SET_CIRCLE:      return "circle";

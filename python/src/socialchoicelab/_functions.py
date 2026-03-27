@@ -24,6 +24,7 @@ __all__ = [
     "distance_to_utility",
     "normalize_utility",
     "level_set_1d",
+    "ic_interval_1d",
     "level_set_2d",
     "level_set_to_polygon",
     "ic_polygon_2d",
@@ -199,6 +200,42 @@ def level_set_1d(
     _check(
         _lib.scs_level_set_1d(
             float(ideal), float(weight), float(utility_level), cfg, out_pts, out_n, err, _ERR
+        ),
+        err,
+    )
+    n = int(out_n[0])
+    return np.array([float(out_pts[i]) for i in range(n)], dtype=np.float64)
+
+
+def ic_interval_1d(
+    ideal: float,
+    reference_x: float,
+    loss_config: LossConfig | None = None,
+    dist_config: DistanceConfig | None = None,
+) -> np.ndarray:
+    """1D indifference interval: one C call (distance → utility → level_set_1d).
+
+    ``dist_config`` must be one-dimensional (``n_weights == 1``).
+    """
+    if loss_config is None:
+        loss_config = LossConfig()
+    if dist_config is None:
+        dist_config = DistanceConfig(salience_weights=[1.0])
+    lcfg = _to_cffi_loss(loss_config)
+    dcfg, _ka = _to_cffi_dist(dist_config, n_dims=1)
+    out_pts = _ffi.new("double[2]")
+    out_n = _ffi.new("int *")
+    err = new_err_buf()
+    _check(
+        _lib.scs_ic_interval_1d(
+            float(ideal),
+            float(reference_x),
+            lcfg,
+            dcfg,
+            out_pts,
+            out_n,
+            err,
+            _ERR,
         ),
         err,
     )

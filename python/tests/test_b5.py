@@ -133,6 +133,18 @@ def test_ic_polygon_2d_matches_four_call_path():
     np.testing.assert_allclose(poly1, poly4, rtol=0, atol=1e-12)
 
 
+def test_ic_interval_1d_matches_three_call_path():
+    """Compound 1D IC matches calculate_distance → distance_to_utility → level_set_1d."""
+    lc = scl.make_loss_config(loss_type="linear", sensitivity=1.0)
+    dc = scl.make_dist_config(salience_weights=[1.0])
+    ideal, ref = 0.5, 1.2
+    p1 = scl.ic_interval_1d(ideal, ref, lc, dc)
+    d = scl.calculate_distance([ideal], [ref], dc)
+    ul = scl.distance_to_utility(d, lc)
+    p3 = scl.level_set_1d(ideal, weight=1.0, utility_level=ul, loss_config=lc)
+    np.testing.assert_allclose(p1, p3, rtol=0, atol=1e-12)
+
+
 # ---------------------------------------------------------------------------
 # B5 — convex hull
 # ---------------------------------------------------------------------------

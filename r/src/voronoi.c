@@ -34,19 +34,17 @@ SEXP r_scs_voronoi_cells_2d(SEXP sites_xy, SEXP n_sites, SEXP bbox) {
     double bbox_max_y = REAL(bbox)[3];
 
     char err[SCS_ERR_BUF_SIZE] = {0};
-    int total_pairs = 0, n_cells = 0;
-    int rc = scs_voronoi_cells_2d_size(xy, n, bbox_min_x, bbox_min_y,
-                                       bbox_max_x, bbox_max_y,
-                                       &total_pairs, &n_cells, err, SCS_ERR_BUF_SIZE);
-    scs_check(rc, err);
+    SCS_VoronoiCellsHeap heap = {0};
+    int rc = scs_voronoi_cells_2d_heap(xy, n, bbox_min_x, bbox_min_y, bbox_max_x,
+                                       bbox_max_y, &heap, err, SCS_ERR_BUF_SIZE);
+    if (rc != SCS_OK) {
+        scs_voronoi_cells_heap_destroy(&heap);
+        scs_check(rc, err);
+    }
 
-    double *out_xy = (double *)R_alloc((size_t)(total_pairs > 0 ? total_pairs * 2 : 1), sizeof(double));
-    int *cell_start = (int *)R_alloc((size_t)(n_cells + 1), sizeof(int));
-    int out_xy_n = 0;
-    rc = scs_voronoi_cells_2d(xy, n, bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y,
-                             out_xy, total_pairs, &out_xy_n, cell_start, n_cells + 1,
-                             err, SCS_ERR_BUF_SIZE);
-    scs_check(rc, err);
+    int n_cells = heap.cell_start_len > 0 ? heap.cell_start_len - 1 : 0;
+    double *out_xy = heap.xy;
+    int *cell_start = heap.cell_start;
 
     SEXP result = PROTECT(Rf_allocVector(VECSXP, n_cells));
     for (int i = 0; i < n_cells; i++) {
@@ -77,6 +75,7 @@ SEXP r_scs_voronoi_cells_2d(SEXP sites_xy, SEXP n_sites, SEXP bbox) {
         /* path_xy, paths_list, cell_list, names — all now reachable via result */
         UNPROTECT(4);
     }
+    scs_voronoi_cells_heap_destroy(&heap);
     UNPROTECT(1);
     return result;
 }

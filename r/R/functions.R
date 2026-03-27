@@ -116,6 +116,30 @@ level_set_1d <- function(ideal, weight = 1.0, utility_level,
       PACKAGE = "socialchoicelab")
 }
 
+#' Compute the 1D IC interval in a single call
+#'
+#' Compound convenience function equivalent to calling
+#' \code{\link{calculate_distance}}, \code{\link{distance_to_utility}}, and
+#' \code{\link{level_set_1d}} in sequence, but without intermediate round-trips
+#' across the C API boundary. The distance configuration must be 1D
+#' (\code{n_weights == 1}).
+#'
+#' @param ideal Voter ideal coordinate (scalar).
+#' @param reference_x Reference coordinate (status quo or seat).
+#' @param loss_config Loss configuration from \code{\link{make_loss_config}}.
+#' @param dist_config Distance configuration from \code{\link{make_dist_config}}
+#'   with \code{n_dims = 1L}.
+#' @return Numeric vector of length 0, 1, or 2 (indifference points).
+#' @export
+ic_interval_1d <- function(ideal, reference_x,
+                             loss_config = make_loss_config(),
+                             dist_config = make_dist_config(n_dims = 1L)) {
+  .Call("r_scs_ic_interval_1d",
+        as.double(ideal), as.double(reference_x),
+        loss_config, dist_config,
+        PACKAGE = "socialchoicelab")
+}
+
 #' Compute the exact 2D level set (indifference curve)
 #'
 #' Returns a named list describing the exact shape of the indifference curve

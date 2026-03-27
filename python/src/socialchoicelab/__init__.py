@@ -50,6 +50,7 @@ from socialchoicelab._functions import (  # noqa: F401
     distance_to_utility,
     normalize_utility,
     level_set_1d,
+    ic_interval_1d,
     level_set_2d,
     level_set_to_polygon,
     ic_polygon_2d,

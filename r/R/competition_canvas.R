@@ -127,13 +127,6 @@ NULL
     ic_num_samples <- as.integer(ic_num_samples)
     if (ic_num_samples < 3L) stop("ic_num_samples must be >= 3, got ", ic_num_samples, ".")
 
-    # Extract salience weight for level_set_1d (R dist config uses $weights)
-    w1d <- if (!is.null(ic_dist_config$weights) && length(ic_dist_config$weights) >= 1L) {
-      as.double(ic_dist_config$weights[1L])
-    } else {
-      1.0
-    }
-
     n_frames <- n_rounds + 1L
     seat_idxs_per_frame <- vector("list", n_frames)
     for (r in seq_len(n_rounds)) {
@@ -159,9 +152,10 @@ NULL
         voter_curves <- vector("list", n_voters)
         for (v in seq_len(n_voters)) {
           voter_x_v <- voters_x[v]
-          dist_val   <- calculate_distance(voter_x_v, seat_x, ic_dist_config)
-          util_level <- distance_to_utility(dist_val, ic_loss_config)
-          pts        <- level_set_1d(voter_x_v, w1d, util_level, ic_loss_config)
+          pts <- .Call("r_scs_ic_interval_1d",
+                       as.double(voter_x_v), as.double(seat_x),
+                       ic_loss_config, ic_dist_config,
+                       PACKAGE = "socialchoicelab")
           voter_curves[[v]] <- as.list(unname(pts))
         }
         frame_curves[[s_i]] <- voter_curves
@@ -549,28 +543,22 @@ animate_competition_canvas <- function(trace,
         s        <- unname(seat_idxs[s_i])
         seat_pos <- unname(pos_mat[s, ])
         frame_cidxs[s_i] <- s - 1L
-        ws <- winset_2d(
-          seat_pos, voter_ideals_flat,
-          dist_config = winset_dist_config,
-          k           = winset_k,
-          n_samples   = winset_num_samples
-        )
-        if (ws$is_empty()) {
+        bnd_wrap <- .Call("r_scs_winset_2d_export_boundary",
+                          as.double(seat_pos[1L]), as.double(seat_pos[2L]),
+                          voter_ideals_flat,
+                          .resolve_k(winset_k),
+                          as.integer(winset_num_samples),
+                          winset_dist_config,
+                          PACKAGE = "socialchoicelab")
+        if (isTRUE(bnd_wrap$empty)) {
           frame_ws[[s_i]] <- NULL
         } else {
-          bnd     <- ws$boundary()
-          xy      <- bnd$xy
-          starts  <- bnd$path_starts
-          is_hole <- bnd$is_hole
-          n_paths <- length(starts)
-          ends    <- c(starts[-1L] - 1L, nrow(xy))
-          paths_list <- lapply(seq_len(n_paths), function(p_i) {
-            rows <- starts[p_i]:ends[p_i]
-            as.list(as.vector(t(xy[rows, ])))
-          })
+          # Each path is a flat numeric vector from C; expand to a list of
+          # scalars to match the prior winset_2d()$boundary() JSON shape.
+          paths_json <- lapply(bnd_wrap$paths, function(p) as.list(unname(p)))
           frame_ws[[s_i]] <- list(
-            paths         = paths_list,
-            is_hole       = as.list(as.integer(is_hole)),
+            paths          = paths_json,
+            is_hole        = as.list(bnd_wrap$is_hole),
             competitor_idx = frame_cidxs[s_i]
           )
         }

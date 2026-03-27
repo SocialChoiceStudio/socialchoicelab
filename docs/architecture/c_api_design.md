@@ -259,7 +259,10 @@ destroy function is a no-op and is safe.
 **SCS_Winset\*** (C2): Created by `scs_winset_2d`, `scs_weighted_winset_2d`,
 `scs_winset_with_veto_2d`, or `scs_winset_clone`. The boundary is exported via
 `scs_winset_boundary_size_2d` (size query) and `scs_winset_sample_boundary_2d`
-(fill). The sampled boundary is an **approximation**; path count and vertex
+(fill). Bindings that only need a one-shot boundary export may use
+`scs_winset_2d_export_boundary` instead: it constructs the winset internally,
+returns `*out_is_empty`, and uses the same size-then-fill pattern as
+`scs_winset_sample_boundary_2d` without exposing an `SCS_Winset*`. The sampled boundary is an **approximation**; path count and vertex
 count depend on the internal representation. Use `out_path_starts` and
 `out_path_is_hole` to split the flat vertex array into rings and to distinguish
 outer boundaries from holes. For an empty winset, `scs_winset_bbox_2d` sets
@@ -340,6 +343,18 @@ int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
     char* err_buf, int err_buf_len);
 ```
 
+**Single-pass heap export:** `scs_voronoi_cells_2d_heap` runs one internal
+Voronoi computation and writes into heap-allocated buffers. The caller must
+call `scs_voronoi_cells_heap_destroy` when finished. This avoids a separate
+`scs_voronoi_cells_2d_size` pass when the goal is to export all cells once.
+
+**Uncovered-set boundary:** `scs_uncovered_set_boundary_2d_heap` similarly
+performs one internal geometry pass and sets `*out_xy` to a buffer allocated
+with `malloc` (or `NULL` if `*out_n_pairs == 0`). Free with `scs_heap_free`.
+`scs_uncovered_set_boundary_size_2d` remains as a thin delegate over
+`scs_uncovered_set_boundary_2d` with no fill buffer for callers that still use
+the two-call size/fill pattern.
+
 ### SCS_TieBreak and randomness (C5, C6, C7)
 
 Voting rules that break ties (`*_one_winner`, `*_ranking`, `scs_rank_by_scores`,
@@ -400,6 +415,11 @@ int scs_level_set_1d(double ideal, double weight, double utility_level,
     int* out_n,           // 0, 1, or 2
     char* err_buf, int err_buf_len);
 
+int scs_ic_interval_1d(double ideal, double reference_x,
+    const SCS_LossConfig* loss_cfg, const SCS_DistanceConfig* dist_cfg,
+    double* out_points, int* out_n,
+    char* err_buf, int err_buf_len);
+
 int scs_level_set_2d(double ideal_x, double ideal_y, double utility_level,
     const SCS_LossConfig* loss_cfg, const SCS_DistanceConfig* dist_cfg,
     SCS_LevelSet2d* out, char* err_buf, int err_buf_len);
@@ -414,6 +434,10 @@ int scs_ic_polygon_2d(double ideal_x, double ideal_y, double sq_x, double sq_y,
     int num_samples, double* out_xy, int out_capacity, int* out_n,
     char* err_buf, int err_buf_len);
 ```
+
+`scs_ic_interval_1d`: compound 1D IC — runs `scs_calculate_distance`,
+`scs_distance_to_utility`, and `scs_level_set_1d` internally (same numerics as
+the three-call sequence). Requires `dist_cfg->n_weights == 1`.
 
 `scs_ic_polygon_2d`: compound call that runs `scs_calculate_distance`,
 `scs_distance_to_utility`, `scs_level_set_2d`, and `scs_level_set_to_polygon`
@@ -560,7 +584,7 @@ scs_profile_destroy(p);
 
 | Context | Rule |
 |---------|------|
-| **Stateless functions** | All pure-computation functions (`scs_calculate_distance`, `scs_distance_to_utility`, `scs_normalize_utility`, `scs_level_set_1d`, `scs_level_set_2d`, `scs_level_set_to_polygon`, `scs_ic_polygon_2d`, `scs_convex_hull_2d`, and all geometry functions added in Phase C1–C4) are **thread-safe** — they take no global mutable state. Callers may invoke them concurrently from multiple threads without synchronisation. |
+| **Stateless functions** | All pure-computation functions (`scs_calculate_distance`, `scs_distance_to_utility`, `scs_normalize_utility`, `scs_level_set_1d`, `scs_ic_interval_1d`, `scs_level_set_2d`, `scs_level_set_to_polygon`, `scs_ic_polygon_2d`, `scs_convex_hull_2d`, and all geometry functions added in Phase C1–C4) are **thread-safe** — they take no global mutable state. Callers may invoke them concurrently from multiple threads without synchronisation. |
 | **SCS_StreamManager** | A `SCS_StreamManager` handle is **not thread-safe**. Concurrent calls on the same handle produce undefined behaviour. The caller is responsible for serialising access (e.g. one manager per thread, or an external mutex). |
 | **scs_api_version** | Thread-safe — reads compile-time constants only. |
 | **Error buffers** | `err_buf` is caller-owned per-call storage. Concurrent calls with distinct buffers are safe. Never share an `err_buf` between concurrent calls. |

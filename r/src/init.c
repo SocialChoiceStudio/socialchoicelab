@@ -28,6 +28,7 @@ extern SEXP r_scs_uniform_real(SEXP, SEXP, SEXP, SEXP);
 
 extern SEXP r_scs_weighted_winset_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_winset_2d(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP r_scs_winset_2d_export_boundary(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_winset_bbox_2d(SEXP);
 extern SEXP r_scs_winset_boundary_2d(SEXP);
 extern SEXP r_scs_winset_clone(SEXP);
@@ -89,6 +90,7 @@ extern SEXP r_scs_api_version(SEXP);
 extern SEXP r_scs_calculate_distance(SEXP, SEXP, SEXP);
 extern SEXP r_scs_convex_hull_2d(SEXP);
 extern SEXP r_scs_distance_to_utility(SEXP, SEXP);
+extern SEXP r_scs_ic_interval_1d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_level_set_1d(SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_level_set_2d(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP r_scs_level_set_to_polygon(SEXP, SEXP);
@@ -162,6 +164,7 @@ static const R_CallMethodDef call_methods[] = {
     /* --- B2: Winset --- */
     {"r_scs_weighted_winset_2d",          (DL_FUNC)&r_scs_weighted_winset_2d,          7},
     {"r_scs_winset_2d",                   (DL_FUNC)&r_scs_winset_2d,                   6},
+    {"r_scs_winset_2d_export_boundary",   (DL_FUNC)&r_scs_winset_2d_export_boundary,   6},
     {"r_scs_winset_bbox_2d",              (DL_FUNC)&r_scs_winset_bbox_2d,              1},
     {"r_scs_winset_boundary_2d",          (DL_FUNC)&r_scs_winset_boundary_2d,          1},
     {"r_scs_winset_clone",                (DL_FUNC)&r_scs_winset_clone,                1},
@@ -224,6 +227,7 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_calculate_distance",             (DL_FUNC)&r_scs_calculate_distance,             3},
     {"r_scs_convex_hull_2d",                 (DL_FUNC)&r_scs_convex_hull_2d,                 1},
     {"r_scs_distance_to_utility",            (DL_FUNC)&r_scs_distance_to_utility,            2},
+    {"r_scs_ic_interval_1d",                 (DL_FUNC)&r_scs_ic_interval_1d,                 4},
     {"r_scs_level_set_1d",                   (DL_FUNC)&r_scs_level_set_1d,                   4},
     {"r_scs_level_set_2d",                   (DL_FUNC)&r_scs_level_set_2d,                   5},
     {"r_scs_level_set_to_polygon",           (DL_FUNC)&r_scs_level_set_to_polygon,           2},
