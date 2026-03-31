@@ -1,6 +1,6 @@
-# canvas_load_demo.R — Reload pre-computed competition canvases from .scscanvas files.
+# canvas_load_demo.R — Reload pre-computed competition canvases from .scsview files.
 #
-# Companion to canvas_save_demo.R. Reads the .scscanvas files saved by that
+# Companion to canvas_save_demo.R. Reads the .scsview files saved by that
 # script (written to the project root) and displays the canvases without
 # recomputing any geometry (ICs, WinSet, Cutlines, etc.).
 #
@@ -16,9 +16,9 @@ library(socialchoicelab)
 library(htmlwidgets)
 
 # Paths match those written by canvas_save_demo.R (tmp/ in project root).
-PATH_1D    <- "tmp/canvas_1d_demo.scscanvas"
-PATH_2D    <- "tmp/canvas_2d_demo.scscanvas"
-PATH_3CAND <- "tmp/canvas_3cand_2d_demo.scscanvas"
+PATH_1D    <- "tmp/canvas_1d_demo.scsview"
+PATH_2D    <- "tmp/canvas_2d_demo.scsview"
+PATH_3CAND <- "tmp/canvas_3cand_2d_demo.scsview"
 
 # ===========================================================================
 # Load and display the 1D canvas

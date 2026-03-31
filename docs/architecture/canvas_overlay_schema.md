@@ -100,12 +100,13 @@ describe geometry that depends on candidate positions at that frame.
 "overlays_frames": [
   // frame 0
   {
-    "indifference_boundaries": [
-      // one entry per candidate pair (i, j), i < j
+    "indifference_curves": [
+      // one entry per displayed candidate / seat holder
       {
-        "i": 0, "j": 1,
-        "segments": [[x0,y0, x1,y1], ...]   // one or more line segments
-                                              // clipped to xlim/ylim
+        "candidate": 0,
+        "curves": [
+          { "ring": [[x,y], ...] }          // one closed curve per voter
+        ]
       }
     ],
     "candidate_regions": [
@@ -131,8 +132,8 @@ describe geometry that depends on candidate positions at that frame.
 
 | Key | Description | C++ function (to be built or exists) |
 |-----|-------------|--------------------------------------|
-| `indifference_boundaries` | Equidistant boundary between each candidate pair under the actual `DistanceConfig`. Line(s) per pair. | Not yet built |
-| `candidate_regions` | Nearest-candidate partition (generalised Voronoi). **Euclidean** case implemented and passed as `voronoi_cells` when `compute_voronoi` is true; one polygon per competitor per frame. Non-Euclidean generalisation planned. | Euclidean: `scs_voronoi_cells_2d` |
+| `indifference_curves` | One voter-level indifference curve per voter through the current seat holder / candidate position. This is the shipped IC overlay used by the competition canvas today. | Exists via `ic_polygon_2d` pipeline |
+| `candidate_regions` | Nearest-candidate partition (generalised Voronoi). **Euclidean** case implemented and passed historically as `voronoi_cells`; one polygon per competitor per frame. Non-Euclidean generalisation planned. These regions may be rendered as filled regions or as boundary-only "Cutlines". | Euclidean: `scs_voronoi_cells_2d` |
 | `winsets` | Set of points that would defeat the candidate's current position by majority rule. | Exists: `scs_winset_2d` |
 
 ---
@@ -171,7 +172,7 @@ The `animate_competition_canvas` function validates the overlay objects,
 serialises them to the `overlays_static` / `overlays_frames` JSON fields, and
 includes them in the payload. The JS player renders whichever keys are present.
 
-Per-frame overlays (winsets, indifference boundaries, candidate regions) are
+Per-frame overlays (ICs, winsets, candidate regions) are
 expensive to compute and large in the payload, so they are opt-in.
 
 ---
@@ -192,8 +193,8 @@ rendering any key that is absent from the payload or whose toggle is off.
 | `heart` | Checkbox | On / Off | Off |
 | `uncovered_set` | Checkbox | On / Off | Off |
 | `core` | Checkbox | On / Off | Off |
-| `indifference_boundaries` | Dropdown | None / Winner(s) / All | None |
-| `candidate_regions` / `voronoi_cells` | Checkbox "Voronoi" | On / Off | Off — shown when payload includes `voronoi_cells` (Euclidean candidate regions; requires `compute_voronoi` at bindings layer). |
+| `indifference_curves` | Checkbox / toggle | On / Off | Off |
+| `candidate_regions` / `voronoi_cells` | Checkbox "Voronoi" or "Cutlines" | On / Off | Off — shown when payload includes candidate-region geometry. In the current player the Euclidean implementation is still labelled "Cutlines". |
 | `winsets` | Dropdown | None / Winner(s) | None |
 
 Toggles for overlays that are absent from the payload are hidden (not greyed
@@ -212,7 +213,7 @@ must guard against this and raise an informative error.
 |---------|-------------|----------------|-------|
 | Centroid | Yes | — | Pure mean; metric-independent |
 | Marginal Median | Yes | — | Per-dimension median; metric-independent |
-| Indifference Boundaries | Yes | — | `level_set_2d` handles all Minkowski metrics with salience weights |
+| Indifference Curves | Yes | — | `level_set_2d` / `ic_polygon_2d` handle all supported Minkowski metrics with salience weights |
 | Winset | Yes | — | Uses sampled ICs via `DistanceConfig`; passes metric through |
 | Convex Hull | Yes | — | The convex hull shape is always valid. It equals the Pareto Set only under Euclidean distance with uniform salience — under other metrics it is an outer bound, not the Pareto Set |
 | Pareto Set | Not yet built | — | The Pareto Set is a metric-independent concept. A correct general implementation does not yet exist. Until it does, the convex hull is used as a Euclidean-only proxy and must not be labelled "Pareto Set" when a non-Euclidean `DistanceConfig` is active |
@@ -238,9 +239,8 @@ are not valid for the active metric, with a clear warning to the user.
    but fixed).
 4. **Per-frame: winsets (winner(s) only)** — C++ already exists; wire up to
    the per-frame payload slot with seat-holder filtering.
-5. **Per-frame: indifference boundaries (none / winner(s) / all)** — C++
-   `level_set_2d` already handles all metrics; needs R/Python per-frame
-   serialisation.
+5. **Per-frame: indifference curves** — current shipped overlay; keep as a
+   canonical per-frame geometry in `overlays_frames`.
 6. **Per-frame: candidate regions** — requires new C++ function for
    general-metric nearest-candidate partition (non-Euclidean deferred to
    roadmap).

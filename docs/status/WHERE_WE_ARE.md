@@ -1,15 +1,14 @@
 # Where We Are
 
-**Single source for "what's next" so any agent on any machine can answer correctly.**
+**Current snapshot** — tags, phase, and blockers. **The ordered plan of what to do next lives in [ROADMAP.md](ROADMAP.md)**; this file should not duplicate that list (link instead).
 
 - **Current phase:** `v0.3.0` is tagged. Layer 7 candidate competition is complete. Additional static-plot improvements have landed on `main` after the tag (non-Euclidean overlays, canvas-aligned centrality markers, SQ legend-only). See [CHANGELOG.md](../../CHANGELOG.md) `[Unreleased]` and [ROADMAP.md](ROADMAP.md) § Post-`v0.3.0`.
-- **Next:** Begin **Characteristics of Voting Rules** (working title), the next major feature track toward `1.0.0`. Optionally cut a patch/minor release (`0.3.1` or similar) to publish the post-tag visualization changes.
+- **Next:** Only [ROADMAP.md](ROADMAP.md) holds priorities and ordering (near-term, long-term, post-tag visualization). This file does not restate that plan.
 - **Release context:** `v0.2.0` and `v0.3.0` are tagged. Authoritative Layer 7 plan: [competition_plan.md](competition_plan.md).
-- **After the next release line:** Iterate to `1.0.0` once all major components — including Characteristics of Voting Rules — are in place.
-- **Ad-hoc follow-ups:** Use [follow_up_queue.md](follow_up_queue.md) for items you explicitly want remembered across sessions (so they are not lost in chat).
+- **Ad-hoc follow-ups:** Optional scratch: [follow_up_queue.md](follow_up_queue.md). Promote items into [ROADMAP.md](ROADMAP.md) when they become real work.
 - **Last updated:** 2026-03-11
 
-**Authority:** This file and `docs/status/ROADMAP.md` are the source for "what's next." Use `follow_up_queue.md` only as a durable scratchpad / pointer list. Completed short-term plans live in `docs/status/archive/` for reference. Milestone definitions: [MILESTONE_GATES.md](MILESTONE_GATES.md).
+**How this fits:** [docs/README.md](../README.md) explains which file answers which question. **Priorities and sequencing:** [ROADMAP.md](ROADMAP.md). **This file:** today’s facts. **Scratch:** [follow_up_queue.md](follow_up_queue.md). **Milestone criteria:** [MILESTONE_GATES.md](MILESTONE_GATES.md). **Old plans:** [archive/](archive/).
 
 ---
 

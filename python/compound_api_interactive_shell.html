@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compound C API — interactive</title>
+  <style>
+    :root { --bg: #0f1419; --panel: #1a2332; --text: #e7ecf3; --accent: #5eb8ff; --muted: #8b98a8; }
+    * { box-sizing: border-box; }
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 1rem 1.25rem 2rem; line-height: 1.45; }
+    h1 { font-weight: 600; font-size: 1.35rem; margin-bottom: 0.35rem; }
+    .sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.25rem; }
+    nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+    nav button {
+      background: var(--panel); color: var(--accent); border: 1px solid #2a3a50; padding: 0.45rem 0.85rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    }
+    nav button:hover { background: #243044; }
+    nav button.active { border-color: var(--accent); background: #1e2d42; }
+    section { display: none; background: var(--panel); border-radius: 10px; padding: 1rem 1.1rem 1.25rem; margin-bottom: 1rem; border: 1px solid #2a3a50; }
+    section.visible { display: block; }
+    section h2 { font-size: 1.05rem; margin: 0 0 0.5rem; font-weight: 600; }
+    section p.hint { color: var(--muted); font-size: 0.82rem; margin: 0 0 0.75rem; }
+    .row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    label { font-size: 0.82rem; color: var(--muted); }
+    input[type="range"] { width: min(420px, 85vw); accent-color: var(--accent); }
+    .val { font-variant-numeric: tabular-nums; color: var(--accent); min-width: 4.5rem; }
+    canvas { display: block; max-width: 100%; height: auto; border-radius: 6px; background: #0d1117; border: 1px solid #2a3a50; }
+    .diag { margin-top: 1.75rem; padding: 1rem 1.1rem; border-radius: 10px; border: 1px solid #2a3a50; background: #121a24; }
+    .diag.pass { border-color: #238636; }
+    .diag.fail { border-color: #da3633; }
+    .diag h2 { font-size: 0.98rem; margin: 0 0 0.4rem; font-weight: 600; }
+    .diag .checks { font-family: ui-monospace, Menlo, monospace; font-size: 0.76rem; white-space: pre-wrap; color: #c9d1d9; line-height: 1.45; margin: 0.5rem 0 0; }
+    .diag .subdiag { margin-top: 0.85rem; }
+    .diag .subdiag h3 { font-size: 0.82rem; margin: 0 0 0.35rem; color: var(--accent); font-weight: 600; }
+    .diag ul { margin: 0.25rem 0 0 1.1rem; padding: 0; color: var(--muted); font-size: 0.8rem; }
+    .diag li { margin-bottom: 0.3rem; }
+    .diag .ok { color: #7ee787; }
+    .diag .bad { color: #ff7b72; }
+  </style>
+</head>
+<body>
+  <h1>Compound C API — interactive demos</h1>
+  <p class="sub">Frames precomputed with <strong>socialchoicelab</strong> (<em>__SOURCE_TAG__</em>). Drag sliders to scrub. Geometry comes from
+    <code>ic_interval_1d</code>, <code>scs_winset_2d_export_boundary</code>,
+    <code>uncovered_set_boundary_2d</code> (Python uses heap export; R uses the standard .Call path),
+    and <code>scs_voronoi_cells_2d_heap</code> (R: same via <code>r_scs_voronoi_cells_2d</code>).</p>
+  <nav id="nav"></nav>
+
+  <section id="sec-ic" class="visible">
+    <h2>1 · <code>ic_interval_1d</code></h2>
+    <p class="hint">Compound 1D indifference interval (distance → utility → level set in one C call). Voter ideal fixed at 0; move the reference (e.g. seat).</p>
+    <div class="row"><label>Reference <span class="val" id="ic-lbl"></span></label></div>
+    <div class="row"><input type="range" id="ic-sl" min="0" max="0" value="0"></div>
+    <canvas id="cv-ic" width="720" height="220"></canvas>
+  </section>
+
+  <section id="sec-winset">
+    <h2>2 · <code>scs_winset_2d_export_boundary</code></h2>
+    <p class="hint">Winset boundary sampled without creating a <code>Winset</code> handle. Status quo orbits the voter triangle; filled region uses even-odd rule for holes.</p>
+    <div class="row"><label>Angle (orbit) <span class="val" id="ws-lbl"></span></label></div>
+    <div class="row"><input type="range" id="ws-sl" min="0" max="0" value="0"></div>
+    <canvas id="cv-ws" width="520" height="520"></canvas>
+  </section>
+
+  <section id="sec-unc">
+    <h2>3 · <code>uncovered_set_boundary_2d</code></h2>
+    <p class="hint">Approximate uncovered-set boundary. Python binding uses one-shot heap allocation + <code>scs_heap_free</code>; R uses size + fill in <code>geometry.c</code>.</p>
+    <div class="row"><label>Grid resolution <span class="val" id="un-lbl"></span></label></div>
+    <div class="row"><input type="range" id="un-sl" min="0" max="0" value="0"></div>
+    <canvas id="cv-un" width="520" height="520"></canvas>
+  </section>
+
+  <section id="sec-vor">
+    <h2>4 · Voronoi (<code>scs_voronoi_cells_2d_heap</code>)</h2>
+    <p class="hint">Euclidean Voronoi clipped to a bbox; single internal compute + heap copy.</p>
+    <div class="row"><label>Bbox scale <span class="val" id="vo-lbl"></span></label></div>
+    <div class="row"><input type="range" id="vo-sl" min="0" max="0" value="0"></div>
+    <canvas id="cv-vo" width="520" height="520"></canvas>
+  </section>
+
+  <div id="panel-diag" class="diag">
+    <h2>What you are looking at · checks</h2>
+    <p class="hint">Each tab above matches one scenario. Text below says what a healthy page looks like, what often breaks, and whether the embedded data passed checks when this HTML was generated (plus a quick re-check in the browser).</p>
+    <div class="subdiag">
+      <h3>Build-time checks (from <code>meta.build_checks</code>)</h3>
+      <pre id="diag-build" class="checks"></pre>
+    </div>
+    <div class="subdiag">
+      <h3>Healthy vs broken (per scenario)</h3>
+      <div id="diag-expect"></div>
+    </div>
+    <div class="subdiag">
+      <h3>Browser re-check (structure only)</h3>
+      <pre id="diag-runtime" class="checks"></pre>
+    </div>
+  </div>
+
+  <script>
+  const DATA = __DATA__;
+
+  function mapX(x, W, x0, x1) { return (x - x0) / (x1 - x0) * W; }
+  function mapY(y, H, y0, y1) { return H - (y - y0) / (y1 - y0) * H; }
+
+  const titles = ['1D IC', 'Winset export', 'Uncovered', 'Voronoi heap'];
+  const secs = ['sec-ic', 'sec-winset', 'sec-unc', 'sec-vor'];
+  const nav = document.getElementById('nav');
+  titles.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.textContent = t;
+    b.className = i === 0 ? 'active' : '';
+    b.onclick = () => {
+      nav.querySelectorAll('button').forEach((x, j) => x.classList.toggle('active', j === i));
+      secs.forEach((id, j) => document.getElementById(id).classList.toggle('visible', j === i));
+    };
+    nav.appendChild(b);
+  });
+
+  (function() {
+    const frames = DATA.ic.frames;
+    const ideal = DATA.ic.ideal;
+    const sl = document.getElementById('ic-sl');
+    const lbl = document.getElementById('ic-lbl');
+    sl.max = String(frames.length - 1);
+    const cv = document.getElementById('cv-ic');
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    const x0 = -2.6, x1 = 2.6;
+    function draw() {
+      const fi = +sl.value;
+      const fr = frames[fi];
+      lbl.textContent = fr.ref.toFixed(2);
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, W, H);
+      const ymid = H / 2;
+      ctx.strokeStyle = '#2a3a50';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, ymid); ctx.lineTo(W, ymid);
+      ctx.stroke();
+      ctx.fillStyle = '#8b98a8';
+      ctx.font = '12px system-ui';
+      ctx.fillText('x', W - 14, ymid - 6);
+      const ix = mapX(ideal, W, x0, x1);
+      ctx.strokeStyle = '#7ee787';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ix, 28); ctx.lineTo(ix, H - 28);
+      ctx.stroke();
+      ctx.fillStyle = '#7ee787';
+      ctx.fillText('ideal', ix - 16, 20);
+      const rx = mapX(fr.ref, W, x0, x1);
+      ctx.strokeStyle = '#ffa657';
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(rx, 24); ctx.lineTo(rx, H - 24);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffa657';
+      ctx.fillText('ref', rx - 10, H - 8);
+      const pts = fr.pts;
+      if (pts.length >= 2) {
+        const a = mapX(pts[0], W, x0, x1), b = mapX(pts[1], W, x0, x1);
+        ctx.strokeStyle = '#5eb8ff';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(a, ymid); ctx.lineTo(b, ymid);
+        ctx.stroke();
+      } else if (pts.length === 1) {
+        const px = mapX(pts[0], W, x0, x1);
+        ctx.fillStyle = '#5eb8ff';
+        ctx.beginPath();
+        ctx.arc(px, ymid, 5, 0, 6.28);
+        ctx.fill();
+      }
+    }
+    sl.oninput = draw;
+    draw();
+  })();
+
+  (function() {
+    const frames = DATA.winset.frames;
+    const vflat = DATA.winset.voters;
+    const sl = document.getElementById('ws-sl');
+    const lbl = document.getElementById('ws-lbl');
+    sl.max = String(frames.length - 1);
+    const cv = document.getElementById('cv-ws');
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    const pad = 36;
+    const x0 = -0.35, x1 = 2.35, y0 = -0.35, y1 = 2.35;
+    function toXY(x, y) {
+      return [pad + mapX(x, W - 2*pad, x0, x1), pad + mapY(y, H - 2*pad, y0, y1)];
+    }
+    function draw() {
+      const fi = +sl.value;
+      const fr = frames[fi];
+      lbl.textContent = (fr.angle_deg != null ? fr.angle_deg : (fi / (frames.length-1) * 360)).toFixed(0) + '°';
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < vflat.length; i += 2) {
+        const [px, py] = toXY(vflat[i], vflat[i+1]);
+        ctx.fillStyle = '#8b98a8';
+        ctx.beginPath();
+        ctx.arc(px, py, 7, 0, 6.28);
+        ctx.fill();
+      }
+      if (!fr.empty && fr.paths) {
+        ctx.beginPath();
+        fr.paths.forEach(p => {
+          const xy = p.xy;
+          if (xy.length < 4) return;
+          const [x0_, y0_] = toXY(xy[0], xy[1]);
+          ctx.moveTo(x0_, y0_);
+          for (let k = 2; k < xy.length; k += 2) {
+            const [xa, ya] = toXY(xy[k], xy[k+1]);
+            ctx.lineTo(xa, ya);
+          }
+          ctx.closePath();
+        });
+        ctx.fillStyle = 'rgba(94, 184, 255, 0.2)';
+        ctx.strokeStyle = '#5eb8ff';
+        ctx.lineWidth = 2;
+        ctx.fill('evenodd');
+        ctx.stroke();
+      }
+      const [sqx, sqy] = fr.sq;
+      const [sx, sy] = toXY(sqx, sqy);
+      ctx.fillStyle = '#ffa657';
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 9); ctx.lineTo(sx + 8, sy + 7); ctx.lineTo(sx - 8, sy + 7);
+      ctx.closePath();
+      ctx.fill();
+    }
+    sl.oninput = draw;
+    draw();
+  })();
+
+  (function() {
+    const frames = DATA.uncovered.frames;
+    const vflat = DATA.uncovered.voters;
+    const sl = document.getElementById('un-sl');
+    const lbl = document.getElementById('un-lbl');
+    sl.max = String(frames.length - 1);
+    const cv = document.getElementById('cv-un');
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    const pad = 40;
+    const x0 = -1.25, x1 = 1.25, y0 = -1.25, y1 = 1.25;
+    function toXY(x, y) {
+      return [pad + mapX(x, W - 2*pad, x0, x1), pad + mapY(y, H - 2*pad, y0, y1)];
+    }
+    function draw() {
+      const fi = +sl.value;
+      const fr = frames[fi];
+      lbl.textContent = String(fr.grid);
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < vflat.length; i += 2) {
+        const [px, py] = toXY(vflat[i], vflat[i+1]);
+        ctx.fillStyle = '#8b98a8';
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, 6.28);
+        ctx.fill();
+      }
+      const xy = fr.xy;
+      if (xy.length >= 6) {
+        ctx.strokeStyle = '#7ee787';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const [xa, ya] = toXY(xy[0], xy[1]);
+        ctx.moveTo(xa, ya);
+        for (let k = 2; k < xy.length; k += 2) {
+          const [xb, yb] = toXY(xy[k], xy[k+1]);
+          ctx.lineTo(xb, yb);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+    sl.oninput = draw;
+    draw();
+  })();
+
+  (function() {
+    const frames = DATA.voronoi.frames;
+    const sites = DATA.voronoi.sites;
+    const sl = document.getElementById('vo-sl');
+    const lbl = document.getElementById('vo-lbl');
+    sl.max = String(frames.length - 1);
+    const cv = document.getElementById('cv-vo');
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    const pad = 28;
+    function draw() {
+      const fi = +sl.value;
+      const fr = frames[fi];
+      lbl.textContent = fr.scale.toFixed(2);
+      const b = fr.bbox;
+      const x0 = b[0], y0 = b[1], x1 = b[2], y1 = b[3];
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, W, H);
+      function toXY(x, y) {
+        return [pad + mapX(x, W - 2*pad, x0, x1), pad + mapY(y, H - 2*pad, y0, y1)];
+      }
+      const cols = ['#5eb8ff44','#ffa65744','#7ee78744','#d2a8ff44','#ff7b7244'];
+      let ci = 0;
+      (fr.cells || []).forEach(cell => {
+        if (!cell || cell.length < 4) return;
+        ctx.fillStyle = cols[ci % cols.length];
+        ctx.strokeStyle = cols[ci % cols.length].replace('44','cc');
+        ci++;
+        ctx.beginPath();
+        const [xa, ya] = toXY(cell[0], cell[1]);
+        ctx.moveTo(xa, ya);
+        for (let k = 2; k < cell.length; k += 2) {
+          const [xb, yb] = toXY(cell[k], cell[k+1]);
+          ctx.lineTo(xb, yb);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      });
+      for (let i = 0; i < sites.length; i += 2) {
+        const [px, py] = toXY(sites[i], sites[i+1]);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px, py, 8, 0, 6.28);
+        ctx.fill();
+      }
+    }
+    sl.oninput = draw;
+    draw();
+  })();
+
+  function runBrowserDiagnostics() {
+    const items = [];
+    let ok = true;
+    function add(pass, msg) {
+      items.push({ ok: pass, msg });
+      if (!pass) ok = false;
+    }
+    try {
+      if (!DATA.ic || !Array.isArray(DATA.ic.frames)) add(false, 'DATA.ic.frames missing or not an array');
+      else if (DATA.ic.frames.length !== 97) add(false, 'DATA.ic.frames.length should be 97, got ' + DATA.ic.frames.length);
+      else add(true, 'ic: 97 frames');
+
+      if (!DATA.winset || !Array.isArray(DATA.winset.frames)) add(false, 'DATA.winset.frames missing');
+      else if (DATA.winset.frames.length !== 48) add(false, 'winset frames should be 48, got ' + DATA.winset.frames.length);
+      else add(true, 'winset: 48 frames');
+
+      if (!DATA.uncovered || !Array.isArray(DATA.uncovered.frames)) add(false, 'DATA.uncovered.frames missing');
+      else if (DATA.uncovered.frames.length !== 15) add(false, 'uncovered frames should be 15, got ' + DATA.uncovered.frames.length);
+      else add(true, 'uncovered: 15 frames');
+
+      if (!DATA.voronoi || !Array.isArray(DATA.voronoi.frames)) add(false, 'DATA.voronoi.frames missing');
+      else if (DATA.voronoi.frames.length !== 36) add(false, 'voronoi frames should be 36, got ' + DATA.voronoi.frames.length);
+      else add(true, 'voronoi: 36 frames');
+
+      const meta = DATA.meta;
+      if (!meta || typeof meta.build_all_ok !== 'boolean') add(false, 'DATA.meta.build_all_ok missing (regenerate HTML with current demo scripts)');
+      else add(true, 'meta present (binding: ' + (meta.binding || '?') + ')');
+    } catch (e) {
+      ok = false;
+      items.push({ ok: false, msg: 'Exception: ' + e.message });
+    }
+    return { ok, items };
+  }
+
+  (function diagPanel() {
+    const root = document.getElementById('panel-diag');
+    const buildEl = document.getElementById('diag-build');
+    const runEl = document.getElementById('diag-runtime');
+    const expEl = document.getElementById('diag-expect');
+    if (!root || !buildEl || !runEl || !expEl) return;
+
+    const meta = DATA.meta || {};
+    if (Array.isArray(meta.build_checks) && meta.build_checks.length) {
+      const lines = ['Binding: ' + (meta.binding || '?') + ', structure v' + (meta.structure_version || '?')];
+      for (const c of meta.build_checks) {
+        lines.push((c.ok ? 'PASS' : 'FAIL') + '  ' + c.scenario + '/' + c.id + ': ' + c.message);
+      }
+      lines.push('—');
+      lines.push(meta.build_all_ok ? 'All build checks passed.' : 'Some build checks FAILED — canvases may be wrong or empty; compare hints below.');
+      buildEl.textContent = lines.join('\n');
+    } else {
+      buildEl.textContent = 'No meta.build_checks (regenerate with python/compound_api_interactive_demo.py or r/compound_api_interactive_demo.R).';
+    }
+    root.classList.toggle('pass', meta.build_all_ok === true);
+    root.classList.toggle('fail', meta.build_all_ok === false);
+
+    const exp = meta.expectations || {};
+    const order = [['ic', '1D IC'], ['winset', 'Winset export'], ['uncovered', 'Uncovered'], ['voronoi', 'Voronoi']];
+    expEl.innerHTML = '';
+    order.forEach(([key, title]) => {
+      const block = exp[key];
+      if (!block) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'subdiag';
+      wrap.innerHTML = '<h3>' + title + '</h3>';
+      const h = document.createElement('p');
+      h.className = 'ok';
+      h.style.margin = '0.25rem 0 0';
+      h.textContent = 'If healthy:';
+      wrap.appendChild(h);
+      const ul1 = document.createElement('ul');
+      (block.healthy || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul1.appendChild(li); });
+      wrap.appendChild(ul1);
+      const b = document.createElement('p');
+      b.className = 'bad';
+      b.style.margin = '0.5rem 0 0';
+      b.textContent = 'If something is wrong:';
+      wrap.appendChild(b);
+      const ul2 = document.createElement('ul');
+      (block.broken || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul2.appendChild(li); });
+      wrap.appendChild(ul2);
+      expEl.appendChild(wrap);
+    });
+
+    const rt = runBrowserDiagnostics();
+    runEl.textContent = rt.items.map(i => (i.ok ? 'PASS  ' : 'FAIL  ') + i.msg).join('\n') +
+      '\n—\n' + (rt.ok ? 'Browser structure check OK.' : 'Browser check reported failures (truncated JSON, wrong generator, or template mismatch).');
+  })();
+  </script>
+</body>
+</html>

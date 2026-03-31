@@ -42,11 +42,11 @@
 # 1D round-trip
 # ---------------------------------------------------------------------------
 
-test_that("save_competition_canvas writes a valid .scscanvas file (1D)", {
+test_that("save_competition_canvas writes a valid .scsview file (1D)", {
   skip_without_lib()
   trace <- .trace_sl_1d()
   w <- animate_competition_canvas(trace, voters = .voters_sl_1d, width = 900L, height = 400L)
-  tmp <- tempfile(fileext = ".scscanvas")
+  tmp <- tempfile(fileext = ".scsview")
   on.exit(unlink(tmp))
 
   result <- save_competition_canvas(w, tmp)
@@ -54,7 +54,7 @@ test_that("save_competition_canvas writes a valid .scscanvas file (1D)", {
   expect_equal(result, tmp)
   expect_true(file.exists(tmp))
   raw <- jsonlite::read_json(tmp, simplifyVector = FALSE)
-  expect_equal(raw$format, "scscanvas")
+  expect_equal(raw$format, "scsview")
   expect_equal(raw$version, "1")
   expect_true(!is.null(raw$created))
   expect_true(startsWith(raw$generator, "socialchoicelab/r/"))
@@ -67,7 +67,7 @@ test_that("load_competition_canvas returns a widget with matching payload (1D)",
   skip_without_lib()
   trace <- .trace_sl_1d()
   w_orig <- animate_competition_canvas(trace, voters = .voters_sl_1d, width = 900L, height = 400L)
-  tmp <- tempfile(fileext = ".scscanvas")
+  tmp <- tempfile(fileext = ".scsview")
   on.exit(unlink(tmp))
   save_competition_canvas(w_orig, tmp)
 
@@ -85,7 +85,7 @@ test_that("load_competition_canvas width/height override works (1D)", {
   skip_without_lib()
   trace <- .trace_sl_1d()
   w_orig <- animate_competition_canvas(trace, voters = .voters_sl_1d, width = 900L, height = 400L)
-  tmp <- tempfile(fileext = ".scscanvas")
+  tmp <- tempfile(fileext = ".scsview")
   on.exit(unlink(tmp))
   save_competition_canvas(w_orig, tmp)
 
@@ -99,17 +99,17 @@ test_that("load_competition_canvas width/height override works (1D)", {
 # 2D round-trip
 # ---------------------------------------------------------------------------
 
-test_that("save_competition_canvas writes a valid .scscanvas file (2D)", {
+test_that("save_competition_canvas writes a valid .scsview file (2D)", {
   skip_without_lib()
   trace <- .trace_sl_2d()
   w <- animate_competition_canvas(trace, voters = .voters_sl_2d, width = 900L, height = 800L)
-  tmp <- tempfile(fileext = ".scscanvas")
+  tmp <- tempfile(fileext = ".scsview")
   on.exit(unlink(tmp))
 
   save_competition_canvas(w, tmp)
 
   raw <- jsonlite::read_json(tmp, simplifyVector = FALSE)
-  expect_equal(raw$format, "scscanvas")
+  expect_equal(raw$format, "scsview")
   expect_equal(raw$width,  900L)
   expect_equal(raw$height, 800L)
   expect_true("voters_x" %in% names(raw$payload))
@@ -120,7 +120,7 @@ test_that("load_competition_canvas returns a widget with matching payload (2D)",
   skip_without_lib()
   trace <- .trace_sl_2d()
   w_orig <- animate_competition_canvas(trace, voters = .voters_sl_2d, width = 900L, height = 800L)
-  tmp <- tempfile(fileext = ".scscanvas")
+  tmp <- tempfile(fileext = ".scsview")
   on.exit(unlink(tmp))
   save_competition_canvas(w_orig, tmp)
 
@@ -146,14 +146,14 @@ test_that("save_competition_canvas errors on non-widget input", {
 
 test_that("load_competition_canvas errors on missing file", {
   expect_error(
-    load_competition_canvas(tempfile(fileext = ".scscanvas")),
+    load_competition_canvas(tempfile(fileext = ".scsview")),
     "file not found"
   )
 })
 
 test_that("load_competition_canvas errors on wrong format", {
   skip_without_lib()
-  tmp <- tempfile(fileext = ".scscanvas")
+  tmp <- tempfile(fileext = ".scsview")
   on.exit(unlink(tmp))
   jsonlite::write_json(list(format = "other", payload = list()), tmp, auto_unbox = TRUE)
   expect_error(

@@ -58,20 +58,21 @@ def test_compute_voronoi_true_produces_correctly_shaped_payload():
         )
     payload = _extract_payload(html)
 
-    assert "voronoi_cells" in payload
-    vc = payload["voronoi_cells"]
+    assert "overlays_frames" in payload
+    assert "voronoi_cells" not in payload
+    frame_overlays = payload["overlays_frames"]
     n_frames = n_rounds + 1
-    assert len(vc) == n_frames
+    assert len(frame_overlays) == n_frames
 
-    for frame_cells in vc:
-        assert len(frame_cells) == n_competitors
-        for cell in frame_cells:
-            if cell is not None:
-                assert "paths" in cell
-                assert "competitor_idx" in cell
-                assert isinstance(cell["paths"], list)
-                assert len(cell["paths"]) >= 1
-                assert 0 <= cell["competitor_idx"] < n_competitors
+    for frame_i in range(n_frames):
+        canonical_entries = frame_overlays[frame_i]["candidate_regions"]
+        assert len(canonical_entries) == n_competitors
+        for entry in canonical_entries:
+            assert "polygons" in entry
+            assert "candidate" in entry
+            assert isinstance(entry["polygons"], list)
+            assert len(entry["polygons"]) >= 1
+            assert 0 <= entry["candidate"] < n_competitors
 
 
 def test_compute_voronoi_non_euclidean_raises():

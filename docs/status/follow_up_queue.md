@@ -1,31 +1,17 @@
 # Follow-up queue
 
-Explicit tasks the maintainer asked to remember **outside** of normal roadmap grooming.
-**Purpose:** chat sessions do not persist; this file is the durable reminder.
+**Optional scratch pad.** Chat does not persist; use this only for reminders that are **not** yet written into [ROADMAP.md](ROADMAP.md).
 
-How to use:
+**Rules**
 
-- Add a bullet when you decide “we should do X next” in conversation or review.
-- Prefer a **one-line outcome** plus optional link to a design doc or issue.
-- When an item ships, **delete it** or move a one-line note to `project_log.md` / `CHANGELOG.md`.
-- If an item already lives in `ROADMAP.md` with full detail, add only a **pointer** here (avoid two sources of truth).
+- Do **not** copy the roadmap’s prioritized list here. Link to a section of `ROADMAP.md` if you need a reminder.
+- When an item becomes real work, **add it to `ROADMAP.md` (or an existing roadmap section) and delete it here.**
+- When an item ships, delete it; one-line history can go in [project_log.md](project_log.md) or [CHANGELOG.md](../../CHANGELOG.md) if it matters.
 
----
-
-## Owner-requested (fill in)
-
-_Add bullets below. Nothing here yet — previous session requests were not written to the repo._
+**Index:** [docs/README.md](../README.md) — how this file relates to `WHERE_WE_ARE.md` and `ROADMAP.md`.
 
 ---
 
-## Pointers (canonical detail elsewhere)
+## Scratch (add below)
 
-These are **not** duplicates of full specs; they are reminders to read the governing doc.
-
-| Topic | Where it lives |
-|-------|----------------|
-| Utility / loss → utility diagnostic plot on canvas (R/Python parity) | `ROADMAP.md` — § Next work sequence (visual stack) |
-| `save_plot` PNG/SVG or other static export | `ROADMAP.md` + `CHANGELOG.md` `[Unreleased]` + `rendering_consolidation_evaluation.md` |
-| Competition engine extensions (e.g. per-run re-randomization) | `ROADMAP.md` post-tag follow-on + `competition_plan.md` |
-| Yolk / Heart correctness (approximation vs exact) | `ROADMAP.md`, `WHERE_WE_ARE.md` known issues, `MILESTONE_GATES.md` |
-| Composite C API before 1.0 | `ROADMAP.md` release ladder |
+_(Empty on purpose until you drop something here.)_

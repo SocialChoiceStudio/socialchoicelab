@@ -44,41 +44,32 @@ test_that("compute_ic = TRUE produces correctly shaped IC payload", {
   n_frames  <- d$n_rounds + 1L   # 3
   n_voters  <- 3L
 
-  expect_true("indifference_curves" %in% names(w$x))
-  expect_true("ic_competitor_indices" %in% names(w$x))
+  expect_true("overlays_frames" %in% names(w$x))
+  expect_false("indifference_curves" %in% names(w$x))
+  expect_false("ic_competitor_indices" %in% names(w$x))
 
-  ic     <- w$x$indifference_curves
-  ic_idx <- w$x$ic_competitor_indices
+  frame_overlays <- w$x$overlays_frames
 
-  # Outer dimension: one entry per frame.
-  expect_length(ic,     n_frames)
-  expect_length(ic_idx, n_frames)
+  expect_length(frame_overlays, n_frames)
 
   for (f in seq_len(n_frames)) {
-    seat_curves <- ic[[f]]
-    seat_idxs   <- ic_idx[[f]]
+    canonical_entries <- frame_overlays[[f]]$indifference_curves
 
-    # At least one seat holder per frame.
-    expect_gte(length(seat_curves), 1L)
-    expect_length(seat_idxs, length(seat_curves))
+    expect_gte(length(canonical_entries), 1L)
 
-    for (s_i in seq_along(seat_curves)) {
-      voter_curves <- seat_curves[[s_i]]
+    for (s_i in seq_along(canonical_entries)) {
+      voter_curves <- canonical_entries[[s_i]]$curves
+      expect_gte(canonical_entries[[s_i]]$candidate, 0L)
+      expect_lt(canonical_entries[[s_i]]$candidate, d$n_competitors)
 
-      # One curve per voter.
       expect_length(voter_curves, n_voters)
 
       for (v in seq_len(n_voters)) {
-        verts <- voter_curves[[v]]
-        # Flat [x0,y0,...]: 16 samples × 2 coords = 32 numbers.
-        expect_length(verts, 2L * 16L)
-        expect_true(all(is.numeric(unlist(verts))))
+        ring <- voter_curves[[v]]$ring
+        expect_length(ring, 16L)
+        expect_true(all(vapply(ring, length, integer(1L)) == 2L))
+        expect_true(all(is.numeric(unlist(ring))))
       }
-
-      # Competitor index is 0-based and within range.
-      ci <- seat_idxs[[s_i]]
-      expect_gte(ci, 0L)
-      expect_lt(ci, d$n_competitors)
     }
   }
 })
@@ -116,9 +107,8 @@ test_that("compute_ic respects ic_num_samples for polygon vertex count", {
   w32 <- animate_competition_canvas(
     trace, voters = IC_VOTERS, compute_ic = TRUE, ic_num_samples = 32L
   )
-  # Each voter curve under 8 samples should have 16 values (8*2), under 32 should have 64.
-  expect_length(w8$x$indifference_curves[[1]][[1]][[1]],  16L)
-  expect_length(w32$x$indifference_curves[[1]][[1]][[1]], 64L)
+  expect_length(w8$x$overlays_frames[[1]]$indifference_curves[[1]]$curves[[1]]$ring,  8L)
+  expect_length(w32$x$overlays_frames[[1]]$indifference_curves[[1]]$curves[[1]]$ring, 32L)
 })
 
 test_that("Euclidean IC polygon vertices are all equidistant from the voter ideal", {
@@ -130,13 +120,13 @@ test_that("Euclidean IC polygon vertices are all equidistant from the voter idea
   w <- animate_competition_canvas(
     trace, voters = IC_VOTERS, compute_ic = TRUE, ic_num_samples = 64L
   )
-  ic <- w$x$indifference_curves
+  ic <- w$x$overlays_frames
   for (f in seq_along(ic)) {
-    for (s_i in seq_along(ic[[f]])) {
+    for (s_i in seq_along(ic[[f]]$indifference_curves)) {
       for (v in seq_len(3L)) {
-        flat    <- unlist(ic[[f]][[s_i]][[v]])
-        xs      <- flat[seq(1L, length(flat), 2L)]
-        ys      <- flat[seq(2L, length(flat), 2L)]
+        ring    <- ic[[f]]$indifference_curves[[s_i]]$curves[[v]]$ring
+        xs      <- vapply(ring, `[[`, numeric(1L), 1L)
+        ys      <- vapply(ring, `[[`, numeric(1L), 2L)
         voter_x <- IC_VOTERS[2L * v - 1L]
         voter_y <- IC_VOTERS[2L * v]
         dists   <- sqrt((xs - voter_x)^2 + (ys - voter_y)^2)
@@ -175,5 +165,5 @@ test_that("compute_ic with manhattan dist produces non-circular ICs", {
   )
   # The polygon type for Manhattan is a rotated square; level_set_to_polygon
   # returns exactly 4 vertices regardless of ic_num_samples.
-  expect_length(w$x$indifference_curves[[1]][[1]][[1]], 8L)  # 4 verts × 2 = 8
+  expect_length(w$x$overlays_frames[[1]]$indifference_curves[[1]]$curves[[1]]$ring, 4L)
 })

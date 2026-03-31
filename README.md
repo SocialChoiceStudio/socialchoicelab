@@ -43,15 +43,15 @@ All randomness is controlled through a **named-stream pseudorandom number genera
 
 | Resource | Link |
 |----------|------|
+| **Docs index (read this first)** | [docs/README.md](docs/README.md) — maps questions to the right file |
 | Architecture | [docs/architecture/design_document.md](docs/architecture/design_document.md) |
 | C API reference | [docs/architecture/c_api_design.md](docs/architecture/c_api_design.md) |
-| Full docs index | [docs/README.md](docs/README.md) |
 
 ---
 
 ## Status
 
-`socialchoicelab` is under active development. The current release line is **`0.2.0`** (core + C API + geometry + aggregation + R/Python bindings + visualization). The **`0.3.0`** track adds multi-candidate electoral competition and is in final refinement.
+Current phase, tags, and pointers to what is next: **[docs/status/WHERE_WE_ARE.md](docs/status/WHERE_WE_ARE.md)**. Prioritized plan: **[docs/status/ROADMAP.md](docs/status/ROADMAP.md)**.
 
 The test suite contains over 300 unit tests, a substantial portion of which are grounded directly in established social choice theorems.
 

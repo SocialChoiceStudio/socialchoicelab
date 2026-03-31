@@ -67,6 +67,89 @@ NULL
   result
 }
 
+.flat_path_to_ring <- function(path_flat) {
+  vals <- as.double(unname(path_flat))
+  if (length(vals) < 2L) return(list())
+  lapply(seq.int(1L, length(vals) - 1L, by = 2L), function(i) {
+    list(unname(vals[i]), unname(vals[i + 1L]))
+  })
+}
+
+.build_overlays_frames <- function(n_frames,
+                                   ic_data = NULL,
+                                   ic_indices = NULL,
+                                   winsets = NULL,
+                                   candidate_regions = NULL) {
+  frames <- replicate(as.integer(n_frames), list(), simplify = FALSE)
+
+  if (!is.null(ic_data)) {
+    for (frame_i in seq_along(ic_data)) {
+      seat_curves <- ic_data[[frame_i]]
+      if (length(seat_curves) == 0L) next
+      seat_idxs <- if (!is.null(ic_indices) && frame_i <= length(ic_indices)) {
+        ic_indices[[frame_i]]
+      } else {
+        as.list(seq_along(seat_curves) - 1L)
+      }
+      entries <- lapply(seq_along(seat_curves), function(seat_i) {
+        list(
+          candidate = unname(as.integer(seat_idxs[[seat_i]])),
+          curves = lapply(seat_curves[[seat_i]], function(curve_flat) {
+            list(ring = .flat_path_to_ring(curve_flat))
+          })
+        )
+      })
+      frames[[frame_i]][["indifference_curves"]] <- entries
+    }
+  }
+
+  if (!is.null(winsets)) {
+    for (frame_i in seq_along(winsets)) {
+      frame_ws <- winsets[[frame_i]]
+      entries <- Filter(Negate(is.null), lapply(frame_ws, function(ws) {
+        if (is.null(ws)) return(NULL)
+        paths <- ws$paths %||% list()
+        holes <- ws$is_hole %||% list()
+        polygons <- lapply(seq_along(paths), function(path_i) {
+          list(
+            ring = .flat_path_to_ring(paths[[path_i]]),
+            hole = isTRUE(as.logical(holes[[path_i]]))
+          )
+        })
+        list(
+          candidate = unname(as.integer(ws$competitor_idx)),
+          polygons = polygons
+        )
+      }))
+      if (length(entries) > 0L) {
+        frames[[frame_i]][["winsets"]] <- entries
+      }
+    }
+  }
+
+  if (!is.null(candidate_regions)) {
+    for (frame_i in seq_along(candidate_regions)) {
+      frame_regions <- candidate_regions[[frame_i]]
+      entries <- Filter(Negate(is.null), lapply(frame_regions, function(region) {
+        if (is.null(region)) return(NULL)
+        paths <- region$paths %||% list()
+        polygons <- lapply(paths, function(path_flat) {
+          list(ring = .flat_path_to_ring(path_flat), hole = FALSE)
+        })
+        list(
+          candidate = unname(as.integer(region$competitor_idx)),
+          polygons = polygons
+        )
+      }))
+      if (length(entries) > 0L) {
+        frames[[frame_i]][["candidate_regions"]] <- entries
+      }
+    }
+  }
+
+  if (any(vapply(frames, length, integer(1L)) > 0L)) frames else NULL
+}
+
 # Internal helper: build the 1D canvas payload and return an htmlwidget.
 .animate_competition_canvas_1d <- function(
     trace, d, competitor_names, voters, title, theme,
@@ -532,17 +615,14 @@ animate_competition_canvas <- function(trace,
 
     voter_ideals_flat <- as.double(c(rbind(vxy$x, vxy$y)))
 
-    ws_data               <- vector("list", n_frames)
-    ws_competitor_indices <- vector("list", n_frames)
+    ws_data <- vector("list", n_frames)
     for (frame_i in seq_len(n_frames)) {
       seat_idxs <- seat_idxs_per_frame[[frame_i]]
       pos_mat   <- positions[[frame_i]]
       frame_ws  <- vector("list", length(seat_idxs))
-      frame_cidxs <- integer(length(seat_idxs))
       for (s_i in seq_along(seat_idxs)) {
         s        <- unname(seat_idxs[s_i])
         seat_pos <- unname(pos_mat[s, ])
-        frame_cidxs[s_i] <- s - 1L
         bnd_wrap <- .Call("r_scs_winset_2d_export_boundary",
                           as.double(seat_pos[1L]), as.double(seat_pos[2L]),
                           voter_ideals_flat,
@@ -559,12 +639,11 @@ animate_competition_canvas <- function(trace,
           frame_ws[[s_i]] <- list(
             paths          = paths_json,
             is_hole        = as.list(bnd_wrap$is_hole),
-            competitor_idx = frame_cidxs[s_i]
+            competitor_idx = s - 1L
           )
         }
       }
-      ws_data[[frame_i]]               <- frame_ws
-      ws_competitor_indices[[frame_i]] <- as.list(frame_cidxs)
+      ws_data[[frame_i]] <- frame_ws
     }
   }
 
@@ -622,16 +701,15 @@ animate_competition_canvas <- function(trace,
   if (!is.null(overlays_serialised)) {
     payload$overlays_static <- overlays_serialised
   }
-  if (!is.null(ic_data)) {
-    payload$indifference_curves       <- ic_data
-    payload$ic_competitor_indices     <- ic_competitor_indices
-  }
-  if (!is.null(ws_data)) {
-    payload$winsets                    <- ws_data
-    payload$winset_competitor_indices  <- ws_competitor_indices
-  }
-  if (!is.null(voronoi_cells)) {
-    payload$voronoi_cells <- voronoi_cells
+  overlays_frames <- .build_overlays_frames(
+    length(frame_names),
+    ic_data = ic_data,
+    ic_indices = ic_competitor_indices,
+    winsets = ws_data,
+    candidate_regions = voronoi_cells
+  )
+  if (!is.null(overlays_frames)) {
+    payload$overlays_frames <- overlays_frames
   }
 
   htmlwidgets::createWidget(
@@ -652,7 +730,7 @@ animate_competition_canvas <- function(trace,
   )
 }
 
-#' Save a competition canvas widget to a .scscanvas file
+#' Save a competition canvas widget to a .scsview file
 #'
 #' Serialises the pre-computed animation payload (positions, ICs, WinSet,
 #' Cutlines, etc.) to a JSON file with metadata.  The file can be reloaded
@@ -662,7 +740,7 @@ animate_competition_canvas <- function(trace,
 #' @param widget An \code{htmlwidget} returned by
 #'   \code{\link{animate_competition_canvas}}.
 #' @param path Path to the output file.  By convention use the
-#'   \code{.scscanvas} extension.
+#'   \code{.scsview} extension.
 #' @return \code{path}, invisibly.
 #' @export
 save_competition_canvas <- function(widget, path) {
@@ -673,7 +751,7 @@ save_competition_canvas <- function(widget, path) {
     )
   }
   envelope <- list(
-    format    = "scscanvas",
+    format    = "scsview",
     version   = "1",
     created   = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     generator = paste0("socialchoicelab/r/",
@@ -686,14 +764,14 @@ save_competition_canvas <- function(widget, path) {
   invisible(path)
 }
 
-#' Load a competition canvas from a .scscanvas file
+#' Load a competition canvas from a .scsview file
 #'
 #' Reads a file written by \code{\link{save_competition_canvas}} (or its Python
 #' equivalent) and returns an \code{htmlwidget} that can be displayed in the
 #' RStudio Viewer, Shiny, or R Markdown, or saved to a standalone HTML file
 #' with \code{htmlwidgets::saveWidget()}.
 #'
-#' @param path Path to a \code{.scscanvas} JSON file.
+#' @param path Path to a \code{.scsview} JSON file.
 #' @param width,height Widget dimensions in pixels.  \code{NULL} uses the
 #'   values stored in the file (or package defaults when those are also
 #'   \code{NULL}).
@@ -704,10 +782,11 @@ load_competition_canvas <- function(path, width = NULL, height = NULL) {
     stop("load_competition_canvas: file not found: ", path)
   }
   envelope <- jsonlite::read_json(path, simplifyVector = FALSE)
-  if (!identical(envelope$format, "scscanvas")) {
+  if (!identical(envelope$format, "scsview")) {
     stop(
       "load_competition_canvas: unexpected format '", envelope$format,
-      "' (expected 'scscanvas'). Is '", path, "' a .scscanvas file?"
+      "' (expected 'scsview'). Is '", path,
+      "' a competition canvas file?"
     )
   }
   w <- if (!is.null(width))  width  else envelope$width

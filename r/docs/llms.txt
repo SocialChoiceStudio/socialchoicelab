@@ -122,6 +122,9 @@ Compute distances, convert to utility, and compute level sets.
 - [`level_set_1d()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_1d.md)
   : Compute the 1D level set (indifference points)
 
+- [`ic_interval_1d()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/ic_interval_1d.md)
+  : Compute the 1D IC interval in a single call
+
 - [`level_set_2d()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_2d.md)
   : Compute the exact 2D level set (indifference curve)
 

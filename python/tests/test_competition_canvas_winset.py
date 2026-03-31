@@ -48,6 +48,15 @@ def _extract_payload(html: str) -> dict:
     return json.loads(match.group(1))
 
 
+def _first_winset_ring(payload: dict) -> list[list[float]] | None:
+    for frame in payload["overlays_frames"]:
+        for entry in frame.get("winsets", []):
+            polygons = entry.get("polygons", [])
+            if polygons:
+                return polygons[0]["ring"]
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -71,21 +80,20 @@ def test_compute_winset_true_produces_correctly_shaped_payload():
         )
     payload = _extract_payload(html)
 
-    assert "winsets" in payload
-    assert "winset_competitor_indices" in payload
+    assert "overlays_frames" in payload
+    assert "winsets" not in payload
+    assert "winset_competitor_indices" not in payload
 
     n_frames = n_rounds + 1  # 3
-    ws = payload["winsets"]
-    ws_idx = payload["winset_competitor_indices"]
+    frame_overlays = payload["overlays_frames"]
 
-    assert len(ws) == n_frames
-    assert len(ws_idx) == n_frames
+    assert len(frame_overlays) == n_frames
 
     for f in range(n_frames):
-        frame_ws = ws[f]
-        frame_idx = ws_idx[f]
-        assert len(frame_ws) >= 1
-        assert len(frame_ws) == len(frame_idx)
+        canonical_entries = frame_overlays[f]["winsets"]
+        assert len(canonical_entries) >= 1
+        for entry in canonical_entries:
+            assert 0 <= entry["candidate"] < n_competitors
 
 
 def test_compute_winset_without_voters_raises():
@@ -115,29 +123,26 @@ def test_non_empty_winset_entry_has_required_keys():
             compute_winset=True,
         )
     payload = _extract_payload(html)
-    ws = payload["winsets"]
+    ws = payload["overlays_frames"]
 
     # Find the first non-null entry.
     found = False
-    for frame_ws in ws:
-        for entry in frame_ws:
+    for frame in ws:
+        for entry in frame.get("winsets", []):
             if entry is not None:
-                assert "paths" in entry
-                assert "is_hole" in entry
-                assert "competitor_idx" in entry
+                assert "polygons" in entry
+                assert "candidate" in entry
 
-                # paths is a non-empty list; each path is flat [x,y,...].
-                assert len(entry["paths"]) >= 1
-                first_path = entry["paths"][0]
-                assert isinstance(first_path, list)
-                assert len(first_path) >= 4
-                assert all(isinstance(v, float) for v in first_path)
+                assert len(entry["polygons"]) >= 1
+                first_ring = entry["polygons"][0]["ring"]
+                assert isinstance(first_ring, list)
+                assert len(first_ring) >= 2
+                assert all(len(pt) == 2 for pt in first_ring)
+                assert all(isinstance(v, float) for pt in first_ring for v in pt)
 
-                # is_hole length matches paths length.
-                assert len(entry["is_hole"]) == len(entry["paths"])
+                assert all("hole" in poly for poly in entry["polygons"])
 
-                # competitor_idx is 0-based.
-                assert 0 <= entry["competitor_idx"] < n_competitors
+                assert 0 <= entry["candidate"] < n_competitors
 
                 found = True
                 break
@@ -156,17 +161,8 @@ def test_winset_num_samples_affects_boundary_vertex_count():
             trace, voters=WS_VOTERS, compute_winset=True, winset_num_samples=64
         )
 
-    def _first_path_len(ws_payload):
-        for frame_ws in ws_payload:
-            for entry in frame_ws:
-                if entry is not None and entry["paths"]:
-                    return len(entry["paths"][0])
-        return None
-
-    ws16 = _extract_payload(html16)["winsets"]
-    ws64 = _extract_payload(html64)["winsets"]
-    len16 = _first_path_len(ws16)
-    len64 = _first_path_len(ws64)
+    len16 = len(_first_winset_ring(_extract_payload(html16)) or [])
+    len64 = len(_first_winset_ring(_extract_payload(html64)) or [])
     assert len16 is not None, "No non-null winset path found at num_samples=16."
     assert len64 is not None, "No non-null winset path found at num_samples=64."
     # Higher num_samples should produce more vertices (or at least not fewer).

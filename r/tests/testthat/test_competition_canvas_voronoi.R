@@ -33,22 +33,20 @@ test_that("compute_voronoi = TRUE produces correctly shaped voronoi payload", {
   n_frames   <- d$n_rounds + 1L
   n_comp     <- d$n_competitors
 
-  expect_true("voronoi_cells" %in% names(w$x))
-  vc <- w$x$voronoi_cells
-  expect_length(vc, n_frames)
+  expect_true("overlays_frames" %in% names(w$x))
+  expect_false("voronoi_cells" %in% names(w$x))
+  frame_overlays <- w$x$overlays_frames
+  expect_length(frame_overlays, n_frames)
 
   for (f in seq_len(n_frames)) {
-    frame_cells <- vc[[f]]
-    expect_length(frame_cells, n_comp)
-    for (c in seq_len(n_comp)) {
-      cell <- frame_cells[[c]]
-      if (!is.null(cell)) {
-        expect_true("paths" %in% names(cell))
-        expect_true("competitor_idx" %in% names(cell))
-        expect_gte(length(cell$paths), 1L)
-        expect_gte(cell$competitor_idx, 0L)
-        expect_lt(cell$competitor_idx, n_comp)
-      }
+    canonical_entries <- frame_overlays[[f]]$candidate_regions
+    expect_length(canonical_entries, n_comp)
+    for (entry in canonical_entries) {
+      expect_true("polygons" %in% names(entry))
+      expect_true("candidate" %in% names(entry))
+      expect_gte(length(entry$polygons), 1L)
+      expect_gte(entry$candidate, 0L)
+      expect_lt(entry$candidate, n_comp)
     }
   }
 })

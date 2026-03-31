@@ -52,9 +52,9 @@ def _trace_2d():
 # 1D round-trip via payload_path
 # ---------------------------------------------------------------------------
 
-def test_payload_path_writes_scscanvas_file_1d():
+def test_payload_path_writes_scsview_file_1d():
     trace = _trace_1d()
-    with tempfile.NamedTemporaryFile(suffix=".scscanvas", delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".scsview", delete=False) as f:
         tmp = f.name
     try:
         sclp.animate_competition_canvas(
@@ -63,7 +63,7 @@ def test_payload_path_writes_scscanvas_file_1d():
         )
         assert Path(tmp).exists()
         envelope = json.loads(Path(tmp).read_text())
-        assert envelope["format"] == "scscanvas"
+        assert envelope["format"] == "scsview"
         assert envelope["version"] == "1"
         assert "created" in envelope
         assert envelope["generator"].startswith("socialchoicelab/python/")
@@ -76,7 +76,7 @@ def test_payload_path_writes_scscanvas_file_1d():
 
 def test_load_competition_canvas_returns_html_1d():
     trace = _trace_1d()
-    with tempfile.NamedTemporaryFile(suffix=".scscanvas", delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".scsview", delete=False) as f:
         tmp = f.name
     try:
         html_orig = sclp.animate_competition_canvas(
@@ -101,7 +101,7 @@ def test_load_competition_canvas_returns_html_1d():
 
 def test_load_competition_canvas_payload_matches_original_1d():
     trace = _trace_1d()
-    with tempfile.NamedTemporaryFile(suffix=".scscanvas", delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".scsview", delete=False) as f:
         tmp = f.name
     try:
         sclp.animate_competition_canvas(
@@ -122,9 +122,9 @@ def test_load_competition_canvas_payload_matches_original_1d():
 # 2D round-trip via payload_path
 # ---------------------------------------------------------------------------
 
-def test_payload_path_writes_scscanvas_file_2d():
+def test_payload_path_writes_scsview_file_2d():
     trace = _trace_2d()
-    with tempfile.NamedTemporaryFile(suffix=".scscanvas", delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".scsview", delete=False) as f:
         tmp = f.name
     try:
         sclp.animate_competition_canvas(
@@ -132,7 +132,7 @@ def test_payload_path_writes_scscanvas_file_2d():
             payload_path=tmp,
         )
         envelope = json.loads(Path(tmp).read_text())
-        assert envelope["format"] == "scscanvas"
+        assert envelope["format"] == "scsview"
         assert envelope["width"] == 900
         assert envelope["height"] == 800
         payload = envelope["payload"]
@@ -145,7 +145,7 @@ def test_payload_path_writes_scscanvas_file_2d():
 
 def test_load_competition_canvas_returns_html_2d():
     trace = _trace_2d()
-    with tempfile.NamedTemporaryFile(suffix=".scscanvas", delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".scsview", delete=False) as f:
         tmp = f.name
     try:
         sclp.animate_competition_canvas(
@@ -161,7 +161,7 @@ def test_load_competition_canvas_returns_html_2d():
 
 def test_load_competition_canvas_width_height_override():
     trace = _trace_2d()
-    with tempfile.NamedTemporaryFile(suffix=".scscanvas", delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".scsview", delete=False) as f:
         tmp = f.name
     try:
         sclp.animate_competition_canvas(
@@ -191,13 +191,13 @@ def test_load_competition_canvas_importable_from_top_level():
 def test_load_competition_canvas_missing_file():
     import pytest
     with pytest.raises(FileNotFoundError, match="file not found"):
-        sclp.load_competition_canvas("/tmp/does_not_exist_xyz.scscanvas")
+        sclp.load_competition_canvas("/tmp/does_not_exist_xyz.scsview")
 
 
 def test_load_competition_canvas_wrong_format():
     import pytest
     with tempfile.NamedTemporaryFile(
-        suffix=".scscanvas", mode="w", delete=False, encoding="utf-8"
+        suffix=".scsview", mode="w", delete=False, encoding="utf-8"
     ) as f:
         json.dump({"format": "other", "payload": {}}, f)
         tmp = f.name

@@ -1,6 +1,6 @@
-"""canvas_load_demo.py — Reload pre-computed competition canvases from .scscanvas files.
+"""canvas_load_demo.py — Reload pre-computed competition canvases from .scsview files.
 
-Companion to canvas_save_demo.py.  Reads the .scscanvas files saved by that
+Companion to canvas_save_demo.py.  Reads the .scsview files saved by that
 script (written to the project root) and opens the canvases without
 recomputing any geometry (ICs, WinSet, Cutlines, etc.).
 
@@ -9,7 +9,7 @@ Run canvas_save_demo.py first to generate the input files, then run this:
   export SCS_LIB_PATH=$(pwd)/build
   python python/canvas_load_demo.py
 
-The .scscanvas format is cross-language: files written by the R demo
+The .scsview format is cross-language: files written by the R demo
 (canvas_save_demo.R / save_competition_canvas()) can be loaded here too, and
 vice versa.
 """
@@ -22,9 +22,9 @@ from pathlib import Path
 import socialchoicelab.plots as sclp
 
 # Paths match those written by canvas_save_demo.py (tmp/ in project root).
-PATH_1D    = "tmp/canvas_1d_demo.scscanvas"
-PATH_2D    = "tmp/canvas_2d_demo.scscanvas"
-PATH_3CAND = "tmp/canvas_3cand_2d_demo.scscanvas"
+PATH_1D    = "tmp/canvas_1d_demo.scsview"
+PATH_2D    = "tmp/canvas_2d_demo.scsview"
+PATH_3CAND = "tmp/canvas_3cand_2d_demo.scsview"
 
 # ===========================================================================
 # Load and open the 1D canvas

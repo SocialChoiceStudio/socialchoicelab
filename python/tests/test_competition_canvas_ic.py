@@ -48,6 +48,13 @@ def _extract_payload(html: str) -> dict:
     return json.loads(match.group(1))
 
 
+def _first_ic_ring(payload: dict) -> list[float]:
+    ring = (
+        payload["overlays_frames"][0]["indifference_curves"][0]["curves"][0]["ring"]
+    )
+    return ring
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -72,34 +79,31 @@ def test_compute_ic_true_produces_correctly_shaped_payload():
         )
     payload = _extract_payload(html)
 
-    assert "indifference_curves" in payload
-    assert "ic_competitor_indices" in payload
+    assert "overlays_frames" in payload
+    assert "indifference_curves" not in payload
+    assert "ic_competitor_indices" not in payload
 
     n_frames  = n_rounds + 1   # 3
     n_voters  = len(IC_VOTERS)  # 3
-    ic        = payload["indifference_curves"]
-    ic_idx    = payload["ic_competitor_indices"]
+    frame_overlays = payload["overlays_frames"]
 
-    assert len(ic)     == n_frames
-    assert len(ic_idx) == n_frames
+    assert len(frame_overlays) == n_frames
 
     for f in range(n_frames):
-        seat_curves = ic[f]
-        seat_idxs   = ic_idx[f]
+        canonical_entries = frame_overlays[f]["indifference_curves"]
 
-        assert len(seat_curves) >= 1
-        assert len(seat_curves) == len(seat_idxs)
+        assert len(canonical_entries) >= 1
 
-        for s_i, voter_curves in enumerate(seat_curves):
+        for s_i, entry in enumerate(canonical_entries):
+            voter_curves = entry["curves"]
             assert len(voter_curves) == n_voters
+            assert 0 <= entry["candidate"] < n_competitors
 
-            for verts in voter_curves:
-                # 16 samples × 2 coords = 32 values.
-                assert len(verts) == 2 * 16
-                assert all(isinstance(v, float) for v in verts)
-
-            ci = seat_idxs[s_i]
-            assert 0 <= ci < n_competitors
+            for curve in voter_curves:
+                ring = curve["ring"]
+                assert len(ring) == 16
+                assert all(len(pt) == 2 for pt in ring)
+                assert all(isinstance(coord, float) for pt in ring for coord in pt)
 
 
 def test_compute_ic_max_curves_exceeded_raises():
@@ -128,10 +132,10 @@ def test_compute_ic_num_samples_controls_vertex_count():
         html32 = sclp.animate_competition_canvas(
             trace, voters=IC_VOTERS, compute_ic=True, ic_num_samples=32
         )
-    p8  = _extract_payload(html8)["indifference_curves"][0][0][0]
-    p32 = _extract_payload(html32)["indifference_curves"][0][0][0]
-    assert len(p8)  == 2 * 8
-    assert len(p32) == 2 * 32
+    p8  = _first_ic_ring(_extract_payload(html8))
+    p32 = _first_ic_ring(_extract_payload(html32))
+    assert len(p8)  == 8
+    assert len(p32) == 32
 
 
 def test_euclidean_ic_polygon_vertices_are_equidistant_from_voter():
@@ -145,12 +149,13 @@ def test_euclidean_ic_polygon_vertices_are_equidistant_from_voter():
             trace, voters=IC_VOTERS, compute_ic=True, ic_num_samples=64
         )
     payload = _extract_payload(html)
-    ic = payload["indifference_curves"]
-    for frame_curves in ic:
-        for seat_curves in frame_curves:
-            for v_i, verts in enumerate(seat_curves):
-                xs = np.array(verts[0::2])
-                ys = np.array(verts[1::2])
+    ic = payload["overlays_frames"]
+    for frame in ic:
+        for seat_entry in frame["indifference_curves"]:
+            for v_i, curve in enumerate(seat_entry["curves"]):
+                ring = curve["ring"]
+                xs = np.array([pt[0] for pt in ring])
+                ys = np.array([pt[1] for pt in ring])
                 voter_x = float(IC_VOTERS[v_i, 0])
                 voter_y = float(IC_VOTERS[v_i, 1])
                 dists = np.sqrt((xs - voter_x) ** 2 + (ys - voter_y) ** 2)
@@ -179,6 +184,6 @@ def test_compute_ic_manhattan_produces_4_vertex_polygon():
             ic_dist_config=manh_dist,
             ic_num_samples=32,
         )
-    verts = _extract_payload(html)["indifference_curves"][0][0][0]
+    ring = _first_ic_ring(_extract_payload(html))
     # Polygon type returns 4 exact vertices regardless of ic_num_samples.
-    assert len(verts) == 2 * 4
+    assert len(ring) == 4

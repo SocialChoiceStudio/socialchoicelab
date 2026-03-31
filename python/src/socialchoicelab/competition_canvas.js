@@ -31,6 +31,81 @@
   function rgba(c, alpha) { return ScsCanvasCore.rgba(c, alpha); }
   function formatTick(val) { return ScsCanvasCore.formatTick(val); }
 
+  function flatPathToRing(pathFlat) {
+    var ring = [];
+    if (!pathFlat || !pathFlat.length) return ring;
+    for (var i = 0; i + 1 < pathFlat.length; i += 2) {
+      ring.push([pathFlat[i], pathFlat[i + 1]]);
+    }
+    return ring;
+  }
+
+  function hasCompetitionOverlayData(data, key) {
+    if (!data) return false;
+    if (data.overlays_frames && data.overlays_frames.length) {
+      for (var fi = 0; fi < data.overlays_frames.length; fi++) {
+        var frameEntries = ((data.overlays_frames[fi] || {})[key]) || [];
+        if (frameEntries.length) return true;
+      }
+    }
+    if (key === "indifference_curves") return data.indifference_curves != null;
+    if (key === "candidate_regions") return data.voronoi_cells != null;
+    if (key === "winsets") return data.winsets != null;
+    return false;
+  }
+
+  function getCompetitionOverlayEntries(data, frameIdx, key) {
+    if (!data) return [];
+
+    if (data.overlays_frames && frameIdx != null && frameIdx < data.overlays_frames.length) {
+      var frame = data.overlays_frames[frameIdx] || {};
+      if (frame[key] && frame[key].length) return frame[key];
+    }
+
+    if (key === "indifference_curves") {
+      var icFrame = data.indifference_curves && data.indifference_curves[frameIdx];
+      var icIdxs = data.ic_competitor_indices ? data.ic_competitor_indices[frameIdx] : null;
+      if (!icFrame) return [];
+      return icFrame.map(function(voterCurves, idx) {
+        return {
+          candidate: icIdxs && idx < icIdxs.length ? icIdxs[idx] : idx,
+          curves: (voterCurves || []).map(function(curve) {
+            return { ring: flatPathToRing(curve) };
+          })
+        };
+      });
+    }
+
+    if (key === "candidate_regions") {
+      var regionFrame = data.voronoi_cells && data.voronoi_cells[frameIdx];
+      if (!regionFrame) return [];
+      return regionFrame.map(function(region, idx) {
+        return {
+          candidate: region && region.competitor_idx != null ? region.competitor_idx : idx,
+          polygons: ((region && region.paths) || []).map(function(pathFlat) {
+            return { ring: flatPathToRing(pathFlat), hole: false };
+          })
+        };
+      });
+    }
+
+    if (key === "winsets") {
+      var wsFrame = data.winsets && data.winsets[frameIdx];
+      if (!wsFrame) return [];
+      return wsFrame.map(function(ws, idx) {
+        var holes = (ws && ws.is_hole) || [];
+        return {
+          candidate: ws && ws.competitor_idx != null ? ws.competitor_idx : idx,
+          polygons: ((ws && ws.paths) || []).map(function(pathFlat, pathIdx) {
+            return { ring: flatPathToRing(pathFlat), hole: !!holes[pathIdx] };
+          })
+        };
+      });
+    }
+
+    return [];
+  }
+
   // ── UI helpers ─────────────────────────────────────────────────────────────
 
   function makeCheckbox(text, checked, accentColor, onChange) {
@@ -675,7 +750,7 @@
         });
       }
     }
-    if (data.indifference_curves != null) {
+    if (hasCompetitionOverlayData(data, "indifference_curves")) {
       hasOverlayItems = true;
       var icCb = makeCheckbox("Indiff. Curves", false, COLORS.button, function(v) {
         self.showIC = v;
@@ -684,7 +759,7 @@
       });
       overlayRow.appendChild(icCb.el);
     }
-    if (data.winsets != null || data.winset_intervals_1d != null) {
+    if (hasCompetitionOverlayData(data, "winsets") || data.winset_intervals_1d != null) {
       hasOverlayItems = true;
       var winsetCb = makeCheckbox("Win Set", false, COLORS.button, function(v) {
         self.showWinset = v;
@@ -693,7 +768,7 @@
       });
       overlayRow.appendChild(winsetCb.el);
     }
-    if (data.voronoi_cells != null) {
+    if (hasCompetitionOverlayData(data, "candidate_regions")) {
       hasOverlayItems = true;
       var voronoiCb = makeCheckbox("Cutlines", false, COLORS.button, function(v) {
         self.showVoronoi = v;
@@ -1242,7 +1317,7 @@
     }
 
     // IC legend entry
-    if (this.showIC && data.indifference_curves) {
+    if (this.showIC && hasCompetitionOverlayData(data, "indifference_curves")) {
       var icLegY = legRow;
       legRow += lineH;
       var icLegColor = data.competitor_colors && data.competitor_colors[0]
@@ -1510,7 +1585,7 @@
     }
 
     // IC legend entry — shown only when ICs are toggled on.
-    if (this.showIC && data.indifference_curves) {
+    if (this.showIC && hasCompetitionOverlayData(data, "indifference_curves")) {
       var icLegY  = legRow;
       legRow += lineH;
       var icLegCx = legX + 8;
@@ -1532,7 +1607,7 @@
     }
 
     // WinSet legend entry — shown only when WinSets are toggled on.
-    if (this.showWinset && data.winsets) {
+    if (this.showWinset && hasCompetitionOverlayData(data, "winsets")) {
       var wsLegY  = legRow;
       legRow += lineH;
       var wsLegColor = data.competitor_colors && data.competitor_colors[0]
@@ -1553,7 +1628,7 @@
     }
 
     // Cutlines legend entry — shown only when Cutlines (Voronoi) is toggled on.
-    if (this.showVoronoi && data.voronoi_cells) {
+    if (this.showVoronoi && hasCompetitionOverlayData(data, "candidate_regions")) {
       var voLegY  = legRow;
       legRow += lineH;
       var voLegColor = data.competitor_colors && data.competitor_colors[0]
@@ -2010,25 +2085,25 @@
     }
 
     // Indifference curves — drawn per voter through each seat holder's position.
-    if (this.showIC && data.indifference_curves) {
-      var icFrames = data.indifference_curves[frameIdx];
-      var icIdxs   = data.ic_competitor_indices ? data.ic_competitor_indices[frameIdx] : null;
-      if (icFrames) {
+    if (this.showIC) {
+      var icEntries = getCompetitionOverlayEntries(data, frameIdx, "indifference_curves");
+      if (icEntries.length) {
         ctx.lineWidth = 2;
         ctx.lineCap   = "round";
         ctx.lineJoin  = "round";
-        for (var si = 0; si < icFrames.length; si++) {
-          var compIdx = icIdxs ? icIdxs[si] : si;
+        for (var si = 0; si < icEntries.length; si++) {
+          var icEntry = icEntries[si] || {};
+          var compIdx = icEntry.candidate != null ? icEntry.candidate : si;
           var icColor = parseRGBA(data.competitor_colors[compIdx] || "rgba(128,128,128,0.9)");
           ctx.strokeStyle = rgba(icColor, 0.20);
-          var voterCurves = icFrames[si];
+          var voterCurves = icEntry.curves || [];
           for (var vi = 0; vi < voterCurves.length; vi++) {
-            var verts = voterCurves[vi];
-            if (!verts || verts.length < 4) continue;
+            var ring = voterCurves[vi] && voterCurves[vi].ring;
+            if (!ring || ring.length < 2) continue;
             ctx.beginPath();
-            ctx.moveTo(this.xToPx(verts[0]), this.yToPx(verts[1]));
-            for (var ki = 2; ki < verts.length; ki += 2) {
-              ctx.lineTo(this.xToPx(verts[ki]), this.yToPx(verts[ki + 1]));
+            ctx.moveTo(this.xToPx(ring[0][0]), this.yToPx(ring[0][1]));
+            for (var ki = 1; ki < ring.length; ki++) {
+              ctx.lineTo(this.xToPx(ring[ki][0]), this.yToPx(ring[ki][1]));
             }
             ctx.closePath();
             ctx.stroke();
@@ -2039,26 +2114,26 @@
 
     // Voronoi cells — drawn per competitor for the current frame (Euclidean candidate regions).
     // Same style as WinSet: fill with competitor colour at low alpha, dashed stroke.
-    if (this.showVoronoi && data.voronoi_cells) {
-      var voFrame = data.voronoi_cells[frameIdx];
-      if (voFrame) {
+    if (this.showVoronoi) {
+      var regionEntries = getCompetitionOverlayEntries(data, frameIdx, "candidate_regions");
+      if (regionEntries.length) {
         ctx.lineWidth = 2.5;
         ctx.setLineDash([6, 4]);
         ctx.lineCap  = "round";
         ctx.lineJoin = "round";
-        for (var vci = 0; vci < voFrame.length; vci++) {
-          var vc = voFrame[vci];
-          if (!vc || !vc.paths) continue;
-          var vcColor = parseRGBA(data.competitor_colors[vc.competitor_idx] || "rgba(128,128,128,0.9)");
+        for (var vci = 0; vci < regionEntries.length; vci++) {
+          var region = regionEntries[vci] || {};
+          var vcColor = parseRGBA(data.competitor_colors[region.candidate] || "rgba(128,128,128,0.9)");
           ctx.fillStyle   = rgba(vcColor, 0.10);
           ctx.strokeStyle = rgba(vcColor, 0.70);
           ctx.beginPath();
-          for (var vpi = 0; vpi < vc.paths.length; vpi++) {
-            var vverts = vc.paths[vpi];
-            if (!vverts || vverts.length < 4) continue;
-            ctx.moveTo(this.xToPx(vverts[0]), this.yToPx(vverts[1]));
-            for (var vki = 2; vki < vverts.length; vki += 2) {
-              ctx.lineTo(this.xToPx(vverts[vki]), this.yToPx(vverts[vki + 1]));
+          var regionPolys = region.polygons || [];
+          for (var vpi = 0; vpi < regionPolys.length; vpi++) {
+            var vRing = regionPolys[vpi] && regionPolys[vpi].ring;
+            if (!vRing || vRing.length < 2) continue;
+            ctx.moveTo(this.xToPx(vRing[0][0]), this.yToPx(vRing[0][1]));
+            for (var vki = 1; vki < vRing.length; vki++) {
+              ctx.lineTo(this.xToPx(vRing[vki][0]), this.yToPx(vRing[vki][1]));
             }
             ctx.closePath();
           }
@@ -2072,26 +2147,26 @@
     // WinSet boundaries — drawn per seat holder for the current frame.
     // Filled with the seat holder's colour at low alpha; dashed border at higher alpha.
     // Holes are handled via the evenodd fill rule so multi-component winsets render correctly.
-    if (this.showWinset && data.winsets) {
-      var wsFrame = data.winsets[frameIdx];
-      if (wsFrame) {
+    if (this.showWinset) {
+      var wsEntries = getCompetitionOverlayEntries(data, frameIdx, "winsets");
+      if (wsEntries.length) {
         ctx.lineWidth = 2.5;
         ctx.setLineDash([6, 4]);
         ctx.lineCap  = "round";
         ctx.lineJoin = "round";
-        for (var wsi = 0; wsi < wsFrame.length; wsi++) {
-          var ws = wsFrame[wsi];
-          if (!ws) continue;
-          var wsColor = parseRGBA(data.competitor_colors[ws.competitor_idx] || "rgba(128,128,128,0.9)");
+        for (var wsi = 0; wsi < wsEntries.length; wsi++) {
+          var ws = wsEntries[wsi] || {};
+          var wsColor = parseRGBA(data.competitor_colors[ws.candidate] || "rgba(128,128,128,0.9)");
           ctx.fillStyle   = rgba(wsColor, 0.10);
           ctx.strokeStyle = rgba(wsColor, 0.70);
           ctx.beginPath();
-          for (var wpi = 0; wpi < ws.paths.length; wpi++) {
-            var wverts = ws.paths[wpi];
-            if (!wverts || wverts.length < 4) continue;
-            ctx.moveTo(this.xToPx(wverts[0]), this.yToPx(wverts[1]));
-            for (var wki = 2; wki < wverts.length; wki += 2) {
-              ctx.lineTo(this.xToPx(wverts[wki]), this.yToPx(wverts[wki + 1]));
+          var polygons = ws.polygons || [];
+          for (var wpi = 0; wpi < polygons.length; wpi++) {
+            var wRing = polygons[wpi] && polygons[wpi].ring;
+            if (!wRing || wRing.length < 2) continue;
+            ctx.moveTo(this.xToPx(wRing[0][0]), this.yToPx(wRing[0][1]));
+            for (var wki = 1; wki < wRing.length; wki++) {
+              ctx.lineTo(this.xToPx(wRing[wki][0]), this.yToPx(wRing[wki][1]));
             }
             ctx.closePath();
           }
@@ -2204,7 +2279,7 @@
     var sOvl             = data.overlays_static;
     var showCentStat     = !!(this.overlayToggles["centroid"]        && sOvl && sOvl["centroid"]);
     var showMedStat      = !!(this.overlayToggles["marginal_median"] && sOvl && sOvl["marginal_median"]);
-    var showWinsetStat   = !!(this.showWinset && data.winsets);
+    var showWinsetStat   = !!(this.showWinset && hasCompetitionOverlayData(data, "winsets"));
     var hasSeatHolders2d = !!(data.seat_holder_indices && data.seat_holder_indices.length > 0);
     var statsHaveContent = hasSeatHolders2d || showCentStat || showMedStat || showWinsetStat;
 
@@ -2219,9 +2294,9 @@
           if (this.overlayToggles[sOvlKeys[sk]]) sRows++;
         }
       }
-      if (this.showIC     && data.indifference_curves) sRows++;
-      if (this.showWinset && data.winsets)             sRows++;
-      if (this.showVoronoi && data.voronoi_cells)      sRows++;   // legend row only
+      if (this.showIC && hasCompetitionOverlayData(data, "indifference_curves")) sRows++;
+      if (this.showWinset && hasCompetitionOverlayData(data, "winsets")) sRows++;
+      if (this.showVoronoi && hasCompetitionOverlayData(data, "candidate_regions")) sRows++;   // legend row only
       var statsY0  = sLegY0 + sRows * sLineH + 10;
       var canvasH  = this.fgCanvas.height / dpr;
       if (statsY0 < canvasH - 20) {
@@ -2340,25 +2415,27 @@
 
         // WinSet area (shoelace formula; holes subtract)
         if (showWinsetStat) {
-          var wsFrameStat = data.winsets[frameIdx];
+          var wsFrameStat = getCompetitionOverlayEntries(data, frameIdx, "winsets");
           var totalArea   = 0;
           var anyNonNull  = false;
-          if (wsFrameStat) {
+          if (wsFrameStat.length) {
             for (var wsi3 = 0; wsi3 < wsFrameStat.length; wsi3++) {
               var wse = wsFrameStat[wsi3];
               if (!wse) continue;
               anyNonNull = true;
-              for (var wp3 = 0; wp3 < wse.paths.length; wp3++) {
-                var wv = wse.paths[wp3];
-                var nv = wv.length / 2;
+              var statPolys = wse.polygons || [];
+              for (var wp3 = 0; wp3 < statPolys.length; wp3++) {
+                var wv = statPolys[wp3] && statPolys[wp3].ring;
+                if (!wv || wv.length < 3) continue;
+                var nv = wv.length;
                 var pa = 0;
                 for (var pv = 0; pv < nv; pv++) {
                   var nxt = (pv + 1) % nv;
-                  pa += wv[pv * 2] * wv[nxt * 2 + 1];
-                  pa -= wv[nxt * 2] * wv[pv * 2 + 1];
+                  pa += wv[pv][0] * wv[nxt][1];
+                  pa -= wv[nxt][0] * wv[pv][1];
                 }
                 pa = Math.abs(pa) * 0.5;
-                totalArea += wse.is_hole[wp3] ? -pa : pa;
+                totalArea += statPolys[wp3].hole ? -pa : pa;
               }
             }
           }

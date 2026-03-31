@@ -1,4 +1,4 @@
-# canvas_save_demo.R — Generate competition canvases and save to .scscanvas files.
+# canvas_save_demo.R — Generate competition canvases and save to .scsview files.
 #
 # Uses the same models as:
 #   competition_1d_demo.R
@@ -20,9 +20,9 @@ library(socialchoicelab)
 # tmp/ is tracked in git but its contents are listed in .gitignore.
 # Shared with canvas_load_demo.R and the Python pair.
 dir.create("tmp", showWarnings = FALSE)
-PATH_1D     <- "tmp/canvas_1d_demo.scscanvas"
-PATH_2D     <- "tmp/canvas_2d_demo.scscanvas"
-PATH_3CAND  <- "tmp/canvas_3cand_2d_demo.scscanvas"
+PATH_1D     <- "tmp/canvas_1d_demo.scsview"
+PATH_2D     <- "tmp/canvas_2d_demo.scsview"
+PATH_3CAND  <- "tmp/canvas_3cand_2d_demo.scsview"
 
 # ===========================================================================
 # 1D competition — same model as competition_1d_demo.R

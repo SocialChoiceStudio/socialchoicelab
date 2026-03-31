@@ -2,13 +2,22 @@
 
 This file is the single entry point for project documentation.
 
+## Start here (humans and agents)
+
+1. **Open this file (`docs/README.md`)** — it maps questions to a single path.
+2. **Right now (tags, phase, blockers):** [`docs/status/WHERE_WE_ARE.md`](status/WHERE_WE_ARE.md).
+3. **Ordered planned work (what to do next, in sequence):** [`docs/status/ROADMAP.md`](status/ROADMAP.md) — **only this file should hold the main prioritized list.** Do not copy that list into other docs; link here instead.
+4. **Scratch reminders from chat (optional):** [`docs/status/follow_up_queue.md`](status/follow_up_queue.md). When something becomes real work, **move it into `ROADMAP.md` and delete the scratch line** so two lists do not drift.
+5. **What actually shipped:** [`CHANGELOG.md`](../CHANGELOG.md) at the repo root.
+6. **`docs/status/archive/`** is old plans — if anything disagrees with `ROADMAP.md` or `WHERE_WE_ARE.md`, **the non-archive files win.**
+
 ## Source-of-Truth Ownership
 
 | What you need | Where to look |
 |---------------|---------------|
-| What's next / current position | `docs/status/WHERE_WE_ARE.md` |
-| Session / owner follow-ups (durable queue) | `docs/status/follow_up_queue.md` |
-| Near-/mid-/long-term roadmap | `docs/status/ROADMAP.md` |
+| Current snapshot (phase, tags, known blockers) | `docs/status/WHERE_WE_ARE.md` |
+| Ordered plan / prioritized next work | `docs/status/ROADMAP.md` |
+| Short scratch list (promote into ROADMAP when real) | `docs/status/follow_up_queue.md` |
 | Layer 7 competition implementation plan | `docs/status/competition_plan.md` |
 | Visualization layer implementation plan (archived) | `docs/status/archive/visualization_plan.md` |
 | Milestone "done" criteria (features, tests, docs, API stability) | `docs/status/MILESTONE_GATES.md` |
@@ -33,12 +42,13 @@ This file is the single entry point for project documentation.
 | Release history | `CHANGELOG.md` (project root) |
 
 
-If two docs disagree for execution decisions, use this precedence:
+If two docs disagree, use this order:
 
-1. `docs/status/WHERE_WE_ARE.md`
-2. `docs/architecture/` (relevant design doc)
-3. `docs/status/ROADMAP.md` (near-/mid-/long-term)
-4. `docs/status/project_log.md` (history only)
+1. **`CHANGELOG.md`** — facts about what was released.
+2. **`docs/status/ROADMAP.md`** — **order and priorities** for planned work.
+3. **`docs/status/WHERE_WE_ARE.md`** — **current snapshot** (should be kept consistent with the roadmap; if they diverge, fix one or the other in the same edit).
+4. **`docs/architecture/`** — technical contracts and design intent for code.
+5. **`docs/status/project_log.md`** — narrative history only, not a plan.
 
 ## Documentation Layout
 
@@ -48,11 +58,10 @@ Project root: `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` (standard open-so
 docs/
 ├── README.md                              ← you are here (master index)
 ├── status/
-│   ├── WHERE_WE_ARE.md                    ← current position + recent work log
-│   ├── follow_up_queue.md                 ← explicit follow-ups (don’t lose across chats)
-│   ├── ROADMAP.md                         ← near-term, mid-term, long-term plans
+│   ├── WHERE_WE_ARE.md                    ← current snapshot (tags, phase, blockers)
+│   ├── ROADMAP.md                         ← ordered prioritized plan (main list)
+│   ├── follow_up_queue.md                 ← optional scratch; promote into ROADMAP
 │   ├── competition_plan.md                ← Layer 7 competition implementation plan
-│   │   ├── visualization_plan.md          ← visualization layer plan (complete, archived)
 │   ├── MILESTONE_GATES.md                 ← definition of done per milestone
 │   ├── project_log.md                     ← chronological narrative history
 │   └── archive/                           ← completed short-term plans (for reference)
@@ -65,7 +74,8 @@ docs/
 │       ├── binding_decisions_resolved.md
 │       ├── consensus_plan_3.md
 │       ├── consensus_plan_4.md
-│       └── core_completion_plan.md
+│       ├── core_completion_plan.md
+│       └── visualization_plan.md          ← visualization layer plan (complete)
 ├── architecture/
 │   ├── design_document.md                 ← living system architecture
 │   ├── geometry_design.md                 ← CGAL 2D geometry API and kernel policy
@@ -92,7 +102,7 @@ Choose the subdirectory by the doc's purpose:
 
 | Subdirectory | Put docs here when … | Examples |
 |---|---|---|
-| `status/` | The doc tracks *current state* — what is done, what is next, time horizons, or history. Agents read these every session. | `WHERE_WE_ARE.md`, `ROADMAP.md` |
+| `status/` | Snapshot, ordered plan, milestones, or history. **Prioritized “what next” belongs in `ROADMAP.md` only**; `WHERE_WE_ARE.md` is the current snapshot. | `ROADMAP.md`, `WHERE_WE_ARE.md`, `MILESTONE_GATES.md` |
 | `architecture/` | The doc records a *design decision* that governs how code is written going forward. Should be stable once adopted. | `design_document.md`, `stream_manager_design.md` |
 | `development/` | The doc is a *how-to* for working on the project — style guide, workflow, tools, illustrative examples. | `development.md`, `git_reference.md` |
 | `SocialChoiceStudioDev/references/` | Academic bibliography and priority lists — outside the repo in Dropbox; not tracked in git. | `reference_index.md`, `implementation_priority.md` |
@@ -106,9 +116,10 @@ Choose the subdirectory by the doc's purpose:
 
 For each completed development item:
 
-1. Update `docs/status/WHERE_WE_ARE.md` (next item, last updated date, add to Recent Work).
+1. Update **`docs/status/ROADMAP.md`** if priorities or ordering changed; update **`docs/status/WHERE_WE_ARE.md`** for the current snapshot (date, phase, blockers). Do not paste the full roadmap into `WHERE_WE_ARE.md` — link to `ROADMAP.md`.
 2. If the work came from a plan, mark it ✅ Done in that plan (completed plans are in `docs/status/archive/`).
 3. Add a dated milestone note to `docs/status/project_log.md` when materially relevant.
+4. Record shipped behavior in **`CHANGELOG.md`**.
 
 At **end-of-milestone** (when running `scripts/end-of-milestone.sh`), the script prompts to confirm `docs/status/ROADMAP.md` is still accurate for near/mid/long-term; update it if horizons have shifted.
 

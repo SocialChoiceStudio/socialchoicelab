@@ -42,23 +42,20 @@ test_that("compute_winset = TRUE produces correctly shaped winset payload", {
   d <- trace$dims()
   n_frames <- d$n_rounds + 1L   # 3
 
-  expect_true("winsets" %in% names(w$x))
-  expect_true("winset_competitor_indices" %in% names(w$x))
+  expect_true("overlays_frames" %in% names(w$x))
+  expect_false("winsets" %in% names(w$x))
+  expect_false("winset_competitor_indices" %in% names(w$x))
 
-  ws     <- w$x$winsets
-  ws_idx <- w$x$winset_competitor_indices
+  frame_overlays <- w$x$overlays_frames
 
-  # Outer dimension: one entry per frame.
-  expect_length(ws,     n_frames)
-  expect_length(ws_idx, n_frames)
+  expect_length(frame_overlays, n_frames)
 
   for (f in seq_len(n_frames)) {
-    frame_ws  <- ws[[f]]
-    frame_idx <- ws_idx[[f]]
-
-    # At least one seat holder per frame.
-    expect_gte(length(frame_ws), 1L)
-    expect_length(frame_idx, length(frame_ws))
+    canonical_entries <- frame_overlays[[f]]$winsets
+    expect_gte(length(canonical_entries), 1L)
+    expect_true(all(vapply(canonical_entries, function(e) {
+      e$candidate >= 0L && e$candidate < d$n_competitors
+    }, logical(1L))))
   }
 })
 
@@ -94,32 +91,29 @@ test_that("non-empty winset entry has paths, is_hole, and competitor_idx keys", 
     voters         = WS_VOTERS,
     compute_winset = TRUE
   )
-  ws <- w$x$winsets
+  ws <- w$x$overlays_frames
   d  <- trace$dims()
 
   # Find the first non-null entry.
   found <- FALSE
   for (f in seq_along(ws)) {
-    for (s_i in seq_along(ws[[f]])) {
-      entry <- ws[[f]][[s_i]]
+    for (s_i in seq_along(ws[[f]]$winsets)) {
+      entry <- ws[[f]]$winsets[[s_i]]
       if (!is.null(entry)) {
-        expect_true("paths" %in% names(entry))
-        expect_true("is_hole" %in% names(entry))
-        expect_true("competitor_idx" %in% names(entry))
+        expect_true("polygons" %in% names(entry))
+        expect_true("candidate" %in% names(entry))
 
-        # paths is a non-empty list; each path is a flat numeric list.
-        expect_gte(length(entry$paths), 1L)
-        first_path <- entry$paths[[1]]
-        expect_true(is.list(first_path))
-        expect_gte(length(first_path), 4L)
-        expect_true(all(is.numeric(unlist(first_path))))
+        expect_gte(length(entry$polygons), 1L)
+        first_ring <- entry$polygons[[1]]$ring
+        expect_true(is.list(first_ring))
+        expect_gte(length(first_ring), 2L)
+        expect_true(all(vapply(first_ring, length, integer(1L)) == 2L))
+        expect_true(all(is.numeric(unlist(first_ring))))
 
-        # is_hole length matches paths length.
-        expect_length(entry$is_hole, length(entry$paths))
+        expect_true(all(vapply(entry$polygons, function(poly) "hole" %in% names(poly), logical(1L))))
 
-        # competitor_idx is 0-based.
-        expect_gte(entry$competitor_idx, 0L)
-        expect_lt(entry$competitor_idx, d$n_competitors)
+        expect_gte(entry$candidate, 0L)
+        expect_lt(entry$candidate, d$n_competitors)
 
         found <- TRUE
         break
@@ -143,20 +137,20 @@ test_that("winset_num_samples affects boundary vertex count", {
   )
 
   # Find the first non-null entry in each and compare path vertex counts.
-  .first_path_len <- function(ws_payload) {
-    for (f in seq_along(ws_payload)) {
-      for (s_i in seq_along(ws_payload[[f]])) {
-        entry <- ws_payload[[f]][[s_i]]
-        if (!is.null(entry) && length(entry$paths) > 0L) {
-          return(length(entry$paths[[1L]]))
+  .first_path_len <- function(frame_payload) {
+    for (f in seq_along(frame_payload)) {
+      for (s_i in seq_along(frame_payload[[f]]$winsets)) {
+        entry <- frame_payload[[f]]$winsets[[s_i]]
+        if (!is.null(entry) && length(entry$polygons) > 0L) {
+          return(length(entry$polygons[[1L]]$ring))
         }
       }
     }
     NA_integer_
   }
 
-  len16 <- .first_path_len(w16$x$winsets)
-  len64 <- .first_path_len(w64$x$winsets)
+  len16 <- .first_path_len(w16$x$overlays_frames)
+  len64 <- .first_path_len(w64$x$overlays_frames)
   expect_false(is.na(len16), info = "No non-null winset path found at num_samples=16.")
   expect_false(is.na(len64), info = "No non-null winset path found at num_samples=64.")
   # Higher num_samples should produce more vertices (or at least not fewer).

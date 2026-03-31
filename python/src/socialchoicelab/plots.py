@@ -313,6 +313,86 @@ def _serialise_overlays_static(overlays):
     return result
 
 
+def _flat_path_to_ring(path_flat) -> list[list[float]]:
+    """Convert flat [x0,y0,...] coordinates to [[x,y], ...] ring form."""
+    arr = np.asarray(path_flat, dtype=float).ravel()
+    return [[float(arr[i]), float(arr[i + 1])] for i in range(0, len(arr) - 1, 2)]
+
+
+def _build_overlays_frames(
+    n_frames: int,
+    ic_data=None,
+    ic_indices=None,
+    winsets=None,
+    candidate_regions=None,
+):
+    """Build canonical per-frame overlays from the legacy payload parts."""
+    frames = [{} for _ in range(int(n_frames))]
+
+    if ic_data is not None:
+        for frame_i, seat_curves in enumerate(ic_data):
+            frame_entries = []
+            seat_idxs = (
+                ic_indices[frame_i]
+                if ic_indices is not None and frame_i < len(ic_indices)
+                else list(range(len(seat_curves)))
+            )
+            for seat_i, voter_curves in enumerate(seat_curves):
+                frame_entries.append({
+                    "candidate": int(seat_idxs[seat_i]),
+                    "curves": [
+                        {"ring": _flat_path_to_ring(curve)}
+                        for curve in voter_curves
+                        if curve is not None
+                    ],
+                })
+            if frame_entries:
+                frames[frame_i]["indifference_curves"] = frame_entries
+
+    if winsets is not None:
+        for frame_i, frame_ws in enumerate(winsets):
+            frame_entries = []
+            for ws in frame_ws:
+                if not ws:
+                    continue
+                paths = ws.get("paths") or []
+                holes = ws.get("is_hole") or []
+                polygons = [
+                    {
+                        "ring": _flat_path_to_ring(path_flat),
+                        "hole": bool(holes[path_i]) if path_i < len(holes) else False,
+                    }
+                    for path_i, path_flat in enumerate(paths)
+                    if path_flat is not None
+                ]
+                frame_entries.append({
+                    "candidate": int(ws.get("competitor_idx", 0)),
+                    "polygons": polygons,
+                })
+            if frame_entries:
+                frames[frame_i]["winsets"] = frame_entries
+
+    if candidate_regions is not None:
+        for frame_i, frame_regions in enumerate(candidate_regions):
+            frame_entries = []
+            for region in frame_regions:
+                if not region:
+                    continue
+                polygons = [
+                    {"ring": _flat_path_to_ring(path_flat), "hole": False}
+                    for path_flat in (region.get("paths") or [])
+                    if path_flat is not None
+                ]
+                frame_entries.append({
+                    "candidate": int(region.get("competitor_idx", 0)),
+                    "polygons": polygons,
+                })
+            if frame_entries:
+                frames[frame_i]["candidate_regions"] = frame_entries
+
+    return frames if any(frame for frame in frames) else None
+
+
 def _htmlwidgets_stub_script() -> str:
     return (
         "    window.HTMLWidgets = (function() {\n"
@@ -427,8 +507,8 @@ def _html_from_spatial_payload(payload: dict, width: int, height: int) -> str:
     ])
 
 
-def _save_scscanvas(payload, width, height, payload_path):
-    """Write the canvas payload envelope to a .scscanvas JSON file."""
+def _save_scsview(payload, width, height, payload_path):
+    """Write the canvas payload envelope to a .scsview JSON file."""
     import datetime
 
     try:
@@ -438,7 +518,7 @@ def _save_scscanvas(payload, width, height, payload_path):
         gen_ver = "unknown"
     created = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     envelope = {
-        "format":    "scscanvas",
+        "format":    "scsview",
         "version":   "1",
         "created":   created,
         "generator": f"socialchoicelab/python/{gen_ver}",
@@ -636,7 +716,7 @@ def _animate_competition_canvas_1d(
         payload["winset_intervals_1d"] = ws_data
 
     if payload_path is not None:
-        _save_scscanvas(payload, width, height, payload_path)
+        _save_scsview(payload, width, height, payload_path)
 
     html = _html_from_payload(payload, width, height)
     if path is not None:
@@ -743,7 +823,7 @@ def animate_competition_canvas(
 
     payload_path:
         If given, write the pre-computed payload (positions, ICs, WinSet,
-        Cutlines, etc.) to this path as a ``.scscanvas`` JSON file before
+        Cutlines, etc.) to this path as a ``.scsview`` JSON file before
         building the HTML.  The file can be reloaded later with
         :func:`load_competition_canvas` without recomputing anything.
     compute_voronoi:
@@ -906,7 +986,6 @@ def animate_competition_canvas(
 
     # ── WinSet computation ──────────────────────────────────────────────────────
     ws_data_payload = None
-    ws_indices_payload = None
     if compute_winset:
         n_voters = len(voters_x)
         if n_voters == 0:
@@ -946,13 +1025,10 @@ def animate_competition_canvas(
         _WS_ERR = 512
 
         ws_data_payload = []
-        ws_indices_payload = []
         for frame_i, pos_mat in enumerate(positions):
             seat_idxs = seat_idxs_per_frame[frame_i]
             frame_ws = []
-            frame_cidxs = []
             for s in seat_idxs:
-                frame_cidxs.append(s)
                 sq_x = float(pos_mat[s, 0])
                 sq_y = float(pos_mat[s, 1])
                 is_empty = _ffi.new("int *")
@@ -1011,7 +1087,6 @@ def animate_competition_canvas(
                     "competitor_idx": s,
                 })
             ws_data_payload.append(frame_ws)
-            ws_indices_payload.append(frame_cidxs)
 
     # ── Voronoi (Euclidean) per frame ─────────────────────────────────────────
     voronoi_cells_payload = None
@@ -1088,17 +1163,18 @@ def animate_competition_canvas(
         "overlays_static":      _serialise_overlays_static(overlays),
         "seat_holder_indices":  seat_holder_indices,
     }
-    if ic_data_payload is not None:
-        payload["indifference_curves"]   = ic_data_payload
-        payload["ic_competitor_indices"] = ic_indices_payload
-    if ws_data_payload is not None:
-        payload["winsets"]                   = ws_data_payload
-        payload["winset_competitor_indices"] = ws_indices_payload
-    if voronoi_cells_payload is not None:
-        payload["voronoi_cells"] = voronoi_cells_payload
+    overlays_frames = _build_overlays_frames(
+        len(frame_names),
+        ic_data=ic_data_payload,
+        ic_indices=ic_indices_payload,
+        winsets=ws_data_payload,
+        candidate_regions=voronoi_cells_payload,
+    )
+    if overlays_frames is not None:
+        payload["overlays_frames"] = overlays_frames
 
     if payload_path is not None:
-        _save_scscanvas(payload, width, height, payload_path)
+        _save_scsview(payload, width, height, payload_path)
 
     html = _html_from_payload(payload, width, height)
     if path is not None:
@@ -1107,7 +1183,7 @@ def animate_competition_canvas(
 
 
 def load_competition_canvas(path, width=None, height=None):
-    """Load a competition canvas animation from a ``.scscanvas`` file.
+    """Load a competition canvas animation from a ``.scsview`` file.
 
     Reads a file written by :func:`animate_competition_canvas` (via the
     ``payload_path`` argument) or the R equivalent ``save_competition_canvas()``,
@@ -1118,7 +1194,7 @@ def load_competition_canvas(path, width=None, height=None):
     Parameters
     ----------
     path:
-        Path to a ``.scscanvas`` JSON file.
+        Path to a ``.scsview`` JSON file.
     width, height:
         Widget dimensions in pixels.  ``None`` uses the values stored in the
         file.
@@ -1131,7 +1207,7 @@ def load_competition_canvas(path, width=None, height=None):
 
     Examples
     --------
-    >>> html = load_competition_canvas("run_200.scscanvas")
+    >>> html = load_competition_canvas("run_200.scsview")
     >>> with open("run_200.html", "w") as f:
     ...     f.write(html)
     """
@@ -1142,10 +1218,11 @@ def load_competition_canvas(path, width=None, height=None):
         )
     envelope = json.loads(p.read_text(encoding="utf-8"))
     fmt = envelope.get("format")
-    if fmt != "scscanvas":
+    if fmt != "scsview":
         raise ValueError(
             f"load_competition_canvas: unexpected format {fmt!r} "
-            f"(expected 'scscanvas'). Is '{path}' a .scscanvas file?"
+            f"(expected 'scsview'). "
+            f"Is '{path}' a competition canvas file?"
         )
     payload = envelope["payload"]
     w = width  if width  is not None else envelope.get("width")  or 900
