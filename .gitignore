@@ -62,6 +62,10 @@ temp/
 debug/
 scratch/
 
+# Generated HTML / canvas outputs (save_plot, interactive demos, R.check, etc.)
+tmp/
+r/tmp/
+
 # Old codebases (reference only, not canonical; often a symlink)
 old_codebases
 old_codebases/
