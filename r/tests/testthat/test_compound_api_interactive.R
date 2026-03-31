@@ -1,11 +1,7 @@
 # test_compound_api_interactive.R — Payload + validation for interactive HTML demos
 
-.com_int_root <- testthat::test_path("../..")
 .com_int_env <- new.env(parent = asNamespace("socialchoicelab"))
-sys.source(
-  file.path(.com_int_root, "compound_api_interactive_common.R"),
-  envir = .com_int_env
-)
+sys.source(testthat::test_path("compound_api_interactive_common.R"), envir = .com_int_env)
 
 test_that("validate_interactive_payload flags empty payload", {
   vc <- .com_int_env$validate_interactive_payload(list())

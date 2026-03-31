@@ -5,7 +5,7 @@
 # ic_interval_1d, r_scs_winset_2d_export_boundary, uncovered_set_boundary_2d,
 # and r_scs_voronoi_cells_2d (heap-backed in C).
 #
-# Shared build/validation: r/compound_api_interactive_common.R
+# Shared build/validation: r/tests/testthat/compound_api_interactive_common.R
 #
 # From repository root:
 #   SCS_LIB_PATH=$(pwd)/build DYLD_LIBRARY_PATH=$(pwd)/build Rscript r/compound_api_interactive_demo.R
@@ -22,20 +22,24 @@ root <- getwd()
 r_pkg <- file.path(root, "r", "DESCRIPTION")
 here_pkg <- file.path(root, "DESCRIPTION")
 if (file.exists(r_pkg)) {
-  devtools::load_all(file.path(root, "r"), quiet = TRUE)
+  repo_root <- root
+  pkg_root <- file.path(root, "r")
+  devtools::load_all(pkg_root, quiet = TRUE)
 } else if (file.exists(here_pkg)) {
-  devtools::load_all(root, quiet = TRUE)
+  pkg_root <- root
+  repo_root <- dirname(root)
+  devtools::load_all(pkg_root, quiet = TRUE)
 } else {
   stop("Run from repo root (r/DESCRIPTION) or from r/.")
 }
 
-common <- file.path(root, "r", "compound_api_interactive_common.R")
+common <- file.path(pkg_root, "tests", "testthat", "compound_api_interactive_common.R")
 if (!file.exists(common)) {
   stop("Missing common helpers: ", common)
 }
 source(common, local = FALSE)
 
-shell <- file.path(root, "python", "compound_api_interactive_shell.html")
+shell <- file.path(repo_root, "python", "compound_api_interactive_shell.html")
 if (!file.exists(shell)) {
   stop("Missing shell template: ", shell)
 }
@@ -63,7 +67,7 @@ if (length(parts) != 2L) {
 html <- paste0(parts[[1L]], json, parts[[2L]])
 html <- gsub("__SOURCE_TAG__", "R bindings", html, fixed = TRUE)
 
-out_dir <- file.path(root, "tmp")
+out_dir <- file.path(repo_root, "tmp")
 if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 out_path <- file.path(out_dir, OUT_NAME)
 cat(html, file = out_path, sep = "")
