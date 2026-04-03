@@ -45,3 +45,13 @@ if ! "$ROOT/scripts/check-all.sh"; then
   echo "pre-push: to bypass (use sparingly): git push --no-verify" >&2
   exit 1
 fi
+
+# check-all runs pkgdown and mkdocs, which rewrite tracked trees under r/docs and
+# docs/site. That would leave the working tree dirty after an otherwise good
+# push. Restore those paths from the index and drop stray untracked outputs
+# there so the hook only *verifies* site builds. To commit regenerated docs,
+# run ./scripts/check-all.sh, commit r/docs and/or docs/site, then push.
+echo ""
+echo "pre-push: restoring r/docs and docs/site to match index (sites were verified)."
+git restore r/docs docs/site
+git clean -fdq -- r/docs docs/site 2>/dev/null || true

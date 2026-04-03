@@ -28,5 +28,5 @@ export SCS_INCLUDE_PATH=$(pwd)/include
 ## Reference
 
 - See `.github/workflows/ci.yml` for the exact CI steps these checks mirror.
-- Pre-push hook (`scripts/pre-push.sh` → `.git/hooks/pre-push`) calls `check-all.sh` automatically when `r/` or `python/` files change.
+- Pre-push hook (`scripts/pre-push.sh` → `.git/hooks/pre-push`) calls `check-all.sh` automatically when `r/` or `python/` files change; after a successful run it restores `r/docs` and `docs/site` from the index so the doc builds do not leave a dirty working tree (they were still verified).
 - To reinstall the pre-push hook after a fresh clone: `cp scripts/pre-push.sh .git/hooks/pre-push && chmod +x .git/hooks/pre-push`
