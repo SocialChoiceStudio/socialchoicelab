@@ -2,11 +2,11 @@
 
 **Current snapshot** — tags, phase, and blockers. **The ordered plan of what to do next lives in [ROADMAP.md](ROADMAP.md)**; this file should not duplicate that list (link instead).
 
-- **Current phase:** `v0.3.0` is tagged. Layer 7 candidate competition is complete. Additional static-plot improvements have landed on `main` after the tag (non-Euclidean overlays, canvas-aligned centrality markers, SQ legend-only). See [CHANGELOG.md](../../CHANGELOG.md) `[Unreleased]` and [ROADMAP.md](ROADMAP.md) § Post-`v0.3.0`.
+- **Current phase:** `v0.3.0` is tagged. Layer 7 candidate competition is complete. On `main` after the tag: static canvas migration (see `[Unreleased]` changelog), **partial composite C API** work (`scs_ic_interval_1d`, `scs_winset_2d_export_boundary`, heap Voronoi / uncovered boundary helpers — R/Python wired; see ROADMAP § Next work sequence). Earlier post-tag items: non-Euclidean overlays, canvas-aligned centrality markers, SQ legend-only.
 - **Next:** Only [ROADMAP.md](ROADMAP.md) holds priorities and ordering (near-term, long-term, post-tag visualization). This file does not restate that plan.
 - **Release context:** `v0.2.0` and `v0.3.0` are tagged. Authoritative Layer 7 plan: [competition_plan.md](competition_plan.md).
 - **Ad-hoc follow-ups:** Optional scratch: [follow_up_queue.md](follow_up_queue.md). Promote items into [ROADMAP.md](ROADMAP.md) when they become real work.
-- **Last updated:** 2026-03-11
+- **Last updated:** 2026-03-30
 
 **How this fits:** [docs/README.md](../README.md) explains which file answers which question. **Priorities and sequencing:** [ROADMAP.md](ROADMAP.md). **This file:** today’s facts. **Scratch:** [follow_up_queue.md](follow_up_queue.md). **Milestone criteria:** [MILESTONE_GATES.md](MILESTONE_GATES.md). **Old plans:** [archive/](archive/).
 
@@ -44,6 +44,12 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 ---
 
 ## Recent Work
+
+### Session: 2026-03-30 — Status + changelog sync: composite C API track (partial)
+
+- **Reality check:** Composite `scs_*` helpers and binding wiring were already on `main` but ROADMAP still read like a blank slate; `CHANGELOG` `[Unreleased]` mentioned canvas migration only.
+- **Updates:** [ROADMAP.md](ROADMAP.md) § Next work sequence — composite item now lists **delivered** (`scs_ic_interval_1d`, `scs_winset_2d_export_boundary`, `scs_uncovered_set_boundary_2d_heap`, `scs_voronoi_cells_2d_heap`) vs **remaining candidates**; release ladder row adjusted. [CHANGELOG.md](../../CHANGELOG.md) `[Unreleased]` — new **Added** subsection for those APIs and bindings. This file — current-phase bullet and last-updated date.
+- **Tooling (separate commit on `main`):** `scripts/pre-push.sh` restores `r/docs` and `docs/site` after a successful `check-all` so the pre-push hook does not leave a dirty tree.
 
 ### Session: 2026-03-11 — Docs sync: `v0.3.0` tagged, post-tag static visualization
 

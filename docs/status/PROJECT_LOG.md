@@ -173,3 +173,9 @@ Entries are in chronological order (oldest first, newest last).
 **Reality check:** `v0.2.0` and `v0.3.0` are tagged on `main`; WHERE_WE_ARE, ROADMAP, MILESTONE_GATES, and `competition_plan.md` were still describing “ready to tag” / R animation blocker in places — corrected.
 
 **Post-tag `main`:** Static spatial layers gained `dist_config` for ICs, preferred regions, and winset auto-compute; polygon closure for strokes; centroid/marginal-median markers aligned with competition canvas; SQ legend-only; later **canvas migration** (Plotly removed). Documented in CHANGELOG `[Unreleased]`, ROADMAP § Post-`v0.3.0`, and `docs/development/visualization_design.md`.
+
+## 2026-03-30 — Docs sync: composite C API (partial) on `main`
+
+**Shipped earlier on `main` (this entry catches up the status docs):** `scs_ic_interval_1d`, `scs_winset_2d_export_boundary`, `scs_uncovered_set_boundary_2d_heap`, `scs_voronoi_cells_2d_heap`; R/Python bindings and plot paths; `c_api_design.md` already described several of these.
+
+**This session:** ROADMAP composite bullet split into delivered vs candidates; CHANGELOG `[Unreleased]` **Added** section; WHERE_WE_ARE snapshot + Recent Work; pre-push restores doc outputs after verify (`scripts/pre-push.sh`, committed separately).

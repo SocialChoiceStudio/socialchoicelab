@@ -110,9 +110,17 @@ Order for the next tracks:
 
 1. **Canvas for static spatial plots** — **Complete ✅** (see [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md)): `plot_spatial_voting` and all `layer_*` use the shared `scs_canvas_core.js` + `spatial_voting_canvas.js` stack; Plotly is removed from R and Python dependencies.
 
-2. **Composite C API operations** — Systematically add new **`scs_*` functions** where R/Python today chain **multiple** existing `scs_*` calls to obtain **one** logical result. (*Naming note:* the **stable boundary** is the C API (`extern "C"` in `scs_api.cpp`); the **implementation** of each composite is C++ that reuses existing core code—so we speak of “composite C API operations,” not “C++ wrappers,” to match what bindings actually call.) Same pattern as `scs_ic_polygon_2d`: one multi-step pipeline inside the library, one C entry point, then thin R/Python bindings. **Candidates** (non-exhaustive): 1D IC paths that still do `calculate_distance` → `distance_to_utility` → `level_set_1d` per segment; redundant `calculate_distance` + `ic_polygon_2d` when both distance and polygon are needed; R’s `level_set_2d` → named list → `level_set_to_polygon` round-trip in hot loops. **Keep** granular `scs_*` primitives for tests, teaching, and composition.
+2. **Composite C API operations** — **In progress on `main`.** Add **`scs_*` functions** where R/Python would otherwise chain **multiple** existing `scs_*` calls for **one** logical result. (*Naming note:* the **stable boundary** is the C API (`extern "C"` in `scs_api.cpp`); the **implementation** is C++ that reuses existing core code.) Same pattern as `scs_ic_polygon_2d`: one pipeline inside the library, one C entry point, thin R/Python bindings. **Keep** granular `scs_*` primitives for tests, teaching, and composition.
 
-3. **Utility function plot** — **After** composite C API work (or in parallel where it does not block it), **revisit** the **utility function plot** (loss / distance → **utility**, e.g. \(u\) vs distance and related teaching or diagnostic views). Align with the canvas static renderer; refresh R/Python parity, theming, and documentation.
+   **Delivered so far (also in `c_api_design.md` and `CHANGELOG.md` `[Unreleased]`):**
+   - `scs_ic_interval_1d` — one-call 1D IC segment (distance → utility → level set) for a single salience weight; R `ic_interval_1d()` / Python `ic_interval_1d`; used in competition and static plot paths.
+   - `scs_winset_2d_export_boundary` — closed winset boundary polylines for visualization; wired in R/Python canvas code.
+   - `scs_uncovered_set_boundary_2d_heap` — heap-backed uncovered-set boundary export (alongside the stack-bounded API).
+   - `scs_voronoi_cells_2d_heap` — heap-backed 2D Voronoi cells over sites; used from bindings for plots.
+
+   **Still candidates (non-exhaustive):** redundant `calculate_distance` + `ic_polygon_2d` when both distance and polygon are needed; R’s `level_set_2d` → named list → `level_set_to_polygon` round-trip in hot loops; any other multi-call chains surfaced by a bindings audit.
+
+3. **Utility function plot** — **After** remaining composite C API work (or in parallel where it does not block it), **revisit** the **utility function plot** (loss / distance → **utility**, e.g. \(u\) vs distance and related teaching or diagnostic views). Align with the canvas static renderer; refresh R/Python parity, theming, and documentation.
 
 ### Animation implementation
 
@@ -151,7 +159,7 @@ Indifference curves (ICs) are computed during both static spatial voting visuali
 |---------|---------|
 | `0.2.0` | First cohesive public package release: core + c_api + geometry + aggregation + bindings + visualization. |
 | `0.3.0` | Candidate competition / Layer 7 release: adaptive candidate engine + trace/C API/bindings + experiment runner baseline. |
-| pre-`1.0.0` | **Composite C API operations:** add composite `scs_*` entry points where bindings still chain multiple calls for one result. **Utility function plot:** revisit the loss/distance→utility diagnostic plot for parity and the canvas renderer (see [§ Next work sequence](#next-work-sequence-visual-stack-and-c-api)). |
+| pre-`1.0.0` | **Composite C API operations** (in progress — see [§ Next work sequence](#next-work-sequence-visual-stack-and-c-api)): finish remaining composite `scs_*` entry points where bindings still chain multiple calls. **Utility function plot:** revisit the loss/distance→utility diagnostic plot for parity and the canvas renderer. |
 | `1.0.0` | Major components complete: `0.3.0` scope plus the next major feature track (currently "Characteristics of Voting Rules", working title). |
 
 ---

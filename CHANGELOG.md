@@ -4,6 +4,19 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 
 ## [Unreleased]
 
+### Added
+
+#### C API — composite geometry helpers
+
+- **`scs_ic_interval_1d`:** one-call 1D indifference interval (distance → utility → `level_set_1d`) for a single salience weight; tests in `test_c_api.cpp` match the multi-call sequence.
+- **`scs_winset_2d_export_boundary`:** export closed winset boundary polylines for plotting.
+- **`scs_uncovered_set_boundary_2d_heap`:** heap-backed allocation path for continuous uncovered-set boundary export (complements the stack-bounded `scs_uncovered_set_boundary_2d`).
+- **`scs_voronoi_cells_2d_heap`:** heap-backed 2D Voronoi diagram over sites (complements `scs_voronoi_cells_2d`).
+
+#### R and Python bindings
+
+- **`ic_interval_1d`** (R and Python) and canvas / competition plot wiring using the above C entry points where they replace previous multi-`.Call` / multi-`cffi` chains; interactive compound demos and tests under `compound_api_*` / `test_functions.R` / Python tests.
+
 ### Changed
 
 #### Static spatial plots (R and Python) — canvas migration
