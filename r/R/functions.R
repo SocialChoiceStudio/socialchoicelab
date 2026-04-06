@@ -377,3 +377,121 @@ weighted_majority_prefers_2d <- function(a, b, voter_ideals, weights,
         dist_config, as.double(threshold),
       PACKAGE = "socialchoicelab")
 }
+
+# ---------------------------------------------------------------------------
+# Utility surface plot
+# ---------------------------------------------------------------------------
+
+#' Plot a voter's 3D utility surface over 2D policy space
+#'
+#' Renders the utility function \eqn{u(x, y)} as an interactive 3D surface
+#' using Three.js (WebGL). The surface peaks at \code{(ideal_x, ideal_y)} and
+#' falls off according to \code{loss_config} and \code{dist_config}. Horizontal
+#' slices through the surface at fixed utility levels correspond to the 2D
+#' indifference curves produced by \code{\link{level_set_polygon_2d}} and
+#' \code{\link{ic_polygon_2d}}.
+#'
+#' Drag the plot with the mouse to rotate the surface.
+#'
+#' @param ideal_x,ideal_y Numeric scalars: voter ideal-point coordinates.
+#' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
+#'   \code{n_weights} must be 2.
+#' @param loss_config Loss configuration from \code{\link{make_loss_config}}.
+#' @param xlim,ylim Numeric vectors of length 2: policy-space extents.
+#'   Defaults to \code{c(-3, 3)} for both axes.
+#' @param resolution Integer: number of grid points per axis. Higher values
+#'   produce smoother surfaces. Default \code{60L}.
+#' @param n_levels Integer: number of indifference rings to draw on the
+#'   surface. Default \code{5L}.
+#' @param axis_labels Character vector of length 2: labels for the two policy
+#'   dimensions. Default \code{c("Dimension 1", "Dimension 2")}.
+#' @param title Optional character string for a plot title.
+#' @param width,height Widget width and height in pixels. Passed to
+#'   \code{\link[htmlwidgets]{createWidget}}.
+#' @return An htmlwidget object (invisible in scripts; displayed in RStudio /
+#'   Shiny / \code{knitr}).
+#' @examples
+#' \dontrun{
+#' # Euclidean distance + quadratic loss (the textbook circular-tent case)
+#' plot_utility_surface(
+#'   ideal_x = 1, ideal_y = 0.5,
+#'   dist_config = make_dist_config("euclidean"),
+#'   loss_config = make_loss_config("quadratic")
+#' )
+#'
+#' # Manhattan distance produces a diamond-shaped tent
+#' plot_utility_surface(
+#'   ideal_x = 0, ideal_y = 0,
+#'   dist_config = make_dist_config("manhattan"),
+#'   loss_config = make_loss_config("linear"),
+#'   axis_labels = c("Guns", "Butter"),
+#'   title = "Voter C utility surface"
+#' )
+#' }
+#' @export
+plot_utility_surface <- function(ideal_x, ideal_y,
+                                 dist_config  = make_dist_config(),
+                                 loss_config  = make_loss_config("quadratic"),
+                                 xlim         = c(-3, 3),
+                                 ylim         = c(-3, 3),
+                                 resolution   = 60L,
+                                 n_levels     = 5L,
+                                 axis_labels  = c("Dimension 1", "Dimension 2"),
+                                 title        = NULL,
+                                 width        = NULL,
+                                 height       = NULL) {
+  stopifnot(
+    is.numeric(ideal_x), length(ideal_x) == 1L,
+    is.numeric(ideal_y), length(ideal_y) == 1L,
+    is.numeric(xlim), length(xlim) == 2L, xlim[1L] < xlim[2L],
+    is.numeric(ylim), length(ylim) == 2L, ylim[1L] < ylim[2L],
+    is.integer(resolution) || is.numeric(resolution), resolution >= 4L,
+    is.integer(n_levels)   || is.numeric(n_levels),   n_levels   >= 1L,
+    length(axis_labels) >= 2L
+  )
+  resolution <- as.integer(resolution)
+  n_levels   <- as.integer(n_levels)
+
+  xvals <- seq(xlim[1L], xlim[2L], length.out = resolution)
+  yvals <- seq(ylim[1L], ylim[2L], length.out = resolution)
+
+  ideal <- c(ideal_x, ideal_y)
+  z     <- numeric(resolution * resolution)
+  for (i in seq_len(resolution)) {
+    for (j in seq_len(resolution)) {
+      alt  <- c(xvals[i], yvals[j])
+      d    <- calculate_distance(ideal, alt, dist_config)
+      z[(i - 1L) * resolution + j] <- distance_to_utility(d, loss_config)
+    }
+  }
+
+  min_u    <- min(z)
+  max_u    <- max(z)
+  ideal_u  <- max_u
+  urange   <- max_u - min_u
+  lv       <- seq(min_u + urange / (n_levels + 1L),
+                  max_u - urange / (n_levels + 1L),
+                  length.out = n_levels)
+
+  payload <- list(
+    xvals        = xvals,
+    yvals        = yvals,
+    z            = z,
+    ideal_x      = ideal_x,
+    ideal_y      = ideal_y,
+    ideal_u      = max_u,
+    min_u        = min_u,
+    max_u        = max_u,
+    level_values = lv,
+    axis_labels  = c(axis_labels[1L], axis_labels[2L], "Utility"),
+    title        = title
+  )
+
+  htmlwidgets::createWidget(
+    name    = "utility_surface_canvas",
+    x       = payload,
+    width   = width,
+    height  = height,
+    package = "socialchoicelab"
+  )
+}

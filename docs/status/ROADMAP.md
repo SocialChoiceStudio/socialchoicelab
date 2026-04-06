@@ -121,7 +121,7 @@ Order for the next tracks:
 
    **Still candidates (non-exhaustive):** redundant `calculate_distance` + `ic_polygon_2d` when both distance and polygon are needed; any other multi-call chains surfaced by a bindings audit.
 
-3. **Utility function plot** — **After** remaining composite C API work (or in parallel where it does not block it), **revisit** the **utility function plot** (loss / distance → **utility**, e.g. \(u\) vs distance and related teaching or diagnostic views). Align with the canvas static renderer; refresh R/Python parity, theming, and documentation.
+3. **Utility function plot** — **Complete ✅ (on `main`).** `plot_utility_surface()` in R and Python renders the full \(u(x,y)\) surface as an interactive 3D widget (Three.js / WebGL, painter-sorted quads, mouse-drag rotation). Accepts any `dist_config` / `loss_config`; indifference rings shown via marching-squares contours. Three.js r0.148.0 bundled locally — no new package dependency. R: `plot_utility_surface()` returns an htmlwidget; Python: `plot_utility_surface()` + `save_utility_surface()` write self-contained HTML.
 
 ### Animation implementation
 
@@ -160,7 +160,7 @@ Indifference curves (ICs) are computed during both static spatial voting visuali
 |---------|---------|
 | `0.2.0` | First cohesive public package release: core + c_api + geometry + aggregation + bindings + visualization. |
 | `0.3.0` | Candidate competition / Layer 7 release: adaptive candidate engine + trace/C API/bindings + experiment runner baseline. |
-| pre-`1.0.0` | **Composite C API operations** (in progress — see [§ Next work sequence](#next-work-sequence-visual-stack-and-c-api)): finish remaining composite `scs_*` entry points where bindings still chain multiple calls. **Utility function plot:** revisit the loss/distance→utility diagnostic plot for parity and the canvas renderer. |
+| pre-`1.0.0` | **Composite C API operations** ✅ Complete. **Utility function plot** ✅ Complete (`plot_utility_surface()` 3D surface widget in R and Python). **Next:** test correctness review (false theorem in unit tests + paper draft); then Yolk algorithm replacement. |
 | `1.0.0` | Major components complete: `0.3.0` scope plus the next major feature track (currently "Characteristics of Voting Rules", working title). |
 
 ---

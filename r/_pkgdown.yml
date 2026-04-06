@@ -35,6 +35,7 @@ reference:
       - level_set_to_polygon
       - level_set_polygon_2d
       - ic_polygon_2d
+      - plot_utility_surface
 
   - title: "Convex Hull and Majority Preference"
     desc: "Geometry utilities and pairwise majority tests."

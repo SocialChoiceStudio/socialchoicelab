@@ -51,6 +51,7 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/layer_yolk.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_1d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_2d.html</loc></url>
+<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_polygon_2d.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_to_polygon.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/list_scenarios.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/load_competition_canvas.html</loc></url>
@@ -68,6 +69,7 @@
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/pairwise_ranking_from_matrix.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/pareto_set.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_spatial_voting.html</loc></url>
+<url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_utility_surface.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plurality_all_winners.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plurality_one_winner.html</loc></url>
 <url><loc>https://socialchoicestudio.github.io/socialchoicelab/r/reference/plurality_scores.html</loc></url>

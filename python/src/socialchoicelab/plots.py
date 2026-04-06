@@ -30,6 +30,8 @@ _PACKAGE_DIR = Path(__file__).parent
 _CORE_JS_PATH = _PACKAGE_DIR / "scs_canvas_core.js"
 _COMPETITION_JS_PATH = _PACKAGE_DIR / "competition_canvas.js"
 _SPATIAL_JS_PATH = _PACKAGE_DIR / "spatial_voting_canvas.js"
+_THREE_JS_PATH = _PACKAGE_DIR / "three.min.js"
+_UTILITY_SURFACE_JS_PATH = _PACKAGE_DIR / "utility_surface_canvas.js"
 
 from socialchoicelab._functions import (
     ic_interval_1d,
@@ -1534,3 +1536,196 @@ def save_plot(fig, path, width=None, height=None):
             f"save_plot: unsupported file extension '{ext}'. Supported formats: .html."
         )
     return str(path)
+
+
+# ---------------------------------------------------------------------------
+# 3D utility surface plot
+# ---------------------------------------------------------------------------
+
+def _html_from_utility_surface_payload(payload: dict, width: int, height: int) -> str:
+    """Build self-contained HTML for the 3D utility surface widget."""
+    for p in (_THREE_JS_PATH, _UTILITY_SURFACE_JS_PATH):
+        if not p.exists():
+            raise FileNotFoundError(
+                f"Utility surface JS missing: {p} "
+                "(copy three.min.js and utility_surface_canvas.js from "
+                "r/inst/htmlwidgets/ into the Python package directory)."
+            )
+    js_three   = _THREE_JS_PATH.read_text(encoding="utf-8")
+    js_widget  = _UTILITY_SURFACE_JS_PATH.read_text(encoding="utf-8")
+    json_payload = json.dumps(payload)
+    title = str(payload.get("title") or "Utility Surface")
+    w = str(int(width))
+    h = str(int(height))
+    return "\n".join([
+        "<!DOCTYPE html>",
+        "<html>",
+        "<head>",
+        '  <meta charset="utf-8">',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+        "  <title>" + title + "</title>",
+        "  <style>",
+        "    * { box-sizing: border-box; margin: 0; padding: 0; }",
+        "    body { background: #fff; }",
+        '    #utility-surface { width: ' + w + 'px; height: ' + h + 'px; position:relative; }',
+        "  </style>",
+        "</head>",
+        "<body>",
+        '  <div id="utility-surface"></div>',
+        "  <script>",
+        _htmlwidgets_stub_script(),
+        "  </script>",
+        "  <script>",
+        js_three,
+        "  </script>",
+        "  <script>",
+        js_widget,
+        "  </script>",
+        "  <script>",
+        "    HTMLWidgets._init(",
+        '      document.getElementById("utility-surface"),',
+        "      " + w + ", " + h + ",",
+        "      " + json_payload,
+        "    );",
+        "  </script>",
+        "</body>",
+        "</html>",
+    ])
+
+
+def plot_utility_surface(
+    ideal_x: float,
+    ideal_y: float,
+    dist_config=None,
+    loss_config=None,
+    xlim: tuple[float, float] = (-3.0, 3.0),
+    ylim: tuple[float, float] = (-3.0, 3.0),
+    resolution: int = 60,
+    n_levels: int = 5,
+    axis_labels: tuple[str, str] = ("Dimension 1", "Dimension 2"),
+    title: str | None = None,
+    width: int = 700,
+    height: int = 580,
+) -> dict:
+    """Plot a voter's 3D utility surface over 2D policy space.
+
+    Renders ``u(x, y)`` as an interactive 3D surface (Three.js / WebGL).
+    The surface peaks at ``(ideal_x, ideal_y)`` and falls off according to
+    ``loss_config`` and ``dist_config``.  Horizontal slices at fixed utility
+    levels correspond to the 2D indifference curves from
+    :func:`~socialchoicelab.level_set_polygon_2d` and
+    :func:`~socialchoicelab.ic_polygon_2d`.
+
+    Drag the plot with the mouse to rotate.
+
+    Parameters
+    ----------
+    ideal_x, ideal_y:
+        Voter ideal-point coordinates.
+    dist_config:
+        :class:`~socialchoicelab.DistanceConfig` (default: Euclidean).
+    loss_config:
+        :class:`~socialchoicelab.LossConfig` (default: quadratic).
+    xlim, ylim:
+        Policy-space extent as ``(min, max)`` pairs.  Default ``(-3, 3)``.
+    resolution:
+        Grid points per axis.  Higher → smoother surface.  Default ``60``.
+    n_levels:
+        Number of indifference rings drawn on the surface.  Default ``5``.
+    axis_labels:
+        Labels for the two policy dimensions.
+    title:
+        Optional plot title.
+    width, height:
+        Widget pixel dimensions.
+
+    Returns
+    -------
+    dict
+        Payload dict.  Pass to :func:`save_utility_surface` to write HTML.
+
+    Examples
+    --------
+    >>> import socialchoicelab as scl
+    >>> fig = scl.plot_utility_surface(1.0, 0.5)
+    >>> scl.save_utility_surface(fig, "/tmp/utility.html")
+    """
+    from socialchoicelab._functions import calculate_distance, distance_to_utility
+    from socialchoicelab._types import make_dist_config, make_loss_config
+
+    if dist_config is None:
+        dist_config = make_dist_config("euclidean")
+    if loss_config is None:
+        loss_config = make_loss_config("quadratic")
+
+    xvals = [xlim[0] + (xlim[1] - xlim[0]) * i / (resolution - 1) for i in range(resolution)]
+    yvals = [ylim[0] + (ylim[1] - ylim[0]) * j / (resolution - 1) for j in range(resolution)]
+
+    ideal = np.array([ideal_x, ideal_y], dtype=np.float64)
+    z: list[float] = []
+    for xi in xvals:
+        for yj in yvals:
+            alt = np.array([xi, yj], dtype=np.float64)
+            d = calculate_distance(ideal, alt, dist_config)
+            z.append(float(distance_to_utility(d, loss_config)))
+
+    min_u = min(z)
+    max_u = max(z)
+    u_range = max_u - min_u if max_u != min_u else 1.0
+    level_values = [
+        min_u + u_range * (k + 1) / (n_levels + 1)
+        for k in range(n_levels)
+    ]
+
+    payload: dict = {
+        "xvals":        xvals,
+        "yvals":        yvals,
+        "z":            z,
+        "ideal_x":      float(ideal_x),
+        "ideal_y":      float(ideal_y),
+        "ideal_u":      float(max_u),
+        "min_u":        float(min_u),
+        "max_u":        float(max_u),
+        "level_values": level_values,
+        "axis_labels":  [str(axis_labels[0]), str(axis_labels[1]), "Utility"],
+        "title":        title,
+        "_width":       int(width),
+        "_height":      int(height),
+        "_type":        "utility_surface",
+    }
+    return payload
+
+
+def save_utility_surface(fig: dict, path, width=None, height=None) -> str:
+    """Save a utility surface payload to a standalone HTML file.
+
+    Parameters
+    ----------
+    fig:
+        Dict returned by :func:`plot_utility_surface`.
+    path:
+        Destination path.  Must end in ``.html``.
+    width, height:
+        Override pixel dimensions from ``fig``.
+
+    Returns
+    -------
+    str
+        Absolute path of the written file.
+    """
+    if fig.get("_type") != "utility_surface":
+        raise ValueError(
+            "save_utility_surface expects a dict returned by plot_utility_surface(), "
+            f"got '_type'={fig.get('_type')!r}."
+        )
+    ext = Path(path).suffix.lower()
+    if ext != ".html":
+        raise ValueError(
+            f"save_utility_surface: unsupported extension '{ext}'. Supported: .html."
+        )
+    w = int(width if width is not None else fig.get("_width", 700))
+    h = int(height if height is not None else fig.get("_height", 580))
+    export = {k: v for k, v in fig.items() if not str(k).startswith("_")}
+    html = _html_from_utility_surface_payload(export, w, h)
+    Path(path).write_text(html, encoding="utf-8")
+    return str(Path(path).resolve())

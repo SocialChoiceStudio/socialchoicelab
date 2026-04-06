@@ -246,3 +246,60 @@ test_that("weighted_majority_prefers_2d returns logical", {
   expect_type(result, "logical")
   expect_length(result, 1L)
 })
+
+# ---------------------------------------------------------------------------
+# plot_utility_surface
+# ---------------------------------------------------------------------------
+
+test_that("plot_utility_surface returns an htmlwidget", {
+  skip_without_lib()
+  w <- plot_utility_surface(
+    ideal_x = 1, ideal_y = 0.5,
+    dist_config = make_dist_config("euclidean"),
+    loss_config = make_loss_config("quadratic"),
+    resolution  = 10L,
+    n_levels    = 3L
+  )
+  expect_s3_class(w, "htmlwidget")
+})
+
+test_that("plot_utility_surface payload has expected fields", {
+  skip_without_lib()
+  w <- plot_utility_surface(
+    ideal_x = 0, ideal_y = 0,
+    resolution = 8L, n_levels = 2L
+  )
+  x <- w$x
+  expect_true(!is.null(x$xvals))
+  expect_true(!is.null(x$yvals))
+  expect_true(!is.null(x$z))
+  expect_length(x$xvals, 8L)
+  expect_length(x$yvals, 8L)
+  expect_length(x$z, 64L)
+  expect_length(x$level_values, 2L)
+  expect_true(x$max_u >= x$min_u)
+})
+
+test_that("plot_utility_surface peak is at ideal point", {
+  skip_without_lib()
+  # With Euclidean + quadratic loss the peak must be at the grid point
+  # nearest the ideal — utility at ideal == max_u.
+  w <- plot_utility_surface(
+    ideal_x = 0, ideal_y = 0,
+    xlim = c(-2, 2), ylim = c(-2, 2),
+    resolution = 20L, n_levels = 3L
+  )
+  expect_equal(w$x$ideal_u, w$x$max_u)
+})
+
+test_that("plot_utility_surface accepts manhattan dist_config", {
+  skip_without_lib()
+  w <- plot_utility_surface(
+    ideal_x = 0, ideal_y = 0,
+    dist_config = make_dist_config("manhattan"),
+    loss_config = make_loss_config("linear"),
+    resolution = 8L, n_levels = 2L
+  )
+  expect_s3_class(w, "htmlwidget")
+  expect_true(all(is.finite(w$x$z)))
+})

@@ -1,5 +1,6 @@
 # test_plots.py — C10/C13: Unit tests for spatial voting visualization helpers.
 
+import math
 import os
 import tempfile
 from pathlib import Path
@@ -526,3 +527,51 @@ def test_layer_marginal_median_position_matches_median():
     mx, my = fig["layers"]["marginal_median"]
     assert abs(mx - 0.0) < 1e-10
     assert abs(my - 0.0) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# plot_utility_surface
+# ---------------------------------------------------------------------------
+
+
+def test_plot_utility_surface_returns_dict():
+    fig = sclp.plot_utility_surface(1.0, 0.5, resolution=10, n_levels=3)
+    assert isinstance(fig, dict)
+    assert fig.get("_type") == "utility_surface"
+
+
+def test_plot_utility_surface_payload_fields():
+    fig = sclp.plot_utility_surface(0.0, 0.0, resolution=8, n_levels=2)
+    assert len(fig["xvals"]) == 8
+    assert len(fig["yvals"]) == 8
+    assert len(fig["z"]) == 64
+    assert len(fig["level_values"]) == 2
+    assert fig["max_u"] >= fig["min_u"]
+    assert all(math.isfinite(v) for v in fig["z"])
+
+
+def test_plot_utility_surface_peak_at_ideal():
+    fig = sclp.plot_utility_surface(0.0, 0.0, resolution=20, n_levels=3)
+    assert abs(fig["ideal_u"] - fig["max_u"]) < 1e-10
+
+
+def test_plot_utility_surface_manhattan():
+    import socialchoicelab as scl
+    fig = sclp.plot_utility_surface(
+        0.0, 0.0,
+        dist_config=scl.make_dist_config("manhattan"),
+        loss_config=scl.make_loss_config("linear"),
+        resolution=8, n_levels=2,
+    )
+    assert fig["_type"] == "utility_surface"
+    assert all(math.isfinite(v) for v in fig["z"])
+
+
+def test_save_utility_surface(tmp_path):
+    fig = sclp.plot_utility_surface(0.0, 0.0, resolution=8, n_levels=2)
+    out = tmp_path / "surface.html"
+    result = sclp.save_utility_surface(fig, out)
+    assert Path(result).exists()
+    html = Path(result).read_text(encoding="utf-8")
+    assert "utility_surface_canvas" in html
+    assert "THREE" in html or "three" in html.lower()

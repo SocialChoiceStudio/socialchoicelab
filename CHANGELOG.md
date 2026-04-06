@@ -19,6 +19,12 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 - **`level_set_polygon_2d`** (R and Python): wraps `scs_level_set_polygon_2d`; tests in `test_functions.R` and `test_b5.py`.
 - **`ic_interval_1d`** (R and Python) and canvas / competition plot wiring using the above C entry points where they replace previous multi-`.Call` / multi-`cffi` chains; interactive compound demos and tests under `compound_api_*` / `test_functions.R` / Python tests.
 
+#### 3D utility surface visualization
+
+- **`plot_utility_surface()`** (R and Python): renders a voter's utility function as an interactive 3D surface (Three.js / WebGL) over 2D policy space. The surface peaks at the voter's ideal point; horizontal slices at fixed utility levels correspond to the 2D indifference curves from `ic_polygon_2d` / `level_set_polygon_2d`. Accepts any `dist_config` / `loss_config` combination; data computed on an N×N grid via the existing C API (`calculate_distance` + `distance_to_utility`). Mouse-drag rotation.
+- **`save_utility_surface()`** (Python): writes a self-contained HTML file for the 3D surface widget (mirrors `save_plot()` for static spatial figures).
+- Three.js r0.148.0 bundled locally under `r/inst/htmlwidgets/lib/three/` (R) and `python/src/socialchoicelab/` (Python) — no new package-level dependency in either language.
+
 ### Changed
 
 #### Static spatial plots (R and Python) — canvas migration

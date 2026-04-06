@@ -36,8 +36,14 @@ Compute distances, convert to utility, and compute level sets.
 - [`level_set_to_polygon()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_to_polygon.md)
   : Sample a 2D level set as a closed polygon
 
+- [`level_set_polygon_2d()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/level_set_polygon_2d.md)
+  : Sample a 2D level set as a polygon in one call
+
 - [`ic_polygon_2d()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/ic_polygon_2d.md)
   : Compute the IC boundary polygon in a single call
+
+- [`plot_utility_surface()`](https://socialchoicestudio.github.io/socialchoicelab/r/reference/plot_utility_surface.md)
+  : Plot a voter's 3D utility surface over 2D policy space
 
 ## Convex Hull and Majority Preference
 

@@ -1,0 +1,5 @@
+dependencies:
+  - name: three
+    version: 0.148.0
+    src: htmlwidgets/lib/three
+    script: three.min.js
