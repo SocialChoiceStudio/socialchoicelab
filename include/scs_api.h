@@ -357,6 +357,32 @@ SCS_API int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
                                      char* err_buf, int err_buf_len);
 
 /**
+ * @brief Compound: 2D level set at utility_level, sampled as a polygon.
+ *
+ * Equivalent to scs_level_set_2d followed by scs_level_set_to_polygon on the
+ * result, without passing SCS_LevelSet2d through language bindings. Same
+ * size-query / fill / SCS_ERROR_BUFFER_TOO_SMALL contract as
+ * scs_level_set_to_polygon.
+ *
+ * @param ideal_x, ideal_y   Ideal point.
+ * @param utility_level      Target utility (same as scs_level_set_2d).
+ * @param loss_cfg           Loss configuration.
+ * @param dist_cfg           Distance configuration (n_weights must be 2).
+ * @param num_samples        Samples for smooth shapes; ignored for POLYGON
+ * type.
+ * @param[out] out_xy        Buffer or NULL for size-query.
+ * @param out_capacity       Capacity in (x,y) pairs.
+ * @param[out] out_n         Required or written vertex count.
+ */
+SCS_API int scs_level_set_polygon_2d(double ideal_x, double ideal_y,
+                                     double utility_level,
+                                     const SCS_LossConfig* loss_cfg,
+                                     const SCS_DistanceConfig* dist_cfg,
+                                     int num_samples, double* out_xy,
+                                     int out_capacity, int* out_n,
+                                     char* err_buf, int err_buf_len);
+
+/**
  * @brief Compound: compute the IC boundary polygon for a voter through a
  * reference point in a single C API call.
  *

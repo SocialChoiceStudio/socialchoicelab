@@ -429,6 +429,11 @@ int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set, int num_samples,
     int* out_n,       // number of (x,y) pairs written
     char* err_buf, int err_buf_len);
 
+int scs_level_set_polygon_2d(double ideal_x, double ideal_y, double utility_level,
+    const SCS_LossConfig* loss_cfg, const SCS_DistanceConfig* dist_cfg,
+    int num_samples, double* out_xy, int out_capacity, int* out_n,
+    char* err_buf, int err_buf_len);
+
 int scs_ic_polygon_2d(double ideal_x, double ideal_y, double sq_x, double sq_y,
     const SCS_LossConfig* loss_cfg, const SCS_DistanceConfig* dist_cfg,
     int num_samples, double* out_xy, int out_capacity, int* out_n,
@@ -438,6 +443,11 @@ int scs_ic_polygon_2d(double ideal_x, double ideal_y, double sq_x, double sq_y,
 `scs_ic_interval_1d`: compound 1D IC — runs `scs_calculate_distance`,
 `scs_distance_to_utility`, and `scs_level_set_1d` internally (same numerics as
 the three-call sequence). Requires `dist_cfg->n_weights == 1`.
+
+`scs_level_set_polygon_2d`: compound call that runs `scs_level_set_2d` then
+`scs_level_set_to_polygon` internally (same numerics as the two-call sequence).
+Use when the target utility level is known directly; for an indifference curve
+through a reference point, `scs_ic_polygon_2d` is the usual entry point.
 
 `scs_ic_polygon_2d`: compound call that runs `scs_calculate_distance`,
 `scs_distance_to_utility`, `scs_level_set_2d`, and `scs_level_set_to_polygon`
@@ -584,7 +594,7 @@ scs_profile_destroy(p);
 
 | Context | Rule |
 |---------|------|
-| **Stateless functions** | All pure-computation functions (`scs_calculate_distance`, `scs_distance_to_utility`, `scs_normalize_utility`, `scs_level_set_1d`, `scs_ic_interval_1d`, `scs_level_set_2d`, `scs_level_set_to_polygon`, `scs_ic_polygon_2d`, `scs_convex_hull_2d`, and all geometry functions added in Phase C1–C4) are **thread-safe** — they take no global mutable state. Callers may invoke them concurrently from multiple threads without synchronisation. |
+| **Stateless functions** | All pure-computation functions (`scs_calculate_distance`, `scs_distance_to_utility`, `scs_normalize_utility`, `scs_level_set_1d`, `scs_ic_interval_1d`, `scs_level_set_2d`, `scs_level_set_to_polygon`, `scs_level_set_polygon_2d`, `scs_ic_polygon_2d`, `scs_convex_hull_2d`, and all geometry functions added in Phase C1–C4) are **thread-safe** — they take no global mutable state. Callers may invoke them concurrently from multiple threads without synchronisation. |
 | **SCS_StreamManager** | A `SCS_StreamManager` handle is **not thread-safe**. Concurrent calls on the same handle produce undefined behaviour. The caller is responsible for serialising access (e.g. one manager per thread, or an external mutex). |
 | **scs_api_version** | Thread-safe — reads compile-time constants only. |
 | **Error buffers** | `err_buf` is caller-owned per-call storage. Concurrent calls with distinct buffers are safe. Never share an `err_buf` between concurrent calls. |

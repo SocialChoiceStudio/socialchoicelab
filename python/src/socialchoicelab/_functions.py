@@ -27,6 +27,7 @@ __all__ = [
     "ic_interval_1d",
     "level_set_2d",
     "level_set_to_polygon",
+    "level_set_polygon_2d",
     "ic_polygon_2d",
     "convex_hull_2d",
     "majority_prefers_2d",
@@ -356,6 +357,65 @@ def level_set_to_polygon(level_set: dict, num_samples: int = 64) -> np.ndarray:
     err = new_err_buf()
     _check(
         _lib.scs_level_set_to_polygon(ls, int(num_samples), buf, n_pts, out_n, err, _ERR), err
+    )
+    return np.frombuffer(_ffi.buffer(buf, n_pts * 2 * 8), dtype=np.float64).reshape(n_pts, 2).copy()
+
+
+def level_set_polygon_2d(
+    ideal_x: float,
+    ideal_y: float,
+    utility_level: float,
+    loss_config: LossConfig | None = None,
+    dist_config: DistanceConfig | None = None,
+    num_samples: int = 64,
+) -> np.ndarray:
+    """Sample a 2D level set at ``utility_level`` as a polygon in one C call.
+
+    Equivalent to :func:`level_set_2d` followed by :func:`level_set_to_polygon`,
+    without building an intermediate dict in Python.
+    """
+    if loss_config is None:
+        loss_config = LossConfig()
+    if dist_config is None:
+        dist_config = DistanceConfig()
+    loss_cfg = _to_cffi_loss(loss_config)
+    dist_cfg, ka = _to_cffi_dist(dist_config, n_dims=2)
+    out_n = _ffi.new("int *")
+    err = new_err_buf()
+    _check(
+        _lib.scs_level_set_polygon_2d(
+            float(ideal_x),
+            float(ideal_y),
+            float(utility_level),
+            loss_cfg,
+            dist_cfg,
+            int(num_samples),
+            _ffi.NULL,
+            0,
+            out_n,
+            err,
+            _ERR,
+        ),
+        err,
+    )
+    n_pts = int(out_n[0])
+    buf = _ffi.new("double[]", n_pts * 2)
+    err = new_err_buf()
+    _check(
+        _lib.scs_level_set_polygon_2d(
+            float(ideal_x),
+            float(ideal_y),
+            float(utility_level),
+            loss_cfg,
+            dist_cfg,
+            int(num_samples),
+            buf,
+            n_pts,
+            out_n,
+            err,
+            _ERR,
+        ),
+        err,
     )
     return np.frombuffer(_ffi.buffer(buf, n_pts * 2 * 8), dtype=np.float64).reshape(n_pts, 2).copy()
 

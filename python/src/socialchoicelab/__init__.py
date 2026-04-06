@@ -53,6 +53,7 @@ from socialchoicelab._functions import (  # noqa: F401
     ic_interval_1d,
     level_set_2d,
     level_set_to_polygon,
+    level_set_polygon_2d,
     ic_polygon_2d,
     convex_hull_2d,
     majority_prefers_2d,

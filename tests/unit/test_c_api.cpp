@@ -634,6 +634,87 @@ TEST(CApi_IcPolygon2d, ResultMatchesFourCallPath) {
   }
 }
 
+TEST(CApi_LevelSetPolygon2d, MatchesLevelSet2dPlusToPolygon) {
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  constexpr int N = 24;
+  constexpr double util = -0.5;
+  char err[256] = {};
+
+  SCS_LevelSet2d ls{};
+  ASSERT_EQ(scs_level_set_2d(1.0, -0.5, util, &lc, &dc, &ls, err, 256), SCS_OK)
+      << err;
+  double xy2[2 * N] = {};
+  int n2 = 0;
+  ASSERT_EQ(scs_level_set_to_polygon(&ls, N, xy2, N, &n2, err, 256), SCS_OK)
+      << err;
+
+  double xy1[2 * N] = {};
+  int n1 = 0;
+  ASSERT_EQ(scs_level_set_polygon_2d(1.0, -0.5, util, &lc, &dc, N, xy1, N, &n1,
+                                     err, 256),
+            SCS_OK)
+      << err;
+
+  ASSERT_EQ(n1, n2);
+  for (int i = 0; i < n1 * 2; ++i) {
+    EXPECT_NEAR(xy1[i], xy2[i], 1e-12) << "index " << i;
+  }
+}
+
+TEST(CApi_LevelSetPolygon2d, ManhattanFourVerticesMatchesTwoStep) {
+  static double w[2] = {1.0, 1.0};
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc{};
+  dc.distance_type = SCS_DIST_MANHATTAN;
+  dc.order_p = 1.0;
+  dc.salience_weights = w;
+  dc.n_weights = 2;
+  char err[256] = {};
+  constexpr double util = -1.0;
+
+  SCS_LevelSet2d ls{};
+  ASSERT_EQ(scs_level_set_2d(0.0, 0.0, util, &lc, &dc, &ls, err, 256), SCS_OK)
+      << err;
+  double xy2[16] = {};
+  int n2 = 0;
+  ASSERT_EQ(scs_level_set_to_polygon(&ls, 64, xy2, 4, &n2, err, 256), SCS_OK)
+      << err;
+
+  double xy1[16] = {};
+  int n1 = 0;
+  ASSERT_EQ(scs_level_set_polygon_2d(0.0, 0.0, util, &lc, &dc, 64, xy1, 4, &n1,
+                                     err, 256),
+            SCS_OK)
+      << err;
+  ASSERT_EQ(n1, 4);
+  ASSERT_EQ(n2, 4);
+  for (int i = 0; i < 8; ++i) {
+    EXPECT_NEAR(xy1[i], xy2[i], 1e-12) << "i=" << i;
+  }
+}
+
+TEST(CApi_LevelSetPolygon2d, SizeQuery) {
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  int out_n = 0;
+  char err[256] = {};
+  ASSERT_EQ(scs_level_set_polygon_2d(0.0, 0.0, -1.0, &lc, &dc, 40, nullptr, 0,
+                                     &out_n, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(out_n, 40);
+}
+
+TEST(CApi_LevelSetPolygon2d, NullOutNFails) {
+  SCS_LossConfig lc = make_linear();
+  SCS_DistanceConfig dc = make_euclidean_2d();
+  char err[256] = {};
+  EXPECT_NE(scs_level_set_polygon_2d(0.0, 0.0, -1.0, &lc, &dc, 8, nullptr, 0,
+                                     nullptr, err, 256),
+            SCS_OK);
+}
+
 // ---------------------------------------------------------------------------
 // StreamManager tests
 // ---------------------------------------------------------------------------

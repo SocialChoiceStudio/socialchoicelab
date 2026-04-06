@@ -113,12 +113,13 @@ Order for the next tracks:
 2. **Composite C API operations** — **In progress on `main`.** Add **`scs_*` functions** where R/Python would otherwise chain **multiple** existing `scs_*` calls for **one** logical result. (*Naming note:* the **stable boundary** is the C API (`extern "C"` in `scs_api.cpp`); the **implementation** is C++ that reuses existing core code.) Same pattern as `scs_ic_polygon_2d`: one pipeline inside the library, one C entry point, thin R/Python bindings. **Keep** granular `scs_*` primitives for tests, teaching, and composition.
 
    **Delivered so far (also in `c_api_design.md` and `CHANGELOG.md` `[Unreleased]`):**
+   - `scs_level_set_polygon_2d` — one-call `level_set_2d` + `level_set_to_polygon` for a fixed utility level; R `level_set_polygon_2d()` / Python `level_set_polygon_2d`.
    - `scs_ic_interval_1d` — one-call 1D IC segment (distance → utility → level set) for a single salience weight; R `ic_interval_1d()` / Python `ic_interval_1d`; used in competition and static plot paths.
    - `scs_winset_2d_export_boundary` — closed winset boundary polylines for visualization; wired in R/Python canvas code.
    - `scs_uncovered_set_boundary_2d_heap` — heap-backed uncovered-set boundary export (alongside the stack-bounded API).
    - `scs_voronoi_cells_2d_heap` — heap-backed 2D Voronoi cells over sites; used from bindings for plots.
 
-   **Still candidates (non-exhaustive):** redundant `calculate_distance` + `ic_polygon_2d` when both distance and polygon are needed; R’s `level_set_2d` → named list → `level_set_to_polygon` round-trip in hot loops; any other multi-call chains surfaced by a bindings audit.
+   **Still candidates (non-exhaustive):** redundant `calculate_distance` + `ic_polygon_2d` when both distance and polygon are needed; any other multi-call chains surfaced by a bindings audit.
 
 3. **Utility function plot** — **After** remaining composite C API work (or in parallel where it does not block it), **revisit** the **utility function plot** (loss / distance → **utility**, e.g. \(u\) vs distance and related teaching or diagnostic views). Align with the canvas static renderer; refresh R/Python parity, theming, and documentation.
 

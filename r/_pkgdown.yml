@@ -33,6 +33,7 @@ reference:
       - ic_interval_1d
       - level_set_2d
       - level_set_to_polygon
+      - level_set_polygon_2d
       - ic_polygon_2d
 
   - title: "Convex Hull and Majority Preference"

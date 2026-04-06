@@ -204,6 +204,30 @@ level_set_to_polygon <- function(level_set, n_samples = 64L) {
       PACKAGE = "socialchoicelab")
 }
 
+#' Sample a 2D level set as a polygon in one call
+#'
+#' Compound convenience: same result as \code{\link{level_set_2d}} followed by
+#' \code{\link{level_set_to_polygon}}, without passing the intermediate
+#' named list across the C boundary.
+#'
+#' @param ideal_x,ideal_y Ideal point coordinates.
+#' @param utility_level Target utility level (same as \code{\link{level_set_2d}}).
+#' @param loss_config Loss configuration from \code{\link{make_loss_config}}.
+#' @param dist_config Distance configuration from \code{\link{make_dist_config}}.
+#' @param n_samples Integer. Sample count for smooth shapes; ignored for polygon
+#'   level sets (Manhattan / Chebyshev). Default: 64.
+#' @return Numeric matrix (n_pts × 2) with columns \code{x} and \code{y}.
+#' @export
+level_set_polygon_2d <- function(ideal_x, ideal_y, utility_level,
+                                    loss_config = make_loss_config(),
+                                    dist_config = make_dist_config(),
+                                    n_samples = 64L) {
+  .Call("r_scs_level_set_polygon_2d",
+        as.double(ideal_x), as.double(ideal_y), as.double(utility_level),
+        loss_config, dist_config, as.integer(n_samples),
+        PACKAGE = "socialchoicelab")
+}
+
 #' Compute the IC boundary polygon in a single call
 #'
 #' Compound convenience function equivalent to calling

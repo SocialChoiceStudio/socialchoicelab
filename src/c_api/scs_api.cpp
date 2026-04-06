@@ -989,6 +989,28 @@ extern "C" int scs_level_set_to_polygon(const SCS_LevelSet2d* level_set,
   }
 }
 
+extern "C" int scs_level_set_polygon_2d(double ideal_x, double ideal_y,
+                                        double utility_level,
+                                        const SCS_LossConfig* loss_cfg,
+                                        const SCS_DistanceConfig* dist_cfg,
+                                        int num_samples, double* out_xy,
+                                        int out_capacity, int* out_n,
+                                        char* err_buf, int err_buf_len) {
+  if (!loss_cfg || !dist_cfg || !out_n) {
+    set_error(err_buf, err_buf_len,
+              "scs_level_set_polygon_2d: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  SCS_LevelSet2d ls{};
+  const int rc_ls = scs_level_set_2d(ideal_x, ideal_y, utility_level, loss_cfg,
+                                     dist_cfg, &ls, err_buf, err_buf_len);
+  if (rc_ls != SCS_OK) {
+    return rc_ls;
+  }
+  return scs_level_set_to_polygon(&ls, num_samples, out_xy, out_capacity, out_n,
+                                  err_buf, err_buf_len);
+}
+
 extern "C" int scs_ic_polygon_2d(double ideal_x, double ideal_y, double sq_x,
                                  double sq_y, const SCS_LossConfig* loss_cfg,
                                  const SCS_DistanceConfig* dist_cfg,

@@ -120,6 +120,18 @@ def test_level_set_to_polygon_shape():
     assert len(poly) > 0
 
 
+def test_level_set_polygon_2d_matches_two_step_path():
+    """One-call level-set polygon matches level_set_2d → level_set_to_polygon."""
+    lc = scl.make_loss_config(loss_type="linear", sensitivity=1.0)
+    dc = scl.make_dist_config(distance_type="euclidean", salience_weights=[1.0, 1.0])
+    n = 24
+    ul = -0.5
+    poly1 = scl.level_set_polygon_2d(1.0, -0.5, ul, lc, dc, num_samples=n)
+    ls = scl.level_set_2d(1.0, -0.5, ul, lc, dc)
+    poly2 = scl.level_set_to_polygon(ls, num_samples=n)
+    np.testing.assert_allclose(poly1, poly2, rtol=0, atol=1e-12)
+
+
 def test_ic_polygon_2d_matches_four_call_path():
     """Compound IC polygon matches calculate_distance → … → level_set_to_polygon."""
     lc = scl.make_loss_config(loss_type="linear", sensitivity=1.0)
