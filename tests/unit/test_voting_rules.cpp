@@ -8,6 +8,7 @@
 #include <socialchoicelab/aggregation/antiplurality.h>
 #include <socialchoicelab/aggregation/approval.h>
 #include <socialchoicelab/aggregation/borda.h>
+#include <socialchoicelab/aggregation/condorcet_consistency.h>
 #include <socialchoicelab/aggregation/plurality.h>
 #include <socialchoicelab/aggregation/scoring_rule.h>
 
@@ -27,6 +28,7 @@ using socialchoicelab::aggregation::borda_all_winners;
 using socialchoicelab::aggregation::borda_one_winner;
 using socialchoicelab::aggregation::borda_ranking;
 using socialchoicelab::aggregation::borda_scores;
+using socialchoicelab::aggregation::condorcet_winner_profile;
 using socialchoicelab::aggregation::DistConfig;
 using socialchoicelab::aggregation::plurality_all_winners;
 using socialchoicelab::aggregation::plurality_one_winner;
@@ -200,11 +202,39 @@ TEST(Borda, ScoreSum_EqualsFormula) {
   EXPECT_EQ(total, expected);
 }
 
-TEST(Borda, CondorcetWinner_IsBordaWinner_ThreeAlts) {
-  // Fishburn (1977): for m=3, Condorcet winner is always the Borda winner.
-  const auto p = make_condorcet_profile();
-  const auto bw = borda_all_winners(p);
-  EXPECT_EQ(bw, std::vector<int>({0}));  // A is CW and Borda winner
+// 5 voters, 3 alternatives. A is the Condorcet winner and C is the Borda
+// winner.
+//   Three voters: A > C > B.  Two voters: C > B > A.
+//   A beats B 3-2 and A beats C 3-2, so A is the Condorcet winner.
+//   Borda points (2, 1, 0): A = 6, B = 2, C = 7, so C is the unique Borda
+//   winner.
+// The old test claimed Fishburn (1977) says these always coincide for three
+// alternatives. That claim is false. The weaker true result (Fishburn 1973)
+// is that Borda does not rank the Condorcet winner last among three
+// alternatives.
+static Profile make_condorcet_not_borda_profile() {
+  Profile p;
+  p.n_voters = 5;
+  p.n_alts = 3;
+  p.rankings = {{0, 2, 1}, {0, 2, 1}, {0, 2, 1}, {2, 1, 0}, {2, 1, 0}};
+  return p;
+}
+
+TEST(Borda, CondorcetWinner_NeedNotBeBordaWinner_ThreeAlts) {
+  const auto p = make_condorcet_not_borda_profile();
+  const auto cw = condorcet_winner_profile(p);
+  ASSERT_TRUE(cw.has_value());
+  EXPECT_EQ(*cw, 0);
+
+  const auto scores = borda_scores(p);
+  EXPECT_EQ(scores[0], 6);
+  EXPECT_EQ(scores[1], 2);
+  EXPECT_EQ(scores[2], 7);
+  EXPECT_EQ(borda_all_winners(p), std::vector<int>({2}));
+
+  const auto ranking = borda_ranking(p, TieBreak::kSmallestIndex);
+  ASSERT_EQ(ranking.size(), 3u);
+  EXPECT_NE(ranking.back(), *cw);
 }
 
 TEST(Borda, Cycle_ProducesCompleteRanking) {

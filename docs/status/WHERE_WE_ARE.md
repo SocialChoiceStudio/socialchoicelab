@@ -2,11 +2,11 @@
 
 **Current snapshot** — tags, phase, and blockers. **The ordered plan of what to do next lives in [ROADMAP.md](ROADMAP.md)**; this file should not duplicate that list (link instead).
 
-- **Current phase:** `v0.3.0` is tagged. Layer 7 candidate competition is complete. On `main` after the tag: static canvas migration (see `[Unreleased]` changelog), **partial composite C API** work (`scs_ic_interval_1d`, `scs_winset_2d_export_boundary`, heap Voronoi / uncovered boundary helpers — R/Python wired; see ROADMAP § Next work sequence). Earlier post-tag items: non-Euclidean overlays, canvas-aligned centrality markers, SQ legend-only.
-- **Next:** Only [ROADMAP.md](ROADMAP.md) holds priorities and ordering (near-term, long-term, post-tag visualization). This file does not restate that plan.
-- **Release context:** `v0.2.0` and `v0.3.0` are tagged. Authoritative Layer 7 plan: [competition_plan.md](competition_plan.md).
-- **Ad-hoc follow-ups:** Optional scratch: [follow_up_queue.md](follow_up_queue.md). Promote items into [ROADMAP.md](ROADMAP.md) when they become real work.
-- **Last updated:** 2026-03-30
+- **Current phase:** The latest numbered release is `v0.3.0`. Candidate competition is finished and is part of that release. Three pieces of work have been finished since then and do not yet have their own release number: the still pictures now use the same drawing method as the animated competition plots; several calculation steps that used to be called one after another were combined into single library calls; and the interactive three-dimensional utility surface was added. See the `[Unreleased]` section of [CHANGELOG.md](../../CHANGELOG.md) and [ROADMAP.md](ROADMAP.md).
+- **Next:** Only [ROADMAP.md](ROADMAP.md) holds the ordered plan. The short list of things that fit one sitting is [follow_up_queue.md](follow_up_queue.md). This file does not restate either list.
+- **Release context:** `v0.2.0` and `v0.3.0` are tagged. The candidate-competition plan is [competition_plan.md](competition_plan.md).
+- **Ad-hoc follow-ups:** [follow_up_queue.md](follow_up_queue.md). Move an item into [ROADMAP.md](ROADMAP.md) if it grows past one sitting.
+- **Last updated:** 2026-09-22
 
 **How this fits:** [docs/README.md](../README.md) explains which file answers which question. **Priorities and sequencing:** [ROADMAP.md](ROADMAP.md). **This file:** today’s facts. **Scratch:** [follow_up_queue.md](follow_up_queue.md). **Milestone criteria:** [MILESTONE_GATES.md](MILESTONE_GATES.md). **Old plans:** [archive/](archive/).
 

@@ -9,8 +9,10 @@
 //       → is_condorcet_consistent = true for all.
 //   (b) Condorcet cycle → no majority winner → is_condorcet_consistent = true
 //       for any winner (vacuously).
-//   (c) Spatial profile → Borda winner matches Copeland winner for 3 alts
-//       (Fishburn 1977 result).
+//   (c) One spatial profile where the Borda winner and the Copeland winner
+//       happen to be the same alternative. This is not a general theorem:
+//       with three alternatives the Condorcet winner need not be the Borda
+//       winner. See Borda.CondorcetWinner_NeedNotBeBordaWinner_ThreeAlts.
 //   (d) Impartial culture → all alternatives have equal expected Borda score
 //       (statistical test).
 //   (e) Pareto set from profile ⊆ convex hull of alternatives (spatial Pareto).
@@ -189,8 +191,8 @@ TEST(Integration_OneDimensionalEmbeddedFixture, PositionalRulesMatchOnLine) {
 }
 
 // ---------------------------------------------------------------------------
-// (c) Borda winner = Copeland winner for 3-alternative Condorcet winner case
-//     (Fishburn 1977).
+// (c) One 3-alternative profile where Borda and Copeland pick the same winner.
+//     Not a general result. The counterexample is in test_voting_rules.cpp.
 // ---------------------------------------------------------------------------
 
 TEST(Integration_Fishburn, BordaWinner_MatchesCopelandWinner_ThreeAlts) {

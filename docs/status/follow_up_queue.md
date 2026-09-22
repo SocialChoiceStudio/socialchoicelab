@@ -1,17 +1,20 @@
 # Follow-up queue
 
-**Optional scratch pad.** Chat does not persist; use this only for reminders that are **not** yet written into [ROADMAP.md](ROADMAP.md).
+**Session-sized tasks.** Pick one. Priority and sequencing stay in [ROADMAP.md](ROADMAP.md).
 
 **Rules**
 
-- Do **not** copy the roadmap’s prioritized list here. Link to a section of `ROADMAP.md` if you need a reminder.
-- When an item becomes real work, **add it to `ROADMAP.md` (or an existing roadmap section) and delete it here.**
-- When an item ships, delete it; one-line history can go in [project_log.md](project_log.md) or [CHANGELOG.md](../../CHANGELOG.md) if it matters.
+- Do **not** treat this as a second roadmap. When an item ships, delete it here.
+- When an item grows past one sitting, stop and put the rest in `ROADMAP.md`.
 
-**Index:** [docs/README.md](../README.md) — how this file relates to `WHERE_WE_ARE.md` and `ROADMAP.md`.
+**Index:** [docs/README.md](../README.md).
 
 ---
 
-## Scratch (add below)
+## Next sitting
 
-_(Empty on purpose until you drop something here.)_
+**Non-Euclidean overlay guard.** [ROADMAP.md](ROADMAP.md) § Non-Euclidean geometry already states the rule: `animate_competition_canvas()` in R and Python must check the distance settings stored with a competition run. If those settings are not ordinary straight-line distance, the animation must not draw overlays that are only valid for straight-line distance (the Pareto set drawn as a convex hull, the Voronoi regions, and anything else labelled as exact only in that case). It must say so in a clear message. Do not build non-Euclidean versions of those overlays in the same sitting.
+
+## Not a short task
+
+Leave these for a planned block: yolk algorithm replacement, the Heart boundary, Characteristics of Voting Rules, per-run position re-randomization, PrefLib import, correcting the paper draft's Fishburn sentence, and giving the finished-but-unreleased work its own release number.

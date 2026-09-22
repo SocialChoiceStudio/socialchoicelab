@@ -110,7 +110,7 @@ Order for the next tracks:
 
 1. **Canvas for static spatial plots** — **Complete ✅** (see [rendering_consolidation_evaluation.md](../architecture/rendering_consolidation_evaluation.md)): `plot_spatial_voting` and all `layer_*` use the shared `scs_canvas_core.js` + `spatial_voting_canvas.js` stack; Plotly is removed from R and Python dependencies.
 
-2. **Composite C API operations** — **In progress on `main`.** Add **`scs_*` functions** where R/Python would otherwise chain **multiple** existing `scs_*` calls for **one** logical result. (*Naming note:* the **stable boundary** is the C API (`extern "C"` in `scs_api.cpp`); the **implementation** is C++ that reuses existing core code.) Same pattern as `scs_ic_polygon_2d`: one pipeline inside the library, one C entry point, thin R/Python bindings. **Keep** granular `scs_*` primitives for tests, teaching, and composition.
+2. **Composite C API operations** — **Complete.** Add **`scs_*` functions** where R/Python would otherwise chain **multiple** existing `scs_*` calls for **one** logical result. (*Naming note:* the **stable boundary** is the C API (`extern "C"` in `scs_api.cpp`); the **implementation** is C++ that reuses existing core code.) Same pattern as `scs_ic_polygon_2d`: one pipeline inside the library, one C entry point, thin R/Python bindings. **Keep** granular `scs_*` primitives for tests, teaching, and composition. An audit of the R and Python bindings found no remaining chains that should be combined.
 
    **Delivered so far (also in `c_api_design.md` and `CHANGELOG.md` `[Unreleased]`):**
    - `scs_level_set_polygon_2d` — one-call `level_set_2d` + `level_set_to_polygon` for a fixed utility level; R `level_set_polygon_2d()` / Python `level_set_polygon_2d`.
@@ -118,8 +118,6 @@ Order for the next tracks:
    - `scs_winset_2d_export_boundary` — closed winset boundary polylines for visualization; wired in R/Python canvas code.
    - `scs_uncovered_set_boundary_2d_heap` — heap-backed uncovered-set boundary export (alongside the stack-bounded API).
    - `scs_voronoi_cells_2d_heap` — heap-backed 2D Voronoi cells over sites; used from bindings for plots.
-
-   **Still candidates (non-exhaustive):** redundant `calculate_distance` + `ic_polygon_2d` when both distance and polygon are needed; any other multi-call chains surfaced by a bindings audit.
 
 3. **Utility function plot** — **Complete ✅ (on `main`).** `plot_utility_surface()` in R and Python renders the full \(u(x,y)\) surface as an interactive 3D widget (Three.js / WebGL, painter-sorted quads, mouse-drag rotation). Accepts any `dist_config` / `loss_config`; indifference rings shown via marching-squares contours. Three.js r0.148.0 bundled locally — no new package dependency. R: `plot_utility_surface()` returns an htmlwidget; Python: `plot_utility_surface()` + `save_utility_surface()` write self-contained HTML.
 
@@ -160,7 +158,7 @@ Indifference curves (ICs) are computed during both static spatial voting visuali
 |---------|---------|
 | `0.2.0` | First cohesive public package release: core + c_api + geometry + aggregation + bindings + visualization. |
 | `0.3.0` | Candidate competition / Layer 7 release: adaptive candidate engine + trace/C API/bindings + experiment runner baseline. |
-| pre-`1.0.0` | **Composite C API operations** ✅ Complete. **Utility function plot** ✅ Complete (`plot_utility_surface()` 3D surface widget in R and Python). **Next:** test correctness review (false theorem in unit tests + paper draft); then Yolk algorithm replacement. |
+| pre-`1.0.0` | Combined library calls ✅ Complete. Three-dimensional utility surface ✅ Complete. The known false Borda/Condorcet unit test is fixed. **Next:** correct the same false claim in the paper draft; then replace the approximate yolk calculation. |
 | `1.0.0` | Major components complete: `0.3.0` scope plus the next major feature track (currently "Characteristics of Voting Rules", working title). |
 
 ---
@@ -226,9 +224,9 @@ These are not on the active roadmap but are worth keeping in view as the project
 
 | Horizon  | Focus |
 |----------|-------|
-| **Near** | Close the current release gate → tag `0.2.0`. |
-| **Mid**  | Finish Layer 7 candidate competition refinements and iterate to `0.3.0`. |
-| **Long** | Complete the next major feature track, then tag `1.0.0`; after that, GUI-lite/web and other advanced spatial features. |
+| **Near** | `0.2.0` and `0.3.0` are already released. Short remaining work is listed in [follow_up_queue.md](follow_up_queue.md). Next sitting: the non-Euclidean overlay guard on the competition animation. Then correct the paper draft's false Fishburn sentence. |
+| **Mid**  | Replace the approximate yolk calculation. See the yolk section below. |
+| **Long** | Finish the next major feature track (working title: Characteristics of Voting Rules), then release `1.0.0`. After that, a simple graphical interface and other advanced features. |
 
 ---
 
@@ -269,8 +267,9 @@ exists) is verified to also be the Borda winner (Fishburn 1977)." This claim is
 A is the Condorcet winner (beats B 3–2, beats C 3–2) but C is the Borda winner
 (score 7 vs. A's 6). The correct result (Fishburn 1973) is that the Borda count
 never ranks the Condorcet winner *last* among 3 alternatives, which is weaker.
-If a unit test asserts Condorcet-winner = Borda-winner for m = 3, that test
-encodes a false theorem and must be corrected. The paper text must also be fixed
+The unit test that asserted this false claim was replaced on 2026-09-22
+(`Borda.CondorcetWinner_NeedNotBeBordaWinner_ThreeAlts` in
+`tests/unit/test_voting_rules.cpp`). The paper text must still be fixed
 (the Fishburn 1977 reference is additionally missing from the bibliography).
 
 ---
