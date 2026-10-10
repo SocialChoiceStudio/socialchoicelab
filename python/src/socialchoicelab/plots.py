@@ -72,6 +72,7 @@ __all__ = [
     "layer_centroid",
     "layer_marginal_median",
     "save_plot",
+    "render_spatial_voting_html",
     "scl_palette",
     "scl_theme_colors",
 ]
@@ -1548,15 +1549,41 @@ def layer_marginal_median(fig, voters, color=None, name="Marginal Median", theme
     return fig
 
 
+def render_spatial_voting_html(fig, width=None, height=None) -> str:
+    """Render a spatial voting canvas payload as a self-contained HTML string.
+
+    This is the in-memory counterpart of :func:`save_plot`'s ``.html`` export:
+    use it when the HTML needs to be embedded in a running process (e.g. a
+    Shiny for Python app's UI) instead of written to a file.
+
+    Parameters
+    ----------
+    fig:
+        Canvas payload dict from :func:`plot_spatial_voting`.
+    width, height:
+        Widget dimensions in pixels. ``None`` uses the dimensions ``fig`` was
+        created with.
+
+    Returns
+    -------
+    str
+        A complete, self-contained ``<!DOCTYPE html>`` document string.
+    """
+    _assert_spatial_payload(fig)
+    w = int(width if width is not None else fig.get("_width", 700))
+    h = int(height if height is not None else fig.get("_height", 600))
+    export = {k: v for k, v in fig.items() if not str(k).startswith("_")}
+    return _html_from_spatial_payload(export, w, h)
+
+
 def save_plot(fig, path, width=None, height=None):
     """Save a spatial voting canvas payload to a standalone HTML file."""
     _assert_spatial_payload(fig)
     ext = Path(path).suffix.lower()
     w = int(width if width is not None else fig.get("_width", 700))
     h = int(height if height is not None else fig.get("_height", 600))
-    export = {k: v for k, v in fig.items() if not str(k).startswith("_")}
     if ext == ".html":
-        html = _html_from_spatial_payload(export, w, h)
+        html = render_spatial_voting_html(fig, width=w, height=h)
         Path(path).write_text(html, encoding="utf-8")
     elif ext in {".png", ".svg", ".pdf", ".jpeg", ".jpg", ".webp"}:
         raise NotImplementedError(

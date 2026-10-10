@@ -452,6 +452,28 @@ def test_save_plot_html():
         os.unlink(path)
 
 
+def test_render_spatial_voting_html_matches_save_plot_output():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
+    html = sclp.render_spatial_voting_html(fig)
+    assert isinstance(html, str)
+    assert "<!DOCTYPE html>" in html
+    assert "spatial-voting-canvas" in html
+    with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:
+        path = f.name
+    try:
+        sclp.save_plot(fig, path)
+        assert Path(path).read_text(encoding="utf-8") == html
+    finally:
+        os.unlink(path)
+
+
+def test_render_spatial_voting_html_respects_explicit_dimensions():
+    fig = sclp.plot_spatial_voting(VOTERS, sq=SQ, width=400, height=300)
+    html = sclp.render_spatial_voting_html(fig, width=200, height=150)
+    assert "200px" in html
+    assert "150px" in html
+
+
 def test_save_plot_png_not_implemented():
     fig = sclp.plot_spatial_voting(VOTERS, sq=SQ)
     with pytest.raises(NotImplementedError, match="PNG"):
