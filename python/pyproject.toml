@@ -28,6 +28,9 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/socialchoicelab"]
+# Scenario JSON is git-ignored by the repo-wide *.json rule; artifacts
+# includes it in the wheel anyway.
+artifacts = ["src/socialchoicelab/data/scenarios/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
