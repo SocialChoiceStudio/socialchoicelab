@@ -13,8 +13,6 @@
 
 ## Next sitting
 
-- [ ] Commit and push the uncommitted nontechnical-user-release work (see `.cursor/HANDOFF.md`; suggested split: service layer / overlay guard / scenario data fix / hosted app). Also push the 3 earlier unpushed commits.
-- [ ] Confirm whether deleting `.cursor/rules/Review-Rules-At-Start.mdc` and `Run-All-Local-Checks-Before-Push.mdc` was intentional.
 - [ ] Build-verify `app/Dockerfile`.
 - [ ] Decide: hosting provider for the web app.
 - [ ] Decide: when and how to run the user pilot.
