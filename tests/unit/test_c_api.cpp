@@ -888,6 +888,65 @@ TEST(CApi_Competition, RunTraceAndExportRoundData) {
   scs_competition_trace_destroy(trace);
 }
 
+TEST(CApi_Competition, TraceDistConfigReportsMetricUsedToRunIt) {
+  double competitor_positions[4] = {0.0, 0.0, 3.0, 3.0};
+  int strategies[2] = {SCS_COMPETITION_STRATEGY_STICKER,
+                       SCS_COMPETITION_STRATEGY_STICKER};
+  double voters[6] = {0.1, 0.1, 0.2, 0.2, 2.9, 2.9};
+  double weights[2] = {1.0, 1.0};
+  SCS_DistanceConfig dc{};
+  dc.distance_type = SCS_DIST_MANHATTAN;
+  dc.order_p = 2.0;
+  dc.salience_weights = weights;
+  dc.n_weights = 2;
+
+  SCS_CompetitionEngineConfig cfg{};
+  cfg.seat_count = 1;
+  cfg.seat_rule = SCS_COMPETITION_SEAT_RULE_PLURALITY_TOP_K;
+  cfg.step_config.kind = SCS_COMPETITION_STEP_FIXED;
+  cfg.step_config.fixed_step_size = 1.0;
+  cfg.boundary_policy = SCS_COMPETITION_BOUNDARY_PROJECT_TO_BOX;
+  cfg.objective_kind = SCS_COMPETITION_OBJECTIVE_VOTE_SHARE;
+  cfg.max_rounds = 1;
+
+  char err[256] = {};
+  SCS_CompetitionTrace* trace =
+      scs_competition_run(competitor_positions, nullptr, strategies, 2, voters,
+                          3, 2, &dc, &cfg, nullptr, err, 256);
+  ASSERT_NE(trace, nullptr) << err;
+
+  // Size-query mode: null out_weights only reports n_weights.
+  SCS_DistanceType distance_type = SCS_DIST_EUCLIDEAN;
+  double order_p = 0.0;
+  int n_weights = 0;
+  EXPECT_EQ(scs_competition_trace_dist_config(trace, &distance_type, &order_p,
+                                              &n_weights, nullptr, 0, err, 256),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(distance_type, SCS_DIST_MANHATTAN);
+  EXPECT_EQ(n_weights, 2);
+
+  // Buffer too small is reported, not silently truncated.
+  double tiny_weights[1] = {};
+  EXPECT_EQ(
+      scs_competition_trace_dist_config(trace, &distance_type, &order_p,
+                                        &n_weights, tiny_weights, 1, err, 256),
+      SCS_ERROR_BUFFER_TOO_SMALL);
+
+  // Fill mode returns the actual weights used.
+  double out_weights[2] = {};
+  EXPECT_EQ(
+      scs_competition_trace_dist_config(trace, &distance_type, &order_p,
+                                        &n_weights, out_weights, 2, err, 256),
+      SCS_OK)
+      << err;
+  EXPECT_EQ(distance_type, SCS_DIST_MANHATTAN);
+  EXPECT_DOUBLE_EQ(out_weights[0], 1.0);
+  EXPECT_DOUBLE_EQ(out_weights[1], 1.0);
+
+  scs_competition_trace_destroy(trace);
+}
+
 TEST(CApi_Competition, RunExperimentAndExportSummary) {
   double competitor_positions[2] = {0.0, 3.0};
   int strategies[2] = {SCS_COMPETITION_STRATEGY_STICKER,

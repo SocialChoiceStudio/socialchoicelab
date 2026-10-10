@@ -40,6 +40,28 @@ test_that("competition_run returns a CompetitionTrace with usable exports", {
   expect_equal(unname(trace$final_seat_shares()), c(1, 0), tolerance = 1e-12)
 })
 
+test_that("trace$dist_config() reports the metric actually used", {
+  # Used by animate_competition_canvas for the non-Euclidean overlay guard;
+  # must report the real DistanceConfig, not a hardcoded Euclidean default.
+  skip_without_lib()
+  cfg <- make_competition_engine_config(
+    seat_count = 1L,
+    seat_rule = "plurality_top_k",
+    max_rounds = 1L,
+    step_config = make_competition_step_config(kind = "fixed", fixed_step_size = 1.0)
+  )
+  trace <- competition_run(
+    c(0.0, 0.0, 3.0, 3.0),
+    c("sticker", "sticker"),
+    c(0.1, 0.1, 0.2, 0.2, 2.9, 2.9),
+    dist_config = make_dist_config(distance_type = "manhattan", weights = c(2.0, 1.0)),
+    engine_config = cfg
+  )
+  dc <- trace$dist_config()
+  expect_identical(dc$distance_type, 1L)
+  expect_equal(unname(dc$weights), c(2.0, 1.0))
+})
+
 test_that("competition_run_experiment returns summary statistics", {
   skip_without_lib()
   competitors <- c(0.0, 3.0)

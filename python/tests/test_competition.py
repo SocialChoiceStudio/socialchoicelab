@@ -34,6 +34,33 @@ def test_competition_run_trace_exports_round_data():
         assert np.allclose(trace.final_seat_shares(), [1.0, 0.0])
 
 
+def test_trace_dist_config_reports_metric_actually_used():
+    """trace.dist_config() must report the DistanceConfig the competition
+    actually ran under, not a hardcoded Euclidean default. This is what
+    animate_competition_canvas relies on for the non-Euclidean overlay guard.
+    """
+    competitors = np.array([[0.0, 0.0], [3.0, 3.0]])
+    voters = np.array([[0.1, 0.1], [0.2, 0.2], [2.9, 2.9]])
+    cfg = scl.CompetitionEngineConfig(
+        seat_count=1,
+        seat_rule="plurality_top_k",
+        max_rounds=1,
+        step_config=scl.CompetitionStepConfig(kind="fixed", fixed_step_size=1.0),
+    )
+    with scl.competition_run(
+        competitors,
+        ["sticker", "sticker"],
+        voters,
+        dist_config=scl.DistanceConfig(
+            distance_type="manhattan", salience_weights=[2.0, 1.0]
+        ),
+        engine_config=cfg,
+    ) as trace:
+        dc = trace.dist_config()
+        assert dc.distance_type == "manhattan"
+        assert list(dc.salience_weights) == [2.0, 1.0]
+
+
 def test_competition_run_experiment_exports_summary():
     competitors = np.array([[0.0], [3.0]])
     voters = np.array([[0.1], [0.2], [2.9]])

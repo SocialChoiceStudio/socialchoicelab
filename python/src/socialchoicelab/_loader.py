@@ -803,6 +803,11 @@ _DECLARATIONS = """
         const SCS_CompetitionTrace* trace, int* out_kinds, int out_len,
         char* err_buf, int err_buf_len);
 
+    int scs_competition_trace_dist_config(
+        const SCS_CompetitionTrace* trace, SCS_DistanceType* out_distance_type,
+        double* out_order_p, int* out_n_weights, double* out_weights,
+        int out_weights_capacity, char* err_buf, int err_buf_len);
+
     SCS_CompetitionExperiment* scs_competition_run_experiment(
         const double* competitor_positions, const double* competitor_headings,
         const int* strategy_kinds, int n_competitors, const double* voter_ideals,

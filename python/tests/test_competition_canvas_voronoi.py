@@ -75,6 +75,51 @@ def test_compute_voronoi_true_produces_correctly_shaped_payload():
             assert 0 <= entry["candidate"] < n_competitors
 
 
+def test_compute_voronoi_raises_when_trace_itself_ran_non_euclidean():
+    """compute_voronoi must check the trace's own metric, not just an
+    explicit voronoi_dist_config override. A caller who runs a competition
+    under Manhattan distance and then asks for Voronoi regions (which are
+    only valid under Euclidean distance) must get a clear error naming the
+    trace's actual metric, even if they pass no voronoi_dist_config at all.
+    """
+    trace = scl.competition_run(
+        _WS_COMPETITORS,
+        ["sticker", "sticker"],
+        WS_VOTERS,
+        dist_config=scl.DistanceConfig(
+            distance_type="manhattan", salience_weights=[1.0, 1.0]
+        ),
+        engine_config=_WS_ENGINE_CFG,
+    )
+    with trace:
+        with pytest.raises(ValueError, match="manhattan"):
+            sclp.animate_competition_canvas(
+                trace, voters=WS_VOTERS, compute_voronoi=True
+            )
+
+
+def test_ic_overlay_defaults_to_trace_dist_config_not_hardcoded_euclidean():
+    """compute_ic with no explicit ic_dist_config should use the metric the
+    trace actually ran under, not silently assume Euclidean."""
+    trace = scl.competition_run(
+        _WS_COMPETITORS,
+        ["sticker", "sticker"],
+        WS_VOTERS,
+        dist_config=scl.DistanceConfig(
+            distance_type="manhattan", salience_weights=[1.0, 1.0]
+        ),
+        engine_config=_WS_ENGINE_CFG,
+    )
+    with trace:
+        # Must not raise: IC is metric-general, so a non-Euclidean trace
+        # default is valid, unlike Voronoi.
+        html = sclp.animate_competition_canvas(
+            trace, voters=WS_VOTERS, compute_ic=True
+        )
+    payload = _extract_payload(html)
+    assert "overlays_frames" in payload
+
+
 def test_compute_voronoi_non_euclidean_raises():
     with _ws_trace_2d() as trace:
         with pytest.raises(ValueError, match="Euclidean.*uniform"):

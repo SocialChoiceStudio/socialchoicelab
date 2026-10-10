@@ -133,6 +133,19 @@ CompetitionTrace <- R6::R6Class(
     strategy_kinds = function() {
       .Call("r_scs_competition_trace_strategy_kinds", private$ptr,
             PACKAGE = "socialchoicelab")
+    },
+
+    #' @description Return the distance configuration this trace actually
+    #'   ran under. Use this (rather than assuming Euclidean) before
+    #'   requesting overlays in \code{\link{animate_competition_canvas}} that
+    #'   are only valid for a specific metric, e.g. Voronoi candidate regions
+    #'   (Euclidean only). See \code{docs/status/ROADMAP.md} \u00a7
+    #'   Non-Euclidean geometry.
+    #' @return A distance-configuration list in the same shape as
+    #'   \code{\link{make_dist_config}}'s return value.
+    dist_config = function() {
+      .Call("r_scs_competition_trace_dist_config", private$ptr,
+            PACKAGE = "socialchoicelab")
     }
   )
 )

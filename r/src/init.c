@@ -67,6 +67,7 @@ extern SEXP r_scs_competition_trace_round_seat_totals(SEXP, SEXP);
 extern SEXP r_scs_competition_trace_final_vote_shares(SEXP);
 extern SEXP r_scs_competition_trace_final_seat_shares(SEXP);
 extern SEXP r_scs_competition_trace_strategy_kinds(SEXP);
+extern SEXP r_scs_competition_trace_dist_config(SEXP);
 extern SEXP r_scs_competition_run_experiment(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP,
                                              SEXP, SEXP, SEXP);
 extern SEXP r_scs_competition_experiment_destroy(SEXP);
@@ -204,6 +205,7 @@ static const R_CallMethodDef call_methods[] = {
     {"r_scs_competition_trace_final_vote_shares",     (DL_FUNC)&r_scs_competition_trace_final_vote_shares,     1},
     {"r_scs_competition_trace_final_seat_shares",     (DL_FUNC)&r_scs_competition_trace_final_seat_shares,     1},
     {"r_scs_competition_trace_strategy_kinds",        (DL_FUNC)&r_scs_competition_trace_strategy_kinds,        1},
+    {"r_scs_competition_trace_dist_config",           (DL_FUNC)&r_scs_competition_trace_dist_config,           1},
     {"r_scs_competition_run_experiment",              (DL_FUNC)&r_scs_competition_run_experiment,              9},
     {"r_scs_competition_experiment_destroy",          (DL_FUNC)&r_scs_competition_experiment_destroy,          1},
     {"r_scs_competition_experiment_dims",             (DL_FUNC)&r_scs_competition_experiment_dims,             1},

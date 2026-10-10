@@ -59,6 +59,12 @@ _TERM_REASON_STR = {
     3: "no_improvement_window",
 }
 
+# Mirrors socialchoicelab._types._DIST_TYPE_INT; kept local (rather than
+# importing a private name) since this is the only place CompetitionTrace
+# needs to translate SCS_DistanceType back to a DistanceConfig.distance_type
+# string.
+_DIST_TYPE_STR = {0: "euclidean", 1: "manhattan", 2: "chebyshev", 3: "minkowski"}
+
 
 @dataclass
 class CompetitionStepConfig:
@@ -218,6 +224,47 @@ class CompetitionTrace:
             "terminated_early": bool(out_early[0]),
             "reason": _TERM_REASON_STR.get(reason, f"unknown({reason})"),
         }
+
+    def dist_config(self) -> DistanceConfig:
+        """Return the :class:`DistanceConfig` this trace was actually run under.
+
+        Use this (rather than assuming Euclidean) before requesting overlays
+        in :func:`socialchoicelab.plots.animate_competition_canvas` that are
+        only valid for a specific metric, e.g. Voronoi candidate regions
+        (Euclidean only). See ``docs/status/ROADMAP.md`` § Non-Euclidean
+        geometry.
+        """
+        out_type = _ffi.new("SCS_DistanceType *")
+        out_order_p = _ffi.new("double *")
+        out_n_weights = _ffi.new("int *")
+        err = new_err_buf()
+        _check(
+            _lib.scs_competition_trace_dist_config(
+                self._ptr, out_type, out_order_p, out_n_weights, _ffi.NULL, 0,
+                err, _ERR,
+            ),
+            err,
+        )
+        n_weights = int(out_n_weights[0])
+        weights_buf = _ffi.new("double[]", n_weights)
+        err = new_err_buf()
+        _check(
+            _lib.scs_competition_trace_dist_config(
+                self._ptr, out_type, out_order_p, out_n_weights, weights_buf,
+                n_weights, err, _ERR,
+            ),
+            err,
+        )
+        weights = list(
+            np.frombuffer(_ffi.buffer(weights_buf, n_weights * 8), dtype=np.float64)
+        )
+        dist_type_int = int(_ffi.cast("int", out_type[0]))
+        dist_type_str = _DIST_TYPE_STR.get(dist_type_int, "euclidean")
+        return DistanceConfig(
+            distance_type=dist_type_str,
+            salience_weights=weights,
+            order_p=float(out_order_p[0]),
+        )
 
     def round_positions(self, round_index: int) -> np.ndarray:
         n_rounds, n_competitors, n_dims = self.dims()

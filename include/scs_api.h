@@ -1908,6 +1908,26 @@ SCS_API int scs_competition_trace_termination(
     SCS_CompetitionTerminationReason* out_reason, char* err_buf,
     int err_buf_len);
 
+/**
+ * Returns the distance configuration that was actually used to produce
+ * `trace` (the `dist_cfg` passed to scs_competition_run / the
+ * experiment-runner equivalent). Visualization bindings should read this
+ * before drawing a Euclidean-only overlay (e.g. Voronoi candidate regions)
+ * on top of a trace, rather than trusting a caller-supplied overlay config
+ * that might not match the metric the competition actually ran under.
+ *
+ * `out_weights` follows the size-query convention used elsewhere in this
+ * API: pass `NULL` to learn `*out_n_weights` without writing any weights;
+ * pass a buffer of at least `*out_n_weights` doubles to receive them.
+ *
+ * @param out_weights_capacity  Capacity of `out_weights`, in doubles.
+ *                              Ignored when `out_weights` is `NULL`.
+ */
+SCS_API int scs_competition_trace_dist_config(
+    const SCS_CompetitionTrace* trace, SCS_DistanceType* out_distance_type,
+    double* out_order_p, int* out_n_weights, double* out_weights,
+    int out_weights_capacity, char* err_buf, int err_buf_len);
+
 SCS_API int scs_competition_trace_round_positions(
     const SCS_CompetitionTrace* trace, int round_index, double* out_positions,
     int out_len, char* err_buf, int err_buf_len);

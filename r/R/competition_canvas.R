@@ -368,8 +368,10 @@ NULL
 #'   sensitivity 1, producing pure iso-distance curves that match competition
 #'   vote logic.
 #' @param ic_dist_config Distance configuration for IC computation (from
-#'   \code{\link{make_dist_config}}). Should match the \code{dist_config} used
-#'   in \code{\link{competition_run}}. Default \code{NULL} uses 2D Euclidean.
+#'   \code{\link{make_dist_config}}). Default \code{NULL} uses the distance
+#'   configuration the competition actually ran under (\code{trace$dist_config()});
+#'   pass an explicit value only to deliberately show indifference curves
+#'   under a different metric than the trace.
 #' @param ic_num_samples Integer >= 3. Number of polygon vertices sampled per
 #'   indifference curve for smooth shapes (circle / ellipse / superellipse).
 #'   Exact polygons always use 4 vertices regardless of this value. Default 32.
@@ -384,9 +386,10 @@ NULL
 #'   metric (\code{winset_dist_config}); no assumption is made about which
 #'   rule is in use.
 #' @param winset_dist_config Distance configuration for WinSet computation
-#'   (from \code{\link{make_dist_config}}). Should match the
-#'   \code{dist_config} used in \code{\link{competition_run}}. Default
-#'   \code{NULL} uses 2D Euclidean.
+#'   (from \code{\link{make_dist_config}}). Default \code{NULL} uses the
+#'   distance configuration the competition actually ran under
+#'   (\code{trace$dist_config()}); pass an explicit value only to
+#'   deliberately show the WinSet under a different metric than the trace.
 #' @param winset_k Voting rule threshold passed to \code{\link{winset_2d}}.
 #'   Use \code{"simple"} for simple majority, or a positive integer \code{k}.
 #'   Default \code{"simple"}.
@@ -397,13 +400,16 @@ NULL
 #'   Default \code{1000L}.
 #' @param compute_voronoi Logical. When \code{TRUE}, compute Euclidean Voronoi
 #'   (candidate) regions per frame and show a "Voronoi" toggle in the canvas.
-#'   Currently only Euclidean (L2, uniform weights) is supported; a
-#'   non-Euclidean \code{voronoi_dist_config} raises an error. Default
-#'   \code{FALSE}.
+#'   Requires the trace itself to have run under Euclidean (L2) distance with
+#'   uniform salience (\code{trace$dist_config()}) — raises an error naming
+#'   the trace's actual metric otherwise, since Voronoi regions are only
+#'   geometrically valid relative to the metric the competition used.
+#'   Default \code{FALSE}.
 #' @param voronoi_dist_config Distance configuration for Voronoi (must be
 #'   Euclidean when \code{compute_voronoi} is \code{TRUE}). Default
-#'   \code{NULL} uses 2D Euclidean. If provided, must be Euclidean with
-#'   uniform salience; otherwise an error is raised.
+#'   \code{NULL} uses the trace's own distance configuration, which must
+#'   itself be Euclidean with uniform salience for \code{compute_voronoi = TRUE}
+#'   to succeed.
 #' @return An \code{htmlwidget} object of class \code{competition_canvas}.
 #' @export
 animate_competition_canvas <- function(trace,
@@ -433,6 +439,17 @@ animate_competition_canvas <- function(trace,
     stop("Expected a CompetitionTrace object, got ", class(trace)[1], ".")
   }
   d <- trace$dims()
+
+  # The distance configuration the competition actually ran under. Overlay
+  # parameters below default to this (rather than hardcoded Euclidean) and
+  # Euclidean-only overlays are checked against it, not just against
+  # whatever overlay-specific config the caller happened to pass — closing
+  # the non-Euclidean overlay guard gap described in
+  # docs/status/ROADMAP.md Non-Euclidean geometry.
+  trace_dist_config <- trace$dist_config()
+  if (is.null(ic_dist_config)) ic_dist_config <- trace_dist_config
+  if (is.null(winset_dist_config)) winset_dist_config <- trace_dist_config
+  if (is.null(voronoi_dist_config)) voronoi_dist_config <- trace_dist_config
 
   # Validate common parameters before dispatching on dimensionality.
   strategy_kinds <- trace$strategy_kinds()
@@ -481,13 +498,34 @@ animate_competition_canvas <- function(trace,
          d$n_dims, ".")
   }
 
+  .is_euclidean_uniform <- function(dc) {
+    type_ok <- identical(dc$distance_type, 0L) ||
+               identical(dc$distance_type, "euclidean")
+    weights <- as.numeric(dc$weights)
+    type_ok && length(weights) >= 2L && length(unique(weights)) == 1L
+  }
+
+  .dist_type_label <- function(code) {
+    labels <- c("euclidean", "manhattan", "chebyshev", "minkowski")
+    if (is.numeric(code) && code >= 0L && code < length(labels)) {
+      labels[code + 1L]
+    } else {
+      as.character(code)
+    }
+  }
+
   if (isTRUE(compute_voronoi)) {
-    vdc <- voronoi_dist_config %||% make_dist_config()
-    type_ok <- identical(vdc$distance_type, 0L) ||
-               identical(vdc$distance_type, "euclidean")
-    weights <- as.numeric(vdc$weights)
-    uniform_ok <- length(weights) >= 2L && length(unique(weights)) == 1L
-    if (!type_ok || !uniform_ok) {
+    if (!.is_euclidean_uniform(trace_dist_config)) {
+      stop(
+        "compute_voronoi = TRUE requires the competition trace to have run ",
+        "under Euclidean (L2) distance with uniform salience, but this ",
+        "trace's distance_type was ", .dist_type_label(trace_dist_config$distance_type),
+        " with weights ", paste(trace_dist_config$weights, collapse = ", "),
+        ". Voronoi candidate regions are only valid relative to the metric ",
+        "the competition actually used, so they cannot be drawn for this trace."
+      )
+    }
+    if (!.is_euclidean_uniform(voronoi_dist_config)) {
       stop(
         "compute_voronoi = TRUE requires Euclidean (L2) distance with uniform ",
         "salience. Voronoi for non-Euclidean metrics is planned; use ",

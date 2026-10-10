@@ -425,6 +425,49 @@ SEXP r_scs_competition_trace_strategy_kinds(SEXP ptr) {
     return str_result;
 }
 
+/* r_scs_competition_trace_dist_config — report the DistanceConfig this trace
+ * actually ran under. Returns a list shaped like make_dist_config()'s return
+ * value (R/utils.R): [[1]] distance_type (int), [[2]] weights (numeric),
+ * [[3]] n_weights (int), [[4]] order_p (numeric). Used by
+ * animate_competition_canvas() to default overlay distance configs to the
+ * trace's own metric and to guard Euclidean-only overlays (Voronoi). See
+ * docs/status/ROADMAP.md Non-Euclidean geometry. */
+SEXP r_scs_competition_trace_dist_config(SEXP ptr) {
+    SCS_CompetitionTrace *trace = (SCS_CompetitionTrace *)get_extptr(ptr);
+    if (!trace) {
+        Rf_error("CompetitionTrace handle is NULL or has already been destroyed.");
+    }
+    char err[SCS_ERR_BUF_SIZE] = {0};
+    SCS_DistanceType distance_type;
+    double order_p = 0.0;
+    int n_weights = 0;
+    /* Size query: NULL out_weights, 0 capacity. */
+    scs_check(scs_competition_trace_dist_config(
+                  trace, &distance_type, &order_p, &n_weights, NULL, 0,
+                  err, SCS_ERR_BUF_SIZE),
+              err);
+
+    SEXP weights = PROTECT(allocVector(REALSXP, n_weights));
+    scs_check(scs_competition_trace_dist_config(
+                  trace, &distance_type, &order_p, &n_weights, REAL(weights),
+                  n_weights, err, SCS_ERR_BUF_SIZE),
+              err);
+
+    SEXP result = PROTECT(allocVector(VECSXP, 4));
+    SEXP names = PROTECT(allocVector(STRSXP, 4));
+    SET_VECTOR_ELT(result, 0, ScalarInteger((int)distance_type));
+    SET_VECTOR_ELT(result, 1, weights);
+    SET_VECTOR_ELT(result, 2, ScalarInteger(n_weights));
+    SET_VECTOR_ELT(result, 3, ScalarReal(order_p));
+    SET_STRING_ELT(names, 0, mkChar("distance_type"));
+    SET_STRING_ELT(names, 1, mkChar("weights"));
+    SET_STRING_ELT(names, 2, mkChar("n_weights"));
+    SET_STRING_ELT(names, 3, mkChar("order_p"));
+    Rf_setAttrib(result, R_NamesSymbol, names);
+    UNPROTECT(3);
+    return result;
+}
+
 SEXP r_scs_competition_run_experiment(SEXP competitor_positions,
                                       SEXP competitor_headings,
                                       SEXP strategy_kinds, SEXP voter_ideals,

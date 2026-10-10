@@ -27,6 +27,14 @@ struct CompetitionTrace {
   std::vector<CompetitorState> final_competitors;
   TerminationReason termination_reason = TerminationReason::kMaxRounds;
   bool terminated_early = false;
+  // The distance configuration the election used during this run (copied from
+  // CompetitionEngineConfig.election_feedback.distance_config at construction
+  // time). Visualization code (R/Python `animate_competition_canvas`) reads
+  // this to decide whether Euclidean-only overlays (e.g. Voronoi candidate
+  // regions) are valid for the metric that actually produced the trace,
+  // rather than trusting a caller-supplied overlay config that may not match.
+  // See docs/status/ROADMAP.md § Non-Euclidean geometry.
+  geometry::DistConfig distance_config;
 };
 
 struct CompetitionEngineConfig {
@@ -283,6 +291,7 @@ inline void validate_engine_inputs(
   detail::validate_engine_inputs(config, initial_competitors, voter_ideals);
 
   CompetitionTrace trace;
+  trace.distance_config = config.election_feedback.distance_config;
   std::vector<CompetitorState> competitors = initial_competitors;
   std::deque<std::string> recent_signatures;
   if (config.termination.stop_on_cycle && config.termination.cycle_memory > 0) {

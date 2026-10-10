@@ -136,4 +136,4 @@ from socialchoicelab.plots import load_competition_canvas  # noqa: F401
 # Utility surface plot (3D, Three.js)
 from socialchoicelab.plots import plot_utility_surface, save_utility_surface  # noqa: F401
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

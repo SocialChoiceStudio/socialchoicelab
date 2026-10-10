@@ -51,6 +51,56 @@ test_that("compute_voronoi = TRUE produces correctly shaped voronoi payload", {
   }
 })
 
+test_that("compute_voronoi = TRUE raises when the trace itself ran non-Euclidean", {
+  # compute_voronoi must check the trace's own metric, not just an explicit
+  # voronoi_dist_config override. A trace run under Manhattan distance must
+  # raise a clear error naming that metric even with no override supplied.
+  skip_without_lib()
+  trace <- competition_run(
+    competitor_positions = c(0.0, 0.0, 2.0, 0.0),
+    strategy_kinds       = c("sticker", "sticker"),
+    voter_ideals         = c(-0.5, 0.0, 0.0, 0.2, 1.8, 0.1),
+    dist_config          = make_dist_config(distance_type = "manhattan"),
+    engine_config        = make_competition_engine_config(
+      seat_count = 1L,
+      seat_rule  = "plurality_top_k",
+      max_rounds = 2L,
+      step_config = make_competition_step_config(
+        kind = "fixed", fixed_step_size = 0.5
+      )
+    )
+  )
+  expect_error(
+    animate_competition_canvas(trace, compute_voronoi = TRUE),
+    "manhattan"
+  )
+})
+
+test_that("compute_ic defaults to the trace's own (non-Euclidean) metric without error", {
+  skip_without_lib()
+  trace <- competition_run(
+    competitor_positions = c(0.0, 0.0, 2.0, 0.0),
+    strategy_kinds       = c("sticker", "sticker"),
+    voter_ideals         = c(-0.5, 0.0, 0.0, 0.2, 1.8, 0.1),
+    dist_config          = make_dist_config(distance_type = "manhattan"),
+    engine_config        = make_competition_engine_config(
+      seat_count = 1L,
+      seat_rule  = "plurality_top_k",
+      max_rounds = 2L,
+      step_config = make_competition_step_config(
+        kind = "fixed", fixed_step_size = 0.5
+      )
+    )
+  )
+  w <- animate_competition_canvas(
+    trace,
+    voters    = c(-0.5, 0.0, 0.0, 0.2, 1.8, 0.1),
+    compute_ic = TRUE
+  )
+  expect_true("overlays_frames" %in% names(w$x))
+  expect_true("indifference_curves" %in% names(w$x$overlays_frames[[1]]))
+})
+
 test_that("compute_voronoi = TRUE with non-Euclidean voronoi_dist_config raises", {
   skip_without_lib()
   trace <- .ws_trace_2d()

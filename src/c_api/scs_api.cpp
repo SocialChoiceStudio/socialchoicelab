@@ -426,6 +426,25 @@ SCS_CompetitionTerminationReason to_c_termination_reason(
   return SCS_COMPETITION_TERM_MAX_ROUNDS;
 }
 
+// Map C++ distance type enum to the C SCS_DistanceType. Inverse of
+// to_dist_config's switch; used to report a trace's own distance
+// configuration back out through the C API (scs_competition_trace_dist_config).
+SCS_DistanceType to_c_dist_type(
+    socialchoicelab::preference::distance::DistanceType type) {
+  using DT = socialchoicelab::preference::distance::DistanceType;
+  switch (type) {
+    case DT::EUCLIDEAN:
+      return SCS_DIST_EUCLIDEAN;
+    case DT::MANHATTAN:
+      return SCS_DIST_MANHATTAN;
+    case DT::CHEBYSHEV:
+      return SCS_DIST_CHEBYSHEV;
+    case DT::MINKOWSKI:
+      return SCS_DIST_MINKOWSKI;
+  }
+  return SCS_DIST_EUCLIDEAN;
+}
+
 socialchoicelab::competition::TerminationConfig to_cpp_termination_config(
     const SCS_CompetitionTerminationConfig& cfg) {
   socialchoicelab::competition::TerminationConfig out;
@@ -4137,6 +4156,40 @@ extern "C" int scs_competition_trace_termination(
   }
   *out_terminated_early = trace->trace.terminated_early ? 1 : 0;
   *out_reason = to_c_termination_reason(trace->trace.termination_reason);
+  return SCS_OK;
+}
+
+// Reports the distance configuration that was actually used to produce this
+// trace (copied from CompetitionEngineConfig at scs_competition_run time), so
+// visualization bindings can validate overlay requests against the real
+// metric instead of trusting a possibly mismatched overlay-specific config.
+// Null out_weights is a size query: writes n_weights and returns SCS_OK
+// without touching out_weights. See docs/architecture/c_api_design.md.
+extern "C" int scs_competition_trace_dist_config(
+    const SCS_CompetitionTrace* trace, SCS_DistanceType* out_distance_type,
+    double* out_order_p, int* out_n_weights, double* out_weights,
+    int out_weights_capacity, char* err_buf, int err_buf_len) {
+  if (!trace || !out_distance_type || !out_order_p || !out_n_weights) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_dist_config: null pointer argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  const auto& cfg = trace->trace.distance_config;
+  *out_distance_type = to_c_dist_type(cfg.type);
+  *out_order_p = cfg.order_p;
+  *out_n_weights = static_cast<int>(cfg.salience_weights.size());
+  if (!out_weights) {
+    return SCS_OK;  // Size query only.
+  }
+  if (out_weights_capacity < static_cast<int>(cfg.salience_weights.size())) {
+    set_error(err_buf, err_buf_len,
+              "scs_competition_trace_dist_config: out_weights buffer is too "
+              "small");
+    return SCS_ERROR_BUFFER_TOO_SMALL;
+  }
+  for (size_t i = 0; i < cfg.salience_weights.size(); ++i) {
+    out_weights[i] = cfg.salience_weights[i];
+  }
   return SCS_OK;
 }
 

@@ -793,9 +793,10 @@ def animate_competition_canvas(
         sensitivity 1, producing pure iso-distance curves that match competition
         vote logic.
     ic_dist_config:
-        :class:`DistanceConfig` for IC computation. Should match the
-        ``dist_config`` used in :func:`competition_run`. ``None`` uses 2D
-        Euclidean.
+        :class:`DistanceConfig` for IC computation. ``None`` (default) uses
+        the distance configuration the competition actually ran under
+        (``trace.dist_config()``); pass an explicit value only to deliberately
+        show indifference curves under a different metric than the trace.
     ic_num_samples:
         Number of polygon vertices per indifference curve for smooth shapes.
         Exact polygons always use 4 vertices. Default 32.
@@ -810,9 +811,10 @@ def animate_competition_canvas(
         ``winset_dist_config``; no assumption is made about which voting rule
         is in use.
     winset_dist_config:
-        :class:`DistanceConfig` for WinSet computation. Should match the
-        ``dist_config`` used in :func:`competition_run`. ``None`` uses 2D
-        Euclidean.
+        :class:`DistanceConfig` for WinSet computation. ``None`` (default)
+        uses the distance configuration the competition actually ran under
+        (``trace.dist_config()``); pass an explicit value only to deliberately
+        show the WinSet under a different metric than the trace.
     winset_k:
         Voting rule threshold passed to :func:`winset_2d`. ``-1`` means
         simple majority. Default ``-1``.
@@ -830,13 +832,17 @@ def animate_competition_canvas(
         :func:`load_competition_canvas` without recomputing anything.
     compute_voronoi:
         When ``True``, compute Euclidean Voronoi (candidate) regions per frame
-        and show a "Voronoi" toggle in the canvas. Currently only Euclidean
-        (L2, uniform weights) is supported; a non-Euclidean
-        ``voronoi_dist_config`` raises a ``ValueError``. Default ``False``.
+        and show a "Voronoi" toggle in the canvas. Requires the trace itself
+        to have run under Euclidean (L2) distance with uniform salience
+        (``trace.dist_config()``) — raises a ``ValueError`` naming the
+        trace's actual metric otherwise, since Voronoi regions are only
+        geometrically valid relative to the metric the competition used.
+        Default ``False``.
     voronoi_dist_config:
         :class:`DistanceConfig` for Voronoi (must be Euclidean when
-        ``compute_voronoi`` is ``True``). ``None`` uses 2D Euclidean. If
-        provided, must be Euclidean with uniform salience.
+        ``compute_voronoi`` is ``True``). ``None`` (default) uses the trace's
+        own distance configuration, which must itself be Euclidean with
+        uniform salience for ``compute_voronoi=True`` to succeed.
 
     Returns
     -------
@@ -845,6 +851,20 @@ def animate_competition_canvas(
         is written to that file.
     """
     n_rounds, n_competitors, n_dims = trace.dims()
+
+    # The distance configuration the competition actually ran under. Overlay
+    # parameters below default to this (rather than hardcoded Euclidean) and
+    # Euclidean-only overlays are checked against it, not just against
+    # whatever overlay-specific config the caller happened to pass — closing
+    # the non-Euclidean overlay guard gap described in
+    # docs/status/ROADMAP.md § Non-Euclidean geometry.
+    trace_dist_config = trace.dist_config()
+    if ic_dist_config is None:
+        ic_dist_config = trace_dist_config
+    if winset_dist_config is None:
+        winset_dist_config = trace_dist_config
+    if voronoi_dist_config is None:
+        voronoi_dist_config = trace_dist_config
 
     # Validate common parameters before dispatching on dimensionality.
     strategy_kinds = trace.strategy_kinds()
@@ -893,12 +913,24 @@ def animate_competition_canvas(
             f"got n_dims={n_dims}."
         )
 
+    def _is_euclidean_uniform(dc):
+        type_ok = getattr(dc, "distance_type", "euclidean") == "euclidean"
+        w = getattr(dc, "salience_weights", None) or [1.0, 1.0]
+        return type_ok and len(w) >= 2 and len(set(w)) == 1
+
     if compute_voronoi:
-        vdc = voronoi_dist_config if voronoi_dist_config is not None else DistanceConfig(salience_weights=[1.0, 1.0])
-        type_ok = (getattr(vdc, "distance_type", "euclidean") == "euclidean")
-        w = getattr(vdc, "salience_weights", [1.0, 1.0])
-        uniform_ok = len(w) >= 2 and len(set(w)) == 1
-        if not type_ok or not uniform_ok:
+        if not _is_euclidean_uniform(trace_dist_config):
+            raise ValueError(
+                "compute_voronoi=True requires the competition trace to have "
+                "run under Euclidean (L2) distance with uniform salience, but "
+                f"this trace ran under distance_type="
+                f"{trace_dist_config.distance_type!r}, salience_weights="
+                f"{trace_dist_config.salience_weights!r}. Voronoi candidate "
+                "regions are only valid relative to the metric the "
+                "competition actually used, so they cannot be drawn for this "
+                "trace."
+            )
+        if not _is_euclidean_uniform(voronoi_dist_config):
             raise ValueError(
                 "compute_voronoi=True requires Euclidean (L2) distance with uniform "
                 "salience. Voronoi for non-Euclidean metrics is planned; use "
