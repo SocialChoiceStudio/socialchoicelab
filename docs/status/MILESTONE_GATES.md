@@ -152,7 +152,7 @@ Single list of items to revisit before we tag a release or open the project to o
 | Item | Source | Note |
 |------|--------|------|
 | ~~**C++20 vs C++17**~~ | Resolved | **Keep C++20.** Decision: stay at `CMAKE_CXX_STANDARD 20` — the codebase has substantial development ahead and C++20 features will be used as the project grows. No action required before `0.2.0`. |
-| ~~**Citations to verify**~~ | Resolved | Borda: standard year is **1784** (cite as "Borda (1784)"). Fishburn (1977): conservative claim — a Condorcet winner, when it exists, is also the Borda winner for 3 alternatives (converse does not hold generally). Guilbaud: corrected to English translation citation (Lazarsfeld & Henry (eds.), MIT Press, 1966, pp. 262–307). All updated in `aggregation_design.md`. |
+| ~~**Citations to verify**~~ | Resolved | Borda: standard year is **1784** (cite as "Borda (1784)"). Fishburn (1977): the earlier claim that a Condorcet winner is always the Borda winner for 3 alternatives was false (counterexample: `Borda.CondorcetWinner_NeedNotBeBordaWinner_ThreeAlts` in `tests/unit/test_voting_rules.cpp`) and was removed; Fishburn (1977) is cited only for naming the anti-plurality rule. Guilbaud: corrected to English translation citation (Lazarsfeld & Henry (eds.), MIT Press, 1966, pp. 262–307). All updated in `aggregation_design.md`. |
 
 ---
 

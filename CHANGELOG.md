@@ -13,6 +13,7 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 - **`scs_winset_2d_export_boundary`:** export closed winset boundary polylines for plotting.
 - **`scs_uncovered_set_boundary_2d_heap`:** heap-backed allocation path for continuous uncovered-set boundary export (complements the stack-bounded `scs_uncovered_set_boundary_2d`).
 - **`scs_voronoi_cells_2d_heap`:** heap-backed 2D Voronoi diagram over sites (complements `scs_voronoi_cells_2d`).
+- **`scs_competition_trace_dist_config`:** reports the `DistanceConfig` actually used to produce a `CompetitionTrace` (now stored on the trace at construction time). `animate_competition_canvas()` (R and Python) uses this to default overlay distance configs to the trace's own metric and to reject Euclidean-only overlays (Voronoi candidate regions) when the trace ran under a non-Euclidean metric, closing the non-Euclidean overlay guard gap tracked in `docs/status/ROADMAP.md` § Non-Euclidean geometry.
 
 #### R and Python bindings
 
@@ -43,6 +44,67 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 - **Status quo:** no on-plot `"SQ"` text; legend and hover only.
 - **Removed:** `animate_competition_trajectories`, `plot_competition_trajectories`
   (R and Python) and their tests — use `animate_competition_canvas` for animation.
+
+### Fixed
+
+#### Non-Euclidean overlay guard on `animate_competition_canvas()`
+
+- `ic_dist_config`, `winset_dist_config`, and `voronoi_dist_config` now default to the
+  distance configuration the trace was actually run under (`scs_competition_trace_dist_config`),
+  instead of silently defaulting to Euclidean regardless of the trace's real metric.
+- `compute_voronoi=TRUE`/`True` now raises a clear error whenever the trace's own metric is
+  not Euclidean with uniform salience, even if the caller passed a Euclidean
+  `voronoi_dist_config` — Voronoi candidate regions are only valid relative to the metric the
+  competition actually ran under. Closes the "non-Euclidean overlay guard" item in
+  `docs/status/follow_up_queue.md`.
+
+#### Application service layer (Python, nontechnical-user-release)
+
+- **`run_spatial_voting_mvp()`** (Python): single serializable entry point for the
+  "explore a spatial voting scenario and export a figure" MVP workflow — loads a
+  bundled scenario or manually entered voters, computes a majority or supermajority
+  winset, and optionally draws Pareto set / indifference curve / preferred-region
+  overlays. Request and response are plain JSON-serializable dicts for a hosted web
+  front end. Python-only by design: see
+  `docs/architecture/application_service_layer.md` for why this does not require an
+  R-side port. Tests in `test_service.py`.
+
+#### Hosted Shiny for Python MVP app (nontechnical-user-release)
+
+- **`app/app.py`**: a Shiny for Python app implementing the single
+  nontechnical-user workflow ("explore a spatial voting scenario and export
+  a figure") via `run_spatial_voting_mvp()` and
+  `plots.render_spatial_voting_html()`. Verified end to end with a real
+  browser: scenario selection, manual voter entry, majority/supermajority
+  rules, Pareto/IC overlays, error handling, and HTML export all work. Not
+  yet deployed to a public host or user-tested; see
+  `docs/architecture/hosted_mvp_design.md`.
+- **`plots.render_spatial_voting_html()`** (Python): returns the same
+  self-contained HTML `save_plot()` writes to disk, as an in-memory string,
+  for embedding in a running process. `save_plot()` now calls this
+  internally instead of duplicating the HTML-building logic. Tests in
+  `test_plots.py`.
+- `app/Dockerfile`, `app/requirements.txt`, `app/tests/test_app.py`: local
+  container build and smoke tests for the app layer.
+
+#### Malformed bundled scenario data
+
+- Two bundled scenarios, `fiorina_plott_a_p_s_r1978_series1` and
+  `fiorina_plott_a_p_s_r1978_series3`, shipped with scalar fields (`n_voters`,
+  `n_dimensions`, `decision_rule`, `name`, `description`, `source`) and every
+  voter coordinate wrapped in singleton arrays (an un-auto-unboxed jsonlite
+  export), crashing `load_scenario()` in both R (`"argument is not a
+  matrix"`) and Python (`TypeError`) instead of loading. Found via live
+  testing of the hosted MVP app. Fixed both the Python (`python/src/socialchoicelab/data/scenarios/`)
+  and R (`r/inst/extdata/scenarios/`) copies of these files; both now load
+  cleanly like the other 32 bundled scenarios. Added a regression test in
+  both languages that loads every bundled scenario.
+
+#### Package version metadata
+
+- R `DESCRIPTION` and Python `pyproject.toml`/`__version__` were still reading `0.2.0`
+  after the `v0.3.0` tag was cut. Bumped both to `0.3.0` to match the tag so installed
+  package metadata reports the version actually released.
 
 ---
 

@@ -31,6 +31,9 @@ This file is the single entry point for project documentation.
 | Competition layer (Layer 7) design | `docs/architecture/competition_design.md` |
 | StreamManager design & rules | `docs/architecture/stream_manager_design.md` |
 | Indifference (level-set) API spec | `docs/architecture/indifference_design.md` |
+| Nontechnical-release MVP workflow scope | `docs/architecture/nontechnical_mvp_design.md` |
+| Nontechnical-release application service layer | `docs/architecture/application_service_layer.md` |
+| Nontechnical-release hosted Shiny for Python MVP | `docs/architecture/hosted_mvp_design.md` |
 | Visualization layer design (color system, layer stack, theme decisions) | `docs/development/visualization_design.md` |
 | Code style, build, test | `docs/development/development.md` |
 | Setup on new or synced machine | `docs/development/setup_checklist.md` |
@@ -83,7 +86,10 @@ docs/
 │   ├── c_api_design.md                    ← stable C ABI design and contracts
 │   ├── competition_design.md              ← Layer 7 competition engine design
 │   ├── stream_manager_design.md           ← RNG single-owner policy and rules
-│   └── indifference_design.md             ← level-set API spec (Layer 2)
+│   ├── indifference_design.md             ← level-set API spec (Layer 2)
+│   ├── nontechnical_mvp_design.md         ← first nontechnical-release workflow scope
+│   ├── application_service_layer.md       ← serializable service layer over the C API/canvas
+│   └── hosted_mvp_design.md               ← hosted Shiny for Python app status
 ├── development/
 │   ├── development.md                     ← code style, build, lint, test instructions
 │   ├── setup_checklist.md                 ← new or synced machine: prerequisites, build, test

@@ -1,6 +1,6 @@
 ---
-description: Consult official library documentation before inventing workarounds for unexpected library behaviour.
-alwaysApply: true
+description: Apply when a library does not behave as expected, before inventing a workaround. Fetch the official documentation first.
+alwaysApply: false
 ---
 
 # Verify Library Behaviour From Official Documentation

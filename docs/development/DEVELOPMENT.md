@@ -9,14 +9,7 @@ To replicate the maintainer’s workflow after cloning the repo:
 1. **Install required tools** — clang-format 21 (to match CI), cpplint, CMake, and a C++20-capable compiler. See [Installation](#installation) below for OS-specific commands.
 2. **Build** — From the project root: `mkdir build && cd build && cmake .. && make`. Run tests with `ctest -LE benchmark`.
 3. **Optional: pre-commit hook** — So every commit runs `./lint.sh format` and blocks if code is not formatted. See [Pre-commit hook (optional)](#pre-commit-hook-optional).
-4. **Optional: Cursor** — If you use Cursor, you can add `.cursor/rules/` (agent rules) and `.cursor/hooks/` (e.g. Model Matchmaker for model routing) locally; `.cursor/` is gitignored. Because Cursor only reads hooks from the user-level config, a one-time install is required for the advisor to run:
-   ```bash
-   cp .cursor/hooks/session-init.sh ~/.cursor/hooks/
-   cp .cursor/hooks/model-advisor.sh ~/.cursor/hooks/
-   chmod +x ~/.cursor/hooks/session-init.sh ~/.cursor/hooks/model-advisor.sh
-   # Then create or merge ~/.cursor/hooks.json — see .cursor/hooks.json for the content.
-   ```
-   After installing, restart Cursor. The advisor logs to **`~/.cursor/hooks/model-advisor.log`** (your user Cursor config directory, not the project’s `.cursor/hooks/`).
+4. **Cursor.** Rules, `.cursor/HANDOFF.md`, and `.cursor/skills/check-before-push/` are tracked. Do not install the model advisor (`model-advisor.sh`, `session-init.sh`) into `~/.cursor/hooks/`. `.cursor/hooks.json` stays off git because `.gitignore` ignores `*.json`.
 
 ## Working on multiple machines
 

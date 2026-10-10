@@ -2,11 +2,11 @@
 
 **Current snapshot** — tags, phase, and blockers. **The ordered plan of what to do next lives in [ROADMAP.md](ROADMAP.md)**; this file should not duplicate that list (link instead).
 
-- **Current phase:** The latest numbered release is `v0.3.0`. Candidate competition is finished and is part of that release. Three pieces of work have been finished since then and do not yet have their own release number: the still pictures now use the same drawing method as the animated competition plots; several calculation steps that used to be called one after another were combined into single library calls; and the interactive three-dimensional utility surface was added. See the `[Unreleased]` section of [CHANGELOG.md](../../CHANGELOG.md) and [ROADMAP.md](ROADMAP.md).
+- **Current phase:** The latest numbered release is `v0.3.0`. Candidate competition is finished and is part of that release. A batch of work on the "nontechnical user release" plan (see `.cursor/plans/nontechnical-user-release_61acb40c.plan.md`) is finished in the working tree but **not yet committed**: the competition-trace non-Euclidean overlay guard, a new Python application service layer (`run_spatial_voting_mvp`), a working hosted Shiny for Python MVP app under `app/`, a scenario-data bug fix, and an `r/DESCRIPTION`/`pyproject.toml` version realignment to `0.3.0`. See the `[Unreleased]` section of [CHANGELOG.md](../../CHANGELOG.md), [ROADMAP.md](ROADMAP.md), and `.cursor/HANDOFF.md` for the uncommitted-state details.
 - **Next:** Only [ROADMAP.md](ROADMAP.md) holds the ordered plan. The short list of things that fit one sitting is [follow_up_queue.md](follow_up_queue.md). This file does not restate either list.
 - **Release context:** `v0.2.0` and `v0.3.0` are tagged. The candidate-competition plan is [competition_plan.md](competition_plan.md).
 - **Ad-hoc follow-ups:** [follow_up_queue.md](follow_up_queue.md). Move an item into [ROADMAP.md](ROADMAP.md) if it grows past one sitting.
-- **Last updated:** 2026-09-22
+- **Last updated:** 2026-10-08
 
 **How this fits:** [docs/README.md](../README.md) explains which file answers which question. **Priorities and sequencing:** [ROADMAP.md](ROADMAP.md). **This file:** today’s facts. **Scratch:** [follow_up_queue.md](follow_up_queue.md). **Milestone criteria:** [MILESTONE_GATES.md](MILESTONE_GATES.md). **Old plans:** [archive/](archive/).
 
@@ -44,6 +44,23 @@ Our `yolk_2d` (in `yolk.h`, Phase C2) uses subgradient descent over 720 sampled 
 ---
 
 ## Recent Work
+
+### Session: 2026-10-08 — Nontechnical-user-release plan: 4 of 5 todos done (uncommitted)
+
+**Everything in this session is uncommitted in the working tree.** See `.cursor/HANDOFF.md` for the exact file list and next steps.
+
+- **`define-mvp`:** New `docs/architecture/nontechnical_mvp_design.md` — scopes the single MVP workflow ("explore a spatial voting scenario and export a figure") and an explicit out-of-scope table.
+- **`release-safety`:**
+  - `CompetitionTrace` now stores the `DistanceConfig` it ran under (new C API `scs_competition_trace_dist_config`, threaded through R and Python). `animate_competition_canvas()` in both languages defaults overlay dist-configs to the trace's own metric and raises a clear error for `compute_voronoi = TRUE` on a non-Euclidean trace. Closes the overlay-guard item that was in `follow_up_queue.md`.
+  - R `DESCRIPTION` and Python `pyproject.toml`/`__version__` were still `0.2.0` after the `v0.3.0` tag was cut; bumped both to `0.3.0`.
+  - Confirmed yolk/heart approximation warnings already exist at the C API level and are correctly excluded from the MVP scope; no code change needed there.
+- **`application-layer`:** New `python/src/socialchoicelab/service.py` — `run_spatial_voting_mvp()`, a single serializable entry point for the MVP workflow. Documented in `docs/architecture/application_service_layer.md`. Python-only by design (see that doc for why this doesn't need an R port).
+- **`hosted-mvp`:** New `app/` directory — a working Shiny for Python app (`app.py`), `Dockerfile` (not build-verified, no Docker in this environment), `requirements.txt`, `README.md`, and smoke tests. Verified end to end with a real browser (scenario selection, manual entry, both decision rules, both overlays, error handling, HTML export). Documented in `docs/architecture/hosted_mvp_design.md`, including two real bugs this testing caught and fixed:
+  - 32 of 34 bundled scenarios have no status quo point; the app's dropdown is now filtered to the 3 that do.
+  - Two scenario JSON files (`fiorina_plott_a_p_s_r1978_series1`/`series3`), in **both** the Python and R data directories, were malformed (singleton-array-wrapped scalars from an un-auto-unboxed jsonlite export) and crashed `load_scenario()` entirely. Fixed in both languages; added a regression test in each that loads every bundled scenario.
+- **`desktop-packaging`:** Cancelled at the user's direction — the goal is the hosted web app, not a desktop app. Plan step left incomplete, which is correct here: desktop packaging genuinely depends on the (not-yet-run) user pilot and on Apple/Windows signing credentials, so there was nothing further to build.
+- **Also:** `plots.render_spatial_voting_html()` added (extracted from `save_plot()`) so the app can embed the canvas HTML in memory.
+- **Full test suites pass:** 302 Python tests, 6 new `app/` smoke tests, full R `testthat` suite, 34 C++ `ctest` cases. None of this is committed yet — see `.cursor/HANDOFF.md`.
 
 ### Session: 2026-03-30 — Status + changelog sync: composite C API track (partial)
 

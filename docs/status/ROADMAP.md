@@ -167,6 +167,8 @@ Indifference curves (ICs) are computed during both static spatial voting visuali
 
 **Static canvas overlays (partially addressed on `main`, post-`v0.3.0`):** `layer_ic()`, `layer_preferred_regions()`, and `layer_winset()` auto-compute accept `dist_config` and use core level-set / winset machinery for non-Euclidean metrics. This does **not** resolve the deferred items below (Pareto proxy, Voronoi, Yolk/Heart/etc. under alternate metrics).
 
+**Competition trace overlay guard (closed, uncommitted — see `.cursor/HANDOFF.md`):** `CompetitionTrace` now stores the `DistanceConfig` it actually ran under (`scs_competition_trace_dist_config` in the C API). `animate_competition_canvas()` in R and Python defaults `ic_dist_config`/`winset_dist_config`/`voronoi_dist_config` to that trace metric and raises a clear error for `compute_voronoi = TRUE` on a non-Euclidean trace, even with no explicit override. This closes the specific "does the animation check the trace's own metric" gap; it does not resolve the Pareto proxy, Voronoi generalisation, or Yolk/Heart/Core items below, which are still open.
+
 Several geometry services are currently valid only under Euclidean distance (or
 have not been verified for other metrics). These must be addressed before the
 project is used with non-Euclidean `DistanceConfig` settings in production:

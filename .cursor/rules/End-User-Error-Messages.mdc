@@ -1,6 +1,6 @@
 ---
-description: End-user error messages should state what failed, what the user entered, and suggest fixes.
-alwaysApply: true
+description: Apply when writing an error message a person will see. State what failed, what they entered, and how to fix it.
+alwaysApply: false
 ---
 
 # End-User Error Messages

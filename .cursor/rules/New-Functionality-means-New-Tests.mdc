@@ -1,6 +1,6 @@
 ---
-description: Require a test for every new functionality
-alwaysApply: true
+description: Apply when adding functionality. Every new behavior needs a unit test.
+alwaysApply: false
 ---
 
 For every new functionality added to the project there should be a test of it. Prefer adding tests under `tests/unit/` and follow existing `test_*.cpp` patterns. If you need suggestions please ask.

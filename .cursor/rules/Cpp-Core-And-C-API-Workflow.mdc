@@ -1,13 +1,13 @@
 ---
-description: When adding C++ core functionality, add C API wrappers, update docs, and add tests
-alwaysApply: true
+description: Apply when adding C++ core functionality that R or Python should call. Add the C API wrapper, the docs, and the tests.
+alwaysApply: false
 ---
 
 # C++ core and C API workflow
 
 When adding **new functionality to the C++ core** (geometry, aggregation, profiles, etc.), complete the full stack:
 
-1. **C API wrappers** — If the feature should be callable from R or Python, add or extend the stable C API (`include/scs_api.h`, `src/c_api/scs_api.cpp`) following the patterns in `docs/status/c_api_extensions_plan.md` and `docs/architecture/c_api_design.md`. Use opaque handles, explicit capacities, and the shared error/return-code conventions.
+1. **C API wrappers.** If the feature should be callable from R or Python, add or extend the stable C API (`include/scs_api.h`, `src/c_api/scs_api.cpp`). Match the existing wrappers. Open only the relevant section of `docs/architecture/c_api_design.md` or `docs/status/c_api_extensions_plan.md`. Use opaque handles, explicit capacities, and the shared error/return-code conventions.
 
 2. **Documentation** — Update `c_api_design.md` (and the extensions plan or `where_we_are.md` as appropriate) with new types, functions, contracts, and any stability notes.
 

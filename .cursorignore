@@ -1,0 +1,7 @@
+# Generated sites. Source docs stay visible.
+docs/site/
+r/docs/
+
+# Vendored Three.js. Widget sources stay visible.
+python/src/socialchoicelab/three.min.js
+r/inst/htmlwidgets/lib/three/three.min.js

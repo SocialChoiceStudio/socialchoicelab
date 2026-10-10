@@ -13,7 +13,12 @@
 
 ## Next sitting
 
-**Non-Euclidean overlay guard.** [ROADMAP.md](ROADMAP.md) § Non-Euclidean geometry already states the rule: `animate_competition_canvas()` in R and Python must check the distance settings stored with a competition run. If those settings are not ordinary straight-line distance, the animation must not draw overlays that are only valid for straight-line distance (the Pareto set drawn as a convex hull, the Voronoi regions, and anything else labelled as exact only in that case). It must say so in a clear message. Do not build non-Euclidean versions of those overlays in the same sitting.
+- [ ] Commit and push the uncommitted nontechnical-user-release work (see `.cursor/HANDOFF.md`; suggested split: service layer / overlay guard / scenario data fix / hosted app). Also push the 3 earlier unpushed commits.
+- [ ] Confirm whether deleting `.cursor/rules/Review-Rules-At-Start.mdc` and `Run-All-Local-Checks-Before-Push.mdc` was intentional.
+- [ ] Build-verify `app/Dockerfile`.
+- [ ] Decide: hosting provider for the web app.
+- [ ] Decide: when and how to run the user pilot.
+- [ ] Decide: how to handle the 31 scenarios with no status quo point (let users click one, or add real ones from the literature). See `docs/architecture/hosted_mvp_design.md` § "Expanding scenario coverage".
 
 ## Not a short task
 

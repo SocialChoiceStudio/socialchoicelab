@@ -294,7 +294,7 @@ by strict majority.  Stronger than Condorcet consistency; implies it.
 | Borda count | Borda (1784) | Published in *Histoire de l'Académie Royale des Sciences* 1784; presented to the Académie 1781. Standard citation year is 1784. |
 | Anti-plurality | Fishburn (1977) "Condorcet Social Choice Functions" | Names and surveys the rule. |
 | Approval voting | Brams & Fishburn (1978, 1983) | 1978 paper introduces the term; 1983 book gives full treatment. |
-| Condorcet winner is also Borda winner (3 alternatives) | Fishburn (1977) | When a Condorcet winner exists among 3 alternatives, it is also the Borda winner. The converse does not hold in general. Verified in integration tests. |
+| Condorcet winner need not be the Borda winner (3 alternatives) | Counterexample in `tests/unit/test_voting_rules.cpp` | With 5 voters (three rank A > C > B, two rank C > B > A), A is the Condorcet winner but C is the Borda winner (scores A = 6, B = 2, C = 7). Tested in `Borda.CondorcetWinner_NeedNotBeBordaWinner_ThreeAlts`. An earlier version of this table claimed the opposite, citing Fishburn (1977); that claim was false and has been removed. |
 | Pareto efficiency (ordinal) | Pareto (1906); Arrow (1951) | Pareto (1906) original; Arrow (1951) formalises in social choice setting. |
 | Condorcet consistency | Condorcet (1785); Arrow (1951) | Condorcet (1785) proposes the concept. |
 | Condorcet paradox / cycling | Condorcet (1785) | Demonstrates the majority cycle. |

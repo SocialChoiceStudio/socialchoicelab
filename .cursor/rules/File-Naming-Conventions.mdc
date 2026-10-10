@@ -1,6 +1,6 @@
 ---
-description: File naming conventions for all file types in this project
-alwaysApply: true
+description: Apply when creating or renaming a file. Use the project file-naming conventions.
+alwaysApply: false
 ---
 
 # File Naming Conventions
