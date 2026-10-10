@@ -71,6 +71,25 @@ test_that("load_scenario tovey_regular_polygon has correct dimensions", {
   expect_equal(length(sc$voter_names), 11L)
 })
 
+test_that("load_scenario loads every bundled scenario without error", {
+  # Two scenario files (fiorina_plott_a_p_s_r1978_series1/series3) were
+  # previously malformed: scalar fields such as n_voters and each voter
+  # coordinate were wrapped in singleton arrays (an un-auto-unboxed
+  # jsonlite export), which crashed load_scenario() with a confusing
+  # "argument is not a matrix" error instead of loading. This test loads
+  # every bundled scenario so a similarly malformed file cannot ship
+  # unnoticed again.
+  for (name in list_scenarios()) {
+    sc <- load_scenario(name)
+    expect_type(sc$n_voters, "integer")
+    expect_type(sc$n_dimensions, "integer")
+    expect_type(sc$decision_rule, "double")
+    expect_equal(length(sc$voters), sc$n_voters * sc$n_dimensions)
+    expect_equal(length(sc$voter_names), sc$n_voters)
+    expect_true(is.null(sc$status_quo) || is.numeric(sc$status_quo))
+  }
+})
+
 test_that("load_scenario with unknown name raises error", {
   expect_error(load_scenario("nonexistent_scenario"), "Unknown scenario")
   expect_error(load_scenario("nonexistent_scenario"), "Available scenarios:")

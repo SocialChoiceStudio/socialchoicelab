@@ -84,6 +84,27 @@ def test_load_scenario_tovey_regular_polygon_dimensions():
     assert len(sc["voter_names"]) == 11
 
 
+def test_load_scenario_loads_every_bundled_scenario_without_error():
+    """Every bundled scenario file must load cleanly.
+
+    Two scenario files (fiorina_plott_a_p_s_r1978_series1/series3) were
+    previously malformed: scalar fields such as n_voters and each voter
+    coordinate were wrapped in singleton lists (an un-auto-unboxed
+    jsonlite export), which crashed load_scenario() with a confusing
+    internal TypeError instead of loading. This test loads every bundled
+    scenario so a similarly malformed file cannot ship unnoticed again.
+    """
+    for name in scl.list_scenarios():
+        sc = scl.load_scenario(name)
+        assert isinstance(sc["n_voters"], int)
+        assert isinstance(sc["n_dimensions"], int)
+        assert isinstance(sc["decision_rule"], float)
+        assert isinstance(sc["voters"], np.ndarray)
+        assert sc["voters"].shape == (sc["n_voters"] * sc["n_dimensions"],)
+        assert len(sc["voter_names"]) == sc["n_voters"]
+        assert sc["status_quo"] is None or isinstance(sc["status_quo"], np.ndarray)
+
+
 def test_load_scenario_unknown_raises_error():
     """load_scenario() raises ValueError for unknown scenario."""
     with pytest.raises(ValueError, match="Unknown scenario"):
