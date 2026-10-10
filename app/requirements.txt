@@ -1,0 +1,4 @@
+# Requirements for the hosted Shiny for Python MVP app.
+# socialchoicelab itself is installed separately from the repo's python/
+# directory (see Dockerfile / README.md) since it is not yet published to PyPI.
+shiny>=1.8,<2
