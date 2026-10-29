@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -167,6 +169,114 @@ inline bool equal_weights_2d(const std::vector<double>& w) {
   return std::abs(w[0] - w[1]) <= tol;
 }
 
+/** @brief Throws unless w has size 2 and both weights are finite and > 0.
+ * Every function that builds a bounded 2D shape (level set, preferred-to set,
+ * winset) needs this: with a weight of 0 the shape is an unbounded strip.
+ * Plain distance still allows 0 (dimension masking, Convention B).
+ * @p caller prefixes the message. */
+inline void require_shape_weights_2d(const std::vector<double>& w,
+                                     const char* caller) {
+  if (w.size() != 2u) {
+    throw std::invalid_argument(std::string(caller) +
+                                ": salience_weights must have size 2 (got " +
+                                std::to_string(w.size()) + ").");
+  }
+  for (std::size_t i = 0; i < 2u; ++i) {
+    if (!(w[i] > 0.0) || !std::isfinite(w[i])) {
+      std::ostringstream os;
+      os << caller << ": salience_weights[" << i << "] is " << w[i]
+         << " (weights entered: " << w[0] << ", " << w[1]
+         << "), but a 2D shape needs every weight to be finite and > 0; a "
+            "weight of 0 makes the shape an unbounded strip. Use a small "
+            "positive weight, or analyse the other dimension in 1D.";
+      throw std::invalid_argument(os.str());
+    }
+  }
+}
+
+/** @brief The 2D level set {x : d(center, x) = r} at weighted distance r.
+ * The semi-axes are r / w0 and r / w1; Euclidean with equal weights gives a
+ * circle of radius r / w0. Weights must already have passed
+ * require_shape_weights_2d. Shared by level_set_2d and the winset
+ * preferred-to sets so the shape logic exists once. @p caller prefixes error
+ * messages. */
+[[nodiscard]] inline LevelSet2d level_set_at_distance_2d(
+    const Point2d& center, double r, distance::DistanceType distance_type,
+    double order_p, const std::vector<double>& w, const char* caller) {
+  const double a0 = r / w[0];
+  const double a1 = r / w[1];
+  if (!std::isfinite(a0) || !std::isfinite(a1)) {
+    std::ostringstream os;
+    os << caller << ": the shape is too large to represent: weighted distance "
+       << r << " divided by salience weights (" << w[0] << ", " << w[1]
+       << ") gives semi-axes (" << a0 << ", " << a1
+       << "). Use larger salience weights or rescale the coordinates to a "
+          "smaller range.";
+    throw std::invalid_argument(os.str());
+  }
+
+  switch (distance_type) {
+    case distance::DistanceType::EUCLIDEAN:
+      if (equal_weights_2d(w)) {
+        return Circle2d{center, a0};
+      }
+      return Ellipse2d{center, a0, a1};
+
+    case distance::DistanceType::MANHATTAN: {
+      Polygon2d poly;
+      poly.vertices.resize(4);
+      poly.vertices[0] = center + Point2d(a0, 0);
+      poly.vertices[1] = center + Point2d(0, a1);
+      poly.vertices[2] = center + Point2d(-a0, 0);
+      poly.vertices[3] = center + Point2d(0, -a1);
+      return poly;
+    }
+
+    case distance::DistanceType::CHEBYSHEV: {
+      Polygon2d poly;
+      poly.vertices.resize(4);
+      poly.vertices[0] = center + Point2d(a0, a1);
+      poly.vertices[1] = center + Point2d(-a0, a1);
+      poly.vertices[2] = center + Point2d(-a0, -a1);
+      poly.vertices[3] = center + Point2d(a0, -a1);
+      return poly;
+    }
+
+    case distance::DistanceType::MINKOWSKI: {
+      const double p = order_p;
+      if (!std::isfinite(p) || p < 1.0) {
+        std::ostringstream os;
+        os << caller << ": Minkowski order_p must be finite and >= 1 (got " << p
+           << ").";
+        throw std::invalid_argument(os.str());
+      }
+      if (p <= 1.0 + 1e-9) {
+        Polygon2d poly;
+        poly.vertices.resize(4);
+        poly.vertices[0] = center + Point2d(a0, 0);
+        poly.vertices[1] = center + Point2d(0, a1);
+        poly.vertices[2] = center + Point2d(-a0, 0);
+        poly.vertices[3] = center + Point2d(0, -a1);
+        return poly;
+      }
+      if (p >= 100.0) {
+        Polygon2d poly;
+        poly.vertices.resize(4);
+        poly.vertices[0] = center + Point2d(a0, a1);
+        poly.vertices[1] = center + Point2d(-a0, a1);
+        poly.vertices[2] = center + Point2d(-a0, -a1);
+        poly.vertices[3] = center + Point2d(a0, -a1);
+        return poly;
+      }
+      return Superellipse2d{center, a0, a1, p};
+    }
+
+    default:
+      throw std::invalid_argument(std::string(caller) +
+                                  ": unknown DistanceType");
+  }
+}
+
 }  // namespace detail
 
 // --- Entry points ---
@@ -222,72 +332,11 @@ inline bool equal_weights_2d(const std::vector<double>& w) {
   }
   const double r =
       detail::distance_from_utility_level(utility_level, loss_config);
-  const double w0 = distance_config.salience_weights[0];
-  const double w1 = distance_config.salience_weights[1];
-  if (w0 <= 0 || w1 <= 0 || !std::isfinite(w0) || !std::isfinite(w1)) {
-    throw std::invalid_argument(
-        "level_set_2d: salience weights must be positive and finite");
-  }
-  const double a0 = r / w0;
-  const double a1 = r / w1;
-
-  switch (distance_config.distance_type) {
-    case distance::DistanceType::EUCLIDEAN:
-      if (detail::equal_weights_2d(distance_config.salience_weights)) {
-        return Circle2d{ideal_point, r};
-      }
-      return Ellipse2d{ideal_point, a0, a1};
-
-    case distance::DistanceType::MANHATTAN: {
-      Polygon2d poly;
-      poly.vertices.resize(4);
-      poly.vertices[0] = ideal_point + Point2d(a0, 0);
-      poly.vertices[1] = ideal_point + Point2d(0, a1);
-      poly.vertices[2] = ideal_point + Point2d(-a0, 0);
-      poly.vertices[3] = ideal_point + Point2d(0, -a1);
-      return poly;
-    }
-
-    case distance::DistanceType::CHEBYSHEV: {
-      Polygon2d poly;
-      poly.vertices.resize(4);
-      poly.vertices[0] = ideal_point + Point2d(a0, a1);
-      poly.vertices[1] = ideal_point + Point2d(-a0, a1);
-      poly.vertices[2] = ideal_point + Point2d(-a0, -a1);
-      poly.vertices[3] = ideal_point + Point2d(a0, -a1);
-      return poly;
-    }
-
-    case distance::DistanceType::MINKOWSKI: {
-      double p = distance_config.order_p;
-      if (!std::isfinite(p) || p < 1.0) {
-        throw std::invalid_argument(
-            "level_set_2d: Minkowski order_p must be finite and >= 1");
-      }
-      if (p <= 1.0 + 1e-9) {
-        Polygon2d poly;
-        poly.vertices.resize(4);
-        poly.vertices[0] = ideal_point + Point2d(a0, 0);
-        poly.vertices[1] = ideal_point + Point2d(0, a1);
-        poly.vertices[2] = ideal_point + Point2d(-a0, 0);
-        poly.vertices[3] = ideal_point + Point2d(0, -a1);
-        return poly;
-      }
-      if (p >= 100.0) {
-        Polygon2d poly;
-        poly.vertices.resize(4);
-        poly.vertices[0] = ideal_point + Point2d(a0, a1);
-        poly.vertices[1] = ideal_point + Point2d(-a0, a1);
-        poly.vertices[2] = ideal_point + Point2d(-a0, -a1);
-        poly.vertices[3] = ideal_point + Point2d(a0, -a1);
-        return poly;
-      }
-      return Superellipse2d{ideal_point, a0, a1, p};
-    }
-
-    default:
-      throw std::invalid_argument("level_set_2d: unknown DistanceType");
-  }
+  detail::require_shape_weights_2d(distance_config.salience_weights,
+                                   "level_set_2d");
+  return detail::level_set_at_distance_2d(
+      ideal_point, r, distance_config.distance_type, distance_config.order_p,
+      distance_config.salience_weights, "level_set_2d");
 }
 
 /**
@@ -379,6 +428,8 @@ inline bool equal_weights_2d(const std::vector<double>& w) {
   if (num_samples < 3) {
     throw std::invalid_argument("ic_polygon_2d: num_samples must be >= 3");
   }
+  detail::require_shape_weights_2d(distance_config.salience_weights,
+                                   "ic_polygon_2d");
   double d;
   switch (distance_config.distance_type) {
     case distance::DistanceType::EUCLIDEAN:

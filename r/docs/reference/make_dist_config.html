@@ -11,7 +11,7 @@ build_dist_config() in src/scs_r_helpers.h; do not reorder."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">socialchoicelab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,7 +64,11 @@ configuration. The list element order is fixed by contract with the C helper
 
 <dt id="arg-weights">weights<a class="anchor" aria-label="anchor" href="#arg-weights"></a></dt>
 <dd><p>Numeric vector of salience weights, one per dimension.
-Default: all-ones vector of length <code>n_dims</code>.</p></dd>
+Default: all-ones vector of length <code>n_dims</code>. Weights must be finite
+and &gt;= 0; a weight of 0 turns that dimension off in distance-only
+functions. Functions that build a 2D shape (indifference curves, winsets,
+<code>core_2d</code>, uncovered-set and Heart boundaries) need every weight
+&gt; 0 and give an error otherwise.</p></dd>
 
 
 <dt id="arg-n-dims">n_dims<a class="anchor" aria-label="anchor" href="#arg-n-dims"></a></dt>

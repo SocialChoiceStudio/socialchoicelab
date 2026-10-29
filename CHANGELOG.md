@@ -47,6 +47,27 @@ All notable changes to SocialChoiceLab are documented in this file. The format i
 
 ### Fixed
 
+#### Salience weights in 2D shapes (review findings S02a-001, S02b-001, S02b-003)
+
+- **Equal non-unit weights gave shapes of the wrong size.** With Euclidean distance and
+  equal weights (w, w), `level_set_2d` and the winset preferred-to sets built a circle of
+  radius r (the weighted distance) instead of r / w, so weights (2, 2) gave curves twice the
+  true size and (0.5, 0.5) half. This affected `level_set_2d`, `ic_polygon_2d`,
+  `level_set_polygon_2d`, every winset function, `core_2d` and the IC / preferred-region /
+  winset plot layers in R and Python. Both copies of the shape logic are replaced by one
+  builder, `level_set_at_distance_2d`, used by `level_set_2d` and the winset code.
+- **A zero salience weight aborted R or Python.** A weight of 0 made the winset code build
+  polygons with Inf/NaN vertices, and CGAL/GMP killed the process (SIGFPE). Functions that
+  build a bounded 2D shape (`level_set_2d`, `ic_polygon_2d`, `winset_2d` and its weighted,
+  veto and petal variants, `core_2d`, `uncovered_set_boundary_2d`, `heart_boundary_2d`) now
+  reject a weight that is not finite and > 0 with an error that names the weight. A weight
+  of 0 still turns a dimension off in distance-only functions (Convention B). Shapes whose
+  semi-axes r / w overflow are rejected too.
+- **NaN/Inf input aborted R or Python in Voronoi and winset point queries.**
+  `scs_voronoi_cells_2d`, `scs_voronoi_cells_2d_size`, `scs_voronoi_cells_2d_heap` and
+  `scs_winset_contains_point_2d` now return `SCS_ERROR_INVALID_ARGUMENT` for non-finite
+  sites, bounding-box limits or query points instead of passing them to CGAL.
+
 #### Non-Euclidean overlay guard on `animate_competition_canvas()`
 
 - `ic_dist_config`, `winset_dist_config`, and `voronoi_dist_config` now default to the

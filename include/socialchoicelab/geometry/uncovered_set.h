@@ -196,6 +196,7 @@ namespace socialchoicelab::geometry {
     throw std::invalid_argument(
         "uncovered_set_boundary_2d: voter_ideals must not be empty.");
   }
+  detail::require_shape_weights(cfg, "uncovered_set_boundary_2d");
 
   // -------------------------------------------------------------------------
   // Build bounding box with 30% margin.

@@ -60,8 +60,13 @@ class DistanceConfig:
         One of ``"euclidean"`` (L2), ``"manhattan"`` (L1),
         ``"chebyshev"`` (L∞), or ``"minkowski"`` (general Lp).
     salience_weights:
-        Per-dimension salience weights (strictly positive).  If ``None``,
-        uniform unit weights are used (the C API default behaviour).
+        Per-dimension salience weights.  If ``None``, uniform unit weights
+        are used (the C API default behaviour).  Each weight must be finite
+        and at least 0; a weight of 0 turns that dimension off in
+        distance-only functions.  Functions that build a 2D shape
+        (indifference curves, winsets, ``core_2d``, uncovered-set and Heart
+        boundaries) need every weight to be greater than 0 and raise an error
+        otherwise.
     order_p:
         Minkowski exponent (≥ 1).  Ignored for other distance types.
     """
@@ -123,6 +128,8 @@ def make_dist_config(
         or ``"minkowski"``.
     salience_weights:
         Per-dimension salience weights.  ``None`` means uniform unit weights.
+        Same rules as ``DistanceConfig``: finite and at least 0, and greater
+        than 0 for functions that build a 2D shape.
     order_p:
         Minkowski exponent (only used when ``distance_type="minkowski"``).
 

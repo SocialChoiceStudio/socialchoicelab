@@ -177,3 +177,41 @@ test_that("geometric_mean_2d errors on empty input", {
   skip_without_lib()
   expect_error(geometric_mean_2d(numeric(0)))
 })
+
+# ---------------------------------------------------------------------------
+# Salience weights (review findings S02a-001, S02b-001, S02b-003).
+# The same cases are in python/tests/test_b8.py (TestSalienceWeights).
+# ---------------------------------------------------------------------------
+
+.zero_weight_msg <- paste0(
+  "winset_2d: salience_weights[0] is 0 (weights entered: 0, 1), but a 2D ",
+  "shape needs every weight to be finite and > 0"
+)
+
+test_that("ic_polygon_2d with equal non-unit weights passes through sq", {
+  skip_without_lib()
+  lc <- make_loss_config(loss_type = "quadratic")
+  for (w in c(2, 0.5)) {
+    dc <- make_dist_config(weights = c(w, w))
+    p <- ic_polygon_2d(0, 0, 1, 0, lc, dc, 64L)
+    expect_equal(as.numeric(p[1, ]), c(1, 0), tolerance = 1e-12)
+    expect_equal(sqrt(p[, 1]^2 + p[, 2]^2), rep(1, nrow(p)), tolerance = 1e-9)
+  }
+})
+
+test_that("winset_2d with equal non-unit weights has the right size", {
+  skip_without_lib()
+  for (w in c(2, 0.5)) {
+    dc <- make_dist_config(weights = c(w, w))
+    ws <- winset_2d(c(1, 0), c(0, 0), dist_config = dc, k = 1L)
+    expect_false(ws$contains(1.5, 0))
+    expect_true(ws$contains(0.9, 0))
+  }
+})
+
+test_that("winset_2d with a zero salience weight gives a clear error", {
+  skip_without_lib()
+  dc <- make_dist_config(weights = c(0, 1))
+  expect_error(winset_2d(c(0.3, 0.5), .voters, dist_config = dc),
+               .zero_weight_msg, fixed = TRUE)
+})

@@ -7,6 +7,7 @@
 #include <socialchoicelab/geometry/core.h>
 
 #include <cmath>
+#include <string>
 #include <vector>
 
 using socialchoicelab::core::types::Point2d;
@@ -150,4 +151,20 @@ TEST(Core2D, TooFewVoters_Throws) {
   EXPECT_THROW(core_2d(one_voter), std::invalid_argument);
   const std::vector<Point2d> empty;
   EXPECT_THROW(core_2d(empty), std::invalid_argument);
+}
+
+// core_2d builds winsets, so it needs every salience weight > 0 (review
+// finding S02b-003: a weight of 0 used to abort the process inside CGAL).
+TEST(Core2D, ZeroSalienceWeight_Throws) {
+  const std::vector<Point2d> voters = {{0.0, 0.0}, {1.0, 0.0}, {0.5, 1.0}};
+  DistConfig cfg;
+  cfg.salience_weights = {0.0, 1.0};
+  try {
+    (void)core_2d(voters, cfg);
+    ADD_FAILURE() << "core_2d accepted a salience weight of 0";
+  } catch (const std::invalid_argument& e) {
+    EXPECT_NE(std::string(e.what()).find("core_2d: salience_weights[0] is 0"),
+              std::string::npos)
+        << e.what();
+  }
 }

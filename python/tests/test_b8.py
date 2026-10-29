@@ -9,6 +9,8 @@ Covers:
 
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pytest
 
@@ -319,3 +321,36 @@ class TestZeroBasedIndices:
     def test_copeland_winner_is_zero_based(self):
         w = scl.copeland_winner_2d(_ALTS, _VOTERS)
         assert 0 <= w < 3
+
+
+# ---------------------------------------------------------------------------
+# Salience weights (review findings S02a-001, S02b-001, S02b-003).
+# The same cases are in r/tests/testthat/test_geometry.R.
+# ---------------------------------------------------------------------------
+
+_ZERO_WEIGHT_MSG = (
+    "winset_2d: salience_weights[0] is 0 (weights entered: 0, 1), but a 2D "
+    "shape needs every weight to be finite and > 0"
+)
+
+
+class TestSalienceWeights:
+    @pytest.mark.parametrize("w", [2.0, 0.5])
+    def test_ic_polygon_equal_non_unit_weights_passes_through_sq(self, w):
+        lc = scl.make_loss_config(loss_type="quadratic")
+        dc = scl.make_dist_config(salience_weights=[w, w])
+        poly = scl.ic_polygon_2d(0.0, 0.0, 1.0, 0.0, lc, dc, num_samples=64)
+        np.testing.assert_allclose(poly[0], [1.0, 0.0], atol=1e-12)
+        np.testing.assert_allclose(np.hypot(poly[:, 0], poly[:, 1]), 1.0, atol=1e-9)
+
+    @pytest.mark.parametrize("w", [2.0, 0.5])
+    def test_winset_equal_non_unit_weights_one_voter(self, w):
+        dc = scl.make_dist_config(salience_weights=[w, w])
+        with scl.winset_2d(1.0, 0.0, [0.0, 0.0], dist_config=dc, k=1) as ws:
+            assert not ws.contains(1.5, 0.0)
+            assert ws.contains(0.9, 0.0)
+
+    def test_winset_zero_weight_raises_clear_error(self):
+        dc = scl.make_dist_config(salience_weights=[0.0, 1.0])
+        with pytest.raises(scl.SCSError, match=re.escape(_ZERO_WEIGHT_MSG)):
+            scl.winset_2d(0.3, 0.5, _VOTERS, dist_config=dc)

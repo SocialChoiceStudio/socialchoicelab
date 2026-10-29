@@ -296,3 +296,11 @@ TEST(HeartBoundary, AllVotersSameIdeal_NearThatIdeal) {
     EXPECT_NEAR(CGAL::to_double(it->y()), 1.0, 0.5);
   }
 }
+
+// The boundary is a 2D shape, so it needs every salience weight > 0.
+TEST(HeartBoundary, ZeroSalienceWeight_Throws) {
+  const std::vector<Point2d> voters = {{0.0, 0.0}, {1.0, 0.0}, {0.5, 1.0}};
+  DistConfig cfg;
+  cfg.salience_weights = {0.0, 1.0};
+  EXPECT_THROW((void)heart_boundary_2d(voters, cfg, 5), std::invalid_argument);
+}

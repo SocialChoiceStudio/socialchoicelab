@@ -154,6 +154,7 @@ namespace socialchoicelab::geometry {
     throw std::invalid_argument("core_2d: need at least 2 voter ideals (got " +
                                 std::to_string(voter_ideals.size()) + ").");
   }
+  detail::require_shape_weights(cfg, "core_2d");
 
   // Candidates: Yolk centre + all voter ideal points.
   std::vector<core::types::Point2d> candidates;

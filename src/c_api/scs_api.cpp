@@ -203,6 +203,22 @@ bool to_dist_config(const SCS_DistanceConfig* dist_cfg,
   return true;
 }
 
+// For entry points that build a bounded 2D shape (winsets, core, uncovered-set
+// and Heart boundaries): reject salience weights that are not > 0 before the
+// core is called. A weight of 0 is fine for distances (Convention B), but it
+// makes these shapes unbounded, and a zero-weight preferred-to set has Inf/NaN
+// vertices that abort the process inside CGAL EPEC. The message is the core's.
+bool check_shape_weights(const socialchoicelab::geometry::DistConfig& cfg,
+                         const char* caller, char* err_buf, int err_buf_len) {
+  try {
+    socialchoicelab::geometry::detail::require_shape_weights(cfg, caller);
+  } catch (const std::invalid_argument& e) {
+    set_error(err_buf, err_buf_len, e.what());
+    return false;
+  }
+  return true;
+}
+
 // Map C loss type to C++ enum.
 socialchoicelab::preference::loss::LossFunctionType to_cpp_loss(
     SCS_LossType t) {
@@ -1386,6 +1402,8 @@ extern "C" SCS_Winset* scs_winset_2d(double status_quo_x, double status_quo_y,
   }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len)) return nullptr;
+  if (!check_shape_weights(cfg, "winset_2d", err_buf, err_buf_len))
+    return nullptr;
   try {
     using socialchoicelab::core::types::Point2d;
     auto ws = new SCS_WinsetImpl{};
@@ -1423,6 +1441,8 @@ extern "C" SCS_Winset* scs_weighted_winset_2d(
   }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len)) return nullptr;
+  if (!check_shape_weights(cfg, "weighted_winset_2d", err_buf, err_buf_len))
+    return nullptr;
   try {
     using socialchoicelab::core::types::Point2d;
     std::vector<double> w(weights, weights + n_voters);
@@ -1467,6 +1487,8 @@ extern "C" SCS_Winset* scs_winset_with_veto_2d(
   }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len)) return nullptr;
+  if (!check_shape_weights(cfg, "winset_with_veto_2d", err_buf, err_buf_len))
+    return nullptr;
   try {
     using socialchoicelab::core::types::Point2d;
     auto vetos = (n_veto > 0) ? build_voters(veto_ideals_xy, n_veto)
@@ -1509,6 +1531,15 @@ extern "C" int scs_winset_contains_point_2d(const SCS_Winset* ws, double x,
   if (!ws || !out_contains) {
     set_error(err_buf, err_buf_len,
               "scs_winset_contains_point_2d: null argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!std::isfinite(x) || !std::isfinite(y)) {
+    set_error(err_buf, err_buf_len,
+              ("winset_contains: the point (" + std::to_string(x) + ", " +
+               std::to_string(y) +
+               ") is not finite (NaN or Inf). Enter finite x and y "
+               "coordinates.")
+                  .c_str());
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
@@ -1747,6 +1778,33 @@ extern "C" int scs_winset_2d_export_boundary(
 // Voronoi cells 2D  (C2.8)
 // ---------------------------------------------------------------------------
 
+// Sites and bbox go straight into CGAL EPEC, where a NaN or Inf aborts the
+// process (SIGFPE in GMP). Reject them before the core is called.
+static bool validate_voronoi_inputs(const double* sites_xy, int n_sites,
+                                    double bbox_min_x, double bbox_min_y,
+                                    double bbox_max_x, double bbox_max_y,
+                                    char* err_buf, int err_buf_len) {
+  if (!validate_finite_doubles(sites_xy, n_sites * 2, "voronoi_cells_2d sites",
+                               err_buf, err_buf_len)) {
+    return false;
+  }
+  const double bbox[4] = {bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y};
+  const char* const names[4] = {"bbox_min_x", "bbox_min_y", "bbox_max_x",
+                                "bbox_max_y"};
+  for (int i = 0; i < 4; ++i) {
+    if (!std::isfinite(bbox[i])) {
+      set_error(err_buf, err_buf_len,
+                ("voronoi_cells_2d: " + std::string(names[i]) + " is " +
+                 std::to_string(bbox[i]) +
+                 ", but the bounding box needs finite numbers. Enter finite "
+                 "bbox limits with min < max in both dimensions.")
+                    .c_str());
+      return false;
+    }
+  }
+  return true;
+}
+
 extern "C" int scs_voronoi_cells_2d_size(const double* sites_xy, int n_sites,
                                          double bbox_min_x, double bbox_min_y,
                                          double bbox_max_x, double bbox_max_y,
@@ -1755,6 +1813,10 @@ extern "C" int scs_voronoi_cells_2d_size(const double* sites_xy, int n_sites,
                                          int err_buf_len) {
   if (!sites_xy || !out_total_xy_pairs || !out_n_cells) {
     set_error(err_buf, err_buf_len, "scs_voronoi_cells_2d_size: null argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_voronoi_inputs(sites_xy, n_sites, bbox_min_x, bbox_min_y,
+                               bbox_max_x, bbox_max_y, err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
@@ -1784,6 +1846,10 @@ extern "C" int scs_voronoi_cells_2d(const double* sites_xy, int n_sites,
   if (!sites_xy || !out_xy_n) {
     set_error(err_buf, err_buf_len,
               "scs_voronoi_cells_2d: null required argument");
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
+  if (!validate_voronoi_inputs(sites_xy, n_sites, bbox_min_x, bbox_min_y,
+                               bbox_max_x, bbox_max_y, err_buf, err_buf_len)) {
     return SCS_ERROR_INVALID_ARGUMENT;
   }
   try {
@@ -1852,6 +1918,10 @@ extern "C" int scs_voronoi_cells_2d_heap(const double* sites_xy, int n_sites,
   out->cell_start = nullptr;
   out->n_xy_pairs = 0;
   out->cell_start_len = 0;
+  if (!validate_voronoi_inputs(sites_xy, n_sites, bbox_min_x, bbox_min_y,
+                               bbox_max_x, bbox_max_y, err_buf, err_buf_len)) {
+    return SCS_ERROR_INVALID_ARGUMENT;
+  }
   try {
     auto cells = socialchoicelab::geometry::voronoi_cells_2d(
         sites_xy, n_sites, bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y);
@@ -2253,6 +2323,8 @@ extern "C" int scs_core_2d(const double* voter_ideals_xy, int n_voters,
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
+  if (!check_shape_weights(cfg, "core_2d", err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
   try {
     auto voters = build_voters(voter_ideals_xy, n_voters);
     auto opt = socialchoicelab::geometry::core_2d(voters, cfg, k);
@@ -2361,6 +2433,9 @@ extern "C" int scs_uncovered_set_boundary_2d(const double* voter_ideals_xy,
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
+  if (!check_shape_weights(cfg, "uncovered_set_boundary_2d", err_buf,
+                           err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
   try {
     auto voters = build_voters(voter_ideals_xy, n_voters);
     auto poly = socialchoicelab::geometry::uncovered_set_boundary_2d(
@@ -2393,6 +2468,9 @@ extern "C" int scs_uncovered_set_boundary_2d_heap(
   }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  if (!check_shape_weights(cfg, "uncovered_set_boundary_2d", err_buf,
+                           err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
   try {
     auto voters = build_voters(voter_ideals_xy, n_voters);
@@ -2496,6 +2574,8 @@ extern "C" int scs_heart_boundary_size_2d(const double* voter_ideals_xy,
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
+  if (!check_shape_weights(cfg, "heart_boundary_2d", err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
   try {
     auto voters = build_voters(voter_ideals_xy, n_voters);
     auto poly = socialchoicelab::geometry::heart_boundary_2d(
@@ -2528,6 +2608,8 @@ extern "C" int scs_heart_boundary_2d(const double* voter_ideals_xy,
   }
   socialchoicelab::geometry::DistConfig cfg;
   if (!to_dist_config(dist_cfg, cfg, err_buf, err_buf_len))
+    return SCS_ERROR_INVALID_ARGUMENT;
+  if (!check_shape_weights(cfg, "heart_boundary_2d", err_buf, err_buf_len))
     return SCS_ERROR_INVALID_ARGUMENT;
   try {
     auto voters = build_voters(voter_ideals_xy, n_voters);
