@@ -38,7 +38,7 @@ Every level-set call needs:
 4. **Distance configuration** — same semantics as `calculate_distance`:
    - `DistanceType`: EUCLIDEAN, MANHATTAN, CHEBYSHEV, MINKOWSKI
    - `order_p` (for MINKOWSKI; finite, ≥ 1)
-   - `salience_weights`: `std::vector<double>` of length N; finite, ≥ 0; zero = dimension masking.
+   - `salience_weights`: `std::vector<double>` of length N; finite, ≥ 0 for distance (zero = dimension masking). `level_set_1d`, `level_set_2d` and `ic_polygon_2d` need every weight finite and > 0, because with a zero weight the level set is an unbounded strip or a pair of lines; they throw `std::invalid_argument` otherwise.
 
 To keep the API manageable, use **config structs** (defined in the indifference header or a small preference config header):
 
@@ -58,7 +58,7 @@ To keep the API manageable, use **config structs** (defined in the indifference 
   The level set is returned as a **discriminated type** so that exact shapes (circle, ellipse, superellipse) are used when possible, with a polygon fallback. This supports fast intersection, compact memory, and accuracy.
 
   - **`LevelSet2d`** — one of:
-    - **`Circle2d`** — center (Point2d), radius (double). Used for **Euclidean** distance with **equal** salience weights (any loss). Many real use cases have circular ICs.
+    - **`Circle2d`** — center (Point2d), radius (double). Used for **Euclidean** distance with **equal** salience weights (any loss). Many real use cases have circular ICs. The level set at weighted distance r has radius r / w, and every shape below has semi-axes r / w₀ and r / w₁. `level_set_2d` and the winset preferred-to sets share one builder for this (`detail::level_set_at_distance_2d`).
     - **`Ellipse2d`** — center (Point2d), semi_axis_0, semi_axis_1 (double), axis-aligned with coordinates. Used for **Euclidean** with **unequal** salience weights.
     - **`Superellipse2d`** — center (Point2d), semi_axis_0, semi_axis_1 (double), exponent p (double). Axis-aligned. Used for **Minkowski** with 1 < p < ∞ (Lamé curve).
     - **`Polygon2d`** — ordered closed list of vertices (e.g. `std::vector<Point2d>`). Used for **Manhattan** (p=1) and **Chebyshev** (p=∞), where the IC is exactly a quadrilateral (4 vertices). Also available as a sampled approximation for any shape via `to_polygon(num_samples)` for plotting or polygon-based intersection.

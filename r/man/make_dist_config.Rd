@@ -17,7 +17,11 @@ make_dist_config(
 \code{"minkowski"} (general Lp).}
 
 \item{weights}{Numeric vector of salience weights, one per dimension.
-Default: all-ones vector of length \code{n_dims}.}
+Default: all-ones vector of length \code{n_dims}. Weights must be finite
+and >= 0; a weight of 0 turns that dimension off in distance-only
+functions. Functions that build a 2D shape (indifference curves, winsets,
+\code{core_2d}, uncovered-set and Heart boundaries) need every weight
+> 0 and give an error otherwise.}
 
 \item{n_dims}{Integer. Number of dimensions; used only when \code{weights}
 is \code{NULL}.}

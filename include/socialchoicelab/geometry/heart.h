@@ -226,6 +226,7 @@ namespace socialchoicelab::geometry {
         "heart_boundary_2d: grid_resolution must be at least 2 (got " +
         std::to_string(grid_resolution) + ").");
   }
+  detail::require_shape_weights(cfg, "heart_boundary_2d");
 
   // Compute bounding box + 30 % margin (matches uncovered_set_boundary_2d).
   double xmin = voter_ideals[0].x();

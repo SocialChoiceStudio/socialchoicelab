@@ -22,6 +22,7 @@
 
 #include <socialchoicelab/core/types.h>
 #include <socialchoicelab/preference/distance/distance_functions.h>
+#include <socialchoicelab/preference/indifference/level_set.h>
 
 #include <Eigen/Dense>
 #include <stdexcept>
@@ -73,6 +74,17 @@ inline int resolve_k(int k, int n) {
         ", n=" + std::to_string(n) + ").");
   }
   return threshold;
+}
+
+/// Throw std::invalid_argument unless cfg has two finite weights > 0.
+/// Every public function that builds a bounded 2D shape (winsets, the core,
+/// uncovered-set and Heart boundaries) calls this before building anything:
+/// a weight of 0 makes those regions unbounded strips, and the Inf/NaN
+/// vertices of a zero-weight preferred-to set would abort the process inside
+/// CGAL EPEC. Distance-only functions still accept a weight of 0.
+inline void require_shape_weights(const DistConfig& cfg, const char* caller) {
+  socialchoicelab::preference::indifference::detail::require_shape_weights_2d(
+      cfg.salience_weights, caller);
 }
 
 /// Distance from p to alt under cfg.

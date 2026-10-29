@@ -106,77 +106,18 @@ inline Polygon2E to_exact_polygon(const indiff::Polygon2d& poly) {
 /// Compute the preferred-to-set boundary polygon for voter with ideal point p
 /// and status quo sq under distance config cfg, sampled at num_samples points.
 /// Returns an empty polygon if the voter is at the SQ (distance ≈ 0).
+/// cfg must already have passed require_shape_weights; caller prefixes error
+/// messages.
 inline Polygon2E pts_polygon(const core::types::Point2d& voter_ideal,
                              const core::types::Point2d& sq,
-                             const DistConfig& cfg, int num_samples) {
+                             const DistConfig& cfg, int num_samples,
+                             const char* caller) {
   const double r = dist_::calculate_distance(voter_ideal, sq, cfg.type,
                                              cfg.order_p, cfg.salience_weights);
   if (r < 1e-12) return Polygon2E{};  // voter at SQ — empty PTS
 
-  const double w0 = cfg.salience_weights[0];
-  const double w1 = cfg.salience_weights[1];
-  const double a0 = r / w0;
-  const double a1 = r / w1;
-
-  // Build the level-set shape and sample it.
-  using indiff::Circle2d;
-  using indiff::Ellipse2d;
-  using indiff::LevelSet2d;
-  using indiff::Polygon2d;
-  using indiff::Superellipse2d;
-
-  LevelSet2d ls;
-  switch (cfg.type) {
-    case dist_::DistanceType::EUCLIDEAN:
-      if (std::abs(w0 - w1) < 1e-10 * std::max(w0, w1)) {
-        ls = Circle2d{voter_ideal, r};
-      } else {
-        ls = Ellipse2d{voter_ideal, a0, a1};
-      }
-      break;
-    case dist_::DistanceType::MANHATTAN: {
-      Polygon2d poly;
-      poly.vertices = {voter_ideal + core::types::Point2d(a0, 0),
-                       voter_ideal + core::types::Point2d(0, a1),
-                       voter_ideal + core::types::Point2d(-a0, 0),
-                       voter_ideal + core::types::Point2d(0, -a1)};
-      ls = poly;
-      break;
-    }
-    case dist_::DistanceType::CHEBYSHEV: {
-      Polygon2d poly;
-      poly.vertices = {voter_ideal + core::types::Point2d(a0, a1),
-                       voter_ideal + core::types::Point2d(-a0, a1),
-                       voter_ideal + core::types::Point2d(-a0, -a1),
-                       voter_ideal + core::types::Point2d(a0, -a1)};
-      ls = poly;
-      break;
-    }
-    case dist_::DistanceType::MINKOWSKI: {
-      const double p = cfg.order_p;
-      if (p <= 1.0 + 1e-9) {
-        Polygon2d poly;
-        poly.vertices = {voter_ideal + core::types::Point2d(a0, 0),
-                         voter_ideal + core::types::Point2d(0, a1),
-                         voter_ideal + core::types::Point2d(-a0, 0),
-                         voter_ideal + core::types::Point2d(0, -a1)};
-        ls = poly;
-      } else if (p >= 100.0) {
-        Polygon2d poly;
-        poly.vertices = {voter_ideal + core::types::Point2d(a0, a1),
-                         voter_ideal + core::types::Point2d(-a0, a1),
-                         voter_ideal + core::types::Point2d(-a0, -a1),
-                         voter_ideal + core::types::Point2d(a0, -a1)};
-        ls = poly;
-      } else {
-        ls = Superellipse2d{voter_ideal, a0, a1, p};
-      }
-      break;
-    }
-    default:
-      throw std::invalid_argument("pts_polygon: unsupported DistanceType");
-  }
-
+  const indiff::LevelSet2d ls = indiff::detail::level_set_at_distance_2d(
+      voter_ideal, r, cfg.type, cfg.order_p, cfg.salience_weights, caller);
   return to_exact_polygon(
       indiff::to_polygon(ls, static_cast<std::size_t>(num_samples)));
 }
@@ -266,6 +207,7 @@ inline void gps_insert_if_valid(WinsetRegion& gps, const Polygon2E& p) {
     throw std::invalid_argument("winset_2d: num_samples must be >= 4 (got " +
                                 std::to_string(num_samples) + ").");
   }
+  detail::require_shape_weights(cfg, "winset_2d");
   const int threshold = detail::resolve_k(k, n);
 
   // S[j] = polygon set for "depth >= j+1".
@@ -273,7 +215,8 @@ inline void gps_insert_if_valid(WinsetRegion& gps, const Polygon2E& p) {
   std::vector<WinsetRegion> S(static_cast<std::size_t>(threshold));
 
   for (int i = 0; i < n; ++i) {
-    Polygon2E Di = detail::pts_polygon(voter_ideals[i], sq, cfg, num_samples);
+    Polygon2E Di =
+        detail::pts_polygon(voter_ideals[i], sq, cfg, num_samples, "winset_2d");
     if (Di.size() < 3) continue;  // voter at SQ or degenerate — skip
 
     WinsetRegion gps_Di;
@@ -335,14 +278,15 @@ inline void gps_insert_if_valid(WinsetRegion& gps, const Polygon2E& p) {
         "winset_2d_petal: num_samples must be >= 4 (got " +
         std::to_string(num_samples) + ").");
   }
+  detail::require_shape_weights(cfg, "winset_2d_petal");
   const int threshold = detail::resolve_k(k, n);
 
   // Pre-compute all n PTS polygons.
   std::vector<Polygon2E> pts(static_cast<std::size_t>(n));
   std::vector<bool> valid(static_cast<std::size_t>(n), false);
   for (int i = 0; i < n; ++i) {
-    pts[static_cast<std::size_t>(i)] =
-        detail::pts_polygon(voter_ideals[i], sq, cfg, num_samples);
+    pts[static_cast<std::size_t>(i)] = detail::pts_polygon(
+        voter_ideals[i], sq, cfg, num_samples, "winset_2d_petal");
     if (pts[static_cast<std::size_t>(i)].size() >= 3 &&
         pts[static_cast<std::size_t>(i)].is_simple()) {
       valid[static_cast<std::size_t>(i)] = true;
@@ -447,13 +391,15 @@ inline void gps_insert_if_valid(WinsetRegion& gps, const Polygon2E& p) {
     const std::vector<core::types::Point2d>& voter_ideals,
     const DistConfig& cfg, const std::vector<core::types::Point2d>& veto_ideals,
     int k = -1, int num_samples = 64) {
+  detail::require_shape_weights(cfg, "winset_with_veto_2d");
   // Step 1: standard winset.
   WinsetRegion ws = winset_2d(sq, voter_ideals, cfg, k, num_samples);
   if (ws.is_empty()) return ws;
 
   // Step 2: intersect with each veto player's preferred-to set.
   for (const auto& veto_ideal : veto_ideals) {
-    Polygon2E veto_pts = detail::pts_polygon(veto_ideal, sq, cfg, num_samples);
+    Polygon2E veto_pts = detail::pts_polygon(veto_ideal, sq, cfg, num_samples,
+                                             "winset_with_veto_2d");
     if (veto_pts.size() < 3) {
       // Veto player at sq: preferred region is empty → constrained winset
       // is empty (no policy change satisfies both majority and this veto).
@@ -528,6 +474,7 @@ inline void gps_insert_if_valid(WinsetRegion& gps, const Polygon2E& p) {
         "weighted_winset_2d: threshold must be in (0, 1] (got " +
         std::to_string(threshold) + ").");
   }
+  detail::require_shape_weights(cfg, "weighted_winset_2d");
 
   // Validate and find minimum weight.
   double w_min = std::numeric_limits<double>::max();

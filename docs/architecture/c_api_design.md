@@ -177,6 +177,18 @@ typedef struct {
 `salience_weights` is borrowed caller-owned storage valid only for the duration
 of the call unless a function explicitly documents that it deep-copies the data.
 
+Weights must be finite. Distance-only functions accept a weight of 0 (dimension
+masking, Convention B). Functions that build a bounded 2D shape need every weight
+> 0 and reject 0 or a negative weight with `SCS_ERROR_INVALID_ARGUMENT` (or a
+`NULL` handle for the winset factories): the level-set and IC functions, `scs_winset_2d`, `scs_weighted_winset_2d`, `scs_winset_with_veto_2d`,
+`scs_core_2d`, `scs_uncovered_set_boundary_2d(_heap/_size)` and
+`scs_heart_boundary_2d(_size)`.
+
+Non-finite doubles must never reach CGAL EPEC: GMP aborts the process (SIGFPE)
+instead of throwing. Every entry point that passes caller doubles to exact geometry
+checks them first (voter ideals, status quo, veto ideals, voting weights, query
+points in `scs_winset_contains_point_2d`, and Voronoi sites and bounding boxes).
+
 ### `SCS_LevelSet2d`
 
 Shape-tagged union encoded as a flat POD struct. Fields used per `type`:

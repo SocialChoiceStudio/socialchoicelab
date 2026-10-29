@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "scs_api.h"  // NOLINT(build/include_subdir)
@@ -3453,4 +3454,218 @@ TEST(CApi_NonFinite, RankByScores_InfScores_ReturnsInvalidArgument) {
                               nullptr, ranking, 3, err, 256);
   EXPECT_EQ(rc, SCS_ERROR_INVALID_ARGUMENT);
   EXPECT_GT(std::strlen(err), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// Salience weights and non-finite input (review findings S02a-001, S02b-001,
+// S02b-003): equal non-unit weights give the right size, and inputs that
+// would reach CGAL EPEC as Inf/NaN are rejected with an error instead of
+// aborting the process.
+// ---------------------------------------------------------------------------
+
+TEST(CApi_SalienceWeights, LevelSetEqualNonUnitWeightsRadiusIsROverW) {
+  SCS_LossConfig lcfg = make_quadratic(1.0);
+  for (double w : {2.0, 0.5}) {
+    double weights[2] = {w, w};
+    SCS_DistanceConfig dc = make_euclidean_dist(weights, 2);
+    SCS_LevelSet2d out{};
+    char err[512] = {};
+    // u = -d^2 = -4 -> weighted distance 2 -> circle of radius 2 / w.
+    ASSERT_EQ(scs_level_set_2d(0.0, 0.0, -4.0, &lcfg, &dc, &out, err, 512),
+              SCS_OK)
+        << err;
+    EXPECT_EQ(out.type, SCS_LEVEL_SET_CIRCLE);
+    EXPECT_NEAR(out.param0, 2.0 / w, 1e-12) << "w = " << w;
+  }
+}
+
+TEST(CApi_SalienceWeights, IcPolygonEqualNonUnitWeightsPassesThroughSQ) {
+  SCS_LossConfig lc = make_quadratic(1.0);
+  for (double w : {2.0, 0.5}) {
+    double weights[2] = {w, w};
+    SCS_DistanceConfig dc = make_euclidean_dist(weights, 2);
+    constexpr int N = 64;
+    double xy[2 * N] = {};
+    int out_n = 0;
+    char err[512] = {};
+    ASSERT_EQ(scs_ic_polygon_2d(0.0, 0.0, 1.0, 0.0, &lc, &dc, N, xy, N, &out_n,
+                                err, 512),
+              SCS_OK)
+        << err;
+    ASSERT_EQ(out_n, N);
+    EXPECT_NEAR(xy[0], 1.0, 1e-12) << "w = " << w;  // vertex 0 is sq
+    EXPECT_NEAR(xy[1], 0.0, 1e-12) << "w = " << w;
+    for (int i = 0; i < out_n; ++i) {
+      EXPECT_NEAR(std::hypot(xy[2 * i], xy[2 * i + 1]), 1.0, 1e-9)
+          << "w = " << w << ", vertex " << i;
+    }
+  }
+}
+
+TEST(CApi_SalienceWeights, WinsetEqualNonUnitWeightsOneVoter) {
+  // S02b-001 reproduction: one voter at (0,0), sq (1,0), k = 1.
+  double voters[] = {0.0, 0.0};
+  for (double w : {2.0, 0.5}) {
+    double weights[2] = {w, w};
+    SCS_DistanceConfig dc = make_euclidean_dist(weights, 2);
+    char err[512] = {};
+    SCS_Winset* ws = scs_winset_2d(1.0, 0.0, voters, 1, &dc, 1,
+                                   SCS_DEFAULT_WINSET_SAMPLES, err, 512);
+    ASSERT_NE(ws, nullptr) << err;
+    int in_far = -1, in_near = -1;
+    ASSERT_EQ(scs_winset_contains_point_2d(ws, 1.5, 0.0, &in_far, err, 512),
+              SCS_OK);
+    ASSERT_EQ(scs_winset_contains_point_2d(ws, 0.9, 0.0, &in_near, err, 512),
+              SCS_OK);
+    EXPECT_EQ(in_far, 0) << "w = " << w;   // farther from the voter than sq
+    EXPECT_EQ(in_near, 1) << "w = " << w;  // closer to the voter than sq
+    scs_winset_destroy(ws);
+  }
+}
+
+TEST(CApi_SalienceWeights, ShapeFunctionsRejectNonPositiveWeights) {
+  double voters[] = {0.0, 0.0, 1.0, 0.0, 0.5, 1.0};
+  double vote_w[] = {1.0, 1.0, 1.0};
+  double veto[] = {0.5, 0.5};
+  for (const auto& wv :
+       {std::vector<double>{0.0, 1.0}, std::vector<double>{1.0, 0.0},
+        std::vector<double>{-1.0, 1.0}}) {
+    double weights[2] = {wv[0], wv[1]};
+    for (SCS_DistanceType t : {SCS_DIST_EUCLIDEAN, SCS_DIST_MANHATTAN,
+                               SCS_DIST_CHEBYSHEV, SCS_DIST_MINKOWSKI}) {
+      SCS_DistanceConfig dc = make_euclidean_dist(weights, 2);
+      dc.distance_type = t;
+      dc.order_p = 3.0;
+      char err[512] = {};
+      EXPECT_EQ(scs_winset_2d(0.3, 0.5, voters, 3, &dc, SCS_MAJORITY_SIMPLE,
+                              SCS_DEFAULT_WINSET_SAMPLES, err, 512),
+                nullptr);
+      EXPECT_NE(std::string(err).find("winset_2d: salience_weights["),
+                std::string::npos)
+          << err;
+      EXPECT_NE(std::string(err).find("finite and > 0"), std::string::npos)
+          << err;
+    }
+    SCS_DistanceConfig dc = make_euclidean_dist(weights, 2);
+    char err[512] = {};
+    EXPECT_EQ(scs_weighted_winset_2d(0.3, 0.5, voters, 3, vote_w, &dc, 0.5,
+                                     SCS_DEFAULT_WINSET_SAMPLES, err, 512),
+              nullptr);
+    EXPECT_NE(std::string(err).find("weighted_winset_2d:"), std::string::npos)
+        << err;
+    EXPECT_EQ(scs_winset_with_veto_2d(0.3, 0.5, voters, 3, &dc, veto, 1,
+                                      SCS_MAJORITY_SIMPLE,
+                                      SCS_DEFAULT_WINSET_SAMPLES, err, 512),
+              nullptr);
+    EXPECT_NE(std::string(err).find("winset_with_veto_2d:"), std::string::npos)
+        << err;
+    int found = -1;
+    double cx = 0.0, cy = 0.0;
+    EXPECT_EQ(scs_core_2d(voters, 3, &dc, SCS_MAJORITY_SIMPLE, &found, &cx, &cy,
+                          err, 512),
+              SCS_ERROR_INVALID_ARGUMENT);
+    EXPECT_NE(std::string(err).find("core_2d:"), std::string::npos) << err;
+    int n_out = 0;
+    EXPECT_EQ(
+        scs_uncovered_set_boundary_2d(voters, 3, &dc, 5, SCS_MAJORITY_SIMPLE,
+                                      nullptr, 0, &n_out, err, 512),
+        SCS_ERROR_INVALID_ARGUMENT);
+    EXPECT_NE(std::string(err).find("uncovered_set_boundary_2d:"),
+              std::string::npos)
+        << err;
+    EXPECT_EQ(scs_heart_boundary_2d(voters, 3, &dc, 5, SCS_MAJORITY_SIMPLE,
+                                    nullptr, 0, &n_out, err, 512),
+              SCS_ERROR_INVALID_ARGUMENT);
+    EXPECT_NE(std::string(err).find("heart_boundary_2d:"), std::string::npos)
+        << err;
+  }
+}
+
+TEST(CApi_SalienceWeights, WinsetRejectsNonFiniteWeights) {
+  double voters[] = {0.0, 0.0, 1.0, 0.0, 0.5, 1.0};
+  for (double bad : {std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::infinity()}) {
+    double weights[2] = {bad, 1.0};
+    SCS_DistanceConfig dc = make_euclidean_dist(weights, 2);
+    char err[512] = {};
+    EXPECT_EQ(scs_winset_2d(0.3, 0.5, voters, 3, &dc, SCS_MAJORITY_SIMPLE,
+                            SCS_DEFAULT_WINSET_SAMPLES, err, 512),
+              nullptr);
+    EXPECT_NE(std::string(err).find("salience_weights"), std::string::npos)
+        << err;
+  }
+}
+
+TEST(CApi_SalienceWeights, ZeroWeightStillAllowedForDistanceOnlyCalls) {
+  // Convention B: weight 0 masks a dimension. Only x matters here.
+  double voters[] = {0.0, 0.0, 0.0, 5.0, 1.0, -5.0};
+  double weights[2] = {1.0, 0.0};
+  SCS_DistanceConfig dc = make_euclidean_dist(weights, 2);
+  int out = -1;
+  char err[512] = {};
+  ASSERT_EQ(scs_majority_prefers_2d(0.1, 100.0, 2.0, 0.0, voters, 3, &dc, 3,
+                                    &out, err, 512),
+            SCS_OK)
+      << err;
+  EXPECT_EQ(out, 1);
+}
+
+TEST(CApi_NonFiniteInput, WinsetContainsRejectsNaNPoint) {
+  char err[512] = {};
+  SCS_Winset* ws = nullptr;
+  make_triangle_winset(&ws, err, 512);
+  ASSERT_NE(ws, nullptr) << err;
+  int contains = -1;
+  EXPECT_EQ(
+      scs_winset_contains_point_2d(ws, std::numeric_limits<double>::quiet_NaN(),
+                                   0.0, &contains, err, 512),
+      SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_NE(std::string(err).find("winset_contains"), std::string::npos) << err;
+  scs_winset_destroy(ws);
+}
+
+TEST(CApi_NonFiniteInput, VoronoiRejectsNaNSite) {
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  double sites[] = {0.0, 0.0, nan, 0.0};
+  char err[512] = {};
+  int total_pairs = -1, n_cells = -1;
+  EXPECT_EQ(scs_voronoi_cells_2d_size(sites, 2, -1.0, -1.0, 3.0, 1.0,
+                                      &total_pairs, &n_cells, err, 512),
+            SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_NE(std::string(err).find("sites"), std::string::npos) << err;
+  int out_xy_n = 0;
+  EXPECT_EQ(scs_voronoi_cells_2d(sites, 2, -1.0, -1.0, 3.0, 1.0, nullptr, 0,
+                                 &out_xy_n, nullptr, 0, err, 512),
+            SCS_ERROR_INVALID_ARGUMENT);
+  SCS_VoronoiCellsHeap heap{};
+  EXPECT_EQ(scs_voronoi_cells_2d_heap(sites, 2, -1.0, -1.0, 3.0, 1.0, &heap,
+                                      err, 512),
+            SCS_ERROR_INVALID_ARGUMENT);
+  EXPECT_EQ(heap.xy, nullptr);
+}
+
+TEST(CApi_NonFiniteInput, VoronoiRejectsNonFiniteBbox) {
+  double sites[] = {0.0, 0.0, 2.0, 0.0};
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+  const double bboxes[][4] = {{nan, -1.0, 3.0, 1.0},
+                              {-1.0, nan, 3.0, 1.0},
+                              {-1.0, -1.0, inf, 1.0},
+                              {-1.0, -1.0, 3.0, nan}};
+  for (const auto& b : bboxes) {
+    char err[512] = {};
+    int total_pairs = -1, n_cells = -1;
+    EXPECT_EQ(scs_voronoi_cells_2d_size(sites, 2, b[0], b[1], b[2], b[3],
+                                        &total_pairs, &n_cells, err, 512),
+              SCS_ERROR_INVALID_ARGUMENT);
+    EXPECT_NE(std::string(err).find("bounding box"), std::string::npos) << err;
+    int out_xy_n = 0;
+    EXPECT_EQ(scs_voronoi_cells_2d(sites, 2, b[0], b[1], b[2], b[3], nullptr, 0,
+                                   &out_xy_n, nullptr, 0, err, 512),
+              SCS_ERROR_INVALID_ARGUMENT);
+    SCS_VoronoiCellsHeap heap{};
+    EXPECT_EQ(scs_voronoi_cells_2d_heap(sites, 2, b[0], b[1], b[2], b[3], &heap,
+                                        err, 512),
+              SCS_ERROR_INVALID_ARGUMENT);
+  }
 }

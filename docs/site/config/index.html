@@ -1010,8 +1010,13 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Per-dimension salience weights (strictly positive).  If <code>None</code>,
-uniform unit weights are used (the C API default behaviour).</p>
+                <p>Per-dimension salience weights.  If <code>None</code>, uniform unit weights
+are used (the C API default behaviour).  Each weight must be finite
+and at least 0; a weight of 0 turns that dimension off in
+distance-only functions.  Functions that build a 2D shape
+(indifference curves, winsets, <code>core_2d</code>, uncovered-set and Heart
+boundaries) need every weight to be greater than 0 and raise an error
+otherwise.</p>
               </div>
             </td>
             <td>
@@ -1263,7 +1268,9 @@ or <code>"minkowski"</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Per-dimension salience weights.  <code>None</code> means uniform unit weights.</p>
+                <p>Per-dimension salience weights.  <code>None</code> means uniform unit weights.
+Same rules as <code>DistanceConfig</code>: finite and at least 0, and greater
+than 0 for functions that build a 2D shape.</p>
               </div>
             </td>
             <td>

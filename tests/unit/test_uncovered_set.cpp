@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 #include <vector>
 
 using socialchoicelab::core::types::Point2d;
@@ -389,4 +390,23 @@ TEST(UncoveredSetBoundary, ResolutionParameter_NonEmpty) {
     EXPECT_GE(poly.size(), 1u)
         << "Uncovered set boundary should be non-empty at resolution " << res;
   }
+}
+
+// The boundary is a 2D shape, so it needs every salience weight > 0: with a
+// weight of 0 the uncovered set is an unbounded strip. The discrete
+// uncovered_set() over given alternatives builds no shape and still allows 0.
+TEST(UncoveredSetBoundary, ZeroSalienceWeight_Throws) {
+  const std::vector<Point2d> voters = {{0.0, 0.0}, {1.0, 0.0}, {0.5, 1.0}};
+  DistConfig cfg;
+  cfg.salience_weights = {1.0, 0.0};
+  try {
+    (void)uncovered_set_boundary_2d(voters, cfg, 5);
+    ADD_FAILURE() << "uncovered_set_boundary_2d accepted a weight of 0";
+  } catch (const std::invalid_argument& e) {
+    EXPECT_NE(std::string(e.what()).find(
+                  "uncovered_set_boundary_2d: salience_weights[1] is 0"),
+              std::string::npos)
+        << e.what();
+  }
+  EXPECT_NO_THROW((void)uncovered_set(voters, voters, cfg));
 }
