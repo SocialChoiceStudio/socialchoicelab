@@ -495,6 +495,11 @@ The C API silently sets the competition space to the bounding box of competitors
 voters ± 1.0 in absolute units (`scs_api.cpp:4083–4103`). R and Python cannot set bounds.
 Is this intended? Should the bindings expose bounds?
 
+Stage 2 adds: bounds change results, because parties that hit the edge are stopped or
+bounced. The ± 1.0 margin is in absolute units, so it is negligible on a 0–1000 scale but
+100× the data range on a 0–0.01 scale. The same code is duplicated at
+`scs_api.cpp:4378–4396`.
+
 **Answer:**
 
 ### Q11. Version numbers
@@ -553,5 +558,137 @@ committed (fbc52da…aa19b05). Treat these as stale and report them?
 Links point to `design_document.md` and `development.md`, but the files are
 `Design_Document.md` and `DEVELOPMENT.md`. Which names are correct under the naming
 convention?
+
+**Answer:**
+
+---
+
+## Raised by Stage 2 (C++ core) — needed before the fix phase
+
+These came out of the Stage 2 reports. None blocks Stage 3. Each lists the options the
+reviewers saw; pick one, or write your own.
+
+### Q18. A weight of 0 in 2D geometry
+A salience weight of 0 means "ignore this dimension". That works for distances, but in 2D
+geometry it turns a voter's preferred region into an endless strip, and today that
+crashes R or Python (S02b-003).
+**Decided for the early fix (2026-10-29, merged in PR #1), change it if you disagree:** in 2D geometry
+(winsets, yolk, uncovered set, Voronoi), weight 0 gives a clear error. In plain distance
+calculations it still means "ignore this dimension". The alternative was to cut the strip
+off at a box.
+
+**Answer:**
+
+### Q19. Threshold loss: the indifference curve through a point inside the "don't care" zone
+With threshold loss, a voter doesn't care about any point within distance τ of their
+ideal. If you ask for the indifference curve through such a point, the code returns the
+edge of the zone, not a curve through the point (S02a open question 1).
+Options: (a) keep returning the zone edge and document it; (b) return the circle through
+the point; (c) return an error saying the point is inside the zone.
+
+**Answer:**
+
+### Q20. Random numbers in a range: can the top value come out?
+`uniform_real(min, max)` is meant to give values from min up to, but not including, max.
+For very narrow ranges, rounding can produce exactly max (S02a-011).
+Options: (a) guarantee max never comes out, by clamping; (b) allow max and document the
+narrow-range exception.
+
+**Answer:**
+
+### Q21. Source for the Gaussian and threshold loss formulas
+The reviewer could not check the Gaussian loss formula against Conevska & Mutlu (2025):
+the PDF text has no readable formula. Threshold loss has no citation at all. Neither
+paper is in `REFERENCE_INDEX.md`.
+What is the source for each formula? (The reviewer will add the papers to the index.)
+
+**Answer:**
+
+### Q22. Yolk with an even number of voters, or a supermajority
+For an even number of voters there are two "median lines" per direction, with a band
+between them. The code makes the yolk touch only one of them. Koehler (1992) says it
+should touch both, for simple majority. For supermajority (k-majority) the reviewer found
+no source.
+Options: (a) touch both edges, as Koehler; (b) keep one edge and document why. And: which
+source should the k-majority yolk follow?
+
+**Answer:**
+
+### Q23. "The yolk centre is always in the uncovered set"
+Tests and docs rely on this, but the cited paper (Feld, Grofman & Miller 1988) does not
+prove it. Should the project keep relying on it? If yes, what is the source?
+
+**Answer:**
+
+### Q24. Voronoi: when do two candidates count as being at the same place?
+Q7 says candidates at the same place share a Voronoi cell. Should "same place" mean
+exactly identical coordinates, or within a small tolerance?
+
+**Answer:**
+
+### Q25. Uncovered set with only one or two corner points
+The uncovered-set boundary can come back as a single point or a line segment, not a
+shape (S02b-008). Is that an acceptable result, or should it be flagged or raised as an
+error?
+
+**Answer:**
+
+### Q26. Who wins a tied last seat?
+When parties tie for a seat, the code always gives it to the party listed first. This
+applies to the seat allocation methods and to seats inside competition runs. Q7 chose
+random tie-breaks for voters and the Predator so that earlier-listed parties aren't
+favoured. Flag both ways.
+Options: (a) break seat ties at random, from a named random stream, as in Q7; (b) keep
+"first listed wins" and document it (ties are rare with many voters).
+
+**Answer:**
+
+### Q27. Copeland ranking: which definition of "beats"?
+There are two Copeland functions, and they disagree (S02c-002). One counts x as beating
+y when more voters prefer x than y (indifferent voters don't count). The other needs a
+majority of all voters. Which should both use? And should the score be "wins minus
+losses" (the standard Copeland score)?
+
+**Answer:**
+
+### Q28. `is_majority_consistent`: rename or redefine?
+The name suggests "does this voting rule always pick the majority winner?". What it
+actually checks is "is this candidate the Condorcet winner?" (S02c-003). Should the code
+change to match the name, or the name change to match the code?
+
+**Answer:**
+
+### Q29. A Predator tied for largest party
+The Predator moves toward the largest party. If the Predator itself is tied for largest,
+should it (a) stand still, as in the Laver & Sergenti code, or (b) pick at random among
+the tied parties, including itself (a literal reading of Q7)?
+
+**Answer:**
+
+### Q30. Bouncing off the wall
+With the "reflect" boundary rule, a party that hits the edge bounces back. But its
+direction isn't flipped, so a Hunter that just gained votes heads straight back into the
+wall next round. Should the direction flip on a bounce?
+
+**Answer:**
+
+### Q31. Scenarios that share a seed
+In a parameter sweep, every scenario with the same master seed gets identical random
+numbers. That's a standard technique (common random numbers) that makes comparisons
+fairer. Is it intended? If so, the reviewer suggests documenting it.
+
+**Answer:**
+
+### Q32. "Share-delta" step size
+One step-size option never moves anyone (S02d-002). Was the step meant to depend on the
+party's own change in vote share, or on its gap to the leading party
+("share-gap-proportional" in `competition_plan.md`)?
+
+**Answer:**
+
+### Q33. Hunter "same move" with random step sizes
+A Hunter that gained votes repeats its last move. With random step sizes, a new step
+length is drawn every round, so the move isn't really the same. Should a Hunter that
+gained votes reuse its last step length?
 
 **Answer:**

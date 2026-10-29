@@ -20,6 +20,30 @@ Read this in full before reviewing anything.
 7. **Do not pad.** An honest "no P0/P1 found in this slice" is a useful result.
 8. Never read or print `.env` or `.github_token`.
 
+## Owner decisions
+
+[owner_questions.md](owner_questions.md) records the owner's answers. They are the
+contract for intended behaviour and override the code, the design docs, and your own
+preferences.
+
+1. **Decided work is not a new finding.** Anything already listed under an answer's
+   "Implies" is known. Do not re-report it. Do report **additional instances** the
+   "Implies" list missed (another `std::` distribution, another lowest-index tie in
+   competition, another unscaled `pow`). Give them IDs as usual and add
+   `Decision: Q<n>` to the finding's **Where** line.
+2. **Withdrawn code is not reviewed.** Heart code (Q1) is being removed. Do not review it
+   for correctness; list any remaining Heart code, tests, C API entries or doc claims once,
+   as P3 "to be removed".
+3. **Answers are rules.** Code or docs that contradict an answer are defects, usually P1.
+   Each answer's "For reviewers" paragraph lists what to look for.
+4. **"Flag both ways"** (e.g. the Predator default in Q8) means report the issue and the
+   options, without deciding which is right.
+5. **Unanswered questions** (blank **Answer:**) mean intended behaviour is unknown. Report
+   the behaviour as an open question, not a defect.
+6. **Cross-cutting principle — Laver & Sergenti as reference, not target.** Divergence from
+   L&S is not a defect by itself. It is a P3 documentation finding if the difference is not
+   documented.
+
 ## Severity
 
 | Level | Meaning | Examples |
@@ -73,7 +97,11 @@ Apply what is relevant to your slice.
   collinear/degenerate geometry, NaN/Inf, very large/small magnitudes.
 - Floating-point: tolerances explicit and consistent; no exact `==` on computed doubles
   where it matters.
-- Randomness: seeded and reproducible; stream use consistent.
+- Randomness (Q4): every draw goes through `PRNG` methods using project-owned algorithms;
+  no `std::*_distribution`, `std::shuffle`, or direct `engine()` use; transcendental
+  calls in RNG code go through the single maths wrapper; named streams used consistently.
+- Thread safety (Q9): no new global or mutable static state; no API that shares mutable
+  state between handles; no doc calling concurrent use of one handle safe.
 - Integer overflow, signed/unsigned mixing, index bounds.
 
 **C API boundary**
