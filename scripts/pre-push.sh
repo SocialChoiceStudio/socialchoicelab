@@ -25,7 +25,9 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     BASE="$remote_sha"
   fi
 
-  if git diff --name-only "$BASE" "$local_sha" 2>/dev/null | grep -qE '^(r|python)/'; then
+  # Not grep -q: it exits at the first match, git diff then dies of SIGPIPE on
+  # a long file list, and pipefail turns that into "no match" (skipped checks).
+  if git diff --name-only "$BASE" "$local_sha" 2>/dev/null | grep -E '^(r|python)/' >/dev/null; then
     CHANGED_BINDINGS=1
     break
   fi
