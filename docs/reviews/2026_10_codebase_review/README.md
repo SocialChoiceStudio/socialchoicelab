@@ -53,4 +53,6 @@ at a time so the rubric can be adjusted between them.
 - `owner_questions.md` — design questions raised by reviewers, with the owner's answers.
 - `prompts/stage_NN_*.md` — the exact prompt given to each agent.
 - `stage_NN_<area>.md` — each agent's findings.
+- `copilot_findings.md` — verified issues from GitHub Copilot's reviews of PRs #1 and #3
+  (SCP-nnn); Stages 10 and 11 include them.
 - `findings_ledger.md` — merged, deduplicated findings (built in Stage 11).

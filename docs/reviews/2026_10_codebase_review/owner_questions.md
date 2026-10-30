@@ -570,14 +570,16 @@ reviewers saw; pick one, or write your own.
 
 ### Q18. A weight of 0 in 2D geometry
 A salience weight of 0 means "ignore this dimension". That works for distances, but in 2D
-geometry it turns a voter's preferred region into an endless strip, and today that
-crashes R or Python (S02b-003).
-**Decided for the early fix (2026-10-29, merged in PR #1), change it if you disagree:** in 2D geometry
-(winsets, yolk, uncovered set, Voronoi), weight 0 gives a clear error. In plain distance
-calculations it still means "ignore this dimension". The alternative was to cut the strip
-off at a box.
+geometry it turns a voter's preferred region into an endless strip, which crashed R or
+Python (S02b-003). The alternative to an error was to cut the strip off at a box.
 
-**Answer:**
+**Answer:** Error (approved 2026-10-29, implemented in PR #1). Every 2D function that builds
+a bounded shape from salience weights (indifference curves, preferred-to sets, and
+everything built on them: winsets, core, uncovered set) rejects a zero, negative or
+non-finite weight with an end-user error. In distance and loss calculations, weight 0
+still means "ignore this dimension". The Yolk ignores the distance config entirely and
+Voronoi takes no weights, so this rule does not apply to them; Voronoi instead rejects
+non-finite sites and bounding-box values.
 
 ### Q19. Threshold loss: the indifference curve through a point inside the "don't care" zone
 With threshold loss, a voter doesn't care about any point within distance τ of their
@@ -634,12 +636,19 @@ error?
 **Answer:**
 
 ### Q26. Who wins a tied last seat?
-When parties tie for a seat, the code always gives it to the party listed first. This
-applies to the seat allocation methods and to seats inside competition runs. Q7 chose
-random tie-breaks for voters and the Predator so that earlier-listed parties aren't
-favoured. Flag both ways.
-Options: (a) break seat ties at random, from a named random stream, as in Q7; (b) keep
-"first listed wins" and document it (ties are rare with many voters).
+Each seat method breaks ties in a fixed order, ending with "first listed wins":
+- Plurality top-k: most votes, then first listed (`seat_allocation.h:16–25`).
+- Hare largest remainder: largest remainder, then most votes, then first listed
+  (`seat_allocation.h:109–115`). For example, votes [1, 3] with 2 seats give [0, 2]: the
+  remainders are equal, so the vote total decides.
+- Competition runs use these methods, so the same order applies there.
+
+Q7 chose random tie-breaks for voters and the Predator so that earlier-listed parties
+aren't favoured. Flag both ways.
+Options: (a) replace only the final "first listed" step with a random draw from a named
+stream, keeping each method's earlier rules (e.g. Hare's vote-total rule); (b) make any
+remaining tie random, including Hare's vote-total rule; (c) keep the fixed order and
+document it (ties are rare with many voters).
 
 **Answer:**
 
