@@ -20,6 +20,9 @@
 - [ ] `scripts/check-all.sh` keeps an `SCS_LIB_PATH` that is already set. Run from a worktree with `SCS_LIB_PATH` pointing at the main checkout, it tests R and Python against the main checkout's library, not the worktree's. Make it warn or fail when `SCS_LIB_PATH` is outside the repo being checked.
 - [ ] Winset errors differ between bindings: Python raises `scs_winset_2d failed: <message>`, R shows `<message>` only. Make them identical (R/Python parity).
 - [ ] The committed R pkgdown site (`r/docs/`) was built at version 0.2.0, so every rebuild changes about 95 pages to 0.3.0. Rebuild and commit it once, on its own.
+- [ ] Token efficiency: trim `docs/status/WHERE_WE_ARE.md` (445 lines, mostly session logs back to Feb) to the current snapshot and known issues; move old session logs to `docs/status/archive/`.
+- [ ] Token efficiency: reduce overlap between the status docs (WHERE_WE_ARE, `.cursor/HANDOFF.md`, ROADMAP, this file, CHANGELOG) so one question needs one file.
+- [ ] Token efficiency: add a Claude Code `.claude/settings.json` that blocks reads of what `.cursorignore` hides (`old_codebases/`, `docs/site/`, `r/docs/`, vendored `three.min.js`) and of `.env` / `.github_token`.
 
 ## Not a short task
 
