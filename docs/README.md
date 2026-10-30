@@ -24,6 +24,7 @@ This file is the single entry point for project documentation.
 | Archived plans (geometry, C API, bindings, aggregation, consensus reviews) | `docs/status/archive/` |
 | Revisit before release or before opening to others | `docs/status/MILESTONE_GATES.md` § Revisit before release |
 | Chronological project history | `docs/status/project_log.md` |
+| Reviews and research briefs (one dated folder each; findings sit beside the brief) | `docs/reviews/` |
 | Architecture intent | `docs/architecture/design_document.md` |
 | Geometry services design (CGAL 2D, winsets, Yolk, Heart, etc.) | `docs/architecture/geometry_design.md` |
 | Aggregation design (profiles, voting rules, Pareto, Condorcet) | `docs/architecture/aggregation_design.md` |
@@ -96,6 +97,9 @@ docs/
 │   ├── git_reference.md                   ← solo git/github workflow
 │   ├── visualization_design.md            ← color system, layer stack, theme decisions
 │   └── sample_simulation_description.md   ← illustrative walkthrough + glossary (non-governing)
+└── reviews/                               ← dated reviews and research briefs
+    ├── 2026_10_codebase_review/           ← top-to-bottom codebase review (in progress)
+    └── 2026_10_future_research/           ← research note: solvers, counting, AI-assisted discovery
 ```
 
 > **Academic reference library** (papers, PDFs, annotated bibliography) lives at
@@ -111,6 +115,7 @@ Choose the subdirectory by the doc's purpose:
 | `status/` | Snapshot, ordered plan, milestones, or history. **Prioritized “what next” belongs in `ROADMAP.md` only**; `WHERE_WE_ARE.md` is the current snapshot. | `ROADMAP.md`, `WHERE_WE_ARE.md`, `MILESTONE_GATES.md` |
 | `architecture/` | The doc records a *design decision* that governs how code is written going forward. Should be stable once adopted. | `design_document.md`, `stream_manager_design.md` |
 | `development/` | The doc is a *how-to* for working on the project — style guide, workflow, tools, illustrative examples. | `development.md`, `git_reference.md` |
+| `reviews/` | A dated review or research brief. The brief, its findings, and any follow-up plan stay together in one folder; accepted work moves into `ROADMAP.md`. | `2026_10_codebase_review/`, `2026_10_future_research/` |
 | `SocialChoiceStudioDev/references/` | Academic bibliography and priority lists — outside the repo in Dropbox; not tracked in git. | `reference_index.md`, `implementation_priority.md` |
 | project root | Standard open-source hygiene files that GitHub renders prominently. | `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md` |
 
