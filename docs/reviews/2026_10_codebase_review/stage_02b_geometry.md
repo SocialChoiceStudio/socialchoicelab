@@ -70,8 +70,11 @@ value, results are returned by value, and no pointer is retained.
   - Majority, Copeland, the uncovered set and the winset honour `DistConfig` (Euclidean,
     Manhattan, Chebyshev, Minkowski).
   - Yolk, quantile lines, Voronoi and `winset_interval_1d` are Euclidean only. Yolk
-    ignores any metric it is given. In 1D every weighted metric induces the same
-    preferences, so the 1D result holds for all metrics.
+    ignores any metric it is given. In 1D every weighted metric with a strictly positive
+    weight induces the same preferences, so the 1D result holds for all such metrics. With
+    weight 0 every alternative ties: the weighted winset is empty, but
+    `winset_interval_1d` (unweighted) still returns a non-empty interval, so it is not
+    valid for masked dimensions. (Correction from Copilot review of PR #3, verified.)
   - Weighted winsets ignore the metric's weights on vote weight (Q6 pending).
 - **Exactness.**
   - Exact: winset Boolean operations, `winset_contains` (exact point-in-polygon on

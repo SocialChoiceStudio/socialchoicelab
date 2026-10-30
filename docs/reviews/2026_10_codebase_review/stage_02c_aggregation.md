@@ -67,8 +67,11 @@ For Stage 3. Everything is header-only, in namespace `socialchoicelab::aggregati
   exact-equality ties go to ascending index. Finite input needed (the C API validates it).
 
 **Generators and voter sampler**
-- `uniform_spatial_profile` / `gaussian_spatial_profile` draw x then y for each voter, then
-  call `build_spatial_profile`. `impartial_culture` does one shuffle per voter, starting
+- `uniform_spatial_profile` / `gaussian_spatial_profile` draw one x and one y per voter,
+  then call `build_spatial_profile`. The x-then-y order is **not guaranteed**: both draws
+  are arguments of one `emplace_back` call (`profile_generators.h:71`, `:112`), and C++
+  leaves argument evaluation order unspecified, so a compiler may draw y first (SCP-004).
+  (Correction from Copilot review of PR #3, verified.) `impartial_culture` does one shuffle per voter, starting
   from the identity.
   - They throw on `n_voters < 1`, `xmin >= xmax` / `ymin >= ymax`, `std_dev <= 0` and
     `n_alts < 1`. They do not validate `alternatives` (it may be empty) or finiteness.
