@@ -501,18 +501,142 @@ bounced. The ± 1.0 margin is in absolute units, so it is negligible on a 0–10
 `scs_api.cpp:4378–4396`.
 
 **Answer:**
+**Decision: bounds are optional; when omitted, they are inferred with a margin relative
+to the data's range, and the bounds used are recorded in the results (option 2).**
+
+- **Explicit bounds.** The bounds define the issue space, shared by voters and
+  competitors. The C API and the R/Python engine configs accept a lower and upper bound
+  for each dimension, used as given. A voter or starting competitor outside them is
+  rejected with an end-user error.
+- **Default when omitted.** The smallest axis-aligned box holding the starting competitors
+  and the voters, widened on each side by 10% of its range in that dimension. If a
+  dimension has zero range, its margin is 10% of the largest range in any dimension. If
+  every dimension has zero range, the call fails with an end-user error asking for
+  explicit bounds. No margin is in absolute units.
+- **Recorded.** The bounds actually used are stored with the trace and the experiment and
+  can be read from the C API, R and Python, so a study can report and reproduce them.
+- **Background.** Today the C API has no bounds input. It always uses the bounding box of
+  competitors and voters ± 1.0 in absolute units (`scs_api.cpp:4165–4186`, duplicated at
+  `4460–4479`; the line numbers in the question are out of date). That margin is
+  negligible on a 0–1000 scale and 100× the data range on a 0–0.01 scale, moves with any
+  outlying voter, and is never reported. The C++ core already takes explicit bounds
+  (`competition_types.h:46`, `engine.h:41`). The website's user-set box
+  (`models.py:17–21`) is used only to place voters. For reference, Laver & Sergenti use a
+  fixed space set in the model (Ch5: −35 to 35 on each axis), not one inferred from data.
+- **For reviewers.** Report any absolute-unit margin, bounds inference duplicated rather
+  than shared, a competition entry point that cannot take explicit bounds, a run that
+  accepts voters or starting competitors outside explicit bounds, a run whose bounds
+  cannot be read back, and docs that don't state the default.
+
+Implies:
+- `include/scs_api.h:1286–1294` (`SCS_CompetitionEngineConfig`) should accept optional
+  per-dimension bounds.
+- `src/c_api/scs_api.cpp:4165–4186` and `4460–4479` should be replaced by one shared
+  helper that uses explicit bounds when given and the relative-margin rule otherwise.
+- `CompetitionTrace` (`engine.h:25–38`) and the experiment result should store the bounds
+  used, with a C API accessor (e.g. `scs_competition_trace_bounds`).
+- R `make_competition_engine_config` (`r/R/utils.R:188–234`) and Python
+  `CompetitionEngineConfig` (`_competition.py:96`) gain a `bounds` argument (default:
+  inferred); `CompetitionTrace` in both exposes the bounds used.
+- `docs/architecture/competition_design.md` (§ Motion policy decisions, lines 159–168)
+  should document bounds and the default. `c_api_design.md` has no competition section
+  today; document the rule in the `scs_api.h` comments.
+- **Website:** `socialchoicestudiowebsite/backend/app/simulation.py:135–160` should pass
+  `request.bounds` to the engine, so the box the user sets is the box competitors are held
+  to.
+- Tests:
+  - Explicit bounds are used as given.
+  - Scale invariance: multiplying positions, voters and step sizes by 1e-3 or 1e3 gives
+    the same trajectory, rescaled, within a relative tolerance.
+  - The zero-range-dimension fallback, and the all-zero-range error.
+  - The error for a voter or starting competitor outside explicit bounds.
+  - The bounds used can be read back from C API, R and Python, with identical values.
 
 ### Q11. Version numbers
 CMake says 0.1.0, `SCS_API_VERSION` says 0.2.0, and the packages are 0.3.0. Which is
 authoritative? Should the C API version track the package version?
 
 **Answer:**
+**Decision: one version number for the whole project (option 1). The current number is
+0.3.0.**
+
+- **One source.** The version is set once, in `CMakeLists.txt` (`project(... VERSION ...)`).
+  The C API version (`SCS_API_VERSION_*`), `r/DESCRIPTION`, `python/pyproject.toml` and
+  Python's `__version__` must equal it. `scripts/check-all.sh` fails if any copy differs.
+- **Meaning.** `scs_version()` in R and Python, the package versions and the git tag all
+  report the same number. This is the "library version" users record with results (Q4).
+  The C API number therefore goes up when only R or Python changed; before the project
+  opens, nothing depends on the C API version signalling C-level changes alone.
+- **Load check.** When R or Python loads `libscs_api`, it compares `scs_api_version()`
+  with its own package version and, if they differ, fails with an end-user error naming
+  both versions and saying to rebuild the library or point `SCS_LIB_PATH` at a matching
+  build.
+- **Background.** Today CMake says 0.1.0 (read by nothing), the C API 0.2.0 (returned by
+  `scs_version()`), and R, Python and `__version__` 0.3.0. The tags (`v0.2.0`, `v0.3.0`)
+  and `CHANGELOG.md` agree with 0.3.0. The numbers already disagreed at the `v0.3.0` tag
+  (CMake 0.1.0, C API 0.2.0, R 0.2.0), and the competition C API, "declared stable at
+  v0.3.0" (`c_api_design.md:44–49`), was added without the minor bump the policy at
+  `c_api_design.md:37–42` requires. Nothing checks that the copies match.
+- **Later.** Whether outside C users need a separate C API version is to be revisited
+  when the project opens, with Q12.
+- **For reviewers.** Report any version copy that differs from `CMakeLists.txt`, any code
+  or doc that treats the C API version as independent of the project version, and
+  experiment outputs that record any other version.
+
+Implies:
+- `CMakeLists.txt:2` should say 0.3.0, and `include/scs_api.h:29–31` should say 0.3.0.
+- `scripts/check-all.sh` should compare all five copies and fail on a mismatch.
+- R and Python should add the load-time version check, with a test for the mismatch
+  error.
+- `docs/architecture/c_api_design.md:37–42` should say the C API version is the project
+  version. Lines 44–49 (stability declarations) and 620–625 (soname, "matching source and
+  header versions is the contract") should be reconciled with this answer and Q12.
+- Website: not affected (it doesn't read any version).
 
 ### Q12. Deprecation language
 `c_api_design.md` describes a deprecation period for API changes. Does that apply before
 the project opens, given the no-backward-compatibility rule?
 
 **Answer:**
+**Decision: no. Until the project opens to outside developers, the no-backward-
+compatibility rule applies to the C API; the stability and deprecation language takes
+effect only when it opens (option 1).**
+
+- **Until opening.** Breaking C API changes (removed functions, changed signatures,
+  changed struct layouts, changed meanings) go in directly, with no deprecation period and
+  no parallel old function. R, Python and the website are updated in the same change, so
+  nothing outside the project breaks.
+- **From opening.** The stability section of `c_api_design.md` (lines 629–642), its
+  stability declarations (lines 44–49) and the pre-1.0 gate in `MILESTONE_GATES.md:96`
+  take effect.
+- **Background.** The stability section promises additive-only changes, no signature or
+  struct-layout changes, and a deprecation period otherwise. Applied now, it would
+  conflict with Q1 (remove the Heart functions), Q6 (new weighted-winset threshold
+  meaning), Q8 (remove `hunter_sticker`) and Q10 (new `SCS_CompetitionEngineConfig`
+  layout). Nothing outside the project calls the C API; the website goes through the
+  Python package. The rule (`.cursor/rules/No-Backward-Compat-Until-Open.mdc:19`) says
+  that after opening it is superseded by "the deprecation policy in `milestone_gates.md`
+  (First binding / 1.0) and ROADMAP.md (Documentation and citation standards)", but
+  neither has one: there is no "First binding" section, and the ROADMAP section is about
+  citations. The only deprecation policy is the one in `c_api_design.md`.
+- **For reviewers.** Do not report a breaking C API change as a defect for lacking a
+  deprecation period, a parallel old function or a CHANGELOG breaking-change entry. Do
+  report old code kept only for compatibility, a breaking change not carried through to
+  R, Python and the website in the same change, and docs that present the stability
+  promise as already in force.
+
+Implies:
+- `docs/architecture/c_api_design.md:629–642` and `:44–49` should say they take effect
+  when the project opens, and that until then the no-backward-compatibility rule applies.
+- `docs/status/MILESTONE_GATES.md:96` should say the same. Its heading "First public
+  release" (line 87) doesn't match the project's closed status.
+- `c_api_design.md:620–625`: an explicit `SOVERSION` is a post-opening task; until then,
+  Q11's load-time version check is the contract.
+- Before opening, write the post-opening deprecation policy (the `c_api_design.md`
+  section is a starting draft) and fix the pointers at
+  `.cursor/rules/No-Backward-Compat-Until-Open.mdc:19`, which name a section and a policy
+  that don't exist.
+- Website: not affected.
 
 ---
 
