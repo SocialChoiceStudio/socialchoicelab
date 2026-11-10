@@ -17,7 +17,7 @@ Excluded: `old_codebases/`, `agent_conversations/`, vendored third-party code
 | 0 | Baseline: builds, tests, sanitizers, warnings, coverage, lint, repo inventory | 1 | Sonnet / medium | done (stage_00_baseline.md) |
 | 1 | Architecture map and stated invariants | 1 | Opus / high | done (stage_01_architecture_map.md) |
 | 2 | C++ core: 2a core+rng+preference, 2b geometry, 2c aggregation, 2d competition | 4 | Opus / high | done (stage_02a–d); S02a-001, S02b-001, S02b-003 fixed early in PR #1 (01f5aba) |
-| 3 | C API: 3h header contract; `scs_api.cpp` slices 3a/3b/3c (line ranges in stage_01 §9); run `test_c_api` and the Python/R tests under macOS `leaks --atExit` (LeakSanitizer is unavailable with Apple clang, per Stage 0) | 4 | Opus / high | — |
+| 3 | C API: 3h header contract; `scs_api.cpp` slices 3a/3b/3c (line ranges recomputed at `e6772eb` in prompts/stage_03_c_api.md); run `test_c_api` and the Python/R tests under macOS `leaks --atExit` (LeakSanitizer is unavailable with Apple clang, per Stage 0) | 4 | Opus / high | done (stage_03h, stage_03a–c); 1 P0, 17 P1, 23 P2, 17 P3 |
 | 4 | C++ tests: 4a core/preference, 4b geometry I, 4c geometry II, 4d aggregation+competition, 4e/4f `test_c_api.cpp` halves | 6 | Sonnet / high | — |
 | 5 | Bindings: 5a R code, 5b R C glue, 5c Python infra (incl. cdef vs. `scs_api.h` diff), 5d Python objects | 4 | Sonnet / high | — |
 | 6 | Parity: 6a signature inventory; 6b non-plot behaviour + binding tests; 6c static plot tests; 6d competition canvas tests | 4 | 6a Haiku; 6b–6d Sonnet / high | — |
